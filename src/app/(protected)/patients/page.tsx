@@ -114,7 +114,7 @@ export default function PatientsPage() {
 };
 
   return (
-    <div className="flex-1 space-y-6 p-4 md:p-8">
+    <div className="space-y-6 p-4 md:p-8">
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight font-headline">Gestión de Pacientes</h2>
@@ -176,15 +176,17 @@ export default function PatientsPage() {
           <p>Cargando pacientes...</p>
         </div>
       ) : filteredPatients.length === 0 ? (
-        <Card className="flex flex-col items-center justify-center text-center py-16 mt-8 shadow-none border-dashed">
-            <User className="h-16 w-16 text-muted-foreground mb-4" />
-            <h3 className="text-xl font-semibold">No se encontraron pacientes</h3>
-            <p className="text-muted-foreground mt-2 max-w-sm">
-            Intenta ajustar tu búsqueda o filtros, o crea un nuevo paciente para empezar.
-            </p>
-            <Button className="mt-6">
-                <PlusCircle className="mr-2 h-4 w-4" /> Crear Primer Paciente
-            </Button>
+        <Card className="text-center py-16 mt-8 shadow-none border-dashed">
+            <div className="flex flex-col items-center justify-center">
+              <User className="h-16 w-16 text-muted-foreground mb-4" />
+              <h3 className="text-xl font-semibold">No se encontraron pacientes</h3>
+              <p className="text-muted-foreground mt-2 max-w-sm">
+              Intenta ajustar tu búsqueda o filtros, o crea un nuevo paciente para empezar.
+              </p>
+              <Button className="mt-6">
+                  <PlusCircle className="mr-2 h-4 w-4" /> Crear Primer Paciente
+              </Button>
+            </div>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

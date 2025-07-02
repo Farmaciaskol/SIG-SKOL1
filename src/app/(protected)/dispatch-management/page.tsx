@@ -1,7 +1,7 @@
 export default function DispatchManagementPage() {
   return (
-    <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm m-4">
-      <div className="flex flex-col items-center gap-1 text-center">
+    <div className="p-4 md:p-8">
+      <div className="flex flex-col items-start gap-1">
         <h3 className="text-2xl font-bold tracking-tight">
           Página de Gestión de Despachos
         </h3>
