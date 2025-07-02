@@ -1,5 +1,5 @@
 import { db, storage } from './firebase';
-import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { RecipeStatus } from './types';
 import type { Recipe, Doctor, InventoryItem, User, Role, ExternalPharmacy, Patient, PharmacovigilanceReport, AppData, AuditTrailEntry } from './types';
@@ -9,18 +9,34 @@ export * from './types';
 
 const USE_MOCK_DATA_ON_EMPTY_FIRESTORE = process.env.NODE_ENV === 'development';
 
+// A flag to prevent seeding more than once per app load
+const seededCollections = new Set<string>();
+
 async function fetchCollection<T extends { id: string }>(collectionName: keyof AppData & string): Promise<T[]> {
   if (!db) {
-    console.error("Firestore is not initialized. Falling back to mock data.");
-    return getMockData()[collectionName] as T[];
+    console.error("Firestore is not initialized.");
+    // Return empty array instead of mock data if db is not available to avoid confusion
+    return [];
   }
   try {
-    const querySnapshot = await getDocs(collection(db, collectionName));
+    let querySnapshot = await getDocs(collection(db, collectionName));
     
-    // If the collection is empty in Firestore, return mock data for a better dev experience.
-    if (querySnapshot.empty && USE_MOCK_DATA_ON_EMPTY_FIRESTORE) {
-      console.warn(`Firestore collection '${collectionName}' is empty. Using mock data for testing.`);
-      return getMockData()[collectionName] as T[];
+    // If the collection is empty, seed it with mock data
+    if (querySnapshot.empty && USE_MOCK_DATA_ON_EMPTY_FIRESTORE && !seededCollections.has(collectionName)) {
+      console.warn(`Firestore collection '${collectionName}' is empty. Seeding with mock data...`);
+      const mockData = getMockData()[collectionName];
+      if (mockData && mockData.length > 0) {
+        const batch = writeBatch(db);
+        mockData.forEach((item: any) => {
+          const docRef = doc(db, collectionName, item.id);
+          batch.set(docRef, item);
+        });
+        await batch.commit();
+        console.log(`Successfully seeded ${mockData.length} documents into '${collectionName}'.`);
+        seededCollections.add(collectionName);
+        // Re-fetch the data after seeding
+        querySnapshot = await getDocs(collection(db, collectionName));
+      }
     }
 
     return querySnapshot.docs.map(doc => {
@@ -35,10 +51,8 @@ async function fetchCollection<T extends { id: string }>(collectionName: keyof A
     });
   } catch (error) {
     console.error(`Error fetching ${collectionName}:`, error);
-    if (USE_MOCK_DATA_ON_EMPTY_FIRESTORE) {
-      console.warn(`Firestore fetch failed for '${collectionName}'. Using mock data as a fallback.`);
-      return getMockData()[collectionName] as T[];
-    }
+    // In case of error, returning an empty array is safer than falling back to mock data,
+    // which can hide connection issues.
     return [];
   }
 }
@@ -59,8 +73,7 @@ export const getPharmacovigilanceReports = async (): Promise<PharmacovigilanceRe
 export const getRecipe = async (id: string): Promise<Recipe | null> => {
     if (!db) {
         console.error("Firestore is not initialized.");
-        const mockRecipes = getMockData().recipes;
-        return mockRecipes.find(r => r.id === id) || null;
+        return null;
     }
     try {
         const docRef = doc(db, 'recipes', id);
@@ -76,11 +89,7 @@ export const getRecipe = async (id: string): Promise<Recipe | null> => {
             }
             return { id: docSnap.id, ...data } as Recipe;
         } else {
-             if (USE_MOCK_DATA_ON_EMPTY_FIRESTORE) {
-                const mockRecipes = getMockData().recipes;
-                return mockRecipes.find(r => r.id === id) || null;
-            }
-            console.log("No such document!");
+            console.log(`Document with id ${id} not found in recipes collection.`);
             return null;
         }
     } catch (error) {

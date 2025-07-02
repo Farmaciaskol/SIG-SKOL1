@@ -150,6 +150,7 @@ export default function RecipesPage() {
   };
 
   const handleUpdateStatus = async (recipe: Recipe, newStatus: RecipeStatus, notes?: string) => {
+    setIsSubmitting(true);
     try {
       const newAuditEntry: AuditTrailEntry = {
         status: newStatus,
@@ -165,6 +166,8 @@ export default function RecipesPage() {
       fetchData();
     } catch (error) {
        toast({ title: 'Error', description: 'No se pudo actualizar el estado de la receta.', variant: 'destructive' });
+    } finally {
+        setIsSubmitting(false);
     }
   }
 
@@ -184,6 +187,7 @@ export default function RecipesPage() {
 
   const handleConfirmDelete = async () => {
     if (!recipeToDelete) return;
+    setIsSubmitting(true);
     try {
         await deleteRecipe(recipeToDelete.id);
         toast({ title: 'Receta Eliminada', description: `La receta ${recipeToDelete.id} ha sido eliminada.` });
@@ -191,6 +195,8 @@ export default function RecipesPage() {
         fetchData();
     } catch (error) {
         toast({ title: 'Error', description: 'No se pudo eliminar la receta.', variant: 'destructive' });
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
@@ -220,7 +226,7 @@ export default function RecipesPage() {
         internalPreparationLot: null,
         compoundingDate: null,
         preparationExpiryDate: null,
-        rejectionReason: null,
+        rejectionReason: undefined,
         auditTrail: [...(recipeToReprepare.auditTrail || []), reprepareAuditEntry]
       };
 
@@ -268,7 +274,7 @@ export default function RecipesPage() {
   const RecipeActions = ({ recipe }: { recipe: Recipe }) => {
     const dispensedCount = recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0;
     const isExpired = new Date(recipe.dueDate) < new Date();
-    const cycleLimitReached = dispensedCount > MAX_REPREPARATIONS;
+    const cycleLimitReached = dispensedCount >= MAX_REPREPARATIONS + 1;
     const canReprepare = !isExpired && !cycleLimitReached;
     
     let disabledTooltip = '';
@@ -487,7 +493,7 @@ export default function RecipesPage() {
       ) : (
         <>
             {/* Desktop Table View */}
-            <Card className="hidden md:block">
+            <Card className="hidden w-full md:block">
                 <CardContent className="p-0">
                     <Table>
                         <TableHeader>
@@ -561,7 +567,10 @@ export default function RecipesPage() {
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogCancel onClick={() => setRecipeToDelete(null)}>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={handleConfirmDelete}>Eliminar</AlertDialogAction>
+                <AlertDialogAction onClick={handleConfirmDelete} disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Eliminar
+                </AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -581,7 +590,10 @@ export default function RecipesPage() {
             </div>
             <DialogFooter>
                 <Button variant="ghost" onClick={() => setRecipeToReject(null)}>Cancelar</Button>
-                <Button variant="destructive" onClick={handleConfirmReject} disabled={!reason.trim()}>Confirmar Rechazo</Button>
+                <Button variant="destructive" onClick={handleConfirmReject} disabled={!reason.trim() || isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Confirmar Rechazo
+                </Button>
             </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -601,7 +613,10 @@ export default function RecipesPage() {
             </div>
             <DialogFooter>
                 <Button variant="ghost" onClick={() => setRecipeToCancel(null)}>Cancelar</Button>
-                <Button variant="destructive" onClick={handleConfirmCancel} disabled={!reason.trim()}>Confirmar Anulación</Button>
+                <Button variant="destructive" onClick={handleConfirmCancel} disabled={!reason.trim() || isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Confirmar Anulación
+                </Button>
             </DialogFooter>
         </DialogContent>
       </Dialog>
