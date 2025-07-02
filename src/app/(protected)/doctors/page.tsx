@@ -41,6 +41,13 @@ type DoctorWithStats = Doctor & {
 };
 
 const DoctorCard = ({ doctor }: { doctor: DoctorWithStats }) => {
+  const getProgressColor = (value: number) => {
+    const roundedValue = Math.round(value);
+    if (roundedValue >= 90) return 'bg-green-500';
+    if (roundedValue >= 50) return 'bg-yellow-400';
+    return 'bg-red-500';
+  };
+
   return (
     <Dialog>
       <Card className="flex flex-col">
@@ -87,14 +94,22 @@ const DoctorCard = ({ doctor }: { doctor: DoctorWithStats }) => {
                 <p>Emisión Correcta</p>
                 <p className="font-semibold">{Math.round(doctor.correctEmissionRate)}%</p>
               </div>
-              <Progress value={doctor.correctEmissionRate} aria-label={`${Math.round(doctor.correctEmissionRate)}% de emisión correcta`} />
+              <Progress
+                value={doctor.correctEmissionRate}
+                aria-label={`${Math.round(doctor.correctEmissionRate)}% de emisión correcta`}
+                indicatorClassName={getProgressColor(doctor.correctEmissionRate)}
+              />
             </div>
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
                 <p>Cumplimiento Crónicos</p>
                 <p className="font-semibold">{Math.round(doctor.chronicComplianceRate)}%</p>
               </div>
-              <Progress value={doctor.chronicComplianceRate} aria-label={`${Math.round(doctor.chronicComplianceRate)}% de cumplimiento crónico`} />
+              <Progress
+                value={doctor.chronicComplianceRate}
+                aria-label={`${Math.round(doctor.chronicComplianceRate)}% de cumplimiento crónico`}
+                indicatorClassName={getProgressColor(doctor.chronicComplianceRate)}
+              />
             </div>
           </div>
         </CardContent>
