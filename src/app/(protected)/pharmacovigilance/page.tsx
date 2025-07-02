@@ -13,7 +13,7 @@ import {
   ExternalPharmacy,
 } from '@/lib/data';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { PlusCircle, Eye, HeartPulse, Clock, CalendarPlus, CheckCircle, FileWarning } from 'lucide-react';
@@ -187,48 +187,77 @@ export default function PharmacovigilancePage() {
           <CardTitle>Lista de Reportes</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID Reporte</TableHead>
-                <TableHead>Fecha Reporte</TableHead>
-                <TableHead>Paciente</TableHead>
-                <TableHead>Receta ID</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead><span className="sr-only">Acciones</span></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {reports.length > 0 ? (
-                reports.map(report => (
-                  <TableRow key={report.id}>
-                    <TableCell className="font-mono text-primary">{report.id}</TableCell>
-                    <TableCell>{format(new Date(report.reportedAt), 'dd-MM-yyyy')}</TableCell>
-                    <TableCell>{getPatientName(report.patientId)}</TableCell>
-                    <TableCell className="font-mono">
-                      {report.recipeId ? (
-                        <Link href={`/recipes/${report.recipeId}`} className="hover:underline text-primary">
-                          {report.recipeId}
-                        </Link>
-                      ) : 'N/A'}
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={statusStyles[report.status].badge}>{report.status}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/pharmacovigilance/${report.id}`}><Eye className="mr-2 h-4 w-4" /> Ver/Editar</Link>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center h-24">No se encontraron reportes.</TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+          {reports.length === 0 ? (
+            <div className="text-center h-24 flex items-center justify-center">No se encontraron reportes.</div>
+          ) : (
+            <>
+              {/* Desktop Table */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID Reporte</TableHead>
+                      <TableHead>Fecha Reporte</TableHead>
+                      <TableHead>Paciente</TableHead>
+                      <TableHead>Receta ID</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead><span className="sr-only">Acciones</span></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {reports.map(report => (
+                      <TableRow key={report.id}>
+                        <TableCell className="font-mono text-primary">{report.id}</TableCell>
+                        <TableCell>{format(new Date(report.reportedAt), 'dd-MM-yyyy')}</TableCell>
+                        <TableCell>{getPatientName(report.patientId)}</TableCell>
+                        <TableCell className="font-mono">
+                          {report.recipeId ? (
+                            <Link href={`/recipes/${report.recipeId}`} className="hover:underline text-primary">
+                              {report.recipeId}
+                            </Link>
+                          ) : 'N/A'}
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={statusStyles[report.status].badge}>{report.status}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link href={`/pharmacovigilance/${report.id}`}><Eye className="mr-2 h-4 w-4" /> Ver/Editar</Link>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile Cards */}
+              <div className="grid grid-cols-1 gap-4 md:hidden">
+                {reports.map(report => (
+                  <Card key={report.id}>
+                    <CardHeader>
+                      <div className="flex justify-between items-start">
+                        <CardTitle className="text-base font-mono text-primary">{report.id}</CardTitle>
+                        <Badge className={statusStyles[report.status].badge}>{report.status}</Badge>
+                      </div>
+                       <p className="text-sm text-muted-foreground">
+                        {format(new Date(report.reportedAt), 'dd MMMM, yyyy', { locale: es })}
+                      </p>
+                    </CardHeader>
+                    <CardContent className="text-sm space-y-2">
+                       <p><span className="font-semibold">Paciente:</span> {getPatientName(report.patientId)}</p>
+                       <p><span className="font-semibold">Medicamento:</span> {report.involvedMedications}</p>
+                    </CardContent>
+                    <CardFooter className="bg-muted/50 p-3">
+                       <Button variant="outline" size="sm" asChild className="w-full">
+                         <Link href={`/pharmacovigilance/${report.id}`}><Eye className="mr-2 h-4 w-4" /> Ver/Editar Reporte</Link>
+                       </Button>
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

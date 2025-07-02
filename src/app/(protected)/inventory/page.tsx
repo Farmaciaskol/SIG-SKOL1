@@ -133,7 +133,7 @@ const InventoryItemForm = ({ item, onFinished }: { item?: InventoryItem; onFinis
                 <FormField control={form.control} name="name" render={({ field }) => (
                     <FormItem><FormLabel>Nombre del Producto *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormField control={form.control} name="unit" render={({ field }) => (
                         <FormItem><FormLabel>Unidad de Medida *</FormLabel><FormControl><Input placeholder="Ej: g, mg, comprimidos" {...field} /></FormControl><FormMessage /></FormItem>
                     )}/>
@@ -141,7 +141,7 @@ const InventoryItemForm = ({ item, onFinished }: { item?: InventoryItem; onFinis
                         <FormItem><FormLabel>Umbral Stock Bajo *</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl><FormMessage /></FormItem>
                     )}/>
                 </div>
-                 <div className="grid grid-cols-2 gap-4">
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormField control={form.control} name="sku" render={({ field }) => (
                         <FormItem><FormLabel>SKU</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                     )}/>
@@ -177,7 +177,7 @@ const InventoryItemForm = ({ item, onFinished }: { item?: InventoryItem; onFinis
                     <CardHeader><CardTitle className="text-base">Para Fraccionamiento (Opcional)</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
                         <FormDescription>Rellene esta sección si este producto es un insumo que se enviará a recetarios para ser fraccionado.</FormDescription>
-                         <div className="grid grid-cols-3 gap-4">
+                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                              <FormField control={form.control} name="itemsPerBaseUnit" render={({ field }) => (
                                 <FormItem><FormLabel>Sub-unidades por Unidad</FormLabel><FormControl><Input type="number" placeholder="Ej: 30" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl></FormItem>
                             )}/>

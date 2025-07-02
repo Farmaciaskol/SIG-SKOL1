@@ -365,7 +365,7 @@ export default function ExternalPrescriptionsPage() {
                 <FormField control={form.control} name="name" render={({ field }) => (
                     <FormItem><FormLabel>Nombre Recetario *</FormLabel><FormControl><Input placeholder="Ej: Farmacias Magistrales S.A." {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormField control={form.control} name="contactPerson" render={({ field }) => (
                         <FormItem><FormLabel>Persona de Contacto</FormLabel><FormControl><Input placeholder="Ej: Juan Pérez" {...field} /></FormControl><FormMessage /></FormItem>
                     )}/>

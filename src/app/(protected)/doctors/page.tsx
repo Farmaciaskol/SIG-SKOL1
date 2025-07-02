@@ -378,7 +378,7 @@ export default function DoctorsPage() {
                 <FormField control={form.control} name="specialty" render={({ field }) => (
                     <FormItem><FormLabel>Especialidad *</FormLabel><FormControl><Input placeholder="Ej: Dermatología" {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField control={form.control} name="license" render={({ field }) => (
                       <FormItem><FormLabel>N° Colegiatura</FormLabel><FormControl><Input placeholder="Ej: 12345" {...field} /></FormControl><FormMessage /></FormItem>
                   )}/>
@@ -386,7 +386,7 @@ export default function DoctorsPage() {
                       <FormItem><FormLabel>RUT</FormLabel><FormControl><Input placeholder="Ej: 12.345.678-9" {...field} /></FormControl><FormMessage /></FormItem>
                   )}/>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                    <FormField control={form.control} name="phone" render={({ field }) => (
                       <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="Ej: +56912345678" {...field} /></FormControl><FormMessage /></FormItem>
                   )}/>

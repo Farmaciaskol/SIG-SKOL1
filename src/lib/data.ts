@@ -3,7 +3,7 @@ import { db, storage } from './firebase';
 import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus } from './types';
-import type { Recipe, Doctor, InventoryItem, User, Role, ExternalPharmacy, Patient, PharmacovigilanceReport, AppData, AuditTrailEntry, DispatchNote, DispatchItem } from './types';
+import type { Recipe, Doctor, InventoryItem, User, Role, ExternalPharmacy, Patient, PharmacovigilanceReport, AppData, AuditTrailEntry, DispatchNote, DispatchItem, ControlledSubstanceLogEntry } from './types';
 import { getMockData } from './mock-data';
 
 export * from './types';
@@ -69,6 +69,7 @@ export const getUsers = async (): Promise<User[]> => fetchCollection<User>('user
 export const getRoles = async (): Promise<Role[]> => fetchCollection<Role>('roles');
 export const getPharmacovigilanceReports = async (): Promise<PharmacovigilanceReport[]> => fetchCollection<PharmacovigilanceReport>('pharmacovigilanceReports');
 export const getDispatchNotes = async (): Promise<DispatchNote[]> => fetchCollection<DispatchNote>('dispatchNotes');
+export const getControlledSubstanceLog = async (): Promise<ControlledSubstanceLogEntry[]> => fetchCollection<ControlledSubstanceLogEntry>('controlledSubstanceLog');
 
 
 // Example of getting a single document
