@@ -210,7 +210,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
       if (result.patientName) form.setValue('newPatientName', result.patientName);
       if (result.patientRut) form.setValue('newPatientRut', result.patientRut);
       if (result.doctorName) form.setValue('newDoctorName', result.doctorName);
-      if (result.doctorRut) form.setValue('newDoctorRut', result.doctorRut);
+      if (result.doctorRut) form.setValue('newDoctorRut', result.doctorLicense);
       if (result.doctorLicense) form.setValue('newDoctorLicense', result.doctorLicense);
       if (result.doctorSpecialty) form.setValue('newDoctorSpecialty', result.doctorSpecialty);
       if (result.prescriptionDate) form.setValue('prescriptionDate', result.prescriptionDate);
@@ -507,7 +507,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
 
                 <div className="space-y-6">
                     {fields.map((item, index) => (
-                    <div key={item.id} className="p-4 border rounded-lg space-y-4 relative bg-muted">
+                    <div key={item.id} className="p-4 border rounded-lg space-y-4 relative">
                         <div className="flex justify-end">
                              {fields.length > 1 && (
                                 <Button type="button" variant="ghost" size="icon" className="text-red-500 hover:text-red-600 absolute top-2 right-2" onClick={() => remove(index)}>
