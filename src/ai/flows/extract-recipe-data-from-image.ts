@@ -29,6 +29,9 @@ const ExtractRecipeDataFromImageOutputSchema = z.object({
   patientName: z.string().describe("The full name of the patient.").optional(),
   patientRut: z.string().describe("The RUT (national ID) of the patient, if visible.").optional(),
   doctorName: z.string().describe("The full name of the prescribing doctor.").optional(),
+  doctorRut: z.string().describe("The RUT (national ID) of the doctor, if visible.").optional(),
+  doctorLicense: z.string().describe("The license number (N° Colegiatura) of the prescribing doctor.").optional(),
+  doctorSpecialty: z.string().describe("The specialty of the prescribing doctor.").optional(),
   prescriptionDate: z.string().describe("The date the prescription was issued in YYYY-MM-DD format.").optional(),
   items: z.array(RecipeItemSchema).describe('An array of prescribed medications or items found in the recipe.')
 });
@@ -48,6 +51,9 @@ const prompt = ai.definePrompt({
   - Patient's full name (patientName)
   - Patient's RUT or national ID (patientRut), if available.
   - Doctor's full name (doctorName)
+  - Doctor's RUT or national ID (doctorRut), if available.
+  - Doctor's license number (doctorLicense)
+  - Doctor's specialty (doctorSpecialty)
   - Date of prescription (prescriptionDate) in YYYY-MM-DD format. If the year is not specified, assume the current year.
   - A list of prescribed items (items), where each item includes:
     - The active ingredient (activeIngredient).

@@ -7,10 +7,12 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import {
   Select,
   SelectContent,
@@ -18,13 +20,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Upload, User, Bot, Pill, Stethoscope, Plus, X, Image as ImageIcon, Loader2, Wand2 } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { Upload, Pill, Plus, X, Image as ImageIcon, Loader2, Wand2, Bot, Calendar as CalendarIcon } from 'lucide-react';
 import { getPatients, getDoctors, getRecipe, Patient, Doctor } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { extractRecipeDataFromImage } from '@/ai/flows/extract-recipe-data-from-image';
 import { simplifyInstructions } from '@/ai/flows/simplify-instructions';
 import Image from 'next/image';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { addMonths } from 'date-fns';
 
 // Zod schema for form validation
 const recipeItemSchema = z.object({
@@ -34,14 +40,24 @@ const recipeItemSchema = z.object({
 });
 
 const recipeFormSchema = z.object({
+  prescriptionDate: z.string({ required_error: "La fecha de prescripción es requerida." }),
+  expiryDate: z.string().optional(),
   patientId: z.string().optional(),
   newPatientName: z.string().optional(),
   newPatientRut: z.string().optional(),
+  dispatchAddress: z.string().optional(),
   doctorId: z.string().optional(),
+  newDoctorName: z.string().optional(),
+  newDoctorLicense: z.string().optional(),
+  newDoctorRut: z.string().optional(),
+  newDoctorSpecialty: z.string().optional(),
   items: z.array(recipeItemSchema).min(1, 'Debe haber al menos un ítem en la receta.'),
 }).refine(data => data.patientId || (data.newPatientName && data.newPatientRut), {
-  message: 'Debe seleccionar un paciente existente o ingresar los datos de uno nuevo.',
+  message: 'Debe seleccionar un paciente existente o ingresar los datos de uno nuevo (nombre y RUT).',
   path: ['patientId'],
+}).refine(data => data.doctorId || (data.newDoctorName && data.newDoctorLicense && data.newDoctorSpecialty), {
+    message: 'Debe seleccionar un médico existente o ingresar los datos de uno nuevo (nombre, N° colegiatura y especialidad).',
+    path: ['doctorId']
 });
 
 
@@ -87,14 +103,12 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
         if (isEditMode) {
           const recipeData = await getRecipe(recipeId);
           if (recipeData) {
-            // Note: This only partially populates the form for edit mode.
-            // A more complete implementation would fetch inventory item names.
             form.reset({
+              ...recipeData,
               patientId: recipeData.patientId,
               doctorId: recipeData.doctorId,
-              // The items model mismatch requires more complex logic to resolve
               items: recipeData.items.length > 0 ? recipeData.items.map(item => ({
-                  activeIngredient: `(ID: ${item.inventoryId})`,
+                  activeIngredient: `(ID: ${item.inventoryId})`, // Placeholder, needs real data
                   dosage: `${item.quantity}`,
                   instructions: item.instructions
               })) : [],
@@ -103,6 +117,12 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
              toast({ title: 'Error', description: 'No se encontró la receta.', variant: 'destructive' });
              router.push('/recipes');
           }
+        } else {
+            // Set default dates for new recipes
+            const today = new Date();
+            const expiry = addMonths(today, 6);
+            form.setValue('prescriptionDate', format(today, 'yyyy-MM-dd'));
+            form.setValue('expiryDate', format(expiry, 'yyyy-MM-dd'));
         }
       } catch (error) {
         console.error("Failed to fetch data:", error);
@@ -136,14 +156,14 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
       
       if (result.patientName) form.setValue('newPatientName', result.patientName);
       if (result.patientRut) form.setValue('newPatientRut', result.patientRut);
-      if (result.doctorName) {
-        const matchedDoctor = doctors.find(d => d.name.toLowerCase().includes(result.doctorName!.toLowerCase()));
-        if (matchedDoctor) form.setValue('doctorId', matchedDoctor.id);
-      }
+      if (result.doctorName) form.setValue('newDoctorName', result.doctorName);
+      if (result.doctorRut) form.setValue('newDoctorRut', result.doctorRut);
+      if (result.doctorLicense) form.setValue('newDoctorLicense', result.doctorLicense);
+      if (result.doctorSpecialty) form.setValue('newDoctorSpecialty', result.doctorSpecialty);
+      if (result.prescriptionDate) form.setValue('prescriptionDate', result.prescriptionDate);
       
       if (result.items && result.items.length > 0) {
-        remove();
-        result.items.forEach(item => append(item));
+        form.setValue('items', result.items);
       }
 
       toast({ title: 'Extracción Exitosa', description: 'Los campos del formulario han sido pre-rellenados.' });
@@ -195,16 +215,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
       <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1 space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Upload className="h-5 w-5" />
-                Carga y Extracción IA
-              </CardTitle>
-              <CardDescription>
-                Sube una imagen o PDF para pre-rellenar el formulario con IA.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+            <CardContent className="p-6">
               <div 
                 className="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary"
                 onClick={() => fileInputRef.current?.click()}
@@ -215,8 +226,8 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
                 ) : (
                   <>
                     <ImageIcon className="h-10 w-10 text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground mb-2">Arrastra o haz clic para buscar</p>
-                    <Button type="button" variant="outline" size="sm">Buscar archivo</Button>
+                    <p className="text-sm text-muted-foreground mb-1">Arrastra o haz clic</p>
+                    <p className="text-xs text-muted-foreground">Sube la imagen de la receta</p>
                   </>
                 )}
               </div>
@@ -230,101 +241,142 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
 
         <div className="lg:col-span-2 space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <User className="h-5 w-5" /> Información del Paciente
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="patientId"
-                render={({ field }) => (
+            <CardContent className="p-6 space-y-8">
+              {/* --- INFORMACIÓN GENERAL --- */}
+              <div>
+                <h2 className="text-xl font-semibold mb-4 text-foreground">Información General</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <FormItem>
-                    <FormLabel>Seleccionar Paciente Existente</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Busca un paciente..." />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {patients.map(p => <SelectItem key={p.id} value={p.id}>{p.name} - {p.rut}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
+                    <FormLabel>ID Receta</FormLabel>
+                    <FormControl>
+                      <Input disabled value="Nuevo (se genera al guardar)" />
+                    </FormControl>
                   </FormItem>
-                )}
-              />
-              <div className="text-center text-sm text-muted-foreground my-2">O</div>
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="newPatientName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nombre Paciente (Nuevo)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ej: Juan Pérez" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="newPatientRut"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>RUT Paciente (Nuevo)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ej: 12.345.678-9" {...field} />
-                      </FormControl>
-                       <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={form.control}
+                    name="prescriptionDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Fecha Prescripción *</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button variant="outline" className={cn("w-full justify-between text-left font-normal", !field.value && "text-muted-foreground")}>
+                                {field.value ? format(new Date(field.value), 'dd-MM-yyyy') : <span>dd-mm-aaaa</span>}
+                                <CalendarIcon className="h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <Calendar mode="single" selected={field.value ? new Date(field.value) : undefined} onSelect={(d) => field.onChange(d ? format(d, 'yyyy-MM-dd') : '')} initialFocus />
+                          </PopoverContent>
+                        </Popover>
+                         <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="expiryDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Fecha Vencimiento</FormLabel>
+                         <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button variant="outline" className={cn("w-full justify-between text-left font-normal", !field.value && "text-muted-foreground")}>
+                                {field.value ? format(new Date(field.value), 'dd-MM-yyyy') : <span>dd-mm-aaaa</span>}
+                                <CalendarIcon className="h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <Calendar mode="single" selected={field.value ? new Date(field.value) : undefined} onSelect={(d) => field.onChange(d ? format(d, 'yyyy-MM-dd') : '')} />
+                          </PopoverContent>
+                        </Popover>
+                        <FormDescription className="text-xs">(Por defecto 6 meses, editable.)</FormDescription>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* --- PACIENTE --- */}
+              <div>
+                 <h2 className="text-xl font-semibold mb-4 text-foreground">Paciente</h2>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                    <div className="md:col-span-2">
+                        <FormField
+                            control={form.control}
+                            name="patientId"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Paciente Existente *</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                    <SelectValue placeholder="Seleccione o ingrese nuevo abajo" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {patients.map(p => <SelectItem key={p.id} value={p.id}>{p.name} - {p.rut}</SelectItem>)}
+                                </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                    </div>
+                    <FormField control={form.control} name="newPatientName" render={({ field }) => (<FormItem><FormLabel>Nombre Paciente (Nuevo/IA) *</FormLabel><FormControl><Input placeholder="Nombre Apellido" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="newPatientRut" render={({ field }) => (<FormItem><FormLabel>RUT Paciente (Nuevo/IA) *</FormLabel><FormControl><Input placeholder="12.345.678-9" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <div className="md:col-span-2">
+                         <FormField control={form.control} name="dispatchAddress" render={({ field }) => (<FormItem><FormLabel>Dirección de Despacho</FormLabel><FormControl><Input placeholder="Ej: Calle Falsa 123, Comuna" {...field} /></FormControl><FormDescription className="text-xs">(Opcional. Por defecto, se retira en farmacia.)</FormDescription><FormMessage /></FormItem>)} />
+                    </div>
+                 </div>
+              </div>
+
+               <Separator />
+
+              {/* --- MÉDICO --- */}
+               <div>
+                 <h2 className="text-xl font-semibold mb-4 text-foreground">Médico</h2>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                     <div className="md:col-span-2">
+                        <FormField
+                            control={form.control}
+                            name="doctorId"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Médico Existente *</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                    <SelectValue placeholder="Seleccione o ingrese nuevo abajo" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {doctors.map(d => <SelectItem key={d.id} value={d.id}>{d.name} - {d.specialty}</SelectItem>)}
+                                </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                    </div>
+                    <FormField control={form.control} name="newDoctorName" render={({ field }) => (<FormItem><FormLabel>Nombre Médico (Nuevo/IA) *</FormLabel><FormControl><Input placeholder="Nombre Apellido" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="newDoctorLicense" render={({ field }) => (<FormItem><FormLabel>N° Colegiatura (Nuevo/IA) *</FormLabel><FormControl><Input placeholder="Ej: 12345" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="newDoctorRut" render={({ field }) => (<FormItem><FormLabel>RUT Médico (Opcional)</FormLabel><FormControl><Input placeholder="12.345.678-K" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="newDoctorSpecialty" render={({ field }) => (<FormItem><FormLabel>Especialidad Médico (Nuevo/IA) *</FormLabel><FormControl><Input placeholder="Ej: Cardiología" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Stethoscope className="h-5 w-5" /> Información del Médico
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <FormField
-                control={form.control}
-                name="doctorId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Seleccionar Médico Existente</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Busca un médico..." />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                         {doctors.map(d => <SelectItem key={d.id} value={d.id}>{d.name} - {d.specialty}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                     <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Pill className="h-5 w-5" /> Ítems del Preparado
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+            <CardContent className="p-6">
+              <h2 className="text-xl font-semibold mb-4 text-foreground flex items-center gap-2"><Pill className="h-5 w-5" /> Ítems del Preparado</h2>
               <div className="space-y-4">
                 {fields.map((item, index) => (
                   <div key={item.id} className="p-4 border rounded-md space-y-3 relative bg-muted/20">
