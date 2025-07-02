@@ -68,6 +68,19 @@ export const getRecipe = async (id: string): Promise<Recipe | null> => {
     }
 };
 
+export const addDoctor = async (doctor: Omit<Doctor, 'id'>): Promise<string> => {
+    if (!db) {
+        throw new Error("Firestore is not initialized.");
+    }
+    try {
+        const docRef = await addDoc(collection(db, 'doctors'), doctor);
+        return docRef.id;
+    } catch (error) {
+        console.error("Error adding doctor:", error);
+        throw new Error("Could not add doctor.");
+    }
+};
+
 export const addExternalPharmacy = async (pharmacy: { name: string }): Promise<string> => {
     if (!db) {
         throw new Error("Firestore is not initialized.");

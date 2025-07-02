@@ -1,12 +1,15 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { getDoctors, getPatients, getRecipes, Doctor, Patient, Recipe, RecipeStatus } from '@/lib/data';
-import { PlusCircle, Search, Phone, Mail, Pencil, Trash2, Users } from 'lucide-react';
+import { getDoctors, getPatients, getRecipes, addDoctor, Doctor, Patient, Recipe, RecipeStatus } from '@/lib/data';
+import { PlusCircle, Search, Phone, Mail, Pencil, Trash2, Users, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 import {
@@ -16,9 +19,18 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-
+import { useToast } from '@/hooks/use-toast';
 
 type DoctorWithStats = Doctor & {
   patientsAssociated: number;
@@ -143,6 +155,16 @@ const DoctorCard = ({ doctor }: { doctor: DoctorWithStats }) => {
   );
 };
 
+const doctorFormSchema = z.object({
+  name: z.string().min(1, { message: 'El nombre es requerido.' }),
+  specialty: z.string().min(1, { message: 'La especialidad es requerida.' }),
+  license: z.string().optional(),
+  rut: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().email({ message: 'Email inválido.' }).optional().or(z.literal('')),
+});
+
+type DoctorFormValues = z.infer<typeof doctorFormSchema>;
 
 export default function DoctorsPage() {
   const [loading, setLoading] = useState(true);
@@ -150,28 +172,66 @@ export default function DoctorsPage() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const { toast } = useToast();
+
+  const form = useForm<DoctorFormValues>({
+    resolver: zodResolver(doctorFormSchema),
+    defaultValues: {
+      name: '',
+      specialty: '',
+      license: '',
+      rut: '',
+      phone: '',
+      email: '',
+    },
+  });
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [doctorsData, patientsData, recipesData] = await Promise.all([
+        getDoctors(),
+        getPatients(),
+        getRecipes(),
+      ]);
+      setDoctors(doctorsData);
+      setPatients(patientsData);
+      setRecipes(recipesData);
+    } catch (error) {
+      console.error('Failed to fetch data:', error);
+      toast({
+        title: 'Error de Carga',
+        description: 'No se pudieron cargar los datos del panel de médicos.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [doctorsData, patientsData, recipesData] = await Promise.all([
-          getDoctors(),
-          getPatients(),
-          getRecipes(),
-        ]);
-        setDoctors(doctorsData);
-        setPatients(patientsData);
-        setRecipes(recipesData);
-      } catch (error) {
-        console.error('Failed to fetch data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
-  }, []);
+  }, [fetchData]);
+
+  const onSubmit = async (data: DoctorFormValues) => {
+    try {
+      await addDoctor(data);
+      toast({
+        title: 'Médico Añadido',
+        description: 'El nuevo médico ha sido registrado correctamente.',
+      });
+      form.reset();
+      setIsFormOpen(false);
+      await fetchData();
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'No se pudo añadir el médico.',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const doctorStats = useMemo<DoctorWithStats[]>(() => {
     if (!doctors.length || !patients.length || !recipes.length) {
@@ -222,58 +282,107 @@ export default function DoctorsPage() {
   }, [doctorStats, searchTerm]);
   
   if (loading) {
-    return <div className="p-8">Cargando médicos...</div>;
+    return <div className="flex-1 p-8">Cargando médicos...</div>;
   }
 
   return (
-    <div className="space-y-6 p-4 md:p-8">
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight font-headline">Gestión de Médicos</h2>
-          <p className="text-muted-foreground">
-            Panel de control para gestionar la relación con los prescriptores.
-          </p>
+    <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+      <div className="flex-1 space-y-6 p-4 md:p-8">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight font-headline">Gestión de Médicos</h2>
+            <p className="text-muted-foreground">
+              Panel de control para gestionar la relación con los prescriptores.
+            </p>
+          </div>
+          <DialogTrigger asChild>
+            <Button>
+              <PlusCircle className="mr-2 h-4 w-4" /> Nuevo Médico
+            </Button>
+          </DialogTrigger>
         </div>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" /> Nuevo Médico
-        </Button>
+
+        <Card>
+            <CardContent className="p-4">
+                <div className="relative">
+                    <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                    type="search"
+                    placeholder="Buscar por nombre, especialidad, N° colegiatura o RUT..."
+                    className="pl-8 w-full"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+            </CardContent>
+        </Card>
+        
+        {filteredDoctors.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredDoctors.map((doctor) => (
+                    <DoctorCard key={doctor.id} doctor={doctor} />
+                ))}
+            </div>
+        ) : (
+            <Card className="text-center py-16 mt-8 shadow-none border-dashed">
+                <div className="flex flex-col items-center justify-center">
+                <Users className="h-16 w-16 text-muted-foreground mb-4" />
+                <h3 className="text-xl font-semibold">No se encontraron médicos</h3>
+                <p className="text-muted-foreground mt-2 max-w-sm">
+                    Intenta ajustar tu búsqueda o crea un nuevo médico para empezar.
+                </p>
+                <DialogTrigger asChild>
+                  <Button className="mt-6">
+                      <PlusCircle className="mr-2 h-4 w-4" /> Crear Primer Médico
+                  </Button>
+                </DialogTrigger>
+                </div>
+            </Card>
+        )}
       </div>
 
-      <Card>
-          <CardContent className="p-4">
-               <div className="relative">
-                  <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                  type="search"
-                  placeholder="Buscar por nombre, especialidad, N° colegiatura o RUT..."
-                  className="pl-8 w-full"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-              </div>
-          </CardContent>
-      </Card>
-      
-      {filteredDoctors.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredDoctors.map((doctor) => (
-                  <DoctorCard key={doctor.id} doctor={doctor} />
-              ))}
-          </div>
-      ) : (
-          <Card className="text-center py-16 mt-8 shadow-none border-dashed">
-              <div className="flex flex-col items-center justify-center">
-              <Users className="h-16 w-16 text-muted-foreground mb-4" />
-              <h3 className="text-xl font-semibold">No se encontraron médicos</h3>
-              <p className="text-muted-foreground mt-2 max-w-sm">
-                  Intenta ajustar tu búsqueda o crea un nuevo médico para empezar.
-              </p>
-              <Button className="mt-6">
-                  <PlusCircle className="mr-2 h-4 w-4" /> Crear Primer Médico
-              </Button>
-              </div>
-          </Card>
-      )}
-    </div>
+      <DialogContent className="sm:max-w-[480px]">
+        <DialogHeader>
+            <DialogTitle>Añadir Nuevo Médico</DialogTitle>
+            <DialogDescription>
+                Complete el formulario para registrar un nuevo médico prescriptor.
+            </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-2">
+                <FormField control={form.control} name="name" render={({ field }) => (
+                    <FormItem><FormLabel>Nombre Completo *</FormLabel><FormControl><Input placeholder="Ej: Dr. Ricardo Pérez" {...field} /></FormControl><FormMessage /></FormItem>
+                )}/>
+                <FormField control={form.control} name="specialty" render={({ field }) => (
+                    <FormItem><FormLabel>Especialidad *</FormLabel><FormControl><Input placeholder="Ej: Dermatología" {...field} /></FormControl><FormMessage /></FormItem>
+                )}/>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField control={form.control} name="license" render={({ field }) => (
+                      <FormItem><FormLabel>N° Colegiatura</FormLabel><FormControl><Input placeholder="Ej: 12345" {...field} /></FormControl><FormMessage /></FormItem>
+                  )}/>
+                  <FormField control={form.control} name="rut" render={({ field }) => (
+                      <FormItem><FormLabel>RUT</FormLabel><FormControl><Input placeholder="Ej: 12.345.678-9" {...field} /></FormControl><FormMessage /></FormItem>
+                  )}/>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                   <FormField control={form.control} name="phone" render={({ field }) => (
+                      <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="Ej: +56912345678" {...field} /></FormControl><FormMessage /></FormItem>
+                  )}/>
+                   <FormField control={form.control} name="email" render={({ field }) => (
+                      <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="Ej: email@dominio.com" {...field} /></FormControl><FormMessage /></FormItem>
+                  )}/>
+                </div>
+                
+                <DialogFooter className="pt-4">
+                    <Button type="button" variant="ghost" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
+                    <Button type="submit" disabled={form.formState.isSubmitting}>
+                        {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Guardar Médico
+                    </Button>
+                </DialogFooter>
+            </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 }
