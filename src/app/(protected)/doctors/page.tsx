@@ -234,7 +234,7 @@ export default function DoctorsPage() {
   };
 
   const doctorStats = useMemo<DoctorWithStats[]>(() => {
-    if (!doctors.length || !patients.length || !recipes.length) {
+    if (!doctors.length) {
       return [];
     }
 
