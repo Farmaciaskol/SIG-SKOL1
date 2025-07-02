@@ -28,6 +28,7 @@ import { extractRecipeDataFromImage } from '@/ai/flows/extract-recipe-data-from-
 import { simplifyInstructions } from '@/ai/flows/simplify-instructions';
 import Image from 'next/image';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { addMonths } from 'date-fns';
@@ -63,6 +64,9 @@ const recipeFormSchema = z.object({
   externalPharmacyId: z.string().min(1, 'Debe seleccionar un recetario externo.'),
   supplySource: z.string().min(1, 'Debe seleccionar un origen de insumos.'),
   preparationCost: z.string().min(1, 'El costo de preparación es requerido.'),
+  isControlled: z.boolean().default(false).optional(),
+  controlledRecipeType: z.string().optional(),
+  controlledRecipeFolio: z.string().optional(),
   items: z.array(recipeItemSchema).min(1, 'Debe haber al menos un ítem en la receta.'),
 }).refine(data => data.patientId || (data.newPatientName && data.newPatientRut), {
   message: 'Debe seleccionar un paciente existente o ingresar los datos de uno nuevo (nombre y RUT).',
@@ -70,6 +74,23 @@ const recipeFormSchema = z.object({
 }).refine(data => data.doctorId || (data.newDoctorName && data.newDoctorLicense && data.newDoctorSpecialty), {
     message: 'Debe seleccionar un médico existente o ingresar los datos de uno nuevo (nombre, N° colegiatura y especialidad).',
     path: ['doctorId']
+}).superRefine((data, ctx) => {
+    if (data.isControlled) {
+        if (!data.controlledRecipeType) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "El tipo de receta controlada es requerido.",
+                path: ["controlledRecipeType"],
+            });
+        }
+        if (!data.controlledRecipeFolio?.trim()) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "El folio de la receta es requerido.",
+                path: ["controlledRecipeFolio"],
+            });
+        }
+    }
 });
 
 
@@ -112,6 +133,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
     resolver: zodResolver(recipeFormSchema),
     defaultValues: {
       items: [defaultItem],
+      isControlled: false,
     },
   });
 
@@ -141,6 +163,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
               preparationCost: recipeData.preparationCost?.toString(),
               patientId: recipeData.patientId,
               doctorId: recipeData.doctorId,
+              isControlled: recipeData.isControlled || false,
               items: recipeData.items.length > 0 ? recipeData.items : [defaultItem],
             });
           } else {
@@ -232,6 +255,8 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
     toast({ title: isEditMode ? 'Receta Actualizada' : 'Receta Creada', description: 'Los datos se han guardado correctamente.' });
     router.push('/recipes');
   };
+
+  const isControlled = form.watch('isControlled');
 
   if (loading) {
     return (
@@ -630,6 +655,85 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
                         </FormItem>
                     )}
                 />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold text-foreground">Medicamento Controlado</h2>
+                <FormField
+                    control={form.control}
+                    name="isControlled"
+                    render={({ field }) => (
+                    <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                        <FormControl>
+                        <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                        />
+                        </FormControl>
+                        <FormLabel className="font-normal text-sm">Es Controlado</FormLabel>
+                    </FormItem>
+                    )}
+                />
+                </div>
+
+                {isControlled && (
+                <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                        control={form.control}
+                        name="controlledRecipeType"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Tipo de Receta Controlada *</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                                <SelectTrigger>
+                                <SelectValue placeholder="Seleccione tipo..." />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                <SelectItem value="Receta Cheque">Receta Cheque</SelectItem>
+                                <SelectItem value="Receta Retenida">Receta Retenida</SelectItem>
+                            </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="controlledRecipeFolio"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Folio Receta *</FormLabel>
+                            <FormControl>
+                            <Input placeholder="Ej: F123456 o Folio Cheque" {...field} value={field.value ?? ''}/>
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <FormItem>
+                            <FormLabel>Folio Interno Skol</FormLabel>
+                            <FormControl>
+                                <Input disabled placeholder="Se genera automáticamente" />
+                            </FormControl>
+                        </FormItem>
+                        <FormItem>
+                            <FormLabel>Adjuntar Imagen Receta Controlada (Opcional)</FormLabel>
+                            <div className="flex items-center gap-2">
+                                <Button type="button" variant="outline">Seleccionar archivo</Button>
+                                <span className="text-sm text-muted-foreground">Sin archivos seleccionados</span>
+                            </div>
+                        </FormItem>
+                    </div>
+                </div>
+                )}
             </CardContent>
           </Card>
 

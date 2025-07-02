@@ -37,6 +37,10 @@ export interface Recipe {
   externalPharmacyId?: string;
   supplySource?: string;
   preparationCost?: number;
+  isControlled?: boolean;
+  controlledRecipeType?: string;
+  controlledRecipeFolio?: string;
+  controlledRecipeImageUrl?: string;
 }
 
 export interface Patient {
