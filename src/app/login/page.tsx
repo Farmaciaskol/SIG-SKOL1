@@ -43,16 +43,16 @@ export default function LoginPage() {
         <Image
           src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
           alt="Skol Pharmacy Logo"
-          width={150}
-          height={150}
+          width={100}
+          height={100}
           className="mb-8"
           priority
         />
-        <div className="mx-auto max-w-md">
-          <h2 className="text-4xl font-bold font-headline mb-4">
+        <div className="mx-auto max-w-sm">
+          <h2 className="text-3xl font-bold font-headline mb-4">
             Sistema Integral de Gestión Skol
           </h2>
-          <p className="text-lg text-primary-foreground/80">
+          <p className="text-base text-primary-foreground/80">
             Optimizando el ciclo de vida de las recetas magistrales con precisión y eficiencia.
           </p>
         </div>
