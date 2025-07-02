@@ -215,12 +215,14 @@ export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElemen
             )}
           </SidebarFooter>
         </Sidebar>
-        <main className="flex-1">
+        <main className="flex-1 overflow-y-auto">
           <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-6">
             <SidebarTrigger className="md:hidden" />
             <div className="flex-1" />
           </header>
-          {props.children}
+          <div className="p-4 md:p-8">
+            {props.children}
+          </div>
         </main>
       </div>
     </SidebarProvider>
