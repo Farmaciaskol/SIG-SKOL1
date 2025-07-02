@@ -21,7 +21,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     }
 
     if (user && isAuthPage) {
-      router.push('/');
+      router.push('/dashboard');
     }
   }, [user, loading, router, pathname]);
 

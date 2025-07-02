@@ -21,7 +21,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '../ui/button';
 
 const menuItems = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/recipes', label: 'Recetas', icon: ClipboardList },
   { href: '/patients', label: 'Pacientes', icon: Users },
   { href: '/chronic-care', label: 'Cuidado Crónico', icon: HeartPulse },
