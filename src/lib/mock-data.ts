@@ -1,12 +1,61 @@
 import type { AppData, Patient, Doctor, Recipe, RecipeItem, InventoryItem, User, Role, ExternalPharmacy } from './types';
-import { RecipeStatus } from './types';
+import { RecipeStatus, ProactivePatientStatus, PatientActionNeeded } from './types';
 import { ROLES, PERMISSIONS } from './constants';
 
 export function getMockData(): AppData {
   const patients: Patient[] = [
-    { id: 'P001', name: 'Ana Martínez', rut: '12.345.678-9', email: 'ana.martinez@example.com', phone: '+56912345678', isChronic: true, chronicCareStatus: 'Atención' },
-    { id: 'P002', name: 'Carlos Rodríguez', rut: '9.876.543-2', email: 'carlos.rodriguez@example.com', phone: '+56987654321', isChronic: false, chronicCareStatus: 'OK' },
-    { id: 'P003', name: 'Luisa Gomez', rut: '15.111.222-K', email: 'luisa.gomez@example.com', phone: '+56911122233', isChronic: true, chronicCareStatus: 'Urgente' },
+    { 
+      id: 'P001', 
+      name: 'Catalina Flores', 
+      rut: '21.345.678-K', 
+      email: 'catalina.flores@example.com', 
+      phone: '+56912345678', 
+      isChronic: false, 
+      chronicCareStatus: 'OK',
+      proactiveStatus: ProactivePatientStatus.OK,
+      proactiveMessage: 'Paciente no crónico. Gestión manual.',
+      actionNeeded: PatientActionNeeded.CREATE_NEW_RECIPE,
+      allergies: ['Penicilina'],
+    },
+    { 
+      id: 'P002', 
+      name: 'Anastasia Rojas', 
+      rut: '19.876.543-2', 
+      email: 'anastasia.rojas@example.com', 
+      phone: '+56987654321', 
+      isChronic: true, 
+      chronicCareStatus: 'Atención',
+      proactiveStatus: ProactivePatientStatus.ATTENTION,
+      proactiveMessage: 'Paciente crónico sin tratamientos activos registrados. Considere añadir uno.',
+      actionNeeded: PatientActionNeeded.CREATE_NEW_RECIPE,
+      allergies: [],
+    },
+    { 
+      id: 'P003', 
+      name: 'Benjamín Soto', 
+      rut: '20.123.456-7', 
+      email: 'benjamin.soto@example.com', 
+      phone: '+56911122233', 
+      isChronic: false, 
+      chronicCareStatus: 'OK',
+      proactiveStatus: ProactivePatientStatus.OK,
+      proactiveMessage: 'Paciente no crónico. Gestión manual.',
+      actionNeeded: PatientActionNeeded.CREATE_NEW_RECIPE,
+      allergies: [],
+    },
+    { 
+      id: 'P004', 
+      name: 'Diego Muñoz', 
+      rut: '18.555.444-1', 
+      email: 'diego.munoz@example.com', 
+      phone: '+56955544411', 
+      isChronic: true, 
+      chronicCareStatus: 'Urgente',
+      proactiveStatus: ProactivePatientStatus.URGENT,
+      proactiveMessage: 'Dispensación de ciclo crónico atrasada por 5 días. Contactar urgentemente.',
+      actionNeeded: PatientActionNeeded.REPREPARE_CYCLE,
+      allergies: ['Aspirina', 'Ibuprofeno'],
+    },
   ];
 
   const doctors: Doctor[] = [

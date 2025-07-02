@@ -8,6 +8,19 @@ export enum RecipeStatus {
   Cancelled = 'Anulada',
 }
 
+export enum ProactivePatientStatus {
+  OK = 'OK', // No action needed
+  ATTENTION = 'ATTENTION', // Needs attention, but not urgent
+  URGENT = 'URGENT', // Urgent action required
+}
+
+export enum PatientActionNeeded {
+  NONE = 'NONE',
+  CREATE_NEW_RECIPE = 'CREATE_NEW_RECIPE',
+  REPREPARE_CYCLE = 'REPREPARE_CYCLE',
+  DISPENSE_COMMERCIAL = 'DISPENSE_COMMERCIAL',
+}
+
 export interface RecipeItem {
   principalActiveIngredient: string;
   pharmaceuticalForm: string;
@@ -51,8 +64,24 @@ export interface Patient {
   rut: string;
   email: string;
   phone: string;
+  address?: string;
+  gender?: 'Masculino' | 'Femenino' | 'Otro';
   isChronic: boolean;
+  preferredDispensationDay?: number;
+  allergies?: string[];
+  adverseReactions?: AdverseReaction[];
+  associatedDoctorIds?: string[];
+  // Legacy field, to be replaced by proactive fields
   chronicCareStatus: 'OK' | 'Atención' | 'Urgente';
+  // New proactive fields
+  proactiveStatus: ProactivePatientStatus;
+  proactiveMessage: string;
+  actionNeeded: PatientActionNeeded;
+}
+
+export interface AdverseReaction {
+  medication: string;
+  description: string;
 }
 
 export interface Doctor {
