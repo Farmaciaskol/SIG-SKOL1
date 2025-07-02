@@ -2,17 +2,27 @@ import { db, storage } from './firebase';
 import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { RecipeStatus } from './types';
-import type { Recipe, Doctor, InventoryItem, User, Role, ExternalPharmacy, Patient, PharmacovigilanceReport } from './types';
+import type { Recipe, Doctor, InventoryItem, User, Role, ExternalPharmacy, Patient, PharmacovigilanceReport, AppData } from './types';
+import { getMockData } from './mock-data';
 
 export * from './types';
 
-async function fetchCollection<T>(collectionName: string): Promise<T[]> {
+const USE_MOCK_DATA_ON_EMPTY_FIRESTORE = process.env.NODE_ENV === 'development';
+
+async function fetchCollection<T extends { id: string }>(collectionName: keyof AppData & string): Promise<T[]> {
   if (!db) {
-    console.error("Firestore is not initialized.");
-    return [];
+    console.error("Firestore is not initialized. Falling back to mock data.");
+    return getMockData()[collectionName] as T[];
   }
   try {
     const querySnapshot = await getDocs(collection(db, collectionName));
+    
+    // If the collection is empty in Firestore, return mock data for a better dev experience.
+    if (querySnapshot.empty && USE_MOCK_DATA_ON_EMPTY_FIRESTORE) {
+      console.warn(`Firestore collection '${collectionName}' is empty. Using mock data for testing.`);
+      return getMockData()[collectionName] as T[];
+    }
+
     return querySnapshot.docs.map(doc => {
       const data = doc.data();
       // Convert Firestore Timestamps to ISO strings for dates
@@ -25,9 +35,14 @@ async function fetchCollection<T>(collectionName: string): Promise<T[]> {
     });
   } catch (error) {
     console.error(`Error fetching ${collectionName}:`, error);
+    if (USE_MOCK_DATA_ON_EMPTY_FIRESTORE) {
+      console.warn(`Firestore fetch failed for '${collectionName}'. Using mock data as a fallback.`);
+      return getMockData()[collectionName] as T[];
+    }
     return [];
   }
 }
+
 
 // Specific fetch functions for each data type
 export const getRecipes = async (): Promise<Recipe[]> => fetchCollection<Recipe>('recipes');
@@ -44,7 +59,8 @@ export const getPharmacovigilanceReports = async (): Promise<PharmacovigilanceRe
 export const getRecipe = async (id: string): Promise<Recipe | null> => {
     if (!db) {
         console.error("Firestore is not initialized.");
-        return null;
+        const mockRecipes = getMockData().recipes;
+        return mockRecipes.find(r => r.id === id) || null;
     }
     try {
         const docRef = doc(db, 'recipes', id);
@@ -60,6 +76,10 @@ export const getRecipe = async (id: string): Promise<Recipe | null> => {
             }
             return { id: docSnap.id, ...data } as Recipe;
         } else {
+             if (USE_MOCK_DATA_ON_EMPTY_FIRESTORE) {
+                const mockRecipes = getMockData().recipes;
+                return mockRecipes.find(r => r.id === id) || null;
+            }
             console.log("No such document!");
             return null;
         }
