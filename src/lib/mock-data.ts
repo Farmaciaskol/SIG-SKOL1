@@ -71,7 +71,7 @@ export function getMockData(): AppData {
 
   const inventory: InventoryItem[] = [
     { 
-      id: 'I001', name: 'Minoxidil', stock: 500, unit: 'g', lowStockThreshold: 100, 
+      id: 'I001', name: 'Minoxidil 5%', sku: 'SK-MINOX5', quantity: 500, unit: 'g', lowStockThreshold: 100, costPrice: 120,
       barcode: 'SKOL-MINOX-G', 
       lots: [
         { lotNumber: 'M202401A', quantity: 200, expiryDate: '2025-12-31'},
@@ -79,19 +79,30 @@ export function getMockData(): AppData {
       ] 
     },
     { 
-      id: 'I002', name: 'Crema Base Hidrófila', stock: 2000, unit: 'g', lowStockThreshold: 500,
+      id: 'I002', name: 'Crema Base Hidrófila', sku: 'SK-CREMA-H', quantity: 180, unit: 'Kg', lowStockThreshold: 200, costPrice: 5000,
       barcode: 'SKOL-CREAM-H-G',
       lots: [
-        { lotNumber: 'CBH-2023-12', quantity: 2000, expiryDate: '2024-12-31' }
+        { lotNumber: 'CBH-2023-12', quantity: 180, expiryDate: '2024-12-31' }
       ]
     },
     { 
-      id: 'I003', name: 'Propranolol', stock: 1500, unit: 'cápsulas', lowStockThreshold: 500,
+      id: 'I003', name: 'Propranolol 10mg', sku: 'SK-PROP10', quantity: 30, unit: 'cápsulas', lowStockThreshold: 500, costPrice: 80, isControlled: true,
       barcode: 'SKOL-PROP-10MG-CAP',
       lots: [
-        { lotNumber: 'PPL-A1', quantity: 500, expiryDate: '2025-08-31' },
-        { lotNumber: 'PPL-A2', quantity: 1000, expiryDate: '2025-11-30' },
+        { lotNumber: 'PPL-A1', quantity: 30, expiryDate: '2024-08-31' }, // Near expiry
       ]
+    },
+    {
+      id: 'I004', name: 'Finasteride 1mg', sku: 'SK-FINA1', quantity: 0, unit: 'cápsulas', lowStockThreshold: 1000, costPrice: 150,
+      barcode: 'SKOL-FINA-1MG-CAP',
+      lots: []
+    },
+     { 
+      id: 'I005', name: 'Cafeína Anhidra', sku: 'SK-CAFE', quantity: 450, unit: 'g', lowStockThreshold: 500, costPrice: 90,
+      barcode: 'SKOL-CAFE-G', 
+      lots: [
+        { lotNumber: 'C202401A', quantity: 450, expiryDate: '2025-10-31'},
+      ] 
     },
   ];
 
@@ -211,7 +222,11 @@ export function getMockData(): AppData {
 
   const dispatchNotes: DispatchNote[] = [];
 
-  return { patients, doctors, inventory, recipes, users, roles, externalPharmacies, dispatchNotes };
-}
+  // Recalculate total quantity for inventory items based on their lots
+  const updatedInventory = inventory.map(item => {
+    const totalQuantity = item.lots?.reduce((sum, lot) => sum + lot.quantity, 0) || 0;
+    return { ...item, quantity: totalQuantity };
+  });
 
-    
+  return { patients, doctors, inventory: updatedInventory, recipes, users, roles, externalPharmacies, dispatchNotes };
+}

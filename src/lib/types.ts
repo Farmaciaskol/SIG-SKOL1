@@ -126,10 +126,19 @@ export interface LotDetail {
 export interface InventoryItem {
   id: string;
   name: string;
-  stock: number;
+  quantity: number; // This is the calculated total stock from all lots
   unit: string;
   lowStockThreshold: number;
+  sku?: string;
   barcode?: string;
+  costPrice?: number;
+  isControlled?: boolean;
+  controlledType?: 'Psicotrópico' | 'Estupefaciente';
+  // For fractionation
+  activePrincipleContentValue?: number;
+  activePrincipleContentUnit?: string;
+  itemsPerBaseUnit?: number;
+  // Lots
   lots?: LotDetail[];
 }
 
@@ -176,5 +185,3 @@ export interface AppData {
   externalPharmacies: ExternalPharmacy[];
   dispatchNotes: DispatchNote[];
 }
-
-    

@@ -3,11 +3,26 @@ import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc 
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { RecipeStatus } from './types';
 import type { Recipe, Patient, Doctor, InventoryItem, User, Role, ExternalPharmacy } from './types';
+import { getMockData } from './mock-data';
 
 export * from './types';
 
-// Generic function to fetch a collection
+// WARNING: THIS IS MOCK DATA AND SHOULD BE REPLACED WITH A REAL DATABASE
+// We are using a mock data implementation because we don't have a real database.
+// In a real application, you would replace this with a call to your database.
+// For example, if you were using Firestore, you would use the following:
+// import { collection, getDocs } from 'firebase/firestore';
+// const querySnapshot = await getDocs(collection(db, collectionName));
+// return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+const USE_MOCK_DATA = true;
+let MOCK_DATA = getMockData();
+
 async function fetchCollection<T>(collectionName: string): Promise<T[]> {
+  if (USE_MOCK_DATA) {
+    return (MOCK_DATA as any)[collectionName] || [];
+  }
+  
   if (!db) {
     console.error("Firestore is not initialized.");
     return [];
@@ -41,6 +56,10 @@ export const getRoles = async (): Promise<Role[]> => fetchCollection<Role>('role
 
 // Example of getting a single document
 export const getRecipe = async (id: string): Promise<Recipe | null> => {
+    if (USE_MOCK_DATA) {
+      return MOCK_DATA.recipes.find(r => r.id === id) || null;
+    }
+
     if (!db) {
         console.error("Firestore is not initialized.");
         return null;
@@ -69,6 +88,18 @@ export const getRecipe = async (id: string): Promise<Recipe | null> => {
 };
 
 export const addDoctor = async (doctor: Omit<Doctor, 'id'>): Promise<string> => {
+    if (USE_MOCK_DATA) {
+        const newId = `D${(MOCK_DATA.doctors.length + 1).toString().padStart(3, '0')}`;
+        const newDoctor = {
+            id: newId,
+            ...doctor,
+            phone: doctor.phone || '',
+            email: doctor.email || ''
+        };
+        MOCK_DATA.doctors.push(newDoctor);
+        return newId;
+    }
+
     if (!db) {
         throw new Error("Firestore is not initialized.");
     }
@@ -90,6 +121,16 @@ export const addDoctor = async (doctor: Omit<Doctor, 'id'>): Promise<string> => 
 };
 
 export const addExternalPharmacy = async (pharmacy: Omit<ExternalPharmacy, 'id'>): Promise<string> => {
+    if (USE_MOCK_DATA) {
+        const newId = `EP${(MOCK_DATA.externalPharmacies.length + 1).toString().padStart(3, '0')}`;
+        const newPharmacy = {
+            id: newId,
+            ...pharmacy
+        };
+        MOCK_DATA.externalPharmacies.push(newPharmacy);
+        return newId;
+    }
+    
     if (!db) {
         throw new Error("Firestore is not initialized.");
     }
@@ -112,6 +153,60 @@ export const addExternalPharmacy = async (pharmacy: Omit<ExternalPharmacy, 'id'>
 };
 
 export const saveRecipe = async (data: any, imageUri: string | null, recipeId?: string): Promise<string> => {
+    if (USE_MOCK_DATA) {
+        // This is a simplified version for mock data.
+        // It doesn't handle image uploads.
+        const effectiveRecipeId = recipeId || `R${(MOCK_DATA.recipes.length + 1).toString().padStart(4, '0')}`;
+        
+        let patientId = data.patientId;
+        if (!patientId && data.newPatientName && data.newPatientRut) {
+             const newPatientId = `P${(MOCK_DATA.patients.length + 1).toString().padStart(3, '0')}`;
+             MOCK_DATA.patients.push({
+                 id: newPatientId,
+                 name: data.newPatientName,
+                 rut: data.newPatientRut,
+                 email: '', phone: '', isChronic: false, chronicCareStatus: 'OK',
+                 proactiveStatus: ProactivePatientStatus.OK,
+                 proactiveMessage: 'Paciente no crónico. Gestión manual.',
+                 actionNeeded: PatientActionNeeded.CREATE_NEW_RECIPE,
+             });
+             patientId = newPatientId;
+        }
+
+        let doctorId = data.doctorId;
+        if (!doctorId && data.newDoctorName && data.newDoctorLicense) {
+             const newDoctorId = `D${(MOCK_DATA.doctors.length + 1).toString().padStart(3, '0')}`;
+             MOCK_DATA.doctors.push({
+                 id: newDoctorId,
+                 name: data.newDoctorName,
+                 specialty: data.newDoctorSpecialty || '',
+                 license: data.newDoctorLicense,
+                 rut: data.newDoctorRut || ''
+             });
+             doctorId = newDoctorId;
+        }
+        
+        const recipeData = {
+            ...data,
+            id: effectiveRecipeId,
+            patientId,
+            doctorId,
+            createdAt: recipeId ? MOCK_DATA.recipes.find(r => r.id === recipeId)!.createdAt : new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            status: recipeId ? MOCK_DATA.recipes.find(r => r.id === recipeId)!.status : RecipeStatus.PendingValidation,
+            paymentStatus: recipeId ? MOCK_DATA.recipes.find(r => r.id === recipeId)!.paymentStatus : 'Pendiente'
+        };
+
+        if (recipeId) {
+            const index = MOCK_DATA.recipes.findIndex(r => r.id === recipeId);
+            if (index !== -1) MOCK_DATA.recipes[index] = recipeData;
+        } else {
+            MOCK_DATA.recipes.push(recipeData);
+        }
+        
+        return effectiveRecipeId;
+    }
+    
     if (!db) {
         throw new Error("Firestore is not initialized.");
     }
