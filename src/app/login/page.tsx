@@ -53,7 +53,7 @@ export default function LoginPage() {
           <h2 className="text-4xl font-bold font-headline mb-4">
             Sistema Integral de Gestión Skol
           </h2>
-          <p className="text-base text-primary-foreground/80">
+          <p className="text-base font-body text-primary-foreground/80">
             Optimizando el ciclo de vida de las recetas magistrales con precisión y eficiencia.
           </p>
         </div>
