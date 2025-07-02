@@ -204,7 +204,14 @@ export default function RecipesPage() {
       await updateRecipe(recipe.id, updates);
 
       toast({ title: 'Estado Actualizado', description: `La receta ${recipe.id} ahora está en estado "${statusConfig[newStatus].text}".` });
-      fetchData();
+      
+      setRecipes(prevRecipes => 
+        prevRecipes.map(r => 
+          r.id === recipe.id 
+            ? { ...r, ...updates, updatedAt: new Date().toISOString() } 
+            : r
+        )
+      );
     } catch (error) {
        toast({ title: 'Error', description: 'No se pudo actualizar el estado de la receta.', variant: 'destructive' });
     } finally {
@@ -245,7 +252,15 @@ export default function RecipesPage() {
       };
        await updateRecipe(recipeToReceive.id, updates);
        toast({ title: 'Preparado Recepcionado', description: `La receta ${recipeToReceive.id} ha sido actualizada.` });
-       fetchData();
+       
+       setRecipes(prevRecipes =>
+         prevRecipes.map(r =>
+           r.id === recipeToReceive.id
+             ? { ...r, ...updates, updatedAt: new Date().toISOString() }
+             : r
+         )
+       );
+
        setRecipeToReceive(null);
        setInternalLot('');
        setPreparationExpiry(undefined);
@@ -260,10 +275,12 @@ export default function RecipesPage() {
     if (!recipeToDelete) return;
     setIsSubmitting(true);
     try {
-        await deleteRecipe(recipeToDelete.id);
-        toast({ title: 'Receta Eliminada', description: `La receta ${recipeToDelete.id} ha sido eliminada.` });
+        const deletedId = recipeToDelete.id;
+        await deleteRecipe(deletedId);
+        toast({ title: 'Receta Eliminada', description: `La receta ${deletedId} ha sido eliminada.` });
+        
+        setRecipes(prevRecipes => prevRecipes.filter(r => r.id !== deletedId));
         setRecipeToDelete(null);
-        fetchData();
     } catch (error) {
         toast({ title: 'Error', description: 'No se pudo eliminar la receta.', variant: 'destructive' });
     } finally {
@@ -274,10 +291,12 @@ export default function RecipesPage() {
   const handleBatchDelete = async () => {
     setIsSubmitting(true);
     try {
-        await Promise.all(selectedRecipes.map(id => deleteRecipe(id)));
-        toast({ title: `${selectedRecipes.length} Recetas Eliminadas`, description: 'Las recetas seleccionadas han sido eliminadas.' });
+        const idsToDelete = [...selectedRecipes];
+        await Promise.all(idsToDelete.map(id => deleteRecipe(id)));
+        toast({ title: `${idsToDelete.length} Recetas Eliminadas`, description: 'Las recetas seleccionadas han sido eliminadas.' });
+        
+        setRecipes(prevRecipes => prevRecipes.filter(r => !idsToDelete.includes(r.id)));
         setSelectedRecipes([]);
-        fetchData();
     } catch (error) {
          toast({ title: 'Error', description: 'No se pudieron eliminar todas las recetas seleccionadas.', variant: 'destructive' });
     } finally {
@@ -324,9 +343,16 @@ export default function RecipesPage() {
       
       toast({ title: 'Nuevo Ciclo Iniciado', description: `La receta ${recipeToReprepare.id} está lista para un nuevo ciclo.` });
       
+      setRecipes(prevRecipes =>
+        prevRecipes.map(r => 
+          r.id === recipeToReprepare.id
+            ? { ...r, ...updates, updatedAt: new Date().toISOString() }
+            : r
+        )
+      );
+
       setRecipeToReprepare(null);
       setControlledFolio('');
-      fetchData();
     } catch (error) {
       toast({ title: 'Error', description: 'No se pudo iniciar el nuevo ciclo.', variant: 'destructive' });
     } finally {
