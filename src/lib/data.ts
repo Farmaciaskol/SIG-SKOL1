@@ -1,5 +1,6 @@
-import { db } from './firebase';
+import { db, storage } from './firebase';
 import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc } from 'firebase/firestore';
+import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { RecipeStatus } from './types';
 import type { Recipe, Patient, Doctor, InventoryItem, User, Role, ExternalPharmacy } from './types';
 
@@ -82,7 +83,7 @@ export const addExternalPharmacy = async (pharmacy: { name: string }): Promise<s
     }
 };
 
-export const saveRecipe = async (data: any, recipeId?: string): Promise<string> => {
+export const saveRecipe = async (data: any, imageUri: string | null, recipeId?: string): Promise<string> => {
     if (!db) {
         throw new Error("Firestore is not initialized.");
     }
@@ -112,6 +113,19 @@ export const saveRecipe = async (data: any, recipeId?: string): Promise<string> 
             rut: data.newDoctorRut || ''
         });
     }
+
+    const effectiveRecipeId = recipeId || doc(collection(db, 'recipes')).id;
+    let imageUrl: string | undefined;
+
+    if (imageUri && storage) {
+        try {
+            const storageRef = ref(storage, `prescriptions/${effectiveRecipeId}`);
+            const uploadResult = await uploadString(storageRef, imageUri, 'data_url');
+            imageUrl = await getDownloadURL(uploadResult.ref);
+        } catch (error) {
+            console.error("Error uploading image:", error);
+        }
+    }
     
     const recipeDataForUpdate: Partial<Recipe> = {
         patientId: patientId,
@@ -127,6 +141,7 @@ export const saveRecipe = async (data: any, recipeId?: string): Promise<string> 
         isControlled: data.isControlled,
         controlledRecipeType: data.controlledRecipeType,
         controlledRecipeFolio: data.controlledRecipeFolio,
+        prescriptionImageUrl: imageUrl,
     };
 
     if (recipeId) {
@@ -134,6 +149,7 @@ export const saveRecipe = async (data: any, recipeId?: string): Promise<string> 
         await updateDoc(recipeRef, recipeDataForUpdate);
         return recipeId;
     } else {
+        const recipeRef = doc(db, 'recipes', effectiveRecipeId);
         const recipeDataForCreate: Omit<Recipe, 'id'> = {
             ...recipeDataForUpdate,
             status: RecipeStatus.PendingValidation,
@@ -141,7 +157,7 @@ export const saveRecipe = async (data: any, recipeId?: string): Promise<string> 
             createdAt: new Date().toISOString(),
         } as Omit<Recipe, 'id'>;
 
-        const docRef = await addDoc(collection(db, 'recipes'), recipeDataForCreate);
-        return docRef.id;
+        await setDoc(recipeRef, recipeDataForCreate);
+        return effectiveRecipeId;
     }
 };

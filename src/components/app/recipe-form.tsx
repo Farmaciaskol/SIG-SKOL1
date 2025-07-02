@@ -168,6 +168,9 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
               isControlled: recipeData.isControlled || false,
               items: recipeData.items.length > 0 ? recipeData.items : [defaultItem],
             });
+            if (recipeData.prescriptionImageUrl) {
+              setPreviewImage(recipeData.prescriptionImageUrl);
+            }
           } else {
              toast({ title: 'Error', description: 'No se encontró la receta.', variant: 'destructive' });
              router.push('/recipes');
@@ -253,7 +256,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
   
   const onSubmit = async (data: RecipeFormValues) => {
     try {
-      await saveRecipe(data, recipeId);
+      await saveRecipe(data, previewImage, recipeId);
       toast({ title: isEditMode ? 'Receta Actualizada' : 'Receta Creada', description: 'Los datos se han guardado correctamente.' });
       router.push('/recipes');
     } catch (error) {
@@ -513,7 +516,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
 
                 <div className="space-y-6">
                     {fields.map((item, index) => (
-                    <div key={item.id} className="p-4 border rounded-lg space-y-4 relative">
+                    <div key={item.id} className="p-4 border rounded-lg space-y-4 relative bg-muted/30">
                         <div className="flex justify-end">
                              {fields.length > 1 && (
                                 <Button type="button" variant="ghost" size="icon" className="text-red-500 hover:text-red-600 absolute top-2 right-2" onClick={() => remove(index)}>

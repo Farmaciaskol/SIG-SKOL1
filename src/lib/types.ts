@@ -42,6 +42,7 @@ export interface Recipe {
   controlledRecipeType?: string;
   controlledRecipeFolio?: string;
   controlledRecipeImageUrl?: string;
+  prescriptionImageUrl?: string;
 }
 
 export interface Patient {
