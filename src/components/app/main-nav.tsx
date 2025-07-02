@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { ClipboardList, FlaskConical, HeartPulse, LayoutDashboard, LogOut, Settings, Users } from 'lucide-react';
+import { ClipboardList, HeartPulse, LayoutDashboard, LogOut, Settings, Users } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -42,10 +43,22 @@ export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElemen
       <div className="flex min-h-screen">
         <Sidebar>
           <SidebarHeader className="p-4 justify-center">
-              <FlaskConical className="w-8 h-8 text-accent" />
-              <h1 className="font-headline text-2xl font-bold text-center truncate group-data-[collapsible=icon]:hidden">
-                Skol
-              </h1>
+            <div className="w-full px-4 group-data-[collapsible=icon]:hidden">
+                <Image
+                    src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
+                    alt="Skol Pharmacy Logo"
+                    width={150}
+                    height={150}
+                    className="mx-auto"
+                />
+            </div>
+            <Image
+                src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
+                alt="Skol Pharmacy Logo"
+                width={32}
+                height={32}
+                className="hidden group-data-[collapsible=icon]:block"
+            />
           </SidebarHeader>
           <SidebarContent>
             <SidebarMenu>

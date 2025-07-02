@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Lock, Mail } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -39,10 +40,14 @@ export default function LoginPage() {
   return (
     <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2 xl:min-h-screen">
       <div className="hidden bg-primary lg:flex flex-col items-center justify-center p-12 text-center text-primary-foreground">
-        <div className="mb-8">
-            <p className="text-sm tracking-widest">FARMACIA</p>
-            <h1 className="text-7xl font-bold font-headline">SKOL</h1>
-        </div>
+        <Image
+          src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
+          alt="Skol Pharmacy Logo"
+          width={250}
+          height={250}
+          className="mb-8"
+          priority
+        />
         <div className="mx-auto max-w-md">
           <h2 className="text-4xl font-bold font-headline mb-4">
             Sistema Integral de Gestión Skol
