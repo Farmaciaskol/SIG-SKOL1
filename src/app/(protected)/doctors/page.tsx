@@ -29,10 +29,8 @@ type DoctorWithStats = Doctor & {
 };
 
 const DoctorCard = ({ doctor }: { doctor: DoctorWithStats }) => {
-  const [showPatientsModal, setShowPatientsModal] = useState(false);
-
   return (
-    <>
+    <Dialog>
       <Card className="flex flex-col">
         <CardHeader>
           <CardTitle className="text-xl font-bold">{doctor.name}</CardTitle>
@@ -90,7 +88,7 @@ const DoctorCard = ({ doctor }: { doctor: DoctorWithStats }) => {
         </CardContent>
         <CardFooter className="bg-muted/50 p-3 flex justify-between items-center">
             <DialogTrigger asChild>
-                 <Button variant="link" className="p-0 h-auto" onClick={() => setShowPatientsModal(true)}>Ver Pacientes</Button>
+                 <Button variant="link" className="p-0 h-auto">Ver Pacientes</Button>
             </DialogTrigger>
          
           <div className="flex items-center gap-1">
@@ -105,43 +103,43 @@ const DoctorCard = ({ doctor }: { doctor: DoctorWithStats }) => {
       </Card>
       
       {/* Patients Modal */}
-      <Dialog open={showPatientsModal} onOpenChange={setShowPatientsModal}>
-        <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-                <DialogTitle>Pacientes de {doctor.name}</DialogTitle>
-                <DialogDescription>
-                    Lista de pacientes que han recibido recetas de este médico.
-                </DialogDescription>
-            </DialogHeader>
-            <div className="max-h-80 overflow-y-auto">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Nombre</TableHead>
-                            <TableHead>RUT</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {doctor.patients.length > 0 ? doctor.patients.map(patient => (
-                            <TableRow key={patient.id}>
-                                <TableCell className="font-medium">
-                                    <Link href={`/patients/${patient.id}`} className="hover:underline text-primary">
-                                        {patient.name}
-                                    </Link>
-                                </TableCell>
-                                <TableCell>{patient.rut}</TableCell>
-                            </TableRow>
-                        )) : (
-                            <TableRow>
-                                <TableCell colSpan={2} className="text-center">No hay pacientes asociados.</TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
-        </DialogContent>
-      </Dialog>
-    </>
+      <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+              <DialogTitle>Pacientes de {doctor.name}</DialogTitle>
+              <DialogDescription>
+                  Lista de pacientes que han recibido recetas de este médico.
+              </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-80 overflow-y-auto">
+              <Table>
+                  <TableHeader>
+                      <TableRow>
+                          <TableHead>Nombre</TableHead>
+                          <TableHead>RUT</TableHead>
+                          <TableHead>Es Crónico</TableHead>
+                      </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                      {doctor.patients.length > 0 ? doctor.patients.map(patient => (
+                          <TableRow key={patient.id}>
+                              <TableCell className="font-medium">
+                                  <Link href={`/patients/${patient.id}`} className="hover:underline text-primary">
+                                      {patient.name}
+                                  </Link>
+                              </TableCell>
+                              <TableCell>{patient.rut}</TableCell>
+                              <TableCell>{patient.isChronic ? 'Sí' : 'No'}</TableCell>
+                          </TableRow>
+                      )) : (
+                          <TableRow>
+                              <TableCell colSpan={3} className="text-center">No hay pacientes asociados.</TableCell>
+                          </TableRow>
+                      )}
+                  </TableBody>
+              </Table>
+          </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
@@ -228,56 +226,54 @@ export default function DoctorsPage() {
   }
 
   return (
-    <Dialog>
-      <div className="space-y-6 p-4 md:p-8">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight font-headline">Gestión de Médicos</h2>
-            <p className="text-muted-foreground">
-              Panel de control para gestionar la relación con los prescriptores.
-            </p>
-          </div>
-          <Button>
-            <PlusCircle className="mr-2 h-4 w-4" /> Nuevo Médico
-          </Button>
+    <div className="space-y-6 p-4 md:p-8">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight font-headline">Gestión de Médicos</h2>
+          <p className="text-muted-foreground">
+            Panel de control para gestionar la relación con los prescriptores.
+          </p>
         </div>
-
-        <Card>
-            <CardContent className="p-4">
-                 <div className="relative">
-                    <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                    type="search"
-                    placeholder="Buscar por nombre, especialidad, N° colegiatura o RUT..."
-                    className="pl-8 w-full"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-            </CardContent>
-        </Card>
-        
-        {filteredDoctors.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredDoctors.map((doctor) => (
-                    <DoctorCard key={doctor.id} doctor={doctor} />
-                ))}
-            </div>
-        ) : (
-            <Card className="text-center py-16 mt-8 shadow-none border-dashed">
-                <div className="flex flex-col items-center justify-center">
-                <Users className="h-16 w-16 text-muted-foreground mb-4" />
-                <h3 className="text-xl font-semibold">No se encontraron médicos</h3>
-                <p className="text-muted-foreground mt-2 max-w-sm">
-                    Intenta ajustar tu búsqueda o crea un nuevo médico para empezar.
-                </p>
-                <Button className="mt-6">
-                    <PlusCircle className="mr-2 h-4 w-4" /> Crear Primer Médico
-                </Button>
-                </div>
-            </Card>
-        )}
+        <Button>
+          <PlusCircle className="mr-2 h-4 w-4" /> Nuevo Médico
+        </Button>
       </div>
-    </Dialog>
+
+      <Card>
+          <CardContent className="p-4">
+               <div className="relative">
+                  <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                  type="search"
+                  placeholder="Buscar por nombre, especialidad, N° colegiatura o RUT..."
+                  className="pl-8 w-full"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+              </div>
+          </CardContent>
+      </Card>
+      
+      {filteredDoctors.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredDoctors.map((doctor) => (
+                  <DoctorCard key={doctor.id} doctor={doctor} />
+              ))}
+          </div>
+      ) : (
+          <Card className="text-center py-16 mt-8 shadow-none border-dashed">
+              <div className="flex flex-col items-center justify-center">
+              <Users className="h-16 w-16 text-muted-foreground mb-4" />
+              <h3 className="text-xl font-semibold">No se encontraron médicos</h3>
+              <p className="text-muted-foreground mt-2 max-w-sm">
+                  Intenta ajustar tu búsqueda o crea un nuevo médico para empezar.
+              </p>
+              <Button className="mt-6">
+                  <PlusCircle className="mr-2 h-4 w-4" /> Crear Primer Médico
+              </Button>
+              </div>
+          </Card>
+      )}
+    </div>
   );
 }
