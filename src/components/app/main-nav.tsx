@@ -6,22 +6,20 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
-  ClipboardList,
+  FileText,
   Users,
   BriefcaseMedical,
-  FileText,
   Warehouse,
-  CalendarClock,
+  Box,
   Truck,
   ShieldAlert,
   Lock,
-  Landmark,
+  CreditCard,
   BarChart2,
   UserCog,
   Settings,
   UserSquare,
   LogOut,
-  ChevronDown,
   MoreHorizontal,
 } from 'lucide-react';
 import {
@@ -55,7 +53,7 @@ const menuGroups = [
       title: 'PRINCIPAL',
       items: [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { href: '/recipes', label: 'Recetas', icon: ClipboardList },
+        { href: '/recipes', label: 'Recetas', icon: FileText },
       ],
     },
     {
@@ -63,14 +61,14 @@ const menuGroups = [
       items: [
         { href: '/patients', label: 'Pacientes', icon: Users },
         { href: '/doctors', label: 'Médicos', icon: BriefcaseMedical },
-        { href: '/external-prescriptions', label: 'Recetarios Ext.', icon: FileText },
+        { href: '/external-prescriptions', label: 'Recetarios Ext.', icon: Warehouse },
       ],
     },
     {
       title: 'OPERACIONES',
       items: [
         { href: '/inventory', label: 'Inventario Skol', icon: Warehouse },
-        { href: '/monthly-dispensing', label: 'Dispensación Mensual', icon: CalendarClock },
+        { href: '/monthly-dispensing', label: 'Dispensación Mensual', icon: Box },
         { href: '/dispatch-management', label: 'Gestión Despachos', icon: Truck },
         { href: '/pharmacovigilance', label: 'Farmacovigilancia', icon: ShieldAlert },
         { href: '/controlled-drugs', label: 'Controlados', icon: Lock },
@@ -79,7 +77,7 @@ const menuGroups = [
     {
       title: 'ADMINISTRACIÓN',
       items: [
-        { href: '/financial-management', label: 'Gestión Financiera', icon: Landmark },
+        { href: '/financial-management', label: 'Gestión Financiera', icon: CreditCard },
         { href: '/reports', label: 'Reportes', icon: BarChart2 },
         { href: '/user-management', label: 'Gestión Usuarios', icon: UserCog },
         { href: '/settings', label: 'Configuración', icon: Settings },
@@ -141,10 +139,9 @@ export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElemen
                   <div className="relative">
                      {openItems.includes(group.title) && <div className="absolute left-[-16px] top-2 bottom-2 w-1 bg-accent rounded-full group-data-[collapsible=icon]:hidden" />}
                     <AccordionTrigger
-                      className="py-2 px-0 hover:no-underline hover:bg-transparent rounded-none text-foreground/60 font-semibold text-xs justify-start [&[data-state=open]>svg]:rotate-180"
+                      className="py-2 px-0 hover:no-underline hover:bg-transparent rounded-none text-foreground/60 font-semibold text-xs justify-start"
                     >
                       <div className="flex-1 text-left tracking-wider uppercase">{group.title}</div>
-                      <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200" />
                     </AccordionTrigger>
                   </div>
                   <AccordionContent className="pl-2 pt-1 pb-1">
