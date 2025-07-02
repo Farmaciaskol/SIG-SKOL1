@@ -173,33 +173,35 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
         setDoctors(doctorsData);
         setExternalPharmacies(externalPharmaciesData);
 
-        if (copyFromId) {
-            const recipeToCopy = await getRecipe(copyFromId);
-            if (recipeToCopy) {
-                const today = new Date();
-                const expiry = addMonths(today, 6);
-                const newRecipeData = {
-                    ...recipeToCopy,
-                    status: RecipeStatus.PendingValidation,
-                    paymentStatus: 'Pendiente',
-                    prescriptionDate: format(today, 'yyyy-MM-dd'),
-                    expiryDate: format(expiry, 'yyyy-MM-dd'),
-                };
-                delete (newRecipeData as any).id;
-                delete (newRecipeData as any).createdAt;
-                delete (newRecipeData as any).updatedAt;
-                
-                await loadFormData(newRecipeData);
-                toast({ title: 'Receta Duplicada', description: 'Revisa los datos y guarda la nueva receta.' });
+        const recipeToLoad = copyFromId || recipeId;
+
+        if (recipeToLoad) {
+            const recipeData = await getRecipe(recipeToLoad);
+            if (recipeData) {
+                if (copyFromId) {
+                    const today = new Date();
+                    const expiry = addMonths(today, 6);
+                    const newRecipeData = {
+                        ...recipeData,
+                        status: RecipeStatus.PendingValidation,
+                        paymentStatus: 'Pendiente',
+                        prescriptionDate: format(today, 'yyyy-MM-dd'),
+                        expiryDate: format(expiry, 'yyyy-MM-dd'),
+                    };
+                    delete (newRecipeData as any).id;
+                    delete (newRecipeData as any).createdAt;
+                    delete (newRecipeData as any).updatedAt;
+                    delete (newRecipeData as any).auditTrail;
+
+                    await loadFormData(newRecipeData);
+                    toast({ title: 'Receta Duplicada', description: 'Revisa los datos y guarda la nueva receta.' });
+                } else { // Editing
+                    await loadFormData(recipeData);
+                }
+            } else {
+                 toast({ title: 'Error', description: 'No se encontró la receta.', variant: 'destructive' });
+                 router.push('/recipes');
             }
-        } else if (isEditMode) {
-          const recipeData = await getRecipe(recipeId);
-          if (recipeData) {
-            await loadFormData(recipeData);
-          } else {
-             toast({ title: 'Error', description: 'No se encontró la receta.', variant: 'destructive' });
-             router.push('/recipes');
-          }
         } else {
             // Set default dates for new recipes
             const today = new Date();
@@ -215,7 +217,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
       }
     };
     fetchData();
-  }, [recipeId, isEditMode, toast, router, form, copyFromId, loadFormData]);
+  }, [recipeId, copyFromId, toast, router, form, loadFormData]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -342,7 +344,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                   <FormItem>
                     <FormLabel>ID Receta</FormLabel>
                     <FormControl>
-                      <Input disabled value={isEditMode ? recipeId : "Nuevo (se genera al guardar)"} />
+                      <Input disabled value={isEditMode && !copyFromId ? recipeId : "Nuevo (se genera al guardar)"} />
                     </FormControl>
                   </FormItem>
                   <FormField

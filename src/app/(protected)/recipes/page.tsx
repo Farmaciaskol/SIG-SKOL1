@@ -36,7 +36,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -54,9 +64,15 @@ import {
   FileX,
   Eye,
   Copy,
-  Printer
+  Printer,
+  CheckCircle,
+  XCircle,
+  Send,
+  PackageCheck,
+  Truck,
+  Ban
 } from 'lucide-react';
-import { getRecipes, getPatients, deleteRecipe, Recipe, Patient, RecipeStatus } from '@/lib/data';
+import { getRecipes, getPatients, deleteRecipe, updateRecipe, Recipe, Patient, RecipeStatus, AuditTrailEntry } from '@/lib/data';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -65,8 +81,9 @@ const statusColors: Record<RecipeStatus, string> = {
   [RecipeStatus.PendingValidation]: 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-100',
   [RecipeStatus.Validated]: 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-100',
   [RecipeStatus.Rejected]: 'bg-red-100 text-red-800 border-red-200 hover:bg-red-100',
-  [RecipeStatus.Preparation]: 'bg-indigo-100 text-indigo-800 border-indigo-200 hover:bg-indigo-100',
-  [RecipeStatus.QualityControl]: 'bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-100',
+  [RecipeStatus.SentToExternal]: 'bg-cyan-100 text-cyan-800 border-cyan-200 hover:bg-cyan-100',
+  [RecipeStatus.ReceivedAtSkol]: 'bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-100',
+  [RecipeStatus.ReadyForPickup]: 'bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-100',
   [RecipeStatus.Dispensed]: 'bg-green-100 text-green-800 border-green-200 hover:bg-green-100',
   [RecipeStatus.Cancelled]: 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-100',
 };
@@ -88,7 +105,12 @@ export default function RecipesPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  
+  // State for dialogs
   const [recipeToDelete, setRecipeToDelete] = useState<Recipe | null>(null);
+  const [recipeToReject, setRecipeToReject] = useState<Recipe | null>(null);
+  const [recipeToCancel, setRecipeToCancel] = useState<Recipe | null>(null);
+  const [reason, setReason] = useState('');
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -114,6 +136,39 @@ export default function RecipesPage() {
   const getPatientName = (patientId: string) => {
     return patients.find((p) => p.id === patientId)?.name || 'N/A';
   };
+
+  const handleUpdateStatus = async (recipe: Recipe, newStatus: RecipeStatus, notes?: string) => {
+    try {
+      const newAuditEntry: AuditTrailEntry = {
+        status: newStatus,
+        date: new Date().toISOString(),
+        userId: 'system-user', // Placeholder
+        notes: notes || `Estado cambiado a ${newStatus}`
+      };
+      const updatedAuditTrail = [...(recipe.auditTrail || []), newAuditEntry];
+      
+      await updateRecipe(recipe.id, { status: newStatus, auditTrail: updatedAuditTrail });
+
+      toast({ title: 'Estado Actualizado', description: `La receta ${recipe.id} ahora está ${newStatus}.` });
+      fetchData();
+    } catch (error) {
+       toast({ title: 'Error', description: 'No se pudo actualizar el estado de la receta.', variant: 'destructive' });
+    }
+  }
+
+  const handleConfirmReject = async () => {
+    if (!recipeToReject || !reason) return;
+    await handleUpdateStatus(recipeToReject, RecipeStatus.Rejected, `Motivo del rechazo: ${reason}`);
+    setRecipeToReject(null);
+    setReason('');
+  }
+
+  const handleConfirmCancel = async () => {
+    if (!recipeToCancel || !reason) return;
+    await handleUpdateStatus(recipeToCancel, RecipeStatus.Cancelled, `Motivo de anulación: ${reason}`);
+    setRecipeToCancel(null);
+    setReason('');
+  }
 
   const handleReprepare = (recipeId: string) => {
     router.push(`/recipes/new?copyFrom=${recipeId}`);
@@ -167,25 +222,74 @@ export default function RecipesPage() {
             Ver Detalle
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href={`/recipes/${recipe.id}`} className="flex items-center cursor-pointer w-full">
-            <Pencil className="mr-2 h-4 w-4" />
-            Editar
-          </Link>
-        </DropdownMenuItem>
+
+        {recipe.status === RecipeStatus.PendingValidation || recipe.status === RecipeStatus.Rejected ? (
+            <DropdownMenuItem asChild>
+                <Link href={`/recipes/${recipe.id}`} className="flex items-center cursor-pointer w-full">
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Editar
+                </Link>
+            </DropdownMenuItem>
+        ) : null}
+
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="flex items-center cursor-pointer w-full" onClick={() => handleReprepare(recipe.id)}>
-            <Copy className="mr-2 h-4 w-4" />
-            Re-preparar
-        </DropdownMenuItem>
+
+        {recipe.status === RecipeStatus.PendingValidation && (
+          <>
+            <DropdownMenuItem onClick={() => handleUpdateStatus(recipe, RecipeStatus.Validated, 'Receta validada por farmacéutico.')}>
+              <CheckCircle className="mr-2 h-4 w-4 text-green-500" /> Validar
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setRecipeToReject(recipe)}>
+              <XCircle className="mr-2 h-4 w-4 text-red-500" /> Rechazar
+            </DropdownMenuItem>
+          </>
+        )}
+        
+        {recipe.status === RecipeStatus.Validated && recipe.supplySource === 'Stock del Recetario Externo' && (
+             <DropdownMenuItem onClick={() => handleUpdateStatus(recipe, RecipeStatus.SentToExternal)}>
+                <Send className="mr-2 h-4 w-4 text-blue-500" /> Enviar a Recetario
+            </DropdownMenuItem>
+        )}
+
+        {recipe.status === RecipeStatus.SentToExternal && (
+             <DropdownMenuItem onClick={() => handleUpdateStatus(recipe, RecipeStatus.ReceivedAtSkol)}>
+                <PackageCheck className="mr-2 h-4 w-4 text-purple-500" /> Recepcionar Preparado
+            </DropdownMenuItem>
+        )}
+        
+        {recipe.status === RecipeStatus.ReceivedAtSkol && (
+            <DropdownMenuItem onClick={() => handleUpdateStatus(recipe, RecipeStatus.ReadyForPickup)}>
+                <Truck className="mr-2 h-4 w-4 text-orange-500" /> Marcar para Retiro
+            </DropdownMenuItem>
+        )}
+
+        {recipe.status === RecipeStatus.ReadyForPickup && (
+            <DropdownMenuItem onClick={() => handleUpdateStatus(recipe, RecipeStatus.Dispensed)}>
+                <CheckCircle className="mr-2 h-4 w-4 text-green-500" /> Dispensar
+            </DropdownMenuItem>
+        )}
+
+        {(recipe.status === RecipeStatus.Dispensed) && (
+            <DropdownMenuItem className="flex items-center cursor-pointer w-full" onClick={() => handleReprepare(recipe.id)}>
+                <Copy className="mr-2 h-4 w-4" />
+                Re-preparar
+            </DropdownMenuItem>
+        )}
+       
         <DropdownMenuItem className="flex items-center cursor-pointer w-full" onClick={handlePrint}>
             <Printer className="mr-2 h-4 w-4" />
-            Imprimir
+            Imprimir Etiqueta
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50 flex items-center cursor-pointer" onClick={() => setRecipeToDelete(recipe)}>
-          <Trash2 className="mr-2 h-4 w-4" />
-          Eliminar
+        
+        {recipe.status !== RecipeStatus.Cancelled && recipe.status !== RecipeStatus.Dispensed && (
+             <DropdownMenuItem className="text-amber-600 focus:text-amber-600 focus:bg-amber-50" onClick={() => setRecipeToCancel(recipe)}>
+                <Ban className="mr-2 h-4 w-4" /> Anular Receta
+            </DropdownMenuItem>
+        )}
+        
+        <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50" onClick={() => setRecipeToDelete(recipe)}>
+          <Trash2 className="mr-2 h-4 w-4" /> Eliminar
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -314,22 +418,8 @@ export default function RecipesPage() {
                         Creada: {format(new Date(recipe.createdAt), "d 'de' MMMM, yyyy", { locale: es })}
                       </p>
                   </CardContent>
-                  <CardFooter className="flex justify-between items-center p-3 bg-muted/50">
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" asChild className="h-9 w-9">
-                        <Link href={`/recipes/${recipe.id}`}><Eye className="h-5 w-5"/></Link>
-                      </Button>
-                      <Button variant="ghost" size="icon" asChild className="h-9 w-9">
-                        <Link href={`/recipes/${recipe.id}`}><Pencil className="h-5 w-5"/></Link>
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-9 w-9 text-red-500 hover:text-red-600 hover:bg-red-100" onClick={() => setRecipeToDelete(recipe)}>
-                          <Trash2 className="h-5 w-5"/>
-                      </Button>
-                    </div>
-                    <Button size="sm" onClick={() => handleReprepare(recipe.id)}>
-                        <Copy className="mr-2 h-4 w-4" />
-                        Re-preparar
-                    </Button>
+                  <CardFooter className="flex justify-end items-center p-3 bg-muted/50">
+                    <RecipeActions recipe={recipe} />
                   </CardFooter>
                 </Card>
             ))}
@@ -337,6 +427,7 @@ export default function RecipesPage() {
         </>
       )}
 
+      {/* Dialog for Deletion */}
       <AlertDialog open={!!recipeToDelete} onOpenChange={(open) => !open && setRecipeToDelete(null)}>
         <AlertDialogContent>
             <AlertDialogHeader>
@@ -351,6 +442,46 @@ export default function RecipesPage() {
             </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog for Rejection */}
+      <Dialog open={!!recipeToReject} onOpenChange={(open) => {if (!open) {setRecipeToReject(null); setReason('');}}}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Rechazar Receta: {recipeToReject?.id}</DialogTitle>
+                <DialogDescription>
+                    Por favor, ingrese el motivo del rechazo. Este quedará registrado en el historial de la receta.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+                <Label htmlFor="reason-textarea">Motivo del Rechazo</Label>
+                <Textarea id="reason-textarea" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ej: Dosis inconsistente con la indicación."/>
+            </div>
+            <DialogFooter>
+                <Button variant="ghost" onClick={() => setRecipeToReject(null)}>Cancelar</Button>
+                <Button variant="destructive" onClick={handleConfirmReject} disabled={!reason.trim()}>Confirmar Rechazo</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Dialog for Cancellation */}
+       <Dialog open={!!recipeToCancel} onOpenChange={(open) => {if (!open) {setRecipeToCancel(null); setReason('');}}}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Anular Receta: {recipeToCancel?.id}</DialogTitle>
+                <DialogDescription>
+                    Por favor, ingrese el motivo de la anulación. Esta acción es irreversible.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+                <Label htmlFor="reason-textarea">Motivo de la Anulación</Label>
+                <Textarea id="reason-textarea" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ej: Solicitado por el paciente."/>
+            </div>
+            <DialogFooter>
+                <Button variant="ghost" onClick={() => setRecipeToCancel(null)}>Cancelar</Button>
+                <Button variant="destructive" onClick={handleConfirmCancel} disabled={!reason.trim()}>Confirmar Anulación</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

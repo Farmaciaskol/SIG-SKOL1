@@ -1,10 +1,12 @@
 
+
 export enum RecipeStatus {
   PendingValidation = 'Pendiente Validación',
   Validated = 'Validada',
   Rejected = 'Rechazada',
-  Preparation = 'En Preparación',
-  QualityControl = 'Control de Calidad',
+  SentToExternal = 'Enviada a Recetario',
+  ReceivedAtSkol = 'Recepcionado en Skol',
+  ReadyForPickup = 'Lista para Retiro',
   Dispensed = 'Dispensada',
   Cancelled = 'Anulada',
 }
@@ -81,6 +83,13 @@ export interface RecipeItem {
   usageInstructions: string;
 }
 
+export interface AuditTrailEntry {
+  status: RecipeStatus;
+  date: string; // ISO String
+  userId: string;
+  notes?: string;
+}
+
 export interface Recipe {
   id: string;
   patientId: string;
@@ -102,6 +111,7 @@ export interface Recipe {
   controlledRecipeImageUrl?: string;
   prescriptionImageUrl?: string;
   skolSuppliedItemsDispatchStatus?: SkolSuppliedItemsDispatchStatus;
+  auditTrail?: AuditTrailEntry[];
 }
 
 export interface AdverseReaction {

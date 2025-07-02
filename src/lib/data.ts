@@ -2,7 +2,7 @@ import { db, storage } from './firebase';
 import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { RecipeStatus } from './types';
-import type { Recipe, Doctor, InventoryItem, User, Role, ExternalPharmacy, Patient, PharmacovigilanceReport, AppData } from './types';
+import type { Recipe, Doctor, InventoryItem, User, Role, ExternalPharmacy, Patient, PharmacovigilanceReport, AppData, AuditTrailEntry } from './types';
 import { getMockData } from './mock-data';
 
 export * from './types';
@@ -145,6 +145,24 @@ export const addExternalPharmacy = async (pharmacy: Omit<ExternalPharmacy, 'id'>
     }
 };
 
+export const updateRecipe = async (id: string, updates: Partial<Recipe>): Promise<void> => {
+    if (!db) {
+        throw new Error("Firestore is not initialized.");
+    }
+    try {
+        const recipeRef = doc(db, 'recipes', id);
+        const dataToUpdate = {
+            ...updates,
+            updatedAt: new Date().toISOString()
+        };
+        await updateDoc(recipeRef, dataToUpdate as any);
+    } catch (error) {
+        console.error("Error updating recipe:", error);
+        throw new Error("Could not update recipe.");
+    }
+};
+
+
 export const saveRecipe = async (data: any, imageUri: string | null, recipeId?: string): Promise<string> => {
     if (!db) {
         throw new Error("Firestore is not initialized.");
@@ -211,17 +229,39 @@ export const saveRecipe = async (data: any, imageUri: string | null, recipeId?: 
         prescriptionImageUrl: imageUrl,
     };
 
-    if (recipeId) {
+    if (recipeId) { // Editing existing recipe
         const recipeRef = doc(db, 'recipes', recipeId);
-        await updateDoc(recipeRef, recipeDataForUpdate);
+        const existingRecipe = await getRecipe(recipeId);
+        
+        if (existingRecipe && existingRecipe.status === RecipeStatus.Rejected) {
+            const newAuditTrailEntry: AuditTrailEntry = {
+                status: RecipeStatus.PendingValidation,
+                date: new Date().toISOString(),
+                userId: 'system-user', // Placeholder
+                notes: 'Receta corregida y reenviada para validación.'
+            };
+            recipeDataForUpdate.status = RecipeStatus.PendingValidation;
+            recipeDataForUpdate.auditTrail = [...(existingRecipe.auditTrail || []), newAuditTrailEntry];
+        }
+
+        await updateDoc(recipeRef, recipeDataForUpdate as any);
         return recipeId;
-    } else {
+    } else { // Creating new recipe
         const recipeRef = doc(db, 'recipes', effectiveRecipeId);
+        
+        const firstAuditEntry: AuditTrailEntry = {
+            status: RecipeStatus.PendingValidation,
+            date: new Date().toISOString(),
+            userId: 'system-user', // Placeholder
+            notes: 'Receta creada en el sistema.'
+        };
+        
         const recipeDataForCreate: Omit<Recipe, 'id'> = {
             ...recipeDataForUpdate,
             status: RecipeStatus.PendingValidation,
             paymentStatus: 'Pendiente',
             createdAt: new Date().toISOString(),
+            auditTrail: [firstAuditEntry]
         } as Omit<Recipe, 'id'>;
 
         await setDoc(recipeRef, recipeDataForCreate);
