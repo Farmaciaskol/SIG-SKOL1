@@ -111,7 +111,7 @@ export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElemen
   return (
     <SidebarProvider>
       <div className="flex min-h-screen bg-background">
-        <Sidebar className="border-r">
+        <Sidebar className="border-r bg-card">
           <SidebarHeader className="p-4 justify-center">
             <div className="w-full px-4 group-data-[collapsible=icon]:hidden">
               <Image
@@ -152,8 +152,8 @@ export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElemen
                             asChild
                             isActive={pathname.startsWith(item.href)}
                             className={cn(
-                                "justify-start font-normal text-sm",
-                                pathname.startsWith(item.href) && "bg-accent text-accent-foreground hover:bg-accent hover:text-accent-foreground font-semibold"
+                                "justify-start font-normal text-sm text-foreground",
+                                pathname.startsWith(item.href) ? "bg-accent text-primary-foreground hover:bg-accent hover:text-primary-foreground font-semibold" : "hover:bg-accent/90 hover:text-primary-foreground"
                             )}
                           >
                             <Link href={item.href}>
@@ -176,9 +176,9 @@ export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElemen
                         <SidebarMenuButton
                             asChild
                             isActive={pathname.startsWith(item.href)}
-                            className={cn(
-                                "justify-start font-normal text-sm",
-                                pathname.startsWith(item.href) && "bg-accent text-accent-foreground hover:bg-accent hover:text-accent-foreground font-semibold"
+                           className={cn(
+                                "justify-start font-normal text-sm text-foreground",
+                                pathname.startsWith(item.href) ? "bg-accent text-primary-foreground hover:bg-accent hover:text-primary-foreground font-semibold" : "hover:bg-accent/90 hover:text-primary-foreground"
                             )}
                         >
                         <Link href={item.href}>
