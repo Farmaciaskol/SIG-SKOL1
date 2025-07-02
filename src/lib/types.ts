@@ -97,6 +97,12 @@ export interface Doctor {
 export interface ExternalPharmacy {
   id: string;
   name: string;
+  contactPerson?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  paymentDetails?: string; // e.g., bank account info
+  defaultPaymentModel?: 'Por Receta' | 'Factura Mensual';
 }
 
 export interface InventoryItem {

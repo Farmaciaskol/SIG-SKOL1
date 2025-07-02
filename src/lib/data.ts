@@ -89,14 +89,21 @@ export const addDoctor = async (doctor: Omit<Doctor, 'id'>): Promise<string> => 
     }
 };
 
-export const addExternalPharmacy = async (pharmacy: { name: string }): Promise<string> => {
+export const addExternalPharmacy = async (pharmacy: Omit<ExternalPharmacy, 'id'>): Promise<string> => {
     if (!db) {
         throw new Error("Firestore is not initialized.");
     }
     try {
-        const docRef = await addDoc(collection(db, 'externalPharmacies'), {
-            name: pharmacy.name
-        });
+        // Ensure all optional fields are at least empty strings
+        const pharmacyData = {
+            ...pharmacy,
+            contactPerson: pharmacy.contactPerson || '',
+            email: pharmacy.email || '',
+            phone: pharmacy.phone || '',
+            address: pharmacy.address || '',
+            paymentDetails: pharmacy.paymentDetails || '',
+        };
+        const docRef = await addDoc(collection(db, 'externalPharmacies'), pharmacyData);
         return docRef.id;
     } catch (error) {
         console.error("Error adding external pharmacy:", error);

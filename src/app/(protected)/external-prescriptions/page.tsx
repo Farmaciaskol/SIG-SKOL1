@@ -1,39 +1,25 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
+import { getExternalPharmacies, addExternalPharmacy, getRecipes, ExternalPharmacy, Recipe, RecipeStatus } from '@/lib/data';
+import { PlusCircle, Search, Phone, Mail, Pencil, Trash2, Warehouse, Loader2, FileText, Banknote, Building2, User } from 'lucide-react';
+import Link from 'next/link';
+
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -43,69 +29,202 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import {
-  MoreHorizontal,
-  PlusCircle,
-  Pencil,
-  Trash2,
-  Warehouse,
-  Loader2,
-} from 'lucide-react';
-import { getExternalPharmacies, addExternalPharmacy, ExternalPharmacy } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+
+type PharmacyWithStats = ExternalPharmacy & {
+  activeRecipes: number;
+  balance: number;
+  reports: number;
+  standardCompliance: number;
+  skolCompliance: number;
+};
+
+const PharmacyCard = ({ pharmacy }: { pharmacy: PharmacyWithStats }) => {
+  const getProgressColor = (value: number) => {
+    if (value >= 95) return 'bg-green-500';
+    if (value >= 80) return 'bg-yellow-400';
+    return 'bg-red-500';
+  };
+
+  return (
+    <Card className="flex flex-col">
+      <CardHeader>
+        <div className="flex justify-between items-start">
+            <CardTitle className="text-xl font-bold">{pharmacy.name}</CardTitle>
+            <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Pencil className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-red-100 hover:text-red-600">
+                <Trash2 className="h-4 w-4" />
+                </Button>
+            </div>
+        </div>
+        
+        <div className="mt-4 space-y-2 text-sm text-muted-foreground">
+            {pharmacy.contactPerson && (
+                <div className="flex items-center gap-3">
+                    <User className="h-4 w-4" />
+                    <span>{pharmacy.contactPerson}</span>
+                </div>
+            )}
+            {pharmacy.phone && (
+                <div className="flex items-center gap-3">
+                    <Phone className="h-4 w-4" />
+                    <span>{pharmacy.phone}</span>
+                </div>
+            )}
+            {pharmacy.email && (
+                <div className="flex items-center gap-3">
+                    <Mail className="h-4 w-4" />
+                    <span>{pharmacy.email}</span>
+                </div>
+            )}
+        </div>
+      </CardHeader>
+      <CardContent className="flex-grow space-y-6">
+        
+        <div className="border-t pt-4 grid grid-cols-3 gap-4 text-center">
+            <div>
+                <p className={`text-2xl font-bold ${pharmacy.balance > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    ${pharmacy.balance.toLocaleString('es-CL')}
+                </p>
+                <p className="text-xs text-muted-foreground">Saldo Pendiente</p>
+            </div>
+             <div>
+                <p className="text-2xl font-bold">{pharmacy.activeRecipes}</p>
+                <p className="text-xs text-muted-foreground">Recetas Activas</p>
+            </div>
+             <div>
+                <p className="text-2xl font-bold">{pharmacy.reports}</p>
+                <p className="text-xs text-muted-foreground">Reportes FV</p>
+            </div>
+        </div>
+
+        <div className="border-t pt-4 space-y-4">
+            <h3 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
+              Rendimiento Operativo
+            </h3>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <p>Cumplimiento Prep. Estándar</p>
+                <p className="font-semibold">{pharmacy.standardCompliance}%</p>
+              </div>
+              <Progress
+                value={pharmacy.standardCompliance}
+                indicatorClassName={getProgressColor(pharmacy.standardCompliance)}
+              />
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <p>Cumplimiento Insumo Skol</p>
+                <p className="font-semibold">{pharmacy.skolCompliance}%</p>
+              </div>
+              <Progress
+                value={pharmacy.skolCompliance}
+                indicatorClassName={getProgressColor(pharmacy.skolCompliance)}
+              />
+            </div>
+        </div>
+      </CardContent>
+      <CardFooter className="bg-muted/50 p-3">
+          <Button className="w-full" asChild>
+            <Link href={`/external-prescriptions/${pharmacy.id}`}>Ver Detalle</Link>
+          </Button>
+      </CardFooter>
+    </Card>
+  );
+};
+
 
 const pharmacyFormSchema = z.object({
-  name: z.string().min(1, { message: 'El nombre del recetario no puede estar vacío.' }),
+  name: z.string().min(1, { message: 'El nombre es requerido.' }),
+  contactPerson: z.string().optional(),
+  email: z.string().email({ message: 'Email inválido.' }).optional().or(z.literal('')),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  paymentDetails: z.string().optional(),
+  defaultPaymentModel: z.string().min(1, { message: 'El modelo de pago es requerido.' }),
 });
 
 type PharmacyFormValues = z.infer<typeof pharmacyFormSchema>;
 
+const StatCard = ({ title, value, icon: Icon }: { title: string; value: string | number; icon: React.ElementType }) => (
+    <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{title}</CardTitle>
+            <Icon className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+            <div className="text-2xl font-bold">{value}</div>
+        </CardContent>
+    </Card>
+);
+
 export default function ExternalPrescriptionsPage() {
-  const [pharmacies, setPharmacies] = useState<ExternalPharmacy[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [pharmacies, setPharmacies] = useState<ExternalPharmacy[]>([]);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const { toast } = useToast();
 
   const form = useForm<PharmacyFormValues>({
     resolver: zodResolver(pharmacyFormSchema),
     defaultValues: {
       name: '',
+      contactPerson: '',
+      email: '',
+      phone: '',
+      address: '',
+      paymentDetails: '',
+      defaultPaymentModel: 'Por Receta',
     },
   });
 
-  const fetchPharmacies = async () => {
+  const fetchData = useCallback(async () => {
+    setLoading(true);
     try {
-      const pharmaciesData = await getExternalPharmacies();
+      const [pharmaciesData, recipesData] = await Promise.all([
+        getExternalPharmacies(),
+        getRecipes(),
+      ]);
       setPharmacies(pharmaciesData);
+      setRecipes(recipesData);
     } catch (error) {
-      console.error("Failed to fetch external pharmacies:", error);
+      console.error('Failed to fetch data:', error);
       toast({
-        title: "Error de Carga",
-        description: "No se pudieron cargar los recetarios externos.",
-        variant: "destructive",
+        title: 'Error de Carga',
+        description: 'No se pudieron cargar los datos de recetarios.',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
-    setLoading(true);
-    fetchPharmacies();
-  }, []);
+    fetchData();
+  }, [fetchData]);
 
   const onSubmit = async (data: PharmacyFormValues) => {
     try {
-      await addExternalPharmacy({ name: data.name });
+      await addExternalPharmacy(data);
       toast({
-        title: 'Éxito',
-        description: 'Recetario externo añadido correctamente.',
+        title: 'Recetario Añadido',
+        description: 'El nuevo recetario ha sido registrado correctamente.',
       });
       form.reset();
-      setIsDialogOpen(false);
-      setLoading(true);
-      await fetchPharmacies();
+      setIsFormOpen(false);
+      await fetchData();
     } catch (error) {
       toast({
         title: 'Error',
@@ -114,126 +233,173 @@ export default function ExternalPrescriptionsPage() {
       });
     }
   };
+  
+  const pharmacyStats = useMemo<PharmacyWithStats[]>(() => {
+    return pharmacies.map(pharmacy => {
+      const pharmacyRecipes = recipes.filter(r => r.externalPharmacyId === pharmacy.id);
+      const activeRecipes = pharmacyRecipes.filter(r => ![RecipeStatus.Dispensed, RecipeStatus.Cancelled, RecipeStatus.Rejected].includes(r.status)).length;
+      
+      const balance = (pharmacyRecipes.reduce((acc, r) => acc + (r.preparationCost || 0), 0)) * -1;
+      
+      return {
+        ...pharmacy,
+        activeRecipes,
+        balance, // Placeholder
+        reports: 0, // Placeholder
+        standardCompliance: 98, // Placeholder
+        skolCompliance: 92, // Placeholder
+      };
+    });
+  }, [pharmacies, recipes]);
 
-  const PharmacyActions = ({ pharmacyId }: { pharmacyId: string }) => (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button aria-haspopup="true" size="icon" variant="ghost">
-          <MoreHorizontal className="h-4 w-4" />
-          <span className="sr-only">Toggle menu</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem className="flex items-center cursor-pointer w-full">
-          <Pencil className="mr-2 h-4 w-4" />
-          Editar
-        </DropdownMenuItem>
-        <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50 flex items-center cursor-pointer">
-          <Trash2 className="mr-2 h-4 w-4" />
-          Eliminar
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
+  const filteredPharmacies = useMemo(() => {
+    if (!searchTerm) {
+      return pharmacyStats;
+    }
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+    return pharmacyStats.filter((pharmacy) =>
+      pharmacy.name.toLowerCase().includes(lowerCaseSearchTerm) ||
+      pharmacy.contactPerson?.toLowerCase().includes(lowerCaseSearchTerm)
+    );
+  }, [pharmacyStats, searchTerm]);
+  
+  const globalStats = useMemo(() => {
+    const totalBalance = pharmacyStats.reduce((acc, p) => acc + p.balance, 0);
+    const highestBalancePharmacy = pharmacyStats.sort((a,b) => a.balance - b.balance)[0];
+
+    return {
+        totalBalance: `$${totalBalance.toLocaleString('es-CL')}`,
+        totalPharmacies: pharmacies.length,
+        highestBalancePharmacyName: pharmacies.length > 0 ? highestBalancePharmacy.name : 'N/A'
+    }
+  }, [pharmacyStats, pharmacies.length]);
+
+
+  if (loading) {
+    return <div className="flex-1 p-8">Cargando recetarios...</div>;
+  }
 
   return (
-    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-      <div className="space-y-6 p-4 md:p-8">
+    <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+      <div className="flex-1 space-y-6 p-4 md:p-8">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <div>
             <h2 className="text-3xl font-bold tracking-tight font-headline">Gestión de Recetarios Externos</h2>
             <p className="text-muted-foreground">
-              Añade, edita y gestiona los recetarios con los que colaboras.
+              Panel de control para gestionar la relación con los socios.
             </p>
           </div>
           <DialogTrigger asChild>
             <Button>
-              <PlusCircle className="mr-2 h-4 w-4" /> Añadir Recetario
+              <PlusCircle className="mr-2 h-4 w-4" /> Nuevo Recetario
             </Button>
           </DialogTrigger>
         </div>
+        
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <StatCard title="Saldo Pendiente Total" value={globalStats.totalBalance} icon={Banknote} />
+            <StatCard title="Total de Recetarios" value={globalStats.totalPharmacies} icon={Building2} />
+            <StatCard title="Recetario con Mayor Saldo" value={globalStats.highestBalancePharmacyName} icon={Warehouse} />
+        </div>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Lista de Recetarios</CardTitle>
-            <CardDescription>
-              Un total de {pharmacies.length} recetarios externos registrados.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex items-center justify-center h-64">
-                <p>Cargando recetarios...</p>
-              </div>
-            ) : pharmacies.length === 0 ? (
-              <div className="flex flex-col items-center justify-center text-center py-16 mt-8 shadow-none border-dashed rounded-lg">
-                <Warehouse className="h-16 w-16 text-muted-foreground mb-4" />
-                <h3 className="text-xl font-semibold">No hay recetarios externos</h3>
-                <p className="text-muted-foreground mt-2 max-w-sm">
-                  Empieza añadiendo el primer recetario para poder asignarlo a las recetas.
-                </p>
-                <DialogTrigger asChild>
-                  <Button className="mt-6">
-                    <PlusCircle className="mr-2 h-4 w-4" /> Añadir Primer Recetario
-                  </Button>
-                </DialogTrigger>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nombre del Recetario</TableHead>
-                    <TableHead className="w-[100px] text-right">
-                      <span className="sr-only">Acciones</span>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pharmacies.map((pharmacy) => (
-                    <TableRow key={pharmacy.id}>
-                      <TableCell className="font-medium">{pharmacy.name}</TableCell>
-                      <TableCell className="text-right">
-                        <PharmacyActions pharmacyId={pharmacy.id} />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
+            <CardContent className="p-4">
+                <div className="relative">
+                    <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        type="search"
+                        placeholder="Buscar por nombre o persona de contacto..."
+                        className="pl-8 w-full"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+            </CardContent>
         </Card>
+        
+        {filteredPharmacies.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredPharmacies.map((pharmacy) => (
+                    <PharmacyCard key={pharmacy.id} pharmacy={pharmacy} />
+                ))}
+            </div>
+        ) : (
+            <Card className="text-center py-16 mt-8 shadow-none border-dashed">
+                <div className="flex flex-col items-center justify-center">
+                    <Warehouse className="h-16 w-16 text-muted-foreground mb-4" />
+                    <h3 className="text-xl font-semibold">No se encontraron recetarios</h3>
+                    <p className="text-muted-foreground mt-2 max-w-sm">
+                        Intenta ajustar tu búsqueda o crea un nuevo recetario para empezar.
+                    </p>
+                    <DialogTrigger asChild>
+                    <Button className="mt-6">
+                        <PlusCircle className="mr-2 h-4 w-4" /> Crear Primer Recetario
+                    </Button>
+                    </DialogTrigger>
+                </div>
+            </Card>
+        )}
       </div>
 
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Añadir Nuevo Recetario Externo</DialogTitle>
-          <DialogDescription>
-            Ingresa el nombre del nuevo recetario para registrarlo en el sistema.
-          </DialogDescription>
+            <DialogTitle>Añadir Nuevo Recetario</DialogTitle>
+            <DialogDescription>
+                Complete el formulario para registrar un nuevo socio.
+            </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nombre del Recetario</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ej: Farmacias Magistrales S.A." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Guardar
-              </Button>
-            </DialogFooter>
-          </form>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-2 max-h-[70vh] overflow-y-auto pr-4">
+                <FormField control={form.control} name="name" render={({ field }) => (
+                    <FormItem><FormLabel>Nombre Recetario *</FormLabel><FormControl><Input placeholder="Ej: Farmacias Magistrales S.A." {...field} /></FormControl><FormMessage /></FormItem>
+                )}/>
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField control={form.control} name="contactPerson" render={({ field }) => (
+                        <FormItem><FormLabel>Persona de Contacto</FormLabel><FormControl><Input placeholder="Ej: Juan Pérez" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                     <FormField control={form.control} name="phone" render={({ field }) => (
+                        <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="Ej: +56912345678" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                </div>
+                 <FormField control={form.control} name="email" render={({ field }) => (
+                    <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="Ej: contacto@recetario.com" {...field} /></FormControl><FormMessage /></FormItem>
+                )}/>
+                 <FormField control={form.control} name="address" render={({ field }) => (
+                    <FormItem><FormLabel>Dirección</FormLabel><FormControl><Input placeholder="Ej: Av. Principal 123, Santiago" {...field} /></FormControl><FormMessage /></FormItem>
+                )}/>
+                 <FormField
+                    control={form.control}
+                    name="defaultPaymentModel"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Modelo de Pago por Defecto *</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                            <SelectTrigger>
+                            <SelectValue placeholder="Seleccione un modelo..." />
+                            </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            <SelectItem value="Por Receta">Por Receta</SelectItem>
+                            <SelectItem value="Factura Mensual">Factura Mensual</SelectItem>
+                        </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                 <FormField control={form.control} name="paymentDetails" render={({ field }) => (
+                    <FormItem><FormLabel>Detalles de Pago</FormLabel><FormControl><Textarea placeholder="Ej: Cuenta Corriente Banco XYZ, N° 123-456-789, a nombre de..." {...field} /></FormControl><FormMessage /></FormItem>
+                )}/>
+
+                <DialogFooter className="pt-4 sticky bottom-0 bg-background">
+                    <Button type="button" variant="ghost" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
+                    <Button type="submit" disabled={form.formState.isSubmitting}>
+                        {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Guardar Recetario
+                    </Button>
+                </DialogFooter>
+            </form>
         </Form>
       </DialogContent>
     </Dialog>
