@@ -32,6 +32,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { addMonths } from 'date-fns';
+import { PHARMACEUTICAL_FORMS, CONCENTRATION_UNITS, DOSAGE_UNITS, TREATMENT_DURATION_UNITS, QUANTITY_TO_PREPARE_UNITS } from '@/lib/constants';
 
 // Zod schema for form validation
 const recipeItemSchema = z.object({
@@ -541,11 +542,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
                                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                                         <FormControl><SelectTrigger><SelectValue placeholder="Seleccione..." /></SelectTrigger></FormControl>
                                         <SelectContent>
-                                            <SelectItem value="cápsulas">Cápsulas</SelectItem>
-                                            <SelectItem value="crema">Crema</SelectItem>
-                                            <SelectItem value="solución">Solución</SelectItem>
-                                            <SelectItem value="gel">Gel</SelectItem>
-                                            <SelectItem value="ungüento">Ungüento</SelectItem>
+                                            {PHARMACEUTICAL_FORMS.map(unit => <SelectItem key={unit} value={unit.toLowerCase()}>{unit}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -561,10 +558,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
                                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                                         <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
                                         <SelectContent>
-                                            <SelectItem value="%">%</SelectItem>
-                                            <SelectItem value="mg/ml">mg/ml</SelectItem>
-                                            <SelectItem value="mg/g">mg/g</SelectItem>
-                                            <SelectItem value="UI/g">UI/g</SelectItem>
+                                            {CONCENTRATION_UNITS.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -580,11 +574,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
                                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                                         <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
                                         <SelectContent>
-                                            <SelectItem value="mg">mg</SelectItem>
-                                            <SelectItem value="ml">ml</SelectItem>
-                                            <SelectItem value="g">g</SelectItem>
-                                            <SelectItem value="UI">UI</SelectItem>
-                                            <SelectItem value="gotas">gotas</SelectItem>
+                                            {DOSAGE_UNITS.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -608,9 +598,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
                                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                                         <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
                                         <SelectContent>
-                                            <SelectItem value="días">días</SelectItem>
-                                            <SelectItem value="semanas">semanas</SelectItem>
-                                            <SelectItem value="meses">meses</SelectItem>
+                                            {TREATMENT_DURATION_UNITS.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -626,10 +614,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
                                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                                         <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
                                         <SelectContent>
-                                            <SelectItem value="cápsulas">cápsulas</SelectItem>
-                                            <SelectItem value="unidades">unidades</SelectItem>
-                                            <SelectItem value="g">g</SelectItem>
-                                            <SelectItem value="ml">ml</SelectItem>
+                                            {QUANTITY_TO_PREPARE_UNITS.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
