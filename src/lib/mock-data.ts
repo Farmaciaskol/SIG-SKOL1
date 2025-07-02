@@ -1,5 +1,5 @@
-import type { AppData, Patient, Doctor, Recipe, RecipeItem, InventoryItem, User, Role, ExternalPharmacy } from './types';
-import { RecipeStatus, ProactivePatientStatus, PatientActionNeeded } from './types';
+import type { AppData, Patient, Doctor, Recipe, RecipeItem, InventoryItem, User, Role, ExternalPharmacy, DispatchNote } from './types';
+import { RecipeStatus, ProactivePatientStatus, PatientActionNeeded, SkolSuppliedItemsDispatchStatus } from './types';
 import { ROLES, PERMISSIONS } from './constants';
 
 export function getMockData(): AppData {
@@ -59,20 +59,40 @@ export function getMockData(): AppData {
   ];
 
   const doctors: Doctor[] = [
-    { id: 'D001', name: 'Dr. Ricardo Pérez', specialty: 'Dermatología' },
-    { id: 'D002', name: 'Dra. Sofía López', specialty: 'Medicina General' },
+    { id: 'D001', name: 'Dr. Ricardo Pérez', specialty: 'Dermatología', email: 'r.perez@med.cl', phone: '+5621234567' },
+    { id: 'D002', name: 'Dra. Sofía López', specialty: 'Medicina General', email: 's.lopez@med.cl', phone: '+5627654321' },
   ];
 
   const externalPharmacies: ExternalPharmacy[] = [
-    { id: 'EP001', name: 'Recetario Central' },
-    { id: 'EP002', name: 'Farmacias Magistrales S.A.' },
-    { id: 'EP003', name: 'Tu Fórmula' },
+    { id: 'EP001', name: 'Recetario Central', contactPerson: 'Juan Valdés', email: 'contacto@central.cl', phone: '22-123-4567' },
+    { id: 'EP002', name: 'Farmacias Magistrales S.A.', contactPerson: 'Ana Reyes', email: 'ana.reyes@farma.com', phone: '22-987-6543' },
+    { id: 'EP003', name: 'Tu Fórmula', contactPerson: 'Pedro Pascal', email: 'ppascal@tuformula.cl', phone: '22-555-1234' },
   ];
 
   const inventory: InventoryItem[] = [
-    { id: 'I001', name: 'Minoxidil 5%', stock: 500, unit: 'ml', lowStockThreshold: 100 },
-    { id: 'I002', name: 'Crema Base Hidrófila', stock: 2000, unit: 'g', lowStockThreshold: 500 },
-    { id: 'I003', name: 'Propranolol 10mg', stock: 150, unit: 'comprimidos', lowStockThreshold: 50 },
+    { 
+      id: 'I001', name: 'Minoxidil', stock: 500, unit: 'g', lowStockThreshold: 100, 
+      barcode: 'SKOL-MINOX-G', 
+      lots: [
+        { lotNumber: 'M202401A', quantity: 200, expiryDate: '2025-12-31'},
+        { lotNumber: 'M202404B', quantity: 300, expiryDate: '2026-03-31'},
+      ] 
+    },
+    { 
+      id: 'I002', name: 'Crema Base Hidrófila', stock: 2000, unit: 'g', lowStockThreshold: 500,
+      barcode: 'SKOL-CREAM-H-G',
+      lots: [
+        { lotNumber: 'CBH-2023-12', quantity: 2000, expiryDate: '2024-12-31' }
+      ]
+    },
+    { 
+      id: 'I003', name: 'Propranolol', stock: 1500, unit: 'cápsulas', lowStockThreshold: 500,
+      barcode: 'SKOL-PROP-10MG-CAP',
+      lots: [
+        { lotNumber: 'PPL-A1', quantity: 500, expiryDate: '2025-08-31' },
+        { lotNumber: 'PPL-A2', quantity: 1000, expiryDate: '2025-11-30' },
+      ]
+    },
   ];
 
   const recipes: Recipe[] = [
@@ -104,6 +124,7 @@ export function getMockData(): AppData {
       externalPharmacyId: 'EP001',
       supplySource: 'Stock del Recetario Externo',
       preparationCost: 15000,
+      skolSuppliedItemsDispatchStatus: SkolSuppliedItemsDispatchStatus.PendingDispatch,
     },
     {
       id: 'R0002',
@@ -133,6 +154,7 @@ export function getMockData(): AppData {
       externalPharmacyId: 'EP002',
       supplySource: 'Insumos de Skol',
       preparationCost: 25000,
+      skolSuppliedItemsDispatchStatus: SkolSuppliedItemsDispatchStatus.PendingDispatch,
     },
     {
       id: 'R0003',
@@ -187,5 +209,9 @@ export function getMockData(): AppData {
       { id: 'R02', name: ROLES.PHARMACIST, permissions: [PERMISSIONS.RECIPES.READ, PERMISSIONS.RECIPES.UPDATE, PERMISSIONS.PATIENTS.READ] }
   ]
 
-  return { patients, doctors, inventory, recipes, users, roles, externalPharmacies };
+  const dispatchNotes: DispatchNote[] = [];
+
+  return { patients, doctors, inventory, recipes, users, roles, externalPharmacies, dispatchNotes };
 }
+
+    

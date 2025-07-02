@@ -21,6 +21,17 @@ export enum PatientActionNeeded {
   DISPENSE_COMMERCIAL = 'DISPENSE_COMMERCIAL',
 }
 
+export enum SkolSuppliedItemsDispatchStatus {
+  PendingDispatch = 'Pendiente Despacho',
+  Dispatched = 'Despachado',
+}
+
+export enum DispatchStatus {
+  Active = 'Activo',
+  Received = 'Recibido',
+  Cancelled = 'Cancelado',
+}
+
 export interface RecipeItem {
   principalActiveIngredient: string;
   pharmaceuticalForm: string;
@@ -49,13 +60,14 @@ export interface Recipe {
   createdAt: string;
   updatedAt: string;
   externalPharmacyId?: string;
-  supplySource?: string;
+  supplySource?: 'Stock del Recetario Externo' | 'Insumos de Skol';
   preparationCost?: number;
   isControlled?: boolean;
   controlledRecipeType?: string;
   controlledRecipeFolio?: string;
   controlledRecipeImageUrl?: string;
   prescriptionImageUrl?: string;
+  skolSuppliedItemsDispatchStatus?: SkolSuppliedItemsDispatchStatus;
 }
 
 export interface Patient {
@@ -105,12 +117,20 @@ export interface ExternalPharmacy {
   defaultPaymentModel?: 'Por Receta' | 'Factura Mensual';
 }
 
+export interface LotDetail {
+    lotNumber: string;
+    quantity: number;
+    expiryDate: string;
+}
+
 export interface InventoryItem {
   id: string;
   name: string;
   stock: number;
   unit: string;
   lowStockThreshold: number;
+  barcode?: string;
+  lots?: LotDetail[];
 }
 
 export interface User {
@@ -126,6 +146,26 @@ export interface Role {
   permissions: string[];
 }
 
+export interface DispatchItem {
+    recipeId: string;
+    inventoryItemId: string;
+    lotNumber: string;
+    quantity: number;
+}
+
+export interface DispatchNote {
+    id: string;
+    externalPharmacyId: string;
+    status: DispatchStatus;
+    createdAt: string;
+    completedAt?: string;
+    items: DispatchItem[];
+    dispatcherName?: string;
+    receivedByName?: string;
+    notes?: string;
+}
+
+
 export interface AppData {
   recipes: Recipe[];
   patients: Patient[];
@@ -134,4 +174,7 @@ export interface AppData {
   users: User[];
   roles: Role[];
   externalPharmacies: ExternalPharmacy[];
+  dispatchNotes: DispatchNote[];
 }
+
+    
