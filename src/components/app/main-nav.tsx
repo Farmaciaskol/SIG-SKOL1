@@ -17,7 +17,7 @@ import {
   Lock,
   Landmark,
   BarChart2,
-  UsersCog,
+  UserCog,
   Settings,
   UserSquare,
   LogOut,
@@ -81,7 +81,7 @@ const menuGroups = [
       items: [
         { href: '/financial-management', label: 'Gestión Financiera', icon: Landmark },
         { href: '/reports', label: 'Reportes', icon: BarChart2 },
-        { href: '/user-management', label: 'Gestión Usuarios', icon: UsersCog },
+        { href: '/user-management', label: 'Gestión Usuarios', icon: UserCog },
         { href: '/settings', label: 'Configuración', icon: Settings },
       ],
     },
