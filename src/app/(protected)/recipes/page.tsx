@@ -440,11 +440,11 @@ export default function RecipesPage() {
             case RecipeStatus.ReadyForPickup:
                  return <Button size="sm" onClick={() => handleUpdateStatus(recipe, RecipeStatus.Dispensed)}><CheckCheck className="mr-2 h-4 w-4" />Dispensar</Button>;
             case RecipeStatus.Dispensed:
-                 const canReprepare = !isSubmitting && !isExpired && !cycleLimitReached;
                  const { isExpired, cycleLimitReached } = {
                     isExpired: new Date(recipe.dueDate) < new Date(),
                     cycleLimitReached: (recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0) >= MAX_REPREPARATIONS + 1,
                  };
+                 const canReprepare = !isSubmitting && !isExpired && !cycleLimitReached;
                  return <Button size="sm" onClick={() => setRecipeToReprepare(recipe)} disabled={!canReprepare}><Copy className="mr-2 h-4 w-4" />Re-preparar</Button>;
             default:
                 return <Button size="sm" asChild><Link href={`/recipes/${recipe.id}`}>Ver Detalle</Link></Button>;
