@@ -10,22 +10,22 @@
     --card-foreground: 224 71% 4%;
     --popover: 0 0% 100%;
     --popover-foreground: 224 71% 4%;
-    --primary: 197 71% 74%; /* Sky Blue */
-    --primary-foreground: 224 71% 4%;
+    --primary: 205 46% 24%; /* Dark Blue from image */
+    --primary-foreground: 210 40% 98%;
     --secondary: 220 13% 91%;
     --secondary-foreground: 224 71% 4%;
     --muted: 220 13% 91%;
     --muted-foreground: 220 9% 45%;
-    --accent: 195 100% 50%; /* Deep Sky Blue */
+    --accent: 202 81% 53%; /* Bright Blue from image */
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
     --border: 220 13% 89%;
     --input: 220 13% 89%;
-    --ring: 195 100% 50%;
+    --ring: 202 81% 53%;
     --radius: 0.5rem;
-    --chart-1: 195 100% 50%;
-    --chart-2: 197 71% 74%;
+    --chart-1: 202 81% 53%;
+    --chart-2: 205 46% 24%;
     --chart-3: 220 13% 60%;
     --chart-4: 220 13% 40%;
     --chart-5: 224 71% 20%;
@@ -38,21 +38,21 @@
     --card-foreground: 210 40% 98%;
     --popover: 222 47% 11%;
     --popover-foreground: 210 40% 98%;
-    --primary: 197 71% 74%;
+    --primary: 202 81% 53%;
     --primary-foreground: 224 71% 4%;
     --secondary: 217 33% 17%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217 33% 17%;
     --muted-foreground: 215 20% 65%;
-    --accent: 195 100% 50%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 205 46% 24%;
+    --accent-foreground: 210 40% 98%;
     --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
     --border: 217 33% 17%;
     --input: 217 33% 17%;
-    --ring: 195 100% 50%;
-    --chart-1: 195 100% 50%;
-    --chart-2: 197 71% 74%;
+    --ring: 202 81% 53%;
+    --chart-1: 202 81% 53%;
+    --chart-2: 205 46% 24%;
     --chart-3: 220 13% 60%;
     --chart-4: 220 13% 80%;
     --chart-5: 224 71% 90%;

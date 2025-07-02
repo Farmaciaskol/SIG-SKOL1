@@ -38,9 +38,9 @@ export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElemen
 
   return (
     <div className="flex min-h-screen">
-      <Sidebar collapsible="icon">
+      <Sidebar>
         <SidebarHeader className="p-4 justify-center">
-            <FlaskConical className="w-8 h-8 text-primary" />
+            <FlaskConical className="w-8 h-8 text-accent" />
             <h1 className="font-headline text-2xl font-bold text-center truncate group-data-[collapsible=icon]:hidden">
               Skol
             </h1>
