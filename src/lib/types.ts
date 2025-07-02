@@ -27,6 +27,7 @@ export interface Recipe {
   id: string;
   patientId: string;
   doctorId: string;
+  dispatchAddress?: string;
   items: RecipeItem[];
   status: RecipeStatus;
   paymentStatus: 'Pagado' | 'Pendiente' | 'N/A';
@@ -57,6 +58,8 @@ export interface Doctor {
   id: string;
   name: string;
   specialty: string;
+  license?: string;
+  rut?: string;
 }
 
 export interface ExternalPharmacy {

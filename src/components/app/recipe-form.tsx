@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Upload, PlusCircle, X, Image as ImageIcon, Loader2, Wand2, Bot, Calendar as CalendarIcon, Trash2 } from 'lucide-react';
-import { getPatients, getDoctors, getRecipe, getExternalPharmacies, Patient, Doctor, ExternalPharmacy } from '@/lib/data';
+import { getPatients, getDoctors, getRecipe, getExternalPharmacies, Patient, Doctor, ExternalPharmacy, saveRecipe } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { extractRecipeDataFromImage } from '@/ai/flows/extract-recipe-data-from-image';
 import { simplifyInstructions } from '@/ai/flows/simplify-instructions';
@@ -160,6 +160,8 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
           if (recipeData) {
             form.reset({
               ...recipeData,
+              prescriptionDate: recipeData.prescriptionDate ? format(new Date(recipeData.prescriptionDate), 'yyyy-MM-dd') : '',
+              expiryDate: recipeData.dueDate ? format(new Date(recipeData.dueDate), 'yyyy-MM-dd') : '',
               preparationCost: recipeData.preparationCost?.toString(),
               patientId: recipeData.patientId,
               doctorId: recipeData.doctorId,
@@ -249,11 +251,15 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
     }
   };
   
-  const onSubmit = (data: RecipeFormValues) => {
-    console.log('Form submitted:', data);
-    // TODO: Implement save logic (create/update in Firestore)
-    toast({ title: isEditMode ? 'Receta Actualizada' : 'Receta Creada', description: 'Los datos se han guardado correctamente.' });
-    router.push('/recipes');
+  const onSubmit = async (data: RecipeFormValues) => {
+    try {
+      await saveRecipe(data, recipeId);
+      toast({ title: isEditMode ? 'Receta Actualizada' : 'Receta Creada', description: 'Los datos se han guardado correctamente.' });
+      router.push('/recipes');
+    } catch (error) {
+      console.error('Failed to save recipe:', error);
+      toast({ title: 'Error al Guardar', description: 'No se pudo guardar la receta. Por favor, intente de nuevo.', variant: 'destructive' });
+    }
   };
 
   const isControlled = form.watch('isControlled');
@@ -389,7 +395,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
                     <FormField control={form.control} name="newPatientName" render={({ field }) => (<FormItem><FormLabel>Nombre Paciente (Nuevo/IA) *</FormLabel><FormControl><Input placeholder="Nombre Apellido" {...field} /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="newPatientRut" render={({ field }) => (<FormItem><FormLabel>RUT Paciente (Nuevo/IA) *</FormLabel><FormControl><Input placeholder="12.345.678-9" {...field} /></FormControl><FormMessage /></FormItem>)} />
                     <div className="md:col-span-2">
-                         <FormField control={form.control} name="dispatchAddress" render={({ field }) => (<FormItem><FormLabel>Dirección de Despacho</FormLabel><FormControl><Input placeholder="Ej: Calle Falsa 123, Comuna" {...field} /></FormControl><FormDescription className="text-xs">(Opcional. Por defecto, se retira en farmacia.)</FormDescription><FormMessage /></FormItem>)} />
+                         <FormField control={form.control} name="dispatchAddress" render={({ field }) => (<FormItem><FormLabel>Dirección de Despacho</FormLabel><FormControl><Input placeholder="Ej: Calle Falsa 123, Comuna" {...field} value={field.value ?? ''} /></FormControl><FormDescription className="text-xs">(Opcional. Por defecto, se retira en farmacia.)</FormDescription><FormMessage /></FormItem>)} />
                     </div>
                  </div>
               </div>

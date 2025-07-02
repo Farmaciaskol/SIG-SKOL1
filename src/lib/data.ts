@@ -1,5 +1,6 @@
 import { db } from './firebase';
-import { collection, getDocs, doc, getDoc, Timestamp, addDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc } from 'firebase/firestore';
+import { RecipeStatus } from './types';
 import type { Recipe, Patient, Doctor, InventoryItem, User, Role, ExternalPharmacy } from './types';
 
 export * from './types';
@@ -78,5 +79,69 @@ export const addExternalPharmacy = async (pharmacy: { name: string }): Promise<s
     } catch (error) {
         console.error("Error adding external pharmacy:", error);
         throw new Error("Could not add external pharmacy.");
+    }
+};
+
+export const saveRecipe = async (data: any, recipeId?: string): Promise<string> => {
+    if (!db) {
+        throw new Error("Firestore is not initialized.");
+    }
+
+    let patientId = data.patientId;
+    if (!patientId && data.newPatientName && data.newPatientRut) {
+        const newPatientRef = doc(collection(db, 'patients'));
+        patientId = newPatientRef.id;
+        await setDoc(newPatientRef, {
+            name: data.newPatientName,
+            rut: data.newPatientRut,
+            email: '',
+            phone: '',
+            isChronic: false,
+            chronicCareStatus: 'OK'
+        });
+    }
+
+    let doctorId = data.doctorId;
+    if (!doctorId && data.newDoctorName && data.newDoctorLicense) {
+        const newDoctorRef = doc(collection(db, 'doctors'));
+        doctorId = newDoctorRef.id;
+        await setDoc(newDoctorRef, {
+            name: data.newDoctorName,
+            specialty: data.newDoctorSpecialty || '',
+            license: data.newDoctorLicense,
+            rut: data.newDoctorRut || ''
+        });
+    }
+    
+    const recipeDataForUpdate: Partial<Recipe> = {
+        patientId: patientId,
+        doctorId: doctorId,
+        dispatchAddress: data.dispatchAddress,
+        items: data.items,
+        prescriptionDate: data.prescriptionDate,
+        dueDate: data.expiryDate,
+        updatedAt: new Date().toISOString(),
+        externalPharmacyId: data.externalPharmacyId,
+        supplySource: data.supplySource,
+        preparationCost: Number(data.preparationCost),
+        isControlled: data.isControlled,
+        controlledRecipeType: data.controlledRecipeType,
+        controlledRecipeFolio: data.controlledRecipeFolio,
+    };
+
+    if (recipeId) {
+        const recipeRef = doc(db, 'recipes', recipeId);
+        await updateDoc(recipeRef, recipeDataForUpdate);
+        return recipeId;
+    } else {
+        const recipeDataForCreate: Omit<Recipe, 'id'> = {
+            ...recipeDataForUpdate,
+            status: RecipeStatus.PendingValidation,
+            paymentStatus: 'Pendiente',
+            createdAt: new Date().toISOString(),
+        } as Omit<Recipe, 'id'>;
+
+        const docRef = await addDoc(collection(db, 'recipes'), recipeDataForCreate);
+        return docRef.id;
     }
 };
