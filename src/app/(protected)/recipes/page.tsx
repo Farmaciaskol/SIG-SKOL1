@@ -508,12 +508,13 @@ export default function RecipesPage() {
         }
     }
     
-    const canEdit = recipe.status !== RecipeStatus.Dispensed && recipe.status !== RecipeStatus.Cancelled;
-    const canReprepare = recipe.status === RecipeStatus.Dispensed && !isExpired && !(cycleLimitReached);
     const { isExpired, cycleLimitReached } = {
         isExpired: new Date(recipe.dueDate) < new Date(),
         cycleLimitReached: (recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0) >= MAX_REPREPARATIONS + 1,
     };
+    const canEdit = recipe.status !== RecipeStatus.Dispensed && recipe.status !== RecipeStatus.Cancelled;
+    const canReprepare = recipe.status === RecipeStatus.Dispensed && !isSubmitting && !isExpired && !cycleLimitReached;
+    
     let disabledReprepareTooltip = '';
     if (isExpired) disabledReprepareTooltip = 'El documento de la receta ha vencido.';
     else if (cycleLimitReached) disabledReprepareTooltip = `Límite de ${MAX_REPREPARATIONS + 1} ciclos alcanzado.`;
