@@ -21,7 +21,8 @@ import {
   Settings,
   UserSquare,
   LogOut,
-  ChevronUp
+  ChevronDown,
+  MoreHorizontal,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -41,25 +42,24 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '../ui/button';
 import React from 'react';
+import { Separator } from '../ui/separator';
 
 const menuGroups = [
     {
-      title: 'Principal',
+      title: 'PRINCIPAL',
       items: [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { href: '/recipes', label: 'Recetas', icon: ClipboardList },
       ],
     },
     {
-      title: 'Gestión',
+      title: 'GESTIÓN',
       items: [
         { href: '/patients', label: 'Pacientes', icon: Users },
         { href: '/doctors', label: 'Médicos', icon: BriefcaseMedical },
@@ -67,7 +67,7 @@ const menuGroups = [
       ],
     },
     {
-      title: 'Operaciones',
+      title: 'OPERACIONES',
       items: [
         { href: '/inventory', label: 'Inventario Skol', icon: Warehouse },
         { href: '/monthly-dispensing', label: 'Dispensación Mensual', icon: CalendarClock },
@@ -77,7 +77,7 @@ const menuGroups = [
       ],
     },
     {
-      title: 'Administración',
+      title: 'ADMINISTRACIÓN',
       items: [
         { href: '/financial-management', label: 'Gestión Financiera', icon: Landmark },
         { href: '/reports', label: 'Reportes', icon: BarChart2 },
@@ -95,24 +95,34 @@ const bottomMenuItems = [
 export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElement>) {
   const pathname = usePathname();
   const [user] = useAuthState(auth);
-  const [openItems, setOpenItems] = React.useState(['Principal']);
+  
+  const defaultOpenGroup = menuGroups.find(group => group.items.some(item => pathname.startsWith(item.href)))?.title || 'PRINCIPAL';
+  const [openItems, setOpenItems] = React.useState([defaultOpenGroup]);
 
   const handleLogout = async () => {
     await signOut(auth);
   };
 
+  React.useEffect(() => {
+    const activeGroup = menuGroups.find(group => group.items.some(item => pathname.startsWith(item.href)))?.title;
+    if (activeGroup && !openItems.includes(activeGroup)) {
+      setOpenItems(prev => [...prev, activeGroup]);
+    }
+  }, [pathname, openItems]);
+
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen">
-        <Sidebar>
+      <div className="flex min-h-screen bg-background">
+        <Sidebar className="border-r">
           <SidebarHeader className="p-4 justify-center">
             <div className="w-full px-4 group-data-[collapsible=icon]:hidden">
               <Image
                 src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
                 alt="Skol Pharmacy Logo"
-                width={150}
-                height={150}
+                width={140}
+                height={40}
                 className="mx-auto"
+                priority
               />
             </div>
             <Image
@@ -121,31 +131,32 @@ export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElemen
               width={32}
               height={32}
               className="hidden group-data-[collapsible=icon]:block"
+              priority
             />
           </SidebarHeader>
-          <SidebarContent>
-            <Accordion type="multiple" value={openItems} onValueChange={setOpenItems} className="w-full px-2">
+          <SidebarContent className="p-0 flex-1">
+            <Accordion type="multiple" value={openItems} onValueChange={setOpenItems} className="w-full px-4">
               {menuGroups.map((group) => (
                 <AccordionItem key={group.title} value={group.title} className="border-b-0">
                   <div className="relative">
-                     {openItems.includes(group.title) && <div className="absolute left-[-8px] top-2 bottom-2 w-1 bg-accent rounded-full" />}
+                     {openItems.includes(group.title) && <div className="absolute left-[-16px] top-2 bottom-2 w-1 bg-accent rounded-full group-data-[collapsible=icon]:hidden" />}
                     <AccordionTrigger
-                      className="py-2 px-2 hover:no-underline hover:bg-muted rounded-md text-foreground/80 font-semibold text-sm justify-start [&[data-state=open]>svg]:rotate-0"
+                      className="py-2 px-0 hover:no-underline hover:bg-transparent rounded-none text-foreground/60 font-semibold text-xs justify-start [&[data-state=open]>svg]:rotate-180"
                     >
-                      <div className="flex-1 text-left">{group.title}</div>
-                      <ChevronUp className="h-4 w-4 shrink-0 transition-transform duration-200" />
+                      <div className="flex-1 text-left tracking-wider uppercase">{group.title}</div>
+                      <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200" />
                     </AccordionTrigger>
                   </div>
-                  <AccordionContent className="pl-4 pt-1 pb-1">
+                  <AccordionContent className="pl-2 pt-1 pb-1">
                     <SidebarMenu>
                       {group.items.map((item) => (
                         <SidebarMenuItem key={item.href}>
                           <SidebarMenuButton
                             asChild
-                            isActive={pathname === item.href}
+                            isActive={pathname.startsWith(item.href)}
                             className={cn(
-                                "justify-start",
-                                pathname === item.href && "bg-accent text-accent-foreground hover:bg-accent hover:text-accent-foreground"
+                                "justify-start font-normal text-sm",
+                                pathname.startsWith(item.href) && "bg-accent text-accent-foreground hover:bg-accent hover:text-accent-foreground font-semibold"
                             )}
                           >
                             <Link href={item.href}>
@@ -161,17 +172,17 @@ export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElemen
               ))}
             </Accordion>
           </SidebarContent>
-           <SidebarFooter className="mt-auto border-t">
-             <SidebarMenu>
+           <SidebarFooter className="mt-auto border-t p-4 space-y-4">
+             <SidebarMenu className="px-0">
                 {bottomMenuItems.map((item) => (
                     <SidebarMenuItem key={item.href}>
                         <SidebarMenuButton
-                        asChild
-                        isActive={pathname === item.href}
-                        className={cn(
-                            "justify-start",
-                            pathname === item.href && "bg-accent text-accent-foreground hover:bg-accent hover:text-accent-foreground"
-                        )}
+                            asChild
+                            isActive={pathname.startsWith(item.href)}
+                            className={cn(
+                                "justify-start font-normal text-sm",
+                                pathname.startsWith(item.href) && "bg-accent text-accent-foreground hover:bg-accent hover:text-accent-foreground font-semibold"
+                            )}
                         >
                         <Link href={item.href}>
                             <item.icon className="h-4 w-4" />
@@ -181,38 +192,37 @@ export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElemen
                     </SidebarMenuItem>
                 ))}
             </SidebarMenu>
+            <Separator className="bg-border/60" />
+             {user && (
+                <div className="flex items-center gap-3">
+                    <Avatar className="h-9 w-9">
+                        <AvatarFallback>{user.email?.charAt(0).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 group-data-[collapsible=icon]:hidden">
+                        <p className="text-sm font-semibold text-foreground truncate">{user.displayName || user.email}</p>
+                        <p className="text-xs text-muted-foreground">Administrador</p>
+                    </div>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 group-data-[collapsible=icon]:hidden">
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-48" align="end" side="top">
+                            <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                            <LogOut className="mr-2 h-4 w-4" />
+                            <span>Cerrar Sesión</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+            )}
           </SidebarFooter>
         </Sidebar>
         <main className="flex-1">
           <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-6">
             <SidebarTrigger className="md:hidden" />
-            <div className="flex-1">
-              <h1 className="font-headline text-lg font-semibold">Sistema de Gestión Skol</h1>
-            </div>
-            {user && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback>{user.email?.charAt(0).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
-                  <DropdownMenuLabel className="font-normal">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">Sesión iniciada</p>
-                      <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Cerrar Sesión</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+            <div className="flex-1" />
           </header>
           {props.children}
         </main>
