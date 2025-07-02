@@ -2,7 +2,7 @@ import { db, storage } from './firebase';
 import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { RecipeStatus } from './types';
-import type { Recipe, Doctor, InventoryItem, User, Role, ExternalPharmacy } from './types';
+import type { Recipe, Doctor, InventoryItem, User, Role, ExternalPharmacy, Patient, PharmacovigilanceReport } from './types';
 
 export * from './types';
 
@@ -37,6 +37,8 @@ export const getExternalPharmacies = async (): Promise<ExternalPharmacy[]> => fe
 export const getInventory = async (): Promise<InventoryItem[]> => fetchCollection<InventoryItem>('inventory');
 export const getUsers = async (): Promise<User[]> => fetchCollection<User>('users');
 export const getRoles = async (): Promise<Role[]> => fetchCollection<Role>('roles');
+export const getPharmacovigilanceReports = async (): Promise<PharmacovigilanceReport[]> => fetchCollection<PharmacovigilanceReport>('pharmacovigilanceReports');
+
 
 // Example of getting a single document
 export const getRecipe = async (id: string): Promise<Recipe | null> => {

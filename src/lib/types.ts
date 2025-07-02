@@ -32,6 +32,14 @@ export enum DispatchStatus {
   Cancelled = 'Cancelado',
 }
 
+export enum PharmacovigilanceReportStatus {
+  New = 'Nuevo',
+  UnderInvestigation = 'En Investigación',
+  ActionRequired = 'Acción Requerida',
+  Resolved = 'Resuelto',
+  Closed = 'Cerrado',
+}
+
 export interface RecipeItem {
   principalActiveIngredient: string;
   pharmaceuticalForm: string;
@@ -70,6 +78,18 @@ export interface Recipe {
   skolSuppliedItemsDispatchStatus?: SkolSuppliedItemsDispatchStatus;
 }
 
+export interface AdverseReaction {
+  medication: string;
+  description: string;
+}
+
+export interface PharmacovigilanceReference {
+  reportId: string;
+  reportedAt: string;
+  problemSummary: string;
+  status: PharmacovigilanceReportStatus;
+}
+
 export interface Patient {
   id: string;
   name: string;
@@ -83,17 +103,13 @@ export interface Patient {
   allergies?: string[];
   adverseReactions?: AdverseReaction[];
   associatedDoctorIds?: string[];
+  pharmacovigilanceEvents?: PharmacovigilanceReference[];
   // Legacy field, to be replaced by proactive fields
   chronicCareStatus: 'OK' | 'Atención' | 'Urgente';
   // New proactive fields
   proactiveStatus: ProactivePatientStatus;
   proactiveMessage: string;
   actionNeeded: PatientActionNeeded;
-}
-
-export interface AdverseReaction {
-  medication: string;
-  description: string;
 }
 
 export interface Doctor {
@@ -174,6 +190,21 @@ export interface DispatchNote {
     notes?: string;
 }
 
+export interface PharmacovigilanceReport {
+  id: string;
+  reportedAt: string;
+  reporterName: string;
+  recipeId?: string;
+  patientId?: string;
+  externalPharmacyId?: string;
+  involvedMedications: string;
+  problemDescription: string;
+  status: PharmacovigilanceReportStatus;
+  actionsTaken?: string;
+  pharmacyResponse?: string;
+  resolutionDetails?: string;
+  updatedAt: string;
+}
 
 export interface AppData {
   recipes: Recipe[];
@@ -184,4 +215,5 @@ export interface AppData {
   roles: Role[];
   externalPharmacies: ExternalPharmacy[];
   dispatchNotes: DispatchNote[];
+  pharmacovigilanceReports: PharmacovigilanceReport[];
 }
