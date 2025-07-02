@@ -1,5 +1,5 @@
 import { db, storage } from './firebase';
-import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { RecipeStatus } from './types';
 import type { Recipe, Doctor, InventoryItem, User, Role, ExternalPharmacy, Patient, PharmacovigilanceReport, AppData } from './types';
@@ -89,6 +89,19 @@ export const getRecipe = async (id: string): Promise<Recipe | null> => {
     }
 };
 
+export const deleteRecipe = async (id: string): Promise<void> => {
+    if (!db) {
+        throw new Error("Firestore is not initialized.");
+    }
+    try {
+        const recipeRef = doc(db, 'recipes', id);
+        await deleteDoc(recipeRef);
+    } catch (error) {
+        console.error("Error deleting recipe:", error);
+        throw new Error("Could not delete recipe.");
+    }
+};
+
 export const addDoctor = async (doctor: Omit<Doctor, 'id'>): Promise<string> => {
     if (!db) {
         throw new Error("Firestore is not initialized.");
@@ -147,6 +160,9 @@ export const saveRecipe = async (data: any, imageUri: string | null, recipeId?: 
             email: '',
             phone: '',
             isChronic: false,
+            proactiveStatus: 'OK',
+            proactiveMessage: 'No requiere acción.',
+            actionNeeded: 'NONE',
             chronicCareStatus: 'OK'
         });
     }
@@ -166,7 +182,7 @@ export const saveRecipe = async (data: any, imageUri: string | null, recipeId?: 
     const effectiveRecipeId = recipeId || doc(collection(db, 'recipes')).id;
     let imageUrl: string | undefined;
 
-    if (imageUri && storage) {
+    if (imageUri && storage && imageUri.startsWith('data:')) {
         try {
             const storageRef = ref(storage, `prescriptions/${effectiveRecipeId}`);
             const uploadResult = await uploadString(storageRef, imageUri, 'data_url');
@@ -174,6 +190,8 @@ export const saveRecipe = async (data: any, imageUri: string | null, recipeId?: 
         } catch (error) {
             console.error("Error uploading image:", error);
         }
+    } else if (imageUri) {
+        imageUrl = imageUri; // It's an existing URL
     }
     
     const recipeDataForUpdate: Partial<Recipe> = {

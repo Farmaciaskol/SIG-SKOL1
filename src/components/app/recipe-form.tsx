@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Upload, PlusCircle, X, Image as ImageIcon, Loader2, Wand2, Bot, Calendar as CalendarIcon, Trash2 } from 'lucide-react';
-import { getPatients, getDoctors, getRecipe, getExternalPharmacies, Patient, Doctor, ExternalPharmacy, saveRecipe } from '@/lib/data';
+import { getPatients, getDoctors, getRecipe, getExternalPharmacies, Patient, Doctor, ExternalPharmacy, saveRecipe, RecipeStatus } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { extractRecipeDataFromImage } from '@/ai/flows/extract-recipe-data-from-image';
 import { simplifyInstructions } from '@/ai/flows/simplify-instructions';
@@ -99,6 +99,7 @@ type RecipeFormValues = z.infer<typeof recipeFormSchema>;
 
 interface RecipeFormProps {
     recipeId?: string;
+    copyFromId?: string;
 }
 
 const defaultItem = {
@@ -116,7 +117,7 @@ const defaultItem = {
   usageInstructions: '',
 };
 
-export function RecipeForm({ recipeId }: RecipeFormProps) {
+export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -143,6 +144,22 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
     name: 'items',
   });
 
+  const loadFormData = useCallback(async (recipeData: any) => {
+    form.reset({
+      ...recipeData,
+      prescriptionDate: recipeData.prescriptionDate ? format(new Date(recipeData.prescriptionDate), 'yyyy-MM-dd') : '',
+      expiryDate: recipeData.dueDate ? format(new Date(recipeData.dueDate), 'yyyy-MM-dd') : '',
+      preparationCost: recipeData.preparationCost?.toString(),
+      patientId: recipeData.patientId,
+      doctorId: recipeData.doctorId,
+      isControlled: recipeData.isControlled || false,
+      items: recipeData.items.length > 0 ? recipeData.items : [defaultItem],
+    });
+    if (recipeData.prescriptionImageUrl) {
+      setPreviewImage(recipeData.prescriptionImageUrl);
+    }
+  }, [form]);
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -156,22 +173,29 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
         setDoctors(doctorsData);
         setExternalPharmacies(externalPharmaciesData);
 
-        if (isEditMode) {
+        if (copyFromId) {
+            const recipeToCopy = await getRecipe(copyFromId);
+            if (recipeToCopy) {
+                const today = new Date();
+                const expiry = addMonths(today, 6);
+                const newRecipeData = {
+                    ...recipeToCopy,
+                    status: RecipeStatus.PendingValidation,
+                    paymentStatus: 'Pendiente',
+                    prescriptionDate: format(today, 'yyyy-MM-dd'),
+                    expiryDate: format(expiry, 'yyyy-MM-dd'),
+                };
+                delete (newRecipeData as any).id;
+                delete (newRecipeData as any).createdAt;
+                delete (newRecipeData as any).updatedAt;
+                
+                await loadFormData(newRecipeData);
+                toast({ title: 'Receta Duplicada', description: 'Revisa los datos y guarda la nueva receta.' });
+            }
+        } else if (isEditMode) {
           const recipeData = await getRecipe(recipeId);
           if (recipeData) {
-            form.reset({
-              ...recipeData,
-              prescriptionDate: recipeData.prescriptionDate ? format(new Date(recipeData.prescriptionDate), 'yyyy-MM-dd') : '',
-              expiryDate: recipeData.dueDate ? format(new Date(recipeData.dueDate), 'yyyy-MM-dd') : '',
-              preparationCost: recipeData.preparationCost?.toString(),
-              patientId: recipeData.patientId,
-              doctorId: recipeData.doctorId,
-              isControlled: recipeData.isControlled || false,
-              items: recipeData.items.length > 0 ? recipeData.items : [defaultItem],
-            });
-            if (recipeData.prescriptionImageUrl) {
-              setPreviewImage(recipeData.prescriptionImageUrl);
-            }
+            await loadFormData(recipeData);
           } else {
              toast({ title: 'Error', description: 'No se encontró la receta.', variant: 'destructive' });
              router.push('/recipes');
@@ -191,7 +215,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
       }
     };
     fetchData();
-  }, [recipeId, isEditMode, toast, router, form]);
+  }, [recipeId, isEditMode, toast, router, form, copyFromId, loadFormData]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -257,9 +281,11 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
   
   const onSubmit = async (data: RecipeFormValues) => {
     try {
-      await saveRecipe(data, previewImage, recipeId);
-      toast({ title: isEditMode ? 'Receta Actualizada' : 'Receta Creada', description: 'Los datos se han guardado correctamente.' });
+      const finalRecipeId = isEditMode && !copyFromId ? recipeId : undefined;
+      await saveRecipe(data, previewImage, finalRecipeId);
+      toast({ title: isEditMode && !copyFromId ? 'Receta Actualizada' : 'Receta Creada', description: 'Los datos se han guardado correctamente.' });
       router.push('/recipes');
+      router.refresh();
     } catch (error) {
       console.error('Failed to save recipe:', error);
       toast({ title: 'Error al Guardar', description: 'No se pudo guardar la receta. Por favor, intente de nuevo.', variant: 'destructive' });
@@ -316,7 +342,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
                   <FormItem>
                     <FormLabel>ID Receta</FormLabel>
                     <FormControl>
-                      <Input disabled value={recipeId || "Nuevo (se genera al guardar)"} />
+                      <Input disabled value={isEditMode ? recipeId : "Nuevo (se genera al guardar)"} />
                     </FormControl>
                   </FormItem>
                   <FormField
@@ -747,7 +773,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
             </Button>
             <Button type="submit" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isEditMode ? 'Guardar Cambios' : 'Guardar Receta'}
+                {isEditMode && !copyFromId ? 'Guardar Cambios' : 'Guardar Receta'}
             </Button>
           </div>
         </div>

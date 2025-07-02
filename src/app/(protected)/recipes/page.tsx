@@ -1,15 +1,14 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardHeader,
-  CardTitle,
-  CardDescription,
   CardFooter,
 } from '@/components/ui/card';
 import {
@@ -27,6 +26,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -47,9 +56,10 @@ import {
   Copy,
   Printer
 } from 'lucide-react';
-import { getRecipes, getPatients, Recipe, Patient, RecipeStatus } from '@/lib/data';
+import { getRecipes, getPatients, deleteRecipe, Recipe, Patient, RecipeStatus } from '@/lib/data';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useToast } from '@/hooks/use-toast';
 
 const statusColors: Record<RecipeStatus, string> = {
   [RecipeStatus.PendingValidation]: 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-100',
@@ -71,34 +81,58 @@ const RecipeStatusBadge = ({ status }: { status: RecipeStatus }) => (
 );
 
 export default function RecipesPage() {
+  const router = useRouter();
+  const { toast } = useToast();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [recipeToDelete, setRecipeToDelete] = useState<Recipe | null>(null);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [recipesData, patientsData] = await Promise.all([
+        getRecipes(),
+        getPatients(),
+      ]);
+      setRecipes(recipesData);
+      setPatients(patientsData);
+    } catch (error) {
+      console.error("Failed to fetch recipes data:", error);
+      toast({ title: 'Error', description: 'No se pudieron cargar los datos de las recetas.', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [recipesData, patientsData] = await Promise.all([
-          getRecipes(),
-          getPatients(),
-        ]);
-        setRecipes(recipesData);
-        setPatients(patientsData);
-      } catch (error) {
-        console.error("Failed to fetch recipes data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   const getPatientName = (patientId: string) => {
     return patients.find((p) => p.id === patientId)?.name || 'N/A';
+  };
+
+  const handleReprepare = (recipeId: string) => {
+    router.push(`/recipes/new?copyFrom=${recipeId}`);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!recipeToDelete) return;
+    try {
+        await deleteRecipe(recipeToDelete.id);
+        toast({ title: 'Receta Eliminada', description: `La receta ${recipeToDelete.id} ha sido eliminada.` });
+        setRecipeToDelete(null);
+        fetchData();
+    } catch (error) {
+        toast({ title: 'Error', description: 'No se pudo eliminar la receta.', variant: 'destructive' });
+    }
+  };
+
+  const handlePrint = () => {
+    toast({ title: 'No implementado', description: 'La función de impresión estará disponible próximamente.' });
   };
   
   const filteredRecipes = recipes
@@ -118,7 +152,7 @@ export default function RecipesPage() {
     })
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  const RecipeActions = ({ recipeId }: { recipeId: string }) => (
+  const RecipeActions = ({ recipe }: { recipe: Recipe }) => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button aria-haspopup="true" size="icon" variant="ghost">
@@ -128,28 +162,28 @@ export default function RecipesPage() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem asChild>
-          <Link href={`/recipes/${recipeId}`} className="flex items-center cursor-pointer w-full">
+          <Link href={`/recipes/${recipe.id}`} className="flex items-center cursor-pointer w-full">
             <Eye className="mr-2 h-4 w-4" />
             Ver Detalle
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href={`/recipes/${recipeId}`} className="flex items-center cursor-pointer w-full">
+          <Link href={`/recipes/${recipe.id}`} className="flex items-center cursor-pointer w-full">
             <Pencil className="mr-2 h-4 w-4" />
             Editar
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="flex items-center cursor-pointer w-full">
+        <DropdownMenuItem className="flex items-center cursor-pointer w-full" onClick={() => handleReprepare(recipe.id)}>
             <Copy className="mr-2 h-4 w-4" />
             Re-preparar
         </DropdownMenuItem>
-        <DropdownMenuItem className="flex items-center cursor-pointer w-full">
+        <DropdownMenuItem className="flex items-center cursor-pointer w-full" onClick={handlePrint}>
             <Printer className="mr-2 h-4 w-4" />
             Imprimir
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50 flex items-center cursor-pointer">
+        <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50 flex items-center cursor-pointer" onClick={() => setRecipeToDelete(recipe)}>
           <Trash2 className="mr-2 h-4 w-4" />
           Eliminar
         </DropdownMenuItem>
@@ -252,7 +286,7 @@ export default function RecipesPage() {
                                 <RecipeStatusBadge status={recipe.status} />
                             </TableCell>
                             <TableCell className="text-right">
-                                <RecipeActions recipeId={recipe.id} />
+                                <RecipeActions recipe={recipe} />
                             </TableCell>
                             </TableRow>
                         ))}
@@ -288,16 +322,35 @@ export default function RecipesPage() {
                       <Button variant="ghost" size="icon" asChild className="h-9 w-9">
                         <Link href={`/recipes/${recipe.id}`}><Pencil className="h-5 w-5"/></Link>
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-9 w-9 text-red-500 hover:text-red-600 hover:bg-red-100">
+                      <Button variant="ghost" size="icon" className="h-9 w-9 text-red-500 hover:text-red-600 hover:bg-red-100" onClick={() => setRecipeToDelete(recipe)}>
                           <Trash2 className="h-5 w-5"/>
                       </Button>
                     </div>
+                    <Button size="sm" onClick={() => handleReprepare(recipe.id)}>
+                        <Copy className="mr-2 h-4 w-4" />
+                        Re-preparar
+                    </Button>
                   </CardFooter>
                 </Card>
             ))}
             </div>
         </>
       )}
+
+      <AlertDialog open={!!recipeToDelete} onOpenChange={(open) => !open && setRecipeToDelete(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>¿Estás seguro que deseas eliminar esta receta?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Esta acción no se puede deshacer. La receta con ID <span className="font-bold font-mono">{recipeToDelete?.id}</span> será eliminada permanentemente.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setRecipeToDelete(null)}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleConfirmDelete}>Eliminar</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
