@@ -43,8 +43,8 @@ export default function LoginPage() {
         <Image
           src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
           alt="Skol Pharmacy Logo"
-          width={250}
-          height={250}
+          width={150}
+          height={150}
           className="mb-8"
           priority
         />
@@ -83,9 +83,7 @@ export default function LoginPage() {
                     </div>
                 </div>
                 <div className="grid gap-2">
-                    <div className="flex items-center">
-                        <Label htmlFor="password">Contraseña</Label>
-                    </div>
+                    <Label htmlFor="password">Contraseña</Label>
                     <div className="relative">
                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                         <Input
