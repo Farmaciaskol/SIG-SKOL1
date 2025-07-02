@@ -1,5 +1,5 @@
 import { db } from './firebase';
-import { collection, getDocs, doc, getDoc, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, Timestamp, addDoc } from 'firebase/firestore';
 import type { Recipe, Patient, Doctor, InventoryItem, User, Role, ExternalPharmacy } from './types';
 
 export * from './types';
@@ -63,5 +63,20 @@ export const getRecipe = async (id: string): Promise<Recipe | null> => {
     } catch (error) {
         console.error("Error getting document:", error);
         return null;
+    }
+};
+
+export const addExternalPharmacy = async (pharmacy: { name: string }): Promise<string> => {
+    if (!db) {
+        throw new Error("Firestore is not initialized.");
+    }
+    try {
+        const docRef = await addDoc(collection(db, 'externalPharmacies'), {
+            name: pharmacy.name
+        });
+        return docRef.id;
+    } catch (error) {
+        console.error("Error adding external pharmacy:", error);
+        throw new Error("Could not add external pharmacy.");
     }
 };
