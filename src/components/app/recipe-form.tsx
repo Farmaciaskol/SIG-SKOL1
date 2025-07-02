@@ -327,7 +327,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
                         <Popover>
                           <PopoverTrigger asChild>
                             <FormControl>
-                              <Button variant="outline" className={cn("w-full justify-between text-left font-normal", !field.value && "text-muted-foreground")}>
+                              <Button variant="outline" className={cn("w-full justify-between text-left font-normal bg-card", !field.value && "text-muted-foreground")}>
                                 {field.value ? format(new Date(field.value), 'dd-MM-yyyy') : <span>dd-mm-aaaa</span>}
                                 <CalendarIcon className="h-4 w-4 opacity-50" />
                               </Button>
@@ -350,7 +350,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
                          <Popover>
                           <PopoverTrigger asChild>
                             <FormControl>
-                              <Button variant="outline" className={cn("w-full justify-between text-left font-normal", !field.value && "text-muted-foreground")}>
+                              <Button variant="outline" className={cn("w-full justify-between text-left font-normal bg-card", !field.value && "text-muted-foreground")}>
                                 {field.value ? format(new Date(field.value), 'dd-MM-yyyy') : <span>dd-mm-aaaa</span>}
                                 <CalendarIcon className="h-4 w-4 opacity-50" />
                               </Button>
@@ -516,7 +516,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
 
                 <div className="space-y-6">
                     {fields.map((item, index) => (
-                    <div key={item.id} className="p-4 border rounded-lg space-y-4 relative bg-muted/30">
+                    <div key={item.id} className="p-4 border rounded-lg space-y-4 relative bg-card">
                         <div className="flex justify-end">
                              {fields.length > 1 && (
                                 <Button type="button" variant="ghost" size="icon" className="text-red-500 hover:text-red-600 absolute top-2 right-2" onClick={() => remove(index)}>
