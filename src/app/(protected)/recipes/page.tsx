@@ -56,6 +56,12 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   MoreHorizontal,
   PlusCircle,
   Search,
@@ -70,12 +76,14 @@ import {
   Send,
   PackageCheck,
   Truck,
-  Ban
+  Ban,
+  Loader2
 } from 'lucide-react';
 import { getRecipes, getPatients, deleteRecipe, updateRecipe, Recipe, Patient, RecipeStatus, AuditTrailEntry } from '@/lib/data';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
+import { MAX_REPREPARATIONS } from '@/lib/constants';
 
 const statusColors: Record<RecipeStatus, string> = {
   [RecipeStatus.PendingValidation]: 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-100',
@@ -110,7 +118,11 @@ export default function RecipesPage() {
   const [recipeToDelete, setRecipeToDelete] = useState<Recipe | null>(null);
   const [recipeToReject, setRecipeToReject] = useState<Recipe | null>(null);
   const [recipeToCancel, setRecipeToCancel] = useState<Recipe | null>(null);
+  const [recipeToReprepare, setRecipeToReprepare] = useState<Recipe | null>(null);
   const [reason, setReason] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [controlledFolio, setControlledFolio] = useState('');
+
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -170,10 +182,6 @@ export default function RecipesPage() {
     setReason('');
   }
 
-  const handleReprepare = (recipeId: string) => {
-    router.push(`/recipes/new?copyFrom=${recipeId}`);
-  };
-
   const handleConfirmDelete = async () => {
     if (!recipeToDelete) return;
     try {
@@ -183,6 +191,56 @@ export default function RecipesPage() {
         fetchData();
     } catch (error) {
         toast({ title: 'Error', description: 'No se pudo eliminar la receta.', variant: 'destructive' });
+    }
+  };
+
+  const handleConfirmReprepare = async () => {
+    if (!recipeToReprepare) return;
+    
+    setIsSubmitting(true);
+    
+    if (recipeToReprepare.isControlled && !controlledFolio.trim()) {
+      toast({ title: "Error de Validación", description: "El nuevo folio es requerido para recetas controladas.", variant: "destructive" });
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      const reprepareAuditEntry: AuditTrailEntry = {
+        status: RecipeStatus.PendingValidation,
+        date: new Date().toISOString(),
+        userId: 'system-user', // Placeholder
+        notes: `Nuevo ciclo de re-preparación iniciado.${recipeToReprepare.isControlled ? ` Nuevo folio: ${controlledFolio}.` : ''}`
+      };
+
+      const updates: Partial<Recipe> = {
+        status: RecipeStatus.PendingValidation,
+        paymentStatus: 'Pendiente',
+        dispensationDate: null,
+        internalPreparationLot: null,
+        compoundingDate: null,
+        preparationExpiryDate: null,
+        rejectionReason: null,
+        auditTrail: [...(recipeToReprepare.auditTrail || []), reprepareAuditEntry]
+      };
+
+      if (recipeToReprepare.isControlled) {
+        updates.controlledRecipeFolio = controlledFolio;
+        // logic for image upload would go here
+      }
+
+      await updateRecipe(recipeToReprepare.id, updates);
+      
+      toast({ title: 'Nuevo Ciclo Iniciado', description: `La receta ${recipeToReprepare.id} está lista para un nuevo ciclo.` });
+      
+      // Close dialog and reset state
+      setRecipeToReprepare(null);
+      setControlledFolio('');
+      fetchData();
+    } catch (error) {
+      toast({ title: 'Error', description: 'No se pudo iniciar el nuevo ciclo.', variant: 'destructive' });
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
@@ -207,93 +265,155 @@ export default function RecipesPage() {
     })
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  const RecipeActions = ({ recipe }: { recipe: Recipe }) => (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button aria-haspopup="true" size="icon" variant="ghost">
-          <MoreHorizontal className="h-4 w-4" />
-          <span className="sr-only">Toggle menu</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem asChild>
-          <Link href={`/recipes/${recipe.id}`} className="flex items-center cursor-pointer w-full">
-            <Eye className="mr-2 h-4 w-4" />
-            Ver Detalle
-          </Link>
-        </DropdownMenuItem>
+  const RecipeActions = ({ recipe }: { recipe: Recipe }) => {
+    const dispensedCount = recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0;
+    const isExpired = new Date(recipe.dueDate) < new Date();
+    const cycleLimitReached = dispensedCount > MAX_REPREPARATIONS;
+    const canReprepare = !isExpired && !cycleLimitReached;
+    
+    let disabledTooltip = '';
+    if (isExpired) disabledTooltip = 'El documento de la receta ha vencido.';
+    else if (cycleLimitReached) disabledTooltip = `Límite de ${MAX_REPREPARATIONS + 1} ciclos alcanzado.`;
 
-        {recipe.status === RecipeStatus.PendingValidation || recipe.status === RecipeStatus.Rejected ? (
+    const ReprepareMenuItem = (
+        <DropdownMenuItem disabled={!canReprepare} onSelect={(e) => {
+            if(!canReprepare) e.preventDefault();
+            else setRecipeToReprepare(recipe);
+        }}>
+            <Copy className="mr-2 h-4 w-4" />
+            Re-preparar
+        </DropdownMenuItem>
+    );
+
+    return (
+        <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+            <Button aria-haspopup="true" size="icon" variant="ghost">
+            <MoreHorizontal className="h-4 w-4" />
+            <span className="sr-only">Toggle menu</span>
+            </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
             <DropdownMenuItem asChild>
-                <Link href={`/recipes/${recipe.id}`} className="flex items-center cursor-pointer w-full">
-                    <Pencil className="mr-2 h-4 w-4" />
-                    Editar
-                </Link>
+            <Link href={`/recipes/${recipe.id}`} className="flex items-center cursor-pointer w-full">
+                <Eye className="mr-2 h-4 w-4" />
+                Ver Detalle
+            </Link>
             </DropdownMenuItem>
-        ) : null}
 
-        <DropdownMenuSeparator />
+            {recipe.status === RecipeStatus.PendingValidation || recipe.status === RecipeStatus.Rejected ? (
+                <DropdownMenuItem asChild>
+                    <Link href={`/recipes/${recipe.id}`} className="flex items-center cursor-pointer w-full">
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Editar
+                    </Link>
+                </DropdownMenuItem>
+            ) : null}
 
-        {recipe.status === RecipeStatus.PendingValidation && (
-          <>
-            <DropdownMenuItem onClick={() => handleUpdateStatus(recipe, RecipeStatus.Validated, 'Receta validada por farmacéutico.')}>
-              <CheckCircle className="mr-2 h-4 w-4 text-green-500" /> Validar
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setRecipeToReject(recipe)}>
-              <XCircle className="mr-2 h-4 w-4 text-red-500" /> Rechazar
-            </DropdownMenuItem>
-          </>
-        )}
+            <DropdownMenuSeparator />
+
+            {recipe.status === RecipeStatus.PendingValidation && (
+            <>
+                <DropdownMenuItem onClick={() => handleUpdateStatus(recipe, RecipeStatus.Validated, 'Receta validada por farmacéutico.')}>
+                <CheckCircle className="mr-2 h-4 w-4 text-green-500" /> Validar
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setRecipeToReject(recipe)}>
+                <XCircle className="mr-2 h-4 w-4 text-red-500" /> Rechazar
+                </DropdownMenuItem>
+            </>
+            )}
+            
+            {recipe.status === RecipeStatus.Validated && recipe.supplySource === 'Stock del Recetario Externo' && (
+                <DropdownMenuItem onClick={() => handleUpdateStatus(recipe, RecipeStatus.SentToExternal)}>
+                    <Send className="mr-2 h-4 w-4 text-blue-500" /> Enviar a Recetario
+                </DropdownMenuItem>
+            )}
+
+            {recipe.status === RecipeStatus.SentToExternal && (
+                <DropdownMenuItem onClick={() => handleUpdateStatus(recipe, RecipeStatus.ReceivedAtSkol)}>
+                    <PackageCheck className="mr-2 h-4 w-4 text-purple-500" /> Recepcionar Preparado
+                </DropdownMenuItem>
+            )}
+            
+            {recipe.status === RecipeStatus.ReceivedAtSkol && (
+                <DropdownMenuItem onClick={() => handleUpdateStatus(recipe, RecipeStatus.ReadyForPickup)}>
+                    <Truck className="mr-2 h-4 w-4 text-orange-500" /> Marcar para Retiro
+                </DropdownMenuItem>
+            )}
+
+            {recipe.status === RecipeStatus.ReadyForPickup && (
+                <DropdownMenuItem onClick={() => handleUpdateStatus(recipe, RecipeStatus.Dispensed)}>
+                    <CheckCircle className="mr-2 h-4 w-4 text-green-500" /> Dispensar
+                </DropdownMenuItem>
+            )}
+
+            {(recipe.status === RecipeStatus.Dispensed) && (
+                !canReprepare ? (
+                     <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <div>{ReprepareMenuItem}</div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>{disabledTooltip}</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                ) : (
+                    ReprepareMenuItem
+                )
+            )}
         
-        {recipe.status === RecipeStatus.Validated && recipe.supplySource === 'Stock del Recetario Externo' && (
-             <DropdownMenuItem onClick={() => handleUpdateStatus(recipe, RecipeStatus.SentToExternal)}>
-                <Send className="mr-2 h-4 w-4 text-blue-500" /> Enviar a Recetario
+            <DropdownMenuItem className="flex items-center cursor-pointer w-full" onClick={handlePrint}>
+                <Printer className="mr-2 h-4 w-4" />
+                Imprimir Etiqueta
             </DropdownMenuItem>
-        )}
+            <DropdownMenuSeparator />
+            
+            {recipe.status !== RecipeStatus.Cancelled && recipe.status !== RecipeStatus.Dispensed && (
+                <DropdownMenuItem className="text-amber-600 focus:text-amber-600 focus:bg-amber-50" onClick={() => setRecipeToCancel(recipe)}>
+                    <Ban className="mr-2 h-4 w-4" /> Anular Receta
+                </DropdownMenuItem>
+            )}
+            
+            <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50" onClick={() => setRecipeToDelete(recipe)}>
+            <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+            </DropdownMenuItem>
+        </DropdownMenuContent>
+        </DropdownMenu>
+    );
+  }
 
-        {recipe.status === RecipeStatus.SentToExternal && (
-             <DropdownMenuItem onClick={() => handleUpdateStatus(recipe, RecipeStatus.ReceivedAtSkol)}>
-                <PackageCheck className="mr-2 h-4 w-4 text-purple-500" /> Recepcionar Preparado
-            </DropdownMenuItem>
-        )}
-        
-        {recipe.status === RecipeStatus.ReceivedAtSkol && (
-            <DropdownMenuItem onClick={() => handleUpdateStatus(recipe, RecipeStatus.ReadyForPickup)}>
-                <Truck className="mr-2 h-4 w-4 text-orange-500" /> Marcar para Retiro
-            </DropdownMenuItem>
-        )}
+  const MobileRecipeActions = ({ recipe }: { recipe: Recipe }) => {
+    const ActionButton = () => {
+        switch (recipe.status) {
+            case RecipeStatus.PendingValidation:
+                return <Button size="sm" onClick={() => handleUpdateStatus(recipe, RecipeStatus.Validated, 'Receta validada por farmacéutico.')}><CheckCircle className="mr-2 h-4 w-4" />Validar</Button>;
+            case RecipeStatus.Validated:
+                 if (recipe.supplySource === 'Stock del Recetario Externo') {
+                    return <Button size="sm" onClick={() => handleUpdateStatus(recipe, RecipeStatus.SentToExternal)}><Send className="mr-2 h-4 w-4" />Enviar</Button>;
+                 }
+                 return <Button size="sm" disabled>En Despacho</Button>;
+            case RecipeStatus.SentToExternal:
+                 return <Button size="sm" onClick={() => handleUpdateStatus(recipe, RecipeStatus.ReceivedAtSkol)}><PackageCheck className="mr-2 h-4 w-4" />Recepcionar</Button>;
+            case RecipeStatus.ReceivedAtSkol:
+                 return <Button size="sm" onClick={() => handleUpdateStatus(recipe, RecipeStatus.ReadyForPickup)}><Truck className="mr-2 h-4 w-4" />Marcar Retiro</Button>;
+            case RecipeStatus.ReadyForPickup:
+                 return <Button size="sm" onClick={() => handleUpdateStatus(recipe, RecipeStatus.Dispensed)}><CheckCircle className="mr-2 h-4 w-4" />Dispensar</Button>;
+            case RecipeStatus.Dispensed:
+                 return <Button size="sm" onClick={() => setRecipeToReprepare(recipe)}><Copy className="mr-2 h-4 w-4" />Re-preparar</Button>;
+            default:
+                return <Button size="sm" asChild><Link href={`/recipes/${recipe.id}`}>Ver Detalle</Link></Button>;
+        }
+    }
 
-        {recipe.status === RecipeStatus.ReadyForPickup && (
-            <DropdownMenuItem onClick={() => handleUpdateStatus(recipe, RecipeStatus.Dispensed)}>
-                <CheckCircle className="mr-2 h-4 w-4 text-green-500" /> Dispensar
-            </DropdownMenuItem>
-        )}
-
-        {(recipe.status === RecipeStatus.Dispensed) && (
-            <DropdownMenuItem className="flex items-center cursor-pointer w-full" onClick={() => handleReprepare(recipe.id)}>
-                <Copy className="mr-2 h-4 w-4" />
-                Re-preparar
-            </DropdownMenuItem>
-        )}
-       
-        <DropdownMenuItem className="flex items-center cursor-pointer w-full" onClick={handlePrint}>
-            <Printer className="mr-2 h-4 w-4" />
-            Imprimir Etiqueta
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        
-        {recipe.status !== RecipeStatus.Cancelled && recipe.status !== RecipeStatus.Dispensed && (
-             <DropdownMenuItem className="text-amber-600 focus:text-amber-600 focus:bg-amber-50" onClick={() => setRecipeToCancel(recipe)}>
-                <Ban className="mr-2 h-4 w-4" /> Anular Receta
-            </DropdownMenuItem>
-        )}
-        
-        <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50" onClick={() => setRecipeToDelete(recipe)}>
-          <Trash2 className="mr-2 h-4 w-4" /> Eliminar
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
+    return (
+        <div className="flex justify-between items-center">
+            <ActionButton />
+            <RecipeActions recipe={recipe} />
+        </div>
+    );
+  }
 
   return (
     <div className="space-y-6 p-4 md:p-8">
@@ -311,36 +431,39 @@ export default function RecipesPage() {
         </Button>
       </div>
 
-      <div className="flex flex-col md:flex-row items-center gap-4">
-        <div className="relative flex-1 w-full">
-            <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-            type="search"
-            placeholder="Buscar por ID, paciente..."
-            className="pl-8 w-full"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            />
-        </div>
-        <div className="w-full md:w-auto">
-            <Select
-            value={statusFilter}
-            onValueChange={setStatusFilter}
-            >
-            <SelectTrigger className="w-full md:w-[220px]">
-                <SelectValue placeholder="Filtrar por estado" />
-            </SelectTrigger>
-            <SelectContent>
-                <SelectItem value="all">Todos los estados</SelectItem>
-                {Object.values(RecipeStatus).map((status) => (
-                <SelectItem key={status} value={status}>
-                    {status}
-                </SelectItem>
-                ))}
-            </SelectContent>
-            </Select>
-        </div>
-      </div>
+      <Card>
+        <CardContent className="p-4 flex flex-col md:flex-row items-center gap-4">
+            <div className="relative flex-1 w-full">
+                <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                type="search"
+                placeholder="Buscar por ID, paciente..."
+                className="pl-8 w-full"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
+            <div className="w-full md:w-auto">
+                <Select
+                value={statusFilter}
+                onValueChange={setStatusFilter}
+                >
+                <SelectTrigger className="w-full md:w-[220px]">
+                    <SelectValue placeholder="Filtrar por estado" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">Todos los estados</SelectItem>
+                    {Object.values(RecipeStatus).map((status) => (
+                    <SelectItem key={status} value={status}>
+                        {status}
+                    </SelectItem>
+                    ))}
+                </SelectContent>
+                </Select>
+            </div>
+        </CardContent>
+      </Card>
+
 
       {loading ? (
         <div className="flex items-center justify-center h-64">
@@ -418,8 +541,8 @@ export default function RecipesPage() {
                         Creada: {format(new Date(recipe.createdAt), "d 'de' MMMM, yyyy", { locale: es })}
                       </p>
                   </CardContent>
-                  <CardFooter className="flex justify-end items-center p-3 bg-muted/50">
-                    <RecipeActions recipe={recipe} />
+                  <CardFooter className="p-3 bg-muted/50">
+                    <MobileRecipeActions recipe={recipe} />
                   </CardFooter>
                 </Card>
             ))}
@@ -480,6 +603,42 @@ export default function RecipesPage() {
                 <Button variant="ghost" onClick={() => setRecipeToCancel(null)}>Cancelar</Button>
                 <Button variant="destructive" onClick={handleConfirmCancel} disabled={!reason.trim()}>Confirmar Anulación</Button>
             </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Dialog for Re-preparation */}
+      <Dialog open={!!recipeToReprepare} onOpenChange={(open) => { if (!open) { setRecipeToReprepare(null); setControlledFolio(''); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Re-preparar Receta: {recipeToReprepare?.id}</DialogTitle>
+          </DialogHeader>
+          {recipeToReprepare?.isControlled ? (
+            <div className="space-y-4">
+              <DialogDescription>
+                Esta es una receta controlada. Para re-preparar, debe ingresar el folio de la nueva receta física/electrónica.
+              </DialogDescription>
+              <div className="grid gap-2 py-2">
+                <Label htmlFor="controlled-folio" className="mb-1">Nuevo Folio de Receta Controlada *</Label>
+                <Input
+                  id="controlled-folio"
+                  value={controlledFolio}
+                  onChange={(e) => setControlledFolio(e.target.value)}
+                  placeholder="Ej: A12345678"
+                />
+              </div>
+            </div>
+          ) : (
+            <DialogDescription>
+              ¿Está seguro que desea iniciar un nuevo ciclo para esta receta? La receta volverá al estado 'Pendiente Validación'.
+            </DialogDescription>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setRecipeToReprepare(null)}>Cancelar</Button>
+            <Button onClick={handleConfirmReprepare} disabled={isSubmitting || (recipeToReprepare?.isControlled && !controlledFolio.trim())}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Confirmar Re-preparación
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

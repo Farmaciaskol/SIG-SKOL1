@@ -112,6 +112,10 @@ export interface Recipe {
   prescriptionImageUrl?: string;
   skolSuppliedItemsDispatchStatus?: SkolSuppliedItemsDispatchStatus;
   auditTrail?: AuditTrailEntry[];
+  dispensationDate?: string | null;
+  internalPreparationLot?: string | null;
+  compoundingDate?: string | null;
+  preparationExpiryDate?: string | null;
 }
 
 export interface AdverseReaction {

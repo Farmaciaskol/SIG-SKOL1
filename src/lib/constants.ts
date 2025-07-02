@@ -128,3 +128,5 @@ export const PHARMACEUTICAL_FORM_DEFAULTS: Record<string, {
     totalQuantityUnit: 'mL',
   },
 };
+
+export const MAX_REPREPARATIONS = 4;
