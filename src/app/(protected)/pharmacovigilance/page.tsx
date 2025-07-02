@@ -37,10 +37,10 @@ const StatCard = ({ title, value, icon: Icon }: { title: string; value: string |
 
 const statusStyles: Record<PharmacovigilanceReportStatus, { badge: string; iconColor: string; icon: React.ElementType }> = {
   [PharmacovigilanceReportStatus.New]: { badge: 'bg-yellow-100 text-yellow-800', iconColor: 'text-yellow-500', icon: PlusCircle },
-  [PharmacovigilanceReportStatus.UnderInvestigation]: { badge: 'bg-blue-100 text-blue-800', iconColor: 'text-blue-500', icon: Clock },
+  [PharmacovigilanceReportStatus.UnderInvestigation]: { badge: 'bg-sky-100 text-sky-800', iconColor: 'text-sky-500', icon: Clock },
   [PharmacovigilanceReportStatus.ActionRequired]: { badge: 'bg-orange-100 text-orange-800', iconColor: 'text-orange-500', icon: FileWarning },
   [PharmacovigilanceReportStatus.Resolved]: { badge: 'bg-green-100 text-green-800', iconColor: 'text-green-500', icon: CheckCircle },
-  [PharmacovigilanceReportStatus.Closed]: { badge: 'bg-gray-200 text-gray-800', iconColor: 'text-gray-500', icon: CheckCircle },
+  [PharmacovigilanceReportStatus.Closed]: { badge: 'bg-slate-200 text-slate-800', iconColor: 'text-slate-500', icon: CheckCircle },
 };
 
 export default function PharmacovigilancePage() {

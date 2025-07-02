@@ -150,12 +150,12 @@ export const MAX_REPREPARATIONS = 4;
 export const statusConfig: Record<RecipeStatus, { text: string; badge: string; icon: LucideIcon }> = {
   [RecipeStatus.PendingReviewPortal]: { text: 'Pendiente Revisión', badge: 'bg-purple-100 text-purple-800 border-purple-200', icon: FileSearch },
   [RecipeStatus.PendingValidation]: { text: 'Pendiente Validación', badge: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: FileClock },
-  [RecipeStatus.Validated]: { text: 'Validada', badge: 'bg-blue-100 text-blue-800 border-blue-200', icon: CheckCircle },
+  [RecipeStatus.Validated]: { text: 'Validada', badge: 'bg-sky-100 text-sky-800 border-sky-200', icon: CheckCircle },
   [RecipeStatus.Rejected]: { text: 'Rechazada', badge: 'bg-red-100 text-red-800 border-red-200', icon: XCircle },
   [RecipeStatus.Preparation]: { text: 'En Preparación', badge: 'bg-pink-100 text-pink-800 border-pink-200', icon: Package },
-  [RecipeStatus.SentToExternal]: { text: 'Enviada a Recetario', badge: 'bg-cyan-100 text-cyan-800 border-cyan-200', icon: Send },
+  [RecipeStatus.SentToExternal]: { text: 'Enviada a Recetario', badge: 'bg-sky-100 text-sky-800 border-sky-200', icon: Send },
   [RecipeStatus.ReceivedAtSkol]: { text: 'Recepcionado en Skol', badge: 'bg-indigo-100 text-indigo-800 border-indigo-200', icon: PackageCheck },
   [RecipeStatus.ReadyForPickup]: { text: 'Lista para Retiro', badge: 'bg-orange-100 text-orange-800 border-orange-200', icon: Truck },
   [RecipeStatus.Dispensed]: { text: 'Dispensada', badge: 'bg-green-100 text-green-800 border-green-200', icon: CheckCheck },
-  [RecipeStatus.Cancelled]: { text: 'Anulada', badge: 'bg-gray-200 text-gray-800 border-gray-300', icon: Ban },
+  [RecipeStatus.Cancelled]: { text: 'Anulada', badge: 'bg-slate-200 text-slate-800 border-slate-300', icon: Ban },
 };

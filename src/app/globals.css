@@ -4,59 +4,59 @@
 
 @layer base {
   :root {
-    --background: 220 25% 95%;
-    --foreground: 210 10% 23%;
-    --card: 0 0% 100%;
-    --card-foreground: 210 10% 23%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 210 10% 23%;
-    --primary: 199 90% 54%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 210 17% 94%;
-    --secondary-foreground: 210 10% 23%;
-    --muted: 210 17% 94%;
-    --muted-foreground: 208 7% 58%;
-    --accent: 199 90% 54%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 210 17% 90%;
-    --input: 210 17% 90%;
-    --ring: 199 90% 54%;
+    --background: 220 17% 96%; /* slate-100 */
+    --foreground: 215 25% 27%; /* slate-700 */
+    --card: 0 0% 100%; /* white */
+    --card-foreground: 215 25% 27%; /* slate-700 */
+    --popover: 0 0% 100%; /* white */
+    --popover-foreground: 215 25% 27%; /* slate-700 */
+    --primary: 205 98% 39%; /* sky-600 */
+    --primary-foreground: 0 0% 100%; /* white */
+    --secondary: 214 23% 90%; /* slate-200 */
+    --secondary-foreground: 215 39% 18%; /* slate-800 */
+    --muted: 214 23% 90%; /* slate-200 */
+    --muted-foreground: 216 19% 47%; /* slate-500 */
+    --accent: 205 98% 39%; /* sky-600 */
+    --accent-foreground: 0 0% 100%; /* white */
+    --destructive: 0 72% 51%; /* red-600 */
+    --destructive-foreground: 0 0% 100%; /* white */
+    --border: 215 28% 84%; /* slate-300 */
+    --input: 215 28% 84%; /* slate-300 */
+    --ring: 205 90% 53%; /* sky-500 */
     --radius: 0.75rem;
-    --chart-1: 199 90% 54%;
-    --chart-2: 213 22% 26%;
-    --chart-3: 220 13% 60%;
-    --chart-4: 220 13% 40%;
-    --chart-5: 224 71% 20%;
+    --chart-1: 205 98% 39%; /* sky-600 */
+    --chart-2: 215 39% 18%; /* slate-800 */
+    --chart-3: 340 82% 61%; /* pink-500 */
+    --chart-4: 262 84% 60%; /* purple-500 */
+    --chart-5: 220 13% 60%; /* slate-400 */
   }
 
   .dark {
-    --background: 220 13% 18%;
-    --foreground: 210 40% 98%;
-    --card: 213 22% 10%;
-    --card-foreground: 210 40% 98%;
-    --popover: 213 22% 10%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 199 90% 54%;
-    --primary-foreground: 213 22% 10%;
-    --secondary: 210 17% 15%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 210 17% 15%;
-    --muted-foreground: 208 7% 65%;
-    --accent: 199 90% 54%;
-    --accent-foreground: 213 22% 10%;
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 210 17% 15%;
-    --input: 210 17% 15%;
-    --ring: 199 90% 54%;
+    --background: 220 13% 10%; /* slate-900 */
+    --foreground: 220 17% 96%; /* slate-100 */
+    --card: 215 39% 18%; /* slate-800 */
+    --card-foreground: 220 17% 96%; /* slate-100 */
+    --popover: 220 13% 10%; /* slate-900 */
+    --popover-foreground: 220 17% 96%; /* slate-100 */
+    --primary: 205 90% 53%; /* sky-500 */
+    --primary-foreground: 215 39% 18%; /* slate-800 */
+    --secondary: 215 25% 27%; /* slate-700 */
+    --secondary-foreground: 220 17% 96%; /* slate-100 */
+    --muted: 215 25% 27%; /* slate-700 */
+    --muted-foreground: 216 19% 47%; /* slate-500 */
+    --accent: 205 90% 53%; /* sky-500 */
+    --accent-foreground: 215 39% 18%; /* slate-800 */
+    --destructive: 0 63% 31%; /* red-900 */
+    --destructive-foreground: 220 17% 96%; /* slate-100 */
+    --border: 215 25% 27%; /* slate-700 */
+    --input: 215 25% 27%; /* slate-700 */
+    --ring: 205 90% 53%; /* sky-500 */
     --radius: 0.75rem;
-    --chart-1: 199 90% 54%;
-    --chart-2: 213 22% 26%;
-    --chart-3: 220 13% 60%;
-    --chart-4: 220 13% 80%;
-    --chart-5: 224 71% 90%;
+    --chart-1: 205 90% 53%; /* sky-500 */
+    --chart-2: 220 17% 96%; /* slate-100 */
+    --chart-3: 340 82% 61%; /* pink-500 */
+    --chart-4: 262 84% 60%; /* purple-500 */
+    --chart-5: 216 19% 47%; /* slate-500 */
   }
 }
 
