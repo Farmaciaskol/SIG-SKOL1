@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -136,7 +137,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full bg-background">
+      <div className="flex items-center justify-center h-full bg-background p-8">
         <p>Cargando dashboard...</p>
       </div>
     );

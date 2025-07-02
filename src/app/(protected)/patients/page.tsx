@@ -114,7 +114,7 @@ export default function PatientsPage() {
 };
 
   return (
-    <div className="space-y-6 p-4 md:p-8">
+    <div className="flex-1 space-y-6 p-4 md:p-8">
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight font-headline">Gestión de Pacientes</h2>
