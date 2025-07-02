@@ -49,6 +49,7 @@ const recipeItemSchema = z.object({
   totalQuantityValue: z.string().min(1, "El valor de la Cantidad Total es requerido."),
   totalQuantityUnit: z.string().min(1, "La unidad de la Cantidad Total es requerida."),
   usageInstructions: z.string().min(1, "Las Instrucciones de Uso son requeridas."),
+  requiresFractionation: z.boolean().optional(),
 });
 
 const recipeFormSchema = z.object({
@@ -116,6 +117,7 @@ const defaultItem = {
   totalQuantityValue: '',
   totalQuantityUnit: '',
   usageInstructions: '',
+  requiresFractionation: false,
 };
 
 export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
@@ -296,6 +298,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
   };
 
   const isControlled = form.watch('isControlled');
+  const supplySource = form.watch('supplySource');
 
   if (loading) {
     return (
@@ -546,10 +549,11 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
 
                 <div className="space-y-6">
                     {fields.map((item, index) => (
-                    <div key={item.id} className="p-4 border rounded-lg space-y-4 relative">
-                        <div className="flex justify-end">
+                    <div key={item.id} className="p-4 border rounded-lg space-y-4 relative bg-muted/30">
+                        <div className="flex justify-between items-start">
+                            <h3 className="font-semibold text-md text-primary">Ítem #{index + 1}</h3>
                              {fields.length > 1 && (
-                                <Button type="button" variant="ghost" size="icon" className="text-red-500 hover:text-red-600 absolute top-2 right-2" onClick={() => remove(index)}>
+                                <Button type="button" variant="ghost" size="icon" className="text-red-500 hover:text-red-600 h-7 w-7" onClick={() => remove(index)}>
                                     <Trash2 className="h-4 w-4" />
                                     <span className="sr-only">Eliminar Ítem</span>
                                 </Button>
@@ -668,6 +672,23 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                                 </FormItem>
                             )}/>
                         </div>
+                        
+                         {supplySource === 'Insumos de Skol' && (
+                            <FormField
+                                control={form.control}
+                                name={`items.${index}.requiresFractionation`}
+                                render={({ field }) => (
+                                <FormItem className="flex flex-row items-center space-x-2 pt-2">
+                                    <FormControl>
+                                        <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                    </FormControl>
+                                    <FormLabel className="!mt-0 font-normal text-sm">
+                                        Insumo provisto por Skol (para fraccionamiento)
+                                    </FormLabel>
+                                </FormItem>
+                                )}
+                            />
+                        )}
 
                         <div className="flex justify-start">
                             <Button type="button" variant="outline" size="sm" onClick={() => handleSimplifyInstructions(index)} disabled={isSimplifying === index}>
@@ -784,5 +805,3 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
     </Form>
   );
 }
-
-    

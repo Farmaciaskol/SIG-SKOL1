@@ -1,8 +1,9 @@
+
 import { db, storage } from './firebase';
 import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
-import { RecipeStatus } from './types';
-import type { Recipe, Doctor, InventoryItem, User, Role, ExternalPharmacy, Patient, PharmacovigilanceReport, AppData, AuditTrailEntry } from './types';
+import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus } from './types';
+import type { Recipe, Doctor, InventoryItem, User, Role, ExternalPharmacy, Patient, PharmacovigilanceReport, AppData, AuditTrailEntry, DispatchNote, DispatchItem } from './types';
 import { getMockData } from './mock-data';
 
 export * from './types';
@@ -67,6 +68,7 @@ export const getInventory = async (): Promise<InventoryItem[]> => fetchCollectio
 export const getUsers = async (): Promise<User[]> => fetchCollection<User>('users');
 export const getRoles = async (): Promise<Role[]> => fetchCollection<Role>('roles');
 export const getPharmacovigilanceReports = async (): Promise<PharmacovigilanceReport[]> => fetchCollection<PharmacovigilanceReport>('pharmacovigilanceReports');
+export const getDispatchNotes = async (): Promise<DispatchNote[]> => fetchCollection<DispatchNote>('dispatchNotes');
 
 
 // Example of getting a single document
@@ -247,6 +249,14 @@ export const saveRecipe = async (data: any, imageUri: string | null, recipeId?: 
         controlledRecipeFolio: data.controlledRecipeFolio,
         prescriptionImageUrl: imageUrl,
     };
+    
+    if (data.supplySource === 'Insumos de Skol') {
+        const hasFractionationItems = data.items.some((item: any) => item.requiresFractionation);
+        if (hasFractionationItems) {
+             recipeDataForUpdate.skolSuppliedItemsDispatchStatus = SkolSuppliedItemsDispatchStatus.Pending;
+        }
+    }
+
 
     if (recipeId) { // Editing existing recipe
         const recipeRef = doc(db, 'recipes', recipeId);
@@ -287,4 +297,95 @@ export const saveRecipe = async (data: any, imageUri: string | null, recipeId?: 
         await setDoc(recipeRef, recipeDataForCreate);
         return effectiveRecipeId;
     }
+};
+
+export const addInventoryItem = async (item: Omit<InventoryItem, 'id' | 'quantity' | 'lots'>): Promise<string> => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    try {
+        const itemData = {
+            ...item,
+            quantity: 0,
+            lots: [],
+        };
+        const docRef = await addDoc(collection(db, 'inventory'), itemData);
+        return docRef.id;
+    } catch (error) {
+        console.error("Error adding inventory item:", error);
+        throw new Error("Could not add inventory item.");
+    }
+};
+
+export const updateInventoryItem = async (id: string, updates: Partial<InventoryItem>): Promise<void> => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    try {
+        const itemRef = doc(db, 'inventory', id);
+        await updateDoc(itemRef, updates as any);
+    } catch (error) {
+        console.error("Error updating inventory item:", error);
+        throw new Error("Could not update inventory item.");
+    }
+};
+
+export const processDispatch = async (pharmacyId: string, dispatchItems: DispatchItem[]): Promise<string> => {
+    if (!db) throw new Error("Firestore is not initialized.");
+
+    const batch = writeBatch(db);
+
+    const dispatchNoteId = doc(collection(db, 'dispatchNotes')).id;
+    const dispatchNoteRef = doc(db, 'dispatchNotes', dispatchNoteId);
+
+    const recipeUpdates: { [recipeId: string]: { itemsToDispatch: number; dispatchedItems: number } } = {};
+
+    for (const item of dispatchItems) {
+        const inventoryRef = doc(db, 'inventory', item.inventoryItemId);
+        const inventorySnap = await getDoc(inventoryRef);
+        if (!inventorySnap.exists()) {
+            throw new Error(`Inventory item ${item.inventoryItemId} not found.`);
+        }
+        const inventoryData = inventorySnap.data() as InventoryItem;
+
+        const lotIndex = inventoryData.lots?.findIndex(l => l.lotNumber === item.lotNumber);
+        if (lotIndex === undefined || lotIndex === -1 || !inventoryData.lots) {
+            throw new Error(`Lot ${item.lotNumber} not found for item ${item.inventoryItemId}.`);
+        }
+
+        const lot = inventoryData.lots[lotIndex];
+        if (lot.quantity < item.quantity) {
+            throw new Error(`Not enough stock for lot ${item.lotNumber}. Required: ${item.quantity}, Available: ${lot.quantity}`);
+        }
+
+        lot.quantity -= item.quantity;
+        inventoryData.quantity -= item.quantity;
+
+        batch.update(inventoryRef, { lots: inventoryData.lots, quantity: inventoryData.quantity });
+
+        if (!recipeUpdates[item.recipeId]) {
+            const recipeSnap = await getDoc(doc(db, 'recipes', item.recipeId));
+            const recipeData = recipeSnap.data() as Recipe;
+            const itemsToDispatch = recipeData.items.filter(i => i.requiresFractionation).length;
+            recipeUpdates[item.recipeId] = { itemsToDispatch, dispatchedItems: 0 };
+        }
+        recipeUpdates[item.recipeId].dispatchedItems++;
+    }
+
+    for (const [recipeId, counts] of Object.entries(recipeUpdates)) {
+        const recipeRef = doc(db, 'recipes', recipeId);
+        const newStatus = counts.dispatchedItems >= counts.itemsToDispatch
+            ? SkolSuppliedItemsDispatchStatus.Dispatched
+            : SkolSuppliedItemsDispatchStatus.PartiallyDispatched;
+        batch.update(recipeRef, { skolSuppliedItemsDispatchStatus: newStatus });
+    }
+
+    const newDispatchNote: DispatchNote = {
+        id: dispatchNoteId,
+        externalPharmacyId: pharmacyId,
+        status: DispatchStatus.Active,
+        createdAt: new Date().toISOString(),
+        items: dispatchItems,
+    };
+    batch.set(dispatchNoteRef, newDispatchNote);
+
+    await batch.commit();
+
+    return dispatchNoteId;
 };

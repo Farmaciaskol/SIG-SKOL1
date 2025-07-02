@@ -26,7 +26,8 @@ export enum PatientActionNeeded {
 }
 
 export enum SkolSuppliedItemsDispatchStatus {
-  PendingDispatch = 'Pendiente Despacho',
+  Pending = 'Pendiente',
+  PartiallyDispatched = 'Parcialmente Despachado',
   Dispatched = 'Despachado',
 }
 
@@ -82,6 +83,7 @@ export interface RecipeItem {
   totalQuantityValue: string;
   totalQuantityUnit: string;
   usageInstructions: string;
+  requiresFractionation?: boolean;
 }
 
 export interface AuditTrailEntry {
@@ -215,6 +217,7 @@ export interface Role {
 export interface DispatchItem {
     recipeId: string;
     inventoryItemId: string;
+    recipeItemName: string;
     lotNumber: string;
     quantity: number;
 }
