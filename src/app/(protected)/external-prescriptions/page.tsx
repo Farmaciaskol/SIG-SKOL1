@@ -43,16 +43,22 @@ type PharmacyWithStats = ExternalPharmacy & {
   activeRecipes: number;
   balance: number;
   reports: number;
-  standardCompliance: number;
-  skolCompliance: number;
+  standardCompliance?: number;
+  skolCompliance?: number;
 };
 
 const PharmacyCard = ({ pharmacy }: { pharmacy: PharmacyWithStats }) => {
-  const getProgressColor = (value: number) => {
+  const getProgressColor = (value?: number) => {
+    if (value === undefined) return 'bg-gray-300';
     if (value >= 95) return 'bg-green-500';
     if (value >= 80) return 'bg-yellow-400';
     return 'bg-red-500';
   };
+  
+  const formatPercentage = (value?: number) => {
+    if (value === undefined) return 'N/A';
+    return `${Math.round(value)}%`;
+  }
 
   return (
     <Card className="flex flex-col">
@@ -113,26 +119,33 @@ const PharmacyCard = ({ pharmacy }: { pharmacy: PharmacyWithStats }) => {
             <h3 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
               Rendimiento Operativo
             </h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <p>Cumplimiento Prep. Estándar</p>
-                <p className="font-semibold">{pharmacy.standardCompliance}%</p>
-              </div>
-              <Progress
-                value={pharmacy.standardCompliance}
-                indicatorClassName={getProgressColor(pharmacy.standardCompliance)}
-              />
-            </div>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <p>Cumplimiento Insumo Skol</p>
-                <p className="font-semibold">{pharmacy.skolCompliance}%</p>
-              </div>
-              <Progress
-                value={pharmacy.skolCompliance}
-                indicatorClassName={getProgressColor(pharmacy.skolCompliance)}
-              />
-            </div>
+            {pharmacy.standardCompliance !== undefined && (
+                <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                    <p>Cumplimiento Prep. Estándar</p>
+                    <p className="font-semibold">{formatPercentage(pharmacy.standardCompliance)}</p>
+                </div>
+                <Progress
+                    value={pharmacy.standardCompliance}
+                    indicatorClassName={getProgressColor(pharmacy.standardCompliance)}
+                />
+                </div>
+            )}
+            {pharmacy.skolCompliance !== undefined && (
+                <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                    <p>Cumplimiento Insumo Skol</p>
+                    <p className="font-semibold">{formatPercentage(pharmacy.skolCompliance)}</p>
+                </div>
+                <Progress
+                    value={pharmacy.skolCompliance}
+                    indicatorClassName={getProgressColor(pharmacy.skolCompliance)}
+                />
+                </div>
+            )}
+            {pharmacy.standardCompliance === undefined && pharmacy.skolCompliance === undefined && (
+                <p className="text-sm text-muted-foreground text-center">No hay datos de rendimiento disponibles.</p>
+            )}
         </div>
       </CardContent>
       <CardFooter className="bg-muted/50 p-3">
@@ -246,8 +259,8 @@ export default function ExternalPrescriptionsPage() {
         activeRecipes,
         balance, // Placeholder
         reports: 0, // Placeholder
-        standardCompliance: 98, // Placeholder
-        skolCompliance: 92, // Placeholder
+        // standardCompliance: 98, // Placeholder
+        // skolCompliance: 92, // Placeholder
       };
     });
   }, [pharmacies, recipes]);

@@ -42,11 +42,17 @@ type DoctorWithStats = Doctor & {
 
 const DoctorCard = ({ doctor }: { doctor: DoctorWithStats }) => {
   const getProgressColor = (value: number) => {
+    if (isNaN(value)) return 'bg-gray-300';
     const roundedValue = Math.round(value);
     if (roundedValue >= 90) return 'bg-green-500';
     if (roundedValue >= 50) return 'bg-yellow-400';
     return 'bg-red-500';
   };
+
+  const formatPercentage = (value: number) => {
+    if (isNaN(value)) return 'N/A';
+    return `${Math.round(value)}%`;
+  }
 
   return (
     <Dialog>
@@ -92,22 +98,22 @@ const DoctorCard = ({ doctor }: { doctor: DoctorWithStats }) => {
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
                 <p>Emisión Correcta</p>
-                <p className="font-semibold">{Math.round(doctor.correctEmissionRate)}%</p>
+                <p className="font-semibold">{formatPercentage(doctor.correctEmissionRate)}</p>
               </div>
               <Progress
-                value={doctor.correctEmissionRate}
-                aria-label={`${Math.round(doctor.correctEmissionRate)}% de emisión correcta`}
+                value={isNaN(doctor.correctEmissionRate) ? 0 : doctor.correctEmissionRate}
+                aria-label={`${formatPercentage(doctor.correctEmissionRate)} de emisión correcta`}
                 indicatorClassName={getProgressColor(doctor.correctEmissionRate)}
               />
             </div>
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
                 <p>Cumplimiento Crónicos</p>
-                <p className="font-semibold">{Math.round(doctor.chronicComplianceRate)}%</p>
+                <p className="font-semibold">{formatPercentage(doctor.chronicComplianceRate)}</p>
               </div>
               <Progress
-                value={doctor.chronicComplianceRate}
-                aria-label={`${Math.round(doctor.chronicComplianceRate)}% de cumplimiento crónico`}
+                value={isNaN(doctor.chronicComplianceRate) ? 0 : doctor.chronicComplianceRate}
+                aria-label={`${formatPercentage(doctor.chronicComplianceRate)} de cumplimiento crónico`}
                 indicatorClassName={getProgressColor(doctor.chronicComplianceRate)}
               />
             </div>
@@ -264,13 +270,13 @@ export default function DoctorsPage() {
 
       const totalRecipes = doctorRecipes.length;
       const rejectedRecipes = doctorRecipes.filter((r) => r.status === RecipeStatus.Rejected).length;
-      const correctEmissionRate = totalRecipes > 0 ? ((totalRecipes - rejectedRecipes) / totalRecipes) * 100 : 100;
+      const correctEmissionRate = totalRecipes > 0 ? ((totalRecipes - rejectedRecipes) / totalRecipes) * 100 : NaN;
 
       const chronicDoctorPatients = doctorPatients.filter(p => p.isChronic);
       const chronicPatientsWithActiveRecipe = chronicDoctorPatients.filter(p => 
         doctorRecipes.some(r => r.patientId === p.id && ![RecipeStatus.Dispensed, RecipeStatus.Cancelled, RecipeStatus.Rejected].includes(r.status))
       ).length;
-      const chronicComplianceRate = chronicDoctorPatients.length > 0 ? (chronicPatientsWithActiveRecipe / chronicDoctorPatients.length) * 100 : 100;
+      const chronicComplianceRate = chronicDoctorPatients.length > 0 ? (chronicPatientsWithActiveRecipe / chronicDoctorPatients.length) * 100 : NaN;
 
       return {
         ...doctor,

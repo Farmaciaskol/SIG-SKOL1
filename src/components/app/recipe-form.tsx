@@ -216,7 +216,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
       if (result.patientName) form.setValue('newPatientName', result.patientName);
       if (result.patientRut) form.setValue('newPatientRut', result.patientRut);
       if (result.doctorName) form.setValue('newDoctorName', result.doctorName);
-      if (result.doctorRut) form.setValue('newDoctorRut', result.doctorLicense);
+      if (result.doctorRut) form.setValue('newDoctorRut', result.doctorRut);
       if (result.doctorLicense) form.setValue('newDoctorLicense', result.doctorLicense);
       if (result.doctorSpecialty) form.setValue('newDoctorSpecialty', result.doctorSpecialty);
       if (result.prescriptionDate) form.setValue('prescriptionDate', result.prescriptionDate);
@@ -380,7 +380,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
                             name="patientId"
                             render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Paciente Existente *</FormLabel>
+                                <FormLabel>Paciente *</FormLabel>
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
                                     <SelectTrigger>
@@ -416,7 +416,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
                             name="doctorId"
                             render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Médico Existente *</FormLabel>
+                                <FormLabel>Médico *</FormLabel>
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
                                     <SelectTrigger>
