@@ -20,10 +20,20 @@ const ExtractRecipeDataFromImageInputSchema = z.object({
 export type ExtractRecipeDataFromImageInput = z.infer<typeof ExtractRecipeDataFromImageInputSchema>;
 
 const RecipeItemSchema = z.object({
-  activeIngredient: z.string().describe('The name of the active ingredient or medication.'),
-  dosage: z.string().describe('The dosage strength or concentration (e.g., "10mg", "5%").'),
-  instructions: z.string().describe('The full usage instructions (e.g., "Take one tablet daily with food").')
+  principalActiveIngredient: z.string().describe("The main active ingredient of the preparation."),
+  pharmaceuticalForm: z.string().describe("The pharmaceutical form (e.g., 'Cápsulas', 'Crema', 'Solución').").optional(),
+  concentrationValue: z.string().describe("The numerical value of the concentration (e.g., '5').").optional(),
+  concentrationUnit: z.string().describe("The unit for the concentration (e.g., '%', 'mg/ml').").optional(),
+  dosageValue: z.string().describe("The numerical value of the dose (e.g., '10').").optional(),
+  dosageUnit: z.string().describe("The unit for the dose (e.g., 'mg', 'ml').").optional(),
+  frequency: z.string().describe("The frequency of administration in hours (e.g., '24' for daily).").optional(),
+  treatmentDurationValue: z.string().describe("The numerical value of the treatment duration (e.g., '30').").optional(),
+  treatmentDurationUnit: z.string().describe("The unit for the treatment duration (e.g., 'días', 'meses').").optional(),
+  totalQuantityValue: z.string().describe("The numerical value of the total quantity to prepare (e.g., '30').").optional(),
+  totalQuantityUnit: z.string().describe("The unit for the total quantity (e.g., 'cápsulas', 'gramos').").optional(),
+  usageInstructions: z.string().describe("The detailed usage instructions for the patient."),
 });
+
 
 const ExtractRecipeDataFromImageOutputSchema = z.object({
   patientName: z.string().describe("The full name of the patient.").optional(),
@@ -56,9 +66,14 @@ const prompt = ai.definePrompt({
   - Doctor's specialty (doctorSpecialty)
   - Date of prescription (prescriptionDate) in YYYY-MM-DD format. If the year is not specified, assume the current year.
   - A list of prescribed items (items), where each item includes:
-    - The active ingredient (activeIngredient).
-    - The dosage or strength (dosage).
-    - The detailed usage instructions (instructions).
+    - The main active ingredient (principalActiveIngredient).
+    - The pharmaceutical form (pharmaceuticalForm), e.g., 'Cápsulas', 'Crema'.
+    - The concentration value (concentrationValue) and unit (concentrationUnit).
+    - The dosage value (dosageValue) and unit (dosageUnit).
+    - The frequency in hours (frequency), e.g., '24' for daily, '12' for twice a day.
+    - The treatment duration value (treatmentDurationValue) and unit (treatmentDurationUnit), e.g., '30' and 'días'.
+    - The total quantity value (totalQuantityValue) and unit (totalQuantityUnit).
+    - The detailed usage instructions (usageInstructions).
 
   If any piece of information is not clearly visible, omit it from the output.
 

@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Upload, Pill, Plus, X, Image as ImageIcon, Loader2, Wand2, Bot, Calendar as CalendarIcon } from 'lucide-react';
+import { Upload, PlusCircle, X, Image as ImageIcon, Loader2, Wand2, Bot, Calendar as CalendarIcon, Trash2 } from 'lucide-react';
 import { getPatients, getDoctors, getRecipe, Patient, Doctor } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { extractRecipeDataFromImage } from '@/ai/flows/extract-recipe-data-from-image';
@@ -34,9 +34,18 @@ import { addMonths } from 'date-fns';
 
 // Zod schema for form validation
 const recipeItemSchema = z.object({
-  activeIngredient: z.string().min(1, 'El principio activo es requerido.'),
-  dosage: z.string().min(1, 'La dosis es requerida.'),
-  instructions: z.string().min(1, 'Las instrucciones son requeridas.'),
+  principalActiveIngredient: z.string().min(1, "El Principio Activo Principal es requerido."),
+  pharmaceuticalForm: z.string().min(1, "La Forma Farmacéutica es requerida."),
+  concentrationValue: z.string().min(1, "El valor de la Concentración es requerido."),
+  concentrationUnit: z.string().min(1, "La unidad de la Concentración es requerida."),
+  dosageValue: z.string().min(1, "El valor de la Dosis es requerido."),
+  dosageUnit: z.string().min(1, "La unidad de la Dosis es requerida."),
+  frequency: z.string().min(1, "La Frecuencia es requerida."),
+  treatmentDurationValue: z.string().min(1, "El valor de la Duración del Tratamiento es requerido."),
+  treatmentDurationUnit: z.string().min(1, "La unidad de la Duración del Tratamiento es requerida."),
+  totalQuantityValue: z.string().min(1, "El valor de la Cantidad Total es requerido."),
+  totalQuantityUnit: z.string().min(1, "La unidad de la Cantidad Total es requerida."),
+  usageInstructions: z.string().min(1, "Las Instrucciones de Uso son requeridas."),
 });
 
 const recipeFormSchema = z.object({
@@ -67,6 +76,21 @@ interface RecipeFormProps {
     recipeId?: string;
 }
 
+const defaultItem = {
+  principalActiveIngredient: '',
+  pharmaceuticalForm: '',
+  concentrationValue: '',
+  concentrationUnit: '',
+  dosageValue: '',
+  dosageUnit: '',
+  frequency: '',
+  treatmentDurationValue: '30',
+  treatmentDurationUnit: 'días',
+  totalQuantityValue: '',
+  totalQuantityUnit: '',
+  usageInstructions: '',
+};
+
 export function RecipeForm({ recipeId }: RecipeFormProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -83,7 +107,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
   const form = useForm<RecipeFormValues>({
     resolver: zodResolver(recipeFormSchema),
     defaultValues: {
-      items: [{ activeIngredient: '', dosage: '', instructions: '' }],
+      items: [defaultItem],
     },
   });
 
@@ -107,11 +131,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
               ...recipeData,
               patientId: recipeData.patientId,
               doctorId: recipeData.doctorId,
-              items: recipeData.items.length > 0 ? recipeData.items.map(item => ({
-                  activeIngredient: `(ID: ${item.inventoryId})`, // Placeholder, needs real data
-                  dosage: `${item.quantity}`,
-                  instructions: item.instructions
-              })) : [],
+              items: recipeData.items.length > 0 ? recipeData.items : [defaultItem],
             });
           } else {
              toast({ title: 'Error', description: 'No se encontró la receta.', variant: 'destructive' });
@@ -163,7 +183,9 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
       if (result.prescriptionDate) form.setValue('prescriptionDate', result.prescriptionDate);
       
       if (result.items && result.items.length > 0) {
-        form.setValue('items', result.items);
+        // AI might not return all fields, so we merge with defaults
+        const filledItems = result.items.map(item => ({ ...defaultItem, ...item }));
+        form.setValue('items', filledItems);
       }
 
       toast({ title: 'Extracción Exitosa', description: 'Los campos del formulario han sido pre-rellenados.' });
@@ -176,7 +198,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
   };
 
   const handleSimplifyInstructions = async (index: number) => {
-    const instructions = form.getValues(`items.${index}.instructions`);
+    const instructions = form.getValues(`items.${index}.usageInstructions`);
     if (!instructions) {
       toast({ title: 'Sin instrucciones', description: 'No hay texto para simplificar.', variant: 'default' });
       return;
@@ -184,7 +206,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
     setIsSimplifying(index);
     try {
       const simplified = await simplifyInstructions(instructions);
-      form.setValue(`items.${index}.instructions`, simplified);
+      form.setValue(`items.${index}.usageInstructions`, simplified);
       toast({ title: 'Instrucciones Simplificadas', description: 'El texto ha sido actualizado.' });
     } catch (error) {
       console.error('Simplification failed:', error);
@@ -249,7 +271,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
                   <FormItem>
                     <FormLabel>ID Receta</FormLabel>
                     <FormControl>
-                      <Input disabled value="Nuevo (se genera al guardar)" />
+                      <Input disabled value={recipeId || "Nuevo (se genera al guardar)"} />
                     </FormControl>
                   </FormItem>
                   <FormField
@@ -376,70 +398,163 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
 
           <Card>
             <CardContent className="p-6">
-              <h2 className="text-xl font-semibold mb-4 text-foreground flex items-center gap-2"><Pill className="h-5 w-5" /> Ítems del Preparado</h2>
-              <div className="space-y-4">
-                {fields.map((item, index) => (
-                  <div key={item.id} className="p-4 border rounded-md space-y-3 relative bg-muted/20">
-                    <Label className="font-semibold">Ítem {index + 1}</Label>
-                     <FormField
-                        control={form.control}
-                        name={`items.${index}.activeIngredient`}
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Principio Activo</FormLabel>
-                                <FormControl><Input placeholder="Principio Activo" {...field} /></FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                     <FormField
-                        control={form.control}
-                        name={`items.${index}.dosage`}
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Dosis/Concentración</FormLabel>
-                                <FormControl><Input placeholder="Ej: 10mg, 5%" {...field} /></FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name={`items.${index}.instructions`}
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Instrucciones de uso</FormLabel>
-                                <FormControl><Textarea placeholder="Instrucciones de uso..." {...field} /></FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <div className="flex justify-between items-center pt-2">
-                      <Button type="button" variant="outline" size="sm" onClick={() => handleSimplifyInstructions(index)} disabled={isSimplifying === index}>
-                         {isSimplifying === index ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
-                        {isSimplifying === index ? 'Simplificando...' : 'Simplificar (IA)'}
-                      </Button>
-                       {fields.length > 1 && (
-                         <Button type="button" variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => remove(index)}>
-                            <X className="h-4 w-4" />
-                         </Button>
-                       )}
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-semibold text-foreground">Preparado Magistral</h2>
+                    <Button type="button" variant="link" onClick={() => append(defaultItem)} className="text-primary hover:text-primary/80">
+                        <PlusCircle className="mr-2 h-4 w-4" /> Añadir
+                    </Button>
+                </div>
+
+                <div className="space-y-6">
+                    {fields.map((item, index) => (
+                    <div key={item.id} className="p-4 border rounded-lg space-y-4 relative bg-background">
+                        <div className="flex justify-end">
+                             {fields.length > 1 && (
+                                <Button type="button" variant="ghost" size="icon" className="text-red-500 hover:text-red-600 absolute top-2 right-2" onClick={() => remove(index)}>
+                                    <Trash2 className="h-4 w-4" />
+                                    <span className="sr-only">Eliminar Ítem</span>
+                                </Button>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <FormField control={form.control} name={`items.${index}.principalActiveIngredient`} render={({ field }) => (
+                                <FormItem className="md:col-span-4">
+                                    <FormLabel>Principio Activo Principal *</FormLabel>
+                                    <FormControl><Input {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}/>
+                            
+                            <FormField control={form.control} name={`items.${index}.pharmaceuticalForm`} render={({ field }) => (
+                                <FormItem className="md:col-span-2">
+                                    <FormLabel>Forma Farmacéutica *</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl><SelectTrigger><SelectValue placeholder="Seleccione..." /></SelectTrigger></FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="cápsulas">Cápsulas</SelectItem>
+                                            <SelectItem value="crema">Crema</SelectItem>
+                                            <SelectItem value="solución">Solución</SelectItem>
+                                            <SelectItem value="gel">Gel</SelectItem>
+                                            <SelectItem value="ungüento">Ungüento</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}/>
+
+                            <FormField control={form.control} name={`items.${index}.concentrationValue`} render={({ field }) => (
+                                <FormItem><FormLabel>Concentración (Valor) *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                            <FormField control={form.control} name={`items.${index}.concentrationUnit`} render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Concentración (Unidad) *</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="%">%</SelectItem>
+                                            <SelectItem value="mg/ml">mg/ml</SelectItem>
+                                            <SelectItem value="mg/g">mg/g</SelectItem>
+                                            <SelectItem value="UI/g">UI/g</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}/>
+
+                            <FormField control={form.control} name={`items.${index}.dosageValue`} render={({ field }) => (
+                                <FormItem><FormLabel>Dosis (Valor) *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                            <FormField control={form.control} name={`items.${index}.dosageUnit`} render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Dosis (Unidad) *</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="mg">mg</SelectItem>
+                                            <SelectItem value="ml">ml</SelectItem>
+                                            <SelectItem value="g">g</SelectItem>
+                                            <SelectItem value="UI">UI</SelectItem>
+                                            <SelectItem value="gotas">gotas</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}/>
+                            
+                            <FormField control={form.control} name={`items.${index}.frequency`} render={({ field }) => (
+                                <FormItem className="md:col-span-2">
+                                    <FormLabel>Frecuencia (horas) *</FormLabel>
+                                    <FormControl><Input placeholder="Ej: 8, 12, 24" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}/>
+
+                            <FormField control={form.control} name={`items.${index}.treatmentDurationValue`} render={({ field }) => (
+                                <FormItem><FormLabel>Duración Trat. (Valor) *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                            <FormField control={form.control} name={`items.${index}.treatmentDurationUnit`} render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Duración Trat. (Unidad) *</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="días">días</SelectItem>
+                                            <SelectItem value="semanas">semanas</SelectItem>
+                                            <SelectItem value="meses">meses</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}/>
+
+                            <FormField control={form.control} name={`items.${index}.totalQuantityValue`} render={({ field }) => (
+                                <FormItem><FormLabel>Cant. Total (Valor) *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                            <FormField control={form.control} name={`items.${index}.totalQuantityUnit`} render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Cant. Total (Unidad) *</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="cápsulas">cápsulas</SelectItem>
+                                            <SelectItem value="unidades">unidades</SelectItem>
+                                            <SelectItem value="g">g</SelectItem>
+                                            <SelectItem value="ml">ml</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}/>
+                            
+                            <FormField control={form.control} name={`items.${index}.usageInstructions`} render={({ field }) => (
+                                <FormItem className="md:col-span-4">
+                                    <FormLabel>Instrucciones de Uso *</FormLabel>
+                                    <FormControl><Textarea placeholder="Instrucciones de uso para el paciente..." {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}/>
+                        </div>
+
+                        <div className="flex justify-start">
+                            <Button type="button" variant="outline" size="sm" onClick={() => handleSimplifyInstructions(index)} disabled={isSimplifying === index}>
+                                {isSimplifying === index ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                                {isSimplifying === index ? 'Simplificando...' : 'Simplificar (IA)'}
+                            </Button>
+                        </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-               <FormField
-                  control={form.control}
-                  name="items"
-                  render={() => (
-                     <FormItem>
-                       <FormMessage className="mt-2" />
-                     </FormItem>
-                  )}
+                    ))}
+                </div>
+
+                <FormField
+                    control={form.control}
+                    name="items"
+                    render={() => (
+                        <FormItem>
+                        <FormMessage className="mt-4" />
+                        </FormItem>
+                    )}
                 />
-              <Button type="button" variant="outline" className="w-full mt-4" onClick={() => append({ activeIngredient: '', dosage: '', instructions: '' })}>
-                <Plus className="mr-2 h-4 w-4" /> Añadir Ítem
-              </Button>
             </CardContent>
           </Card>
 

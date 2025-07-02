@@ -9,9 +9,18 @@ export enum RecipeStatus {
 }
 
 export interface RecipeItem {
-  inventoryId: string;
-  quantity: number;
-  instructions: string;
+  principalActiveIngredient: string;
+  pharmaceuticalForm: string;
+  concentrationValue: string;
+  concentrationUnit: string;
+  dosageValue: string;
+  dosageUnit: string;
+  frequency: string;
+  treatmentDurationValue: string;
+  treatmentDurationUnit: string;
+  totalQuantityValue: string;
+  totalQuantityUnit: string;
+  usageInstructions: string;
 }
 
 export interface Recipe {
