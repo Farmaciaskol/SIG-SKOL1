@@ -5,7 +5,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Toolti
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, ArrowRight, FlaskConical, Stethoscope, UserCheck, Users } from 'lucide-react';
-import { getInitialData, Recipe, RecipeStatus } from '@/lib/data';
+import { getRecipes, getPatients, Recipe, RecipeStatus, Patient } from '@/lib/data';
 import Link from 'next/link';
 
 type Kpi = {
@@ -22,18 +22,33 @@ type RecipeCountByStatus = {
 
 export default function DashboardPage() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const data = getInitialData();
-    setRecipes(data.recipes);
-    setLoading(false);
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [recipesData, patientsData] = await Promise.all([
+          getRecipes(),
+          getPatients(),
+        ]);
+        setRecipes(recipesData);
+        setPatients(patientsData);
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p>Loading dashboard...</p>
+        <p>Cargando dashboard...</p>
       </div>
     );
   }
@@ -41,8 +56,8 @@ export default function DashboardPage() {
   const kpis: Kpi[] = [
     { title: 'Recetas por Validar', value: recipes.filter(r => r.status === RecipeStatus.PendingValidation).length.toString(), icon: Stethoscope, href: '/recipes' },
     { title: 'En Preparación', value: recipes.filter(r => r.status === RecipeStatus.Preparation).length.toString(), icon: FlaskConical, href: '/recipes' },
-    { title: 'Pacientes Crónicos', value: '3', icon: UserCheck, href: '/chronic-care' },
-    { title: 'Total de Pacientes', value: getInitialData().patients.length.toString(), icon: Users, href: '/patients' },
+    { title: 'Pacientes Crónicos', value: patients.filter(p => p.isChronic).length.toString(), icon: UserCheck, href: '/chronic-care' },
+    { title: 'Total de Pacientes', value: patients.length.toString(), icon: Users, href: '/patients' },
   ];
 
   const recipeCounts = Object.values(RecipeStatus).map(status => ({
@@ -108,7 +123,7 @@ export default function DashboardPage() {
                     <div className="flex-grow">
                       <p className="text-sm font-medium">Receta Vencida: #{recipe.id}</p>
                       <p className="text-xs text-muted-foreground">
-                        Paciente: {getInitialData().patients.find(p => p.id === recipe.patientId)?.name}
+                        Paciente: {patients.find(p => p.id === recipe.patientId)?.name}
                       </p>
                     </div>
                     <Button variant="ghost" size="sm" asChild>
