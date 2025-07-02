@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -205,7 +206,7 @@ export default function DispatchManagementPage() {
                         const allItemsValidated = items.every(item => validationState[`${item.recipe.id}-${item.inventoryItem.id}`]?.isValidated === 'valid');
                         return (
                             <AccordionItem value={pharmacyId} key={pharmacyId}>
-                                <AccordionTrigger className="text-lg font-semibold hover:no-underline">
+                                <AccordionTrigger className="text-lg font-semibold">
                                     {getPharmacyName(pharmacyId)} ({items.length} ítems)
                                 </AccordionTrigger>
                                 <AccordionContent className="p-2 space-y-4">
@@ -304,5 +305,3 @@ export default function DispatchManagementPage() {
     </div>
   );
 }
-
-    

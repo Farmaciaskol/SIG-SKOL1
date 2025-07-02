@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
@@ -252,15 +253,13 @@ export default function ExternalPrescriptionsPage() {
       const pharmacyRecipes = recipes.filter(r => r.externalPharmacyId === pharmacy.id);
       const activeRecipes = pharmacyRecipes.filter(r => ![RecipeStatus.Dispensed, RecipeStatus.Cancelled, RecipeStatus.Rejected].includes(r.status)).length;
       
-      const balance = (pharmacyRecipes.reduce((acc, r) => acc + (r.preparationCost || 0), 0)) * -1;
+      const balance = pharmacyRecipes.reduce((acc, r) => acc + (r.preparationCost || 0), 0);
       
       return {
         ...pharmacy,
         activeRecipes,
-        balance, // Placeholder
+        balance, 
         reports: 0, // Placeholder
-        // standardCompliance: 98, // Placeholder
-        // skolCompliance: 92, // Placeholder
       };
     });
   }, [pharmacies, recipes]);
@@ -278,7 +277,7 @@ export default function ExternalPrescriptionsPage() {
   
   const globalStats = useMemo(() => {
     const totalBalance = pharmacyStats.reduce((acc, p) => acc + p.balance, 0);
-    const highestBalancePharmacy = pharmacyStats.sort((a,b) => a.balance - b.balance)[0];
+    const highestBalancePharmacy = pharmacyStats.sort((a,b) => b.balance - a.balance)[0];
 
     return {
         totalBalance: `$${totalBalance.toLocaleString('es-CL')}`,

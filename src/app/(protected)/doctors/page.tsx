@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
@@ -136,7 +137,7 @@ const DoctorCard = ({ doctor }: { doctor: DoctorWithStats }) => {
       </Card>
       
       {/* Patients Modal */}
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-xl">
           <DialogHeader>
               <DialogTitle>Pacientes de {doctor.name}</DialogTitle>
               <DialogDescription>
@@ -255,7 +256,7 @@ export default function DoctorsPage() {
   };
 
   const doctorStats = useMemo<DoctorWithStats[]>(() => {
-    if (!doctors.length) {
+    if (loading) {
       return [];
     }
 
@@ -287,7 +288,7 @@ export default function DoctorsPage() {
         patients: doctorPatients,
       };
     });
-  }, [doctors, patients, recipes]);
+  }, [doctors, patients, recipes, loading]);
 
   const filteredDoctors = useMemo(() => {
     if (!searchTerm) {

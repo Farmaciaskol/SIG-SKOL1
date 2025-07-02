@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -137,7 +138,7 @@ export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElemen
               {menuGroups.map((group) => (
                 <AccordionItem key={group.title} value={group.title} className="border-b-0">
                   <div className="relative">
-                     {openItems.includes(group.title) && <div className="absolute left-[-16px] top-2 bottom-2 w-1 bg-accent rounded-full group-data-[collapsible=icon]:hidden" />}
+                     {openItems.includes(group.title) && <div className="absolute left-[-16px] top-2 bottom-2 w-1 bg-primary rounded-full group-data-[collapsible=icon]:hidden" />}
                     <AccordionTrigger
                       className="py-2 px-0 hover:no-underline hover:bg-transparent rounded-none text-foreground/60 font-semibold text-xs justify-start"
                     >
@@ -152,8 +153,8 @@ export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElemen
                             asChild
                             isActive={pathname.startsWith(item.href)}
                             className={cn(
-                                "justify-start font-normal text-sm text-foreground",
-                                pathname.startsWith(item.href) ? "bg-accent text-primary-foreground hover:bg-accent hover:text-primary-foreground font-semibold" : "hover:bg-accent/90 hover:text-primary-foreground"
+                                "justify-start font-normal text-sm",
+                                pathname.startsWith(item.href) ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground font-semibold" : "text-foreground hover:bg-accent hover:text-accent-foreground"
                             )}
                           >
                             <Link href={item.href}>
@@ -177,8 +178,8 @@ export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElemen
                             asChild
                             isActive={pathname.startsWith(item.href)}
                            className={cn(
-                                "justify-start font-normal text-sm text-foreground",
-                                pathname.startsWith(item.href) ? "bg-accent text-primary-foreground hover:bg-accent hover:text-primary-foreground font-semibold" : "hover:bg-accent/90 hover:text-primary-foreground"
+                                "justify-start font-normal text-sm",
+                                pathname.startsWith(item.href) ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground font-semibold" : "text-foreground hover:bg-accent hover:text-accent-foreground"
                             )}
                         >
                         <Link href={item.href}>
