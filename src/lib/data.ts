@@ -73,7 +73,15 @@ export const addDoctor = async (doctor: Omit<Doctor, 'id'>): Promise<string> => 
         throw new Error("Firestore is not initialized.");
     }
     try {
-        const docRef = await addDoc(collection(db, 'doctors'), doctor);
+        const doctorData = {
+            name: doctor.name,
+            specialty: doctor.specialty,
+            license: doctor.license || '',
+            rut: doctor.rut || '',
+            phone: doctor.phone || '',
+            email: doctor.email || '',
+        };
+        const docRef = await addDoc(collection(db, 'doctors'), doctorData);
         return docRef.id;
     } catch (error) {
         console.error("Error adding doctor:", error);
