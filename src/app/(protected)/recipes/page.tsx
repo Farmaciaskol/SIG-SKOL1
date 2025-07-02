@@ -117,6 +117,7 @@ const RecipeStatusBadge = ({ status }: { status: RecipeStatus }) => {
 
 export default function RecipesPage() {
   const { toast } = useToast();
+  const router = useRouter();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -480,11 +481,11 @@ export default function RecipesPage() {
             case RecipeStatus.ReadyForPickup:
                  return <Button size="sm" onClick={() => handleUpdateStatus(recipe, RecipeStatus.Dispensed)}><CheckCheck className="mr-2 h-4 w-4" />Dispensar</Button>;
             case RecipeStatus.Dispensed:
-                 const { isExpired: isReprepareExpired, cycleLimitReached: isReprepareLimitReached } = {
-                    isReprepareExpired: recipe.dueDate ? new Date(recipe.dueDate) < new Date() : false,
+                const { isExpired, cycleLimitReached } = {
+                    isExpired: recipe.dueDate ? new Date(recipe.dueDate) < new Date() : false,
                     cycleLimitReached: (recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0) >= MAX_REPREPARATIONS + 1,
-                 };
-                 const canReprepare = !isSubmitting && !isReprepareExpired && !isReprepareLimitReached;
+                };
+                const canReprepare = !isSubmitting && !isExpired && !cycleLimitReached;
                  return <Button size="sm" onClick={() => setRecipeToReprepare(recipe)} disabled={!canReprepare}><Copy className="mr-2 h-4 w-4" />Re-preparar</Button>;
             default:
                 return <Button size="sm" onClick={() => setRecipeToView(recipe)}>Ver Detalle</Button>;
@@ -496,7 +497,7 @@ export default function RecipesPage() {
         cycleLimitReached: (recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0) >= MAX_REPREPARATIONS + 1,
     };
     const canEdit = recipe.status !== RecipeStatus.Dispensed && recipe.status !== RecipeStatus.Cancelled;
-    const canReprepare = recipe.status === RecipeStatus.Dispensed && !isSubmitting && !isExpired && !cycleLimitReached;
+    const canReprepare = recipe.status === RecipeStatus.Dispensed && !isExpired && !cycleLimitReached;
 
     return (
         <div className="flex justify-between items-center w-full">
@@ -545,71 +546,75 @@ export default function RecipesPage() {
       </div>
 
       <Card>
-        <CardContent className="p-4 flex flex-col gap-4">
+        <CardContent className="p-4">
+          <Collapsible
+            open={advancedFiltersOpen}
+            onOpenChange={setAdvancedFiltersOpen}
+            className="flex flex-col gap-4"
+          >
             <div className="flex flex-col md:flex-row items-center gap-4">
-                <div className="relative flex-1 w-full">
-                    <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                    type="search"
-                    placeholder="Buscar por ID, paciente, principio activo..."
-                    className="pl-8 w-full"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-                <div className="w-full md:w-auto">
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                        <SelectTrigger className="w-full md:w-[220px]">
-                            <SelectValue placeholder="Filtrar por estado" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">Todos los estados</SelectItem>
-                            {Object.values(RecipeStatus).map((status) => (
-                            <SelectItem key={status} value={status}>
-                                {statusConfig[status]?.text || status}
-                            </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-                 <Collapsible open={advancedFiltersOpen} onOpenChange={setAdvancedFiltersOpen}>
-                    <CollapsibleTrigger asChild>
-                        <Button variant="outline" className="w-full md:w-auto">
-                            <Filter className="mr-2 h-4 w-4" />
-                            Filtros Avanzados
-                        </Button>
-                    </CollapsibleTrigger>
-                </Collapsible>
+              <div className="relative flex-1 w-full">
+                <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Buscar por ID, paciente, principio activo..."
+                  className="pl-8 w-full"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <div className="w-full md:w-auto">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full md:w-[220px]">
+                    <SelectValue placeholder="Filtrar por estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los estados</SelectItem>
+                    {Object.values(RecipeStatus).map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {statusConfig[status]?.text || status}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <CollapsibleTrigger asChild>
+                <Button variant="outline" className="w-full md:w-auto">
+                  <Filter className="mr-2 h-4 w-4" />
+                  Filtros Avanzados
+                </Button>
+              </CollapsibleTrigger>
             </div>
             <CollapsibleContent className="space-y-4 pt-4 border-t">
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                     <Select value={doctorFilter} onValueChange={setDoctorFilter}>
-                        <SelectTrigger><SelectValue placeholder="Filtrar por médico..." /></SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">Todos los médicos</SelectItem>
-                            {doctors.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
-                     <Select value={pharmacyFilter} onValueChange={setPharmacyFilter}>
-                        <SelectTrigger><SelectValue placeholder="Filtrar por recetario..." /></SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">Todos los recetarios</SelectItem>
-                             {externalPharmacies.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !dateRange && "text-muted-foreground")}>
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {dateRange?.from ? (dateRange.to ? `${format(dateRange.from, "LLL dd, y")} - ${format(dateRange.to, "LLL dd, y")}` : format(dateRange.from, "LLL dd, y")) : <span>Seleccionar rango de fechas</span>}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar mode="range" selected={dateRange} onSelect={setDateRange} numberOfMonths={2}/>
-                        </PopoverContent>
-                    </Popover>
-                 </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Select value={doctorFilter} onValueChange={setDoctorFilter}>
+                  <SelectTrigger><SelectValue placeholder="Filtrar por médico..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los médicos</SelectItem>
+                    {doctors.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={pharmacyFilter} onValueChange={setPharmacyFilter}>
+                  <SelectTrigger><SelectValue placeholder="Filtrar por recetario..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los recetarios</SelectItem>
+                    {externalPharmacies.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !dateRange && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateRange?.from ? (dateRange.to ? `${format(dateRange.from, "LLL dd, y")} - ${format(dateRange.to, "LLL dd, y")}` : format(dateRange.from, "LLL dd, y")) : <span>Seleccionar rango de fechas</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="range" selected={dateRange} onSelect={setDateRange} numberOfMonths={2} />
+                  </PopoverContent>
+                </Popover>
+              </div>
             </CollapsibleContent>
+          </Collapsible>
         </CardContent>
       </Card>
 
