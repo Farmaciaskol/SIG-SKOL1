@@ -220,9 +220,7 @@ export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElemen
             <SidebarTrigger className="md:hidden" />
             <div className="flex-1" />
           </header>
-          <div className="p-4 md:p-8">
-            {props.children}
-          </div>
+          {props.children}
         </main>
       </div>
     </SidebarProvider>

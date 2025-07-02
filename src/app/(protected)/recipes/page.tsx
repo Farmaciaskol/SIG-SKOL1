@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
+  CardFooter,
 } from '@/components/ui/card';
 import {
   Table,
@@ -157,7 +158,7 @@ export default function RecipesPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 md:p-8">
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight font-headline">Gestión de Recetas</h2>
@@ -264,25 +265,34 @@ export default function RecipesPage() {
             <div className="grid grid-cols-1 gap-4 md:hidden">
             {filteredRecipes.map((recipe) => (
                 <Card key={recipe.id}>
-                    <CardHeader>
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="text-sm font-medium text-primary font-mono">{recipe.id}</p>
-                                <CardTitle className="text-lg">{getPatientName(recipe.patientId)}</CardTitle>
-                            </div>
-                            <RecipeActions recipeId={recipe.id} />
-                        </div>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                        <div className="flex justify-between items-center text-sm">
-                            <span className="text-muted-foreground">Estado</span>
-                            <RecipeStatusBadge status={recipe.status} />
-                        </div>
-                        <div className="flex justify-between items-center text-sm">
-                            <span className="text-muted-foreground">Creada</span>
-                            <span>{format(new Date(recipe.createdAt), "dd/MM/yyyy", { locale: es })}</span>
-                        </div>
-                    </CardContent>
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <Link href={`/recipes/${recipe.id}`} className="font-semibold text-primary hover:underline">
+                      {recipe.id}
+                    </Link>
+                    <RecipeStatusBadge status={recipe.status} />
+                  </CardHeader>
+                  <CardContent className="space-y-1 pb-4">
+                    <p className="font-bold text-lg">{getPatientName(recipe.patientId)}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {recipe.items[0]?.principalActiveIngredient || 'Múltiples ítems'}
+                    </p>
+                     <p className="text-xs text-muted-foreground pt-1">
+                        Creada: {format(new Date(recipe.createdAt), "d 'de' MMMM, yyyy", { locale: es })}
+                      </p>
+                  </CardContent>
+                  <CardFooter className="flex justify-between items-center p-3 bg-muted/50">
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" asChild className="h-9 w-9">
+                        <Link href={`/recipes/${recipe.id}`}><Eye className="h-5 w-5"/></Link>
+                      </Button>
+                      <Button variant="ghost" size="icon" asChild className="h-9 w-9">
+                        <Link href={`/recipes/${recipe.id}`}><Pencil className="h-5 w-5"/></Link>
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-9 w-9 text-red-500 hover:text-red-600 hover:bg-red-100">
+                          <Trash2 className="h-5 w-5"/>
+                      </Button>
+                    </div>
+                  </CardFooter>
                 </Card>
             ))}
             </div>
