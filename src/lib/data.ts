@@ -1,6 +1,6 @@
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, Timestamp } from 'firebase/firestore';
-import type { Recipe, Patient, Doctor, InventoryItem, User, Role } from './types';
+import type { Recipe, Patient, Doctor, InventoryItem, User, Role, ExternalPharmacy } from './types';
 
 export * from './types';
 
@@ -32,6 +32,7 @@ async function fetchCollection<T>(collectionName: string): Promise<T[]> {
 export const getRecipes = async (): Promise<Recipe[]> => fetchCollection<Recipe>('recipes');
 export const getPatients = async (): Promise<Patient[]> => fetchCollection<Patient>('patients');
 export const getDoctors = async (): Promise<Doctor[]> => fetchCollection<Doctor>('doctors');
+export const getExternalPharmacies = async (): Promise<ExternalPharmacy[]> => fetchCollection<ExternalPharmacy>('externalPharmacies');
 export const getInventory = async (): Promise<InventoryItem[]> => fetchCollection<InventoryItem>('inventory');
 export const getUsers = async (): Promise<User[]> => fetchCollection<User>('users');
 export const getRoles = async (): Promise<Role[]> => fetchCollection<Role>('roles');

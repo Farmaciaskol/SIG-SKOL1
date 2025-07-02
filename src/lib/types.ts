@@ -34,6 +34,9 @@ export interface Recipe {
   dueDate: string;
   createdAt: string;
   updatedAt: string;
+  externalPharmacyId?: string;
+  supplySource?: string;
+  preparationCost?: number;
 }
 
 export interface Patient {
@@ -50,6 +53,11 @@ export interface Doctor {
   id: string;
   name: string;
   specialty: string;
+}
+
+export interface ExternalPharmacy {
+  id: string;
+  name: string;
 }
 
 export interface InventoryItem {
@@ -80,4 +88,5 @@ export interface AppData {
   inventory: InventoryItem[];
   users: User[];
   roles: Role[];
+  externalPharmacies: ExternalPharmacy[];
 }

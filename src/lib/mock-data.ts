@@ -1,4 +1,4 @@
-import type { AppData, Patient, Doctor, Recipe, RecipeItem, InventoryItem, User, Role } from './types';
+import type { AppData, Patient, Doctor, Recipe, RecipeItem, InventoryItem, User, Role, ExternalPharmacy } from './types';
 import { RecipeStatus } from './types';
 import { ROLES, PERMISSIONS } from './constants';
 
@@ -12,6 +12,12 @@ export function getMockData(): AppData {
   const doctors: Doctor[] = [
     { id: 'D001', name: 'Dr. Ricardo Pérez', specialty: 'Dermatología' },
     { id: 'D002', name: 'Dra. Sofía López', specialty: 'Medicina General' },
+  ];
+
+  const externalPharmacies: ExternalPharmacy[] = [
+    { id: 'EP001', name: 'Recetario Central' },
+    { id: 'EP002', name: 'Farmacias Magistrales S.A.' },
+    { id: 'EP003', name: 'Tu Fórmula' },
   ];
 
   const inventory: InventoryItem[] = [
@@ -46,6 +52,9 @@ export function getMockData(): AppData {
       dueDate: new Date(new Date().setDate(new Date().getDate() + 2)).toISOString(),
       createdAt: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(),
       updatedAt: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(),
+      externalPharmacyId: 'EP001',
+      supplySource: 'Stock del Recetario Externo',
+      preparationCost: 15000,
     },
     {
       id: 'R0002',
@@ -72,6 +81,9 @@ export function getMockData(): AppData {
       dueDate: new Date(new Date().setDate(new Date().getDate() + 5)).toISOString(),
       createdAt: new Date(new Date().setDate(new Date().getDate() - 3)).toISOString(),
       updatedAt: new Date().toISOString(),
+      externalPharmacyId: 'EP002',
+      supplySource: 'Insumos de Skol',
+      preparationCost: 25000,
     },
     {
       id: 'R0003',
@@ -98,6 +110,9 @@ export function getMockData(): AppData {
       dueDate: new Date(new Date().setDate(new Date().getDate() - 10)).toISOString(),
       createdAt: new Date(new Date().setDate(new Date().getDate() - 15)).toISOString(),
       updatedAt: new Date(new Date().setDate(new Date().getDate() - 10)).toISOString(),
+      externalPharmacyId: 'EP001',
+      supplySource: 'Stock del Recetario Externo',
+      preparationCost: 18500,
     },
     {
       id: 'R0004',
@@ -123,5 +138,5 @@ export function getMockData(): AppData {
       { id: 'R02', name: ROLES.PHARMACIST, permissions: [PERMISSIONS.RECIPES.READ, PERMISSIONS.RECIPES.UPDATE, PERMISSIONS.PATIENTS.READ] }
   ]
 
-  return { patients, doctors, inventory, recipes, users, roles };
+  return { patients, doctors, inventory, recipes, users, roles, externalPharmacies };
 }

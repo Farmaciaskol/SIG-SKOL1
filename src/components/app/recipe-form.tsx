@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Upload, PlusCircle, X, Image as ImageIcon, Loader2, Wand2, Bot, Calendar as CalendarIcon, Trash2 } from 'lucide-react';
-import { getPatients, getDoctors, getRecipe, Patient, Doctor } from '@/lib/data';
+import { getPatients, getDoctors, getRecipe, getExternalPharmacies, Patient, Doctor, ExternalPharmacy } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { extractRecipeDataFromImage } from '@/ai/flows/extract-recipe-data-from-image';
 import { simplifyInstructions } from '@/ai/flows/simplify-instructions';
@@ -60,6 +60,9 @@ const recipeFormSchema = z.object({
   newDoctorLicense: z.string().optional(),
   newDoctorRut: z.string().optional(),
   newDoctorSpecialty: z.string().optional(),
+  externalPharmacyId: z.string().min(1, 'Debe seleccionar un recetario externo.'),
+  supplySource: z.string().min(1, 'Debe seleccionar un origen de insumos.'),
+  preparationCost: z.string().min(1, 'El costo de preparación es requerido.'),
   items: z.array(recipeItemSchema).min(1, 'Debe haber al menos un ítem en la receta.'),
 }).refine(data => data.patientId || (data.newPatientName && data.newPatientRut), {
   message: 'Debe seleccionar un paciente existente o ingresar los datos de uno nuevo (nombre y RUT).',
@@ -96,6 +99,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
   const { toast } = useToast();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [externalPharmacies, setExternalPharmacies] = useState<ExternalPharmacy[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAiExtracting, setIsAiExtracting] = useState(false);
   const [isSimplifying, setIsSimplifying] = useState<number | null>(null);
@@ -120,15 +124,21 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [patientsData, doctorsData] = await Promise.all([getPatients(), getDoctors()]);
+        const [patientsData, doctorsData, externalPharmaciesData] = await Promise.all([
+            getPatients(), 
+            getDoctors(),
+            getExternalPharmacies(),
+        ]);
         setPatients(patientsData);
         setDoctors(doctorsData);
+        setExternalPharmacies(externalPharmaciesData);
 
         if (isEditMode) {
           const recipeData = await getRecipe(recipeId);
           if (recipeData) {
             form.reset({
               ...recipeData,
+              preparationCost: recipeData.preparationCost?.toString(),
               patientId: recipeData.patientId,
               doctorId: recipeData.doctorId,
               items: recipeData.items.length > 0 ? recipeData.items : [defaultItem],
@@ -393,6 +403,71 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
                     <FormField control={form.control} name="newDoctorSpecialty" render={({ field }) => (<FormItem><FormLabel>Especialidad Médico (Nuevo/IA) *</FormLabel><FormControl><Input placeholder="Ej: Cardiología" {...field} /></FormControl><FormMessage /></FormItem>)} />
                  </div>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+                <h2 className="text-xl font-semibold mb-6 text-foreground">Recetario e Insumos</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                    control={form.control}
+                    name="externalPharmacyId"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Recetario Externo Asignado *</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                            <SelectTrigger>
+                            <SelectValue placeholder="Seleccione un recetario..." />
+                            </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            {externalPharmacies.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                        </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="supplySource"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Origen de Insumos *</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                            <SelectTrigger>
+                            <SelectValue placeholder="Seleccione un origen..." />
+                            </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            <SelectItem value="Stock del Recetario Externo">Stock del Recetario Externo</SelectItem>
+                            <SelectItem value="Insumos de Skol">Insumos de Skol</SelectItem>
+                        </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <div className="md:col-span-2">
+                    <FormField
+                        control={form.control}
+                        name="preparationCost"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Costo Preparación (CLP) *</FormLabel>
+                            <FormControl>
+                            <Input placeholder="Ej: 15000" {...field} />
+                            </FormControl>
+                            <FormDescription className="text-xs">Costo que Skol pagará al recetario.</FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                </div>
+                </div>
             </CardContent>
           </Card>
 
