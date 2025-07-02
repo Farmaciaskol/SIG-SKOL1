@@ -7,12 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { getPatients, Patient, ProactivePatientStatus, PatientActionNeeded } from '@/lib/data';
-import { PlusCircle, Search, User, Heart, AlertTriangle, Pencil, Trash2, FileText, Repeat, Truck } from 'lucide-react';
+import { PlusCircle, Search, User, Heart, AlertTriangle, Pencil, Trash2, FileText, Repeat, Truck, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const statusStyles: Record<ProactivePatientStatus, string> = {
-  [ProactivePatientStatus.URGENT]: 'border-red-500 bg-red-50/50',
-  [ProactivePatientStatus.ATTENTION]: 'border-yellow-500 bg-yellow-50/50',
+  [ProactivePatientStatus.URGENT]: 'border-red-500 bg-red-50',
+  [ProactivePatientStatus.ATTENTION]: 'border-pink-500 bg-pink-50',
   [ProactivePatientStatus.OK]: 'border-border',
 };
 
@@ -89,11 +89,11 @@ export default function PatientsPage() {
             </CardHeader>
             <CardContent className="py-2">
                 <div className="flex items-start text-sm">
-                    <span className="text-green-600 mr-2 mt-0.5">✔</span>
-                    <p className="text-muted-foreground leading-snug">{patient.proactiveMessage}</p>
+                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                    <p className="text-foreground/90 leading-snug">{patient.proactiveMessage}</p>
                 </div>
             </CardContent>
-            <CardFooter className="flex justify-between items-center bg-background/50 py-3 px-4 mt-2">
+            <CardFooter className="flex justify-between items-center bg-muted/50 py-3 px-4 mt-2">
                 <Button size="sm" asChild>
                     <Link href={`/recipes/new?patientId=${patient.id}`}>
                         <ButtonIcon className="mr-2 h-4 w-4" />
@@ -127,9 +127,9 @@ export default function PatientsPage() {
         </Button>
       </div>
 
-      <Card className="p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
+      <Card>
+        <CardContent className="p-4 sm:p-6 space-y-4">
+            <div className="relative">
                 <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                 type="search"
@@ -139,36 +139,36 @@ export default function PatientsPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </div>
-            <div className='flex items-center gap-2'>
-                <span className="text-sm font-medium text-muted-foreground hidden sm:block">Filtros de Prevención:</span>
-                <div className="flex items-center gap-1 bg-muted p-1 rounded-lg">
+            <div className="flex items-center gap-4">
+                <span className="text-sm font-medium">Filtros de Prevención:</span>
+                <div className="flex items-center gap-2">
                     <Button 
-                        variant={activeFilter === 'all' ? "default" : "ghost"}
+                        variant={activeFilter === 'all' ? 'default' : 'link'}
                         size="sm"
                         onClick={() => setActiveFilter('all')}
-                        className={cn("px-3 h-8", activeFilter === 'all' && "bg-background shadow-sm text-primary hover:bg-background")}
+                        className="px-3"
                     >
                         Todos
                     </Button>
                     <Button 
-                        variant={activeFilter === 'URGENT' ? "default" : "ghost"}
+                        variant={activeFilter === 'URGENT' ? 'default' : 'link'}
                         size="sm"
                         onClick={() => setActiveFilter(ProactivePatientStatus.URGENT)}
-                        className={cn("px-3 h-8", activeFilter === ProactivePatientStatus.URGENT && "bg-background shadow-sm text-primary hover:bg-background")}
+                        className="px-3"
                     >
                         Urgente
                     </Button>
                     <Button 
-                        variant={activeFilter === 'ATTENTION' ? "default" : "ghost"}
+                        variant={activeFilter === 'ATTENTION' ? 'default' : 'link'}
                         size="sm"
                         onClick={() => setActiveFilter(ProactivePatientStatus.ATTENTION)}
-                        className={cn("px-3 h-8", activeFilter === ProactivePatientStatus.ATTENTION && "bg-background shadow-sm text-primary hover:bg-background")}
+                        className="px-3"
                     >
                         Atención
                     </Button>
                 </div>
             </div>
-        </div>
+        </CardContent>
       </Card>
       
       {loading ? (
