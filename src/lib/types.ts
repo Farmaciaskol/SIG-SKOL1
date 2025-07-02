@@ -90,6 +90,8 @@ export interface Doctor {
   specialty: string;
   license?: string;
   rut?: string;
+  email?: string;
+  phone?: string;
 }
 
 export interface ExternalPharmacy {
