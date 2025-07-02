@@ -136,15 +136,13 @@ export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElemen
           <SidebarContent className="p-0 flex-1">
             <Accordion type="multiple" value={openItems} onValueChange={setOpenItems} className="w-full px-4">
               {menuGroups.map((group) => (
-                <AccordionItem key={group.title} value={group.title} className="border-b-0">
-                  <div className="relative">
-                     {openItems.includes(group.title) && <div className="absolute left-[-16px] top-2 bottom-2 w-1 bg-primary rounded-full group-data-[collapsible=icon]:hidden" />}
-                    <AccordionTrigger
-                      className="py-2 px-0 hover:no-underline hover:bg-transparent rounded-none text-foreground/60 font-semibold text-xs justify-start"
-                    >
-                      <div className="flex-1 text-left tracking-wider uppercase">{group.title}</div>
-                    </AccordionTrigger>
-                  </div>
+                <AccordionItem key={group.title} value={group.title} className="border-b-0 relative">
+                  {openItems.includes(group.title) && <div className="absolute left-[-16px] top-2 bottom-2 w-1 bg-primary rounded-full group-data-[collapsible=icon]:hidden" />}
+                  <AccordionTrigger
+                    className="py-2 px-0 hover:no-underline hover:bg-transparent rounded-none text-foreground/60 font-semibold text-xs justify-start gap-1"
+                  >
+                    <span className="tracking-wider uppercase">{group.title}</span>
+                  </AccordionTrigger>
                   <AccordionContent className="pl-2 pt-1 pb-1">
                     <SidebarMenu>
                       {group.items.map((item) => (
