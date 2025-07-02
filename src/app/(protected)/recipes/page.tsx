@@ -101,6 +101,7 @@ const statusConfig: Record<RecipeStatus, { text: string; badge: string; icon: Re
   [RecipeStatus.ReadyForPickup]: { text: 'Lista para Retiro', badge: 'bg-orange-100 text-orange-800 border-orange-200', icon: Truck },
   [RecipeStatus.Dispensed]: { text: 'Dispensada', badge: 'bg-green-100 text-green-800 border-green-200', icon: CheckCheck },
   [RecipeStatus.Cancelled]: { text: 'Anulada', badge: 'bg-gray-200 text-gray-800 border-gray-300', icon: Ban },
+  [RecipeStatus.Preparation]: { text: 'En Preparación', badge: 'bg-pink-100 text-pink-800 border-pink-200', icon: Package },
 };
 
 
@@ -460,7 +461,7 @@ export default function RecipesPage() {
   }
 
   return (
-    <div className="flex-1 space-y-6 p-4 md:p-8">
+    <div className="space-y-6 p-4 md:p-8">
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight font-headline">Gestión de Recetas</h2>
