@@ -422,7 +422,7 @@ export default function RecipesPage() {
   }
 
   return (
-    <div className="space-y-6 p-4 md:p-8">
+    <div className="flex-1 space-y-6 p-4 md:p-8">
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight font-headline">Gestión de Recetas</h2>
@@ -476,7 +476,7 @@ export default function RecipesPage() {
           <p>Cargando recetas...</p>
         </div>
       ) : filteredRecipes.length === 0 ? (
-        <Card className="py-16 mt-8 shadow-none border-dashed">
+        <Card className="w-full py-16 mt-8 shadow-none border-dashed">
             <div className="flex flex-col items-center justify-center text-center">
               <FileX className="h-16 w-16 text-muted-foreground mb-4" />
               <h3 className="text-xl font-semibold">No se encontraron recetas</h3>
@@ -659,3 +659,5 @@ export default function RecipesPage() {
     </div>
   );
 }
+
+    

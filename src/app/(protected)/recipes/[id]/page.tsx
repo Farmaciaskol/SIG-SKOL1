@@ -1,3 +1,4 @@
+
 'use client';
 
 import { RecipeForm } from '@/components/app/recipe-form';
@@ -28,3 +29,5 @@ export default function EditRecipePage() {
     </div>
   );
 }
+
+    
