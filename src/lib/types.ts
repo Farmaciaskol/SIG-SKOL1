@@ -1,6 +1,7 @@
 
 
 export enum RecipeStatus {
+  PendingReviewPortal = 'Pendiente Revisión - Portal',
   PendingValidation = 'Pendiente Validación',
   Validated = 'Validada',
   Rejected = 'Rechazada',
@@ -112,10 +113,10 @@ export interface Recipe {
   prescriptionImageUrl?: string;
   skolSuppliedItemsDispatchStatus?: SkolSuppliedItemsDispatchStatus;
   auditTrail?: AuditTrailEntry[];
-  dispensationDate?: string | null;
-  internalPreparationLot?: string | null;
-  compoundingDate?: string | null;
-  preparationExpiryDate?: string | null;
+  dispensationDate?: string;
+  internalPreparationLot?: string;
+  compoundingDate?: string;
+  preparationExpiryDate?: string;
 }
 
 export interface AdverseReaction {

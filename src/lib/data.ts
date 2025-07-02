@@ -87,6 +87,10 @@ export const getRecipe = async (id: string): Promise<Recipe | null> => {
                 data[key] = data[key].toDate().toISOString();
                 }
             }
+            // Ensure auditTrail is an array
+            if (!data.auditTrail) {
+                data.auditTrail = [];
+            }
             return { id: docSnap.id, ...data } as Recipe;
         } else {
             console.log(`Document with id ${id} not found in recipes collection.`);
@@ -164,6 +168,12 @@ export const updateRecipe = async (id: string, updates: Partial<Recipe>): Promis
             ...updates,
             updatedAt: new Date().toISOString()
         };
+        // Firestore cannot store 'undefined' values, so we should clean them.
+        Object.keys(dataToUpdate).forEach(key => {
+            if ((dataToUpdate as any)[key] === undefined) {
+                delete (dataToUpdate as any)[key];
+            }
+        });
         await updateDoc(recipeRef, dataToUpdate as any);
     } catch (error) {
         console.error("Error updating recipe:", error);
@@ -242,6 +252,7 @@ export const saveRecipe = async (data: any, imageUri: string | null, recipeId?: 
         const recipeRef = doc(db, 'recipes', recipeId);
         const existingRecipe = await getRecipe(recipeId);
         
+        // If editing a rejected recipe, reset status to Pending Validation
         if (existingRecipe && existingRecipe.status === RecipeStatus.Rejected) {
             const newAuditTrailEntry: AuditTrailEntry = {
                 status: RecipeStatus.PendingValidation,

@@ -10,6 +10,8 @@ import {
   CardContent,
   CardHeader,
   CardFooter,
+  CardTitle,
+  CardDescription,
 } from '@/components/ui/card';
 import {
   Table,
@@ -77,7 +79,11 @@ import {
   PackageCheck,
   Truck,
   Ban,
-  Loader2
+  Loader2,
+  FileClock,
+  CheckCheck,
+  FileSearch,
+  Package,
 } from 'lucide-react';
 import { getRecipes, getPatients, deleteRecipe, updateRecipe, Recipe, Patient, RecipeStatus, AuditTrailEntry } from '@/lib/data';
 import { format } from 'date-fns';
@@ -85,25 +91,31 @@ import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { MAX_REPREPARATIONS } from '@/lib/constants';
 
-const statusColors: Record<RecipeStatus, string> = {
-  [RecipeStatus.PendingValidation]: 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-100',
-  [RecipeStatus.Validated]: 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-100',
-  [RecipeStatus.Rejected]: 'bg-red-100 text-red-800 border-red-200 hover:bg-red-100',
-  [RecipeStatus.SentToExternal]: 'bg-cyan-100 text-cyan-800 border-cyan-200 hover:bg-cyan-100',
-  [RecipeStatus.ReceivedAtSkol]: 'bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-100',
-  [RecipeStatus.ReadyForPickup]: 'bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-100',
-  [RecipeStatus.Dispensed]: 'bg-green-100 text-green-800 border-green-200 hover:bg-green-100',
-  [RecipeStatus.Cancelled]: 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-100',
+const statusConfig: Record<RecipeStatus, { text: string; badge: string; icon: React.ElementType }> = {
+  [RecipeStatus.PendingReviewPortal]: { text: 'Pendiente Revisión', badge: 'bg-purple-100 text-purple-800 border-purple-200', icon: FileSearch },
+  [RecipeStatus.PendingValidation]: { text: 'Pendiente Validación', badge: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: FileClock },
+  [RecipeStatus.Validated]: { text: 'Validada', badge: 'bg-blue-100 text-blue-800 border-blue-200', icon: CheckCircle },
+  [RecipeStatus.Rejected]: { text: 'Rechazada', badge: 'bg-red-100 text-red-800 border-red-200', icon: XCircle },
+  [RecipeStatus.SentToExternal]: { text: 'Enviada a Recetario', badge: 'bg-cyan-100 text-cyan-800 border-cyan-200', icon: Send },
+  [RecipeStatus.ReceivedAtSkol]: { text: 'Recepcionado en Skol', badge: 'bg-indigo-100 text-indigo-800 border-indigo-200', icon: PackageCheck },
+  [RecipeStatus.ReadyForPickup]: { text: 'Lista para Retiro', badge: 'bg-orange-100 text-orange-800 border-orange-200', icon: Truck },
+  [RecipeStatus.Dispensed]: { text: 'Dispensada', badge: 'bg-green-100 text-green-800 border-green-200', icon: CheckCheck },
+  [RecipeStatus.Cancelled]: { text: 'Anulada', badge: 'bg-gray-200 text-gray-800 border-gray-300', icon: Ban },
 };
 
-const RecipeStatusBadge = ({ status }: { status: RecipeStatus }) => (
-  <Badge
-    variant="outline"
-    className={`font-semibold text-xs ${statusColors[status]}`}
-  >
-    {status}
-  </Badge>
-);
+
+const RecipeStatusBadge = ({ status }: { status: RecipeStatus }) => {
+  const config = statusConfig[status] || { text: status, badge: 'bg-gray-100', icon: FileClock };
+  return (
+    <Badge
+      variant="outline"
+      className={`font-semibold text-xs gap-1.5 ${config.badge}`}
+    >
+      <config.icon className="h-3.5 w-3.5" />
+      {config.text}
+    </Badge>
+  );
+};
 
 export default function RecipesPage() {
   const router = useRouter();
@@ -115,6 +127,7 @@ export default function RecipesPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   
   // State for dialogs
+  const [recipeToView, setRecipeToView] = useState<Recipe | null>(null);
   const [recipeToDelete, setRecipeToDelete] = useState<Recipe | null>(null);
   const [recipeToReject, setRecipeToReject] = useState<Recipe | null>(null);
   const [recipeToCancel, setRecipeToCancel] = useState<Recipe | null>(null);
@@ -155,14 +168,24 @@ export default function RecipesPage() {
       const newAuditEntry: AuditTrailEntry = {
         status: newStatus,
         date: new Date().toISOString(),
-        userId: 'system-user', // Placeholder
+        userId: 'system-user', // Placeholder for actual user ID
         notes: notes || `Estado cambiado a ${newStatus}`
       };
       const updatedAuditTrail = [...(recipe.auditTrail || []), newAuditEntry];
       
-      await updateRecipe(recipe.id, { status: newStatus, auditTrail: updatedAuditTrail });
+      const updates: Partial<Recipe> = { 
+        status: newStatus, 
+        auditTrail: updatedAuditTrail,
+        rejectionReason: newStatus === RecipeStatus.Rejected ? notes : recipe.rejectionReason,
+      };
 
-      toast({ title: 'Estado Actualizado', description: `La receta ${recipe.id} ahora está ${newStatus}.` });
+      if(newStatus === RecipeStatus.Dispensed) {
+        updates.dispensationDate = new Date().toISOString();
+      }
+
+      await updateRecipe(recipe.id, updates);
+
+      toast({ title: 'Estado Actualizado', description: `La receta ${recipe.id} ahora está en estado "${newStatus}".` });
       fetchData();
     } catch (error) {
        toast({ title: 'Error', description: 'No se pudo actualizar el estado de la receta.', variant: 'destructive' });
@@ -222,24 +245,23 @@ export default function RecipesPage() {
       const updates: Partial<Recipe> = {
         status: RecipeStatus.PendingValidation,
         paymentStatus: 'Pendiente',
-        dispensationDate: null,
-        internalPreparationLot: null,
-        compoundingDate: null,
-        preparationExpiryDate: null,
+        dispensationDate: undefined,
+        internalPreparationLot: undefined,
+        compoundingDate: undefined,
+        preparationExpiryDate: undefined,
         rejectionReason: undefined,
         auditTrail: [...(recipeToReprepare.auditTrail || []), reprepareAuditEntry]
       };
 
       if (recipeToReprepare.isControlled) {
         updates.controlledRecipeFolio = controlledFolio;
-        // logic for image upload would go here
+        // logic for new image upload would go here
       }
 
       await updateRecipe(recipeToReprepare.id, updates);
       
       toast({ title: 'Nuevo Ciclo Iniciado', description: `La receta ${recipeToReprepare.id} está lista para un nuevo ciclo.` });
       
-      // Close dialog and reset state
       setRecipeToReprepare(null);
       setControlledFolio('');
       fetchData();
@@ -264,7 +286,8 @@ export default function RecipesPage() {
         const lowerCaseSearchTerm = searchTerm.toLowerCase();
         return (
           recipe.id.toLowerCase().includes(lowerCaseSearchTerm) ||
-          patientName.includes(lowerCaseSearchTerm)
+          patientName.includes(lowerCaseSearchTerm) ||
+          recipe.items.some(item => item.principalActiveIngredient.toLowerCase().includes(lowerCaseSearchTerm))
         );
       }
       return true;
@@ -276,7 +299,6 @@ export default function RecipesPage() {
     const isExpired = new Date(recipe.dueDate) < new Date();
     const cycleLimitReached = dispensedCount >= MAX_REPREPARATIONS + 1;
     const canReprepare = !isExpired && !cycleLimitReached;
-    
     let disabledTooltip = '';
     if (isExpired) disabledTooltip = 'El documento de la receta ha vencido.';
     else if (cycleLimitReached) disabledTooltip = `Límite de ${MAX_REPREPARATIONS + 1} ciclos alcanzado.`;
@@ -300,24 +322,23 @@ export default function RecipesPage() {
             </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-            <DropdownMenuItem asChild>
-            <Link href={`/recipes/${recipe.id}`} className="flex items-center cursor-pointer w-full">
+            <DropdownMenuItem onClick={() => setRecipeToView(recipe)}>
                 <Eye className="mr-2 h-4 w-4" />
                 Ver Detalle
-            </Link>
             </DropdownMenuItem>
-
-            {recipe.status === RecipeStatus.PendingValidation || recipe.status === RecipeStatus.Rejected ? (
-                <DropdownMenuItem asChild>
+            
+            {(recipe.status !== RecipeStatus.Dispensed && recipe.status !== RecipeStatus.Cancelled) && (
+                 <DropdownMenuItem asChild>
                     <Link href={`/recipes/${recipe.id}`} className="flex items-center cursor-pointer w-full">
                         <Pencil className="mr-2 h-4 w-4" />
                         Editar
                     </Link>
                 </DropdownMenuItem>
-            ) : null}
+            )}
 
             <DropdownMenuSeparator />
 
+            {/* --- CONTEXTUAL ACTIONS --- */}
             {recipe.status === RecipeStatus.PendingValidation && (
             <>
                 <DropdownMenuItem onClick={() => handleUpdateStatus(recipe, RecipeStatus.Validated, 'Receta validada por farmacéutico.')}>
@@ -329,15 +350,23 @@ export default function RecipesPage() {
             </>
             )}
             
-            {recipe.status === RecipeStatus.Validated && recipe.supplySource === 'Stock del Recetario Externo' && (
-                <DropdownMenuItem onClick={() => handleUpdateStatus(recipe, RecipeStatus.SentToExternal)}>
-                    <Send className="mr-2 h-4 w-4 text-blue-500" /> Enviar a Recetario
-                </DropdownMenuItem>
+            {recipe.status === RecipeStatus.Validated && (
+                recipe.supplySource === 'Insumos de Skol' ? (
+                     <DropdownMenuItem asChild>
+                        <Link href={`/dispatch-management`} className="flex items-center cursor-pointer w-full">
+                            <Package className="mr-2 h-4 w-4 text-blue-500" /> Ir a Despachos
+                        </Link>
+                    </DropdownMenuItem>
+                ) : (
+                    <DropdownMenuItem onClick={() => handleUpdateStatus(recipe, RecipeStatus.SentToExternal)}>
+                        <Send className="mr-2 h-4 w-4 text-cyan-500" /> Enviar a Recetario
+                    </DropdownMenuItem>
+                )
             )}
 
             {recipe.status === RecipeStatus.SentToExternal && (
                 <DropdownMenuItem onClick={() => handleUpdateStatus(recipe, RecipeStatus.ReceivedAtSkol)}>
-                    <PackageCheck className="mr-2 h-4 w-4 text-purple-500" /> Recepcionar Preparado
+                    <PackageCheck className="mr-2 h-4 w-4 text-indigo-500" /> Recepcionar Preparado
                 </DropdownMenuItem>
             )}
             
@@ -349,9 +378,10 @@ export default function RecipesPage() {
 
             {recipe.status === RecipeStatus.ReadyForPickup && (
                 <DropdownMenuItem onClick={() => handleUpdateStatus(recipe, RecipeStatus.Dispensed)}>
-                    <CheckCircle className="mr-2 h-4 w-4 text-green-500" /> Dispensar
+                    <CheckCheck className="mr-2 h-4 w-4 text-green-500" /> Dispensar
                 </DropdownMenuItem>
             )}
+            {/* --- END CONTEXTUAL ACTIONS --- */}
 
             {(recipe.status === RecipeStatus.Dispensed) && (
                 !canReprepare ? (
@@ -369,11 +399,14 @@ export default function RecipesPage() {
                     ReprepareMenuItem
                 )
             )}
-        
-            <DropdownMenuItem className="flex items-center cursor-pointer w-full" onClick={handlePrint}>
-                <Printer className="mr-2 h-4 w-4" />
-                Imprimir Etiqueta
-            </DropdownMenuItem>
+            
+            {(recipe.status === RecipeStatus.ReceivedAtSkol || recipe.status === RecipeStatus.ReadyForPickup) && (
+                <DropdownMenuItem className="flex items-center cursor-pointer w-full" onClick={handlePrint}>
+                    <Printer className="mr-2 h-4 w-4" />
+                    Imprimir Etiqueta
+                </DropdownMenuItem>
+            )}
+
             <DropdownMenuSeparator />
             
             {recipe.status !== RecipeStatus.Cancelled && recipe.status !== RecipeStatus.Dispensed && (
@@ -391,30 +424,35 @@ export default function RecipesPage() {
   }
 
   const MobileRecipeActions = ({ recipe }: { recipe: Recipe }) => {
+    // Primary action button logic
     const ActionButton = () => {
         switch (recipe.status) {
             case RecipeStatus.PendingValidation:
                 return <Button size="sm" onClick={() => handleUpdateStatus(recipe, RecipeStatus.Validated, 'Receta validada por farmacéutico.')}><CheckCircle className="mr-2 h-4 w-4" />Validar</Button>;
             case RecipeStatus.Validated:
-                 if (recipe.supplySource === 'Stock del Recetario Externo') {
-                    return <Button size="sm" onClick={() => handleUpdateStatus(recipe, RecipeStatus.SentToExternal)}><Send className="mr-2 h-4 w-4" />Enviar</Button>;
-                 }
-                 return <Button size="sm" disabled>En Despacho</Button>;
+                 return recipe.supplySource === 'Insumos de Skol' 
+                    ? <Button size="sm" asChild><Link href="/dispatch-management"><Package className="mr-2 h-4 w-4" />Ir a Despacho</Link></Button>
+                    : <Button size="sm" onClick={() => handleUpdateStatus(recipe, RecipeStatus.SentToExternal)}><Send className="mr-2 h-4 w-4" />Enviar</Button>;
             case RecipeStatus.SentToExternal:
                  return <Button size="sm" onClick={() => handleUpdateStatus(recipe, RecipeStatus.ReceivedAtSkol)}><PackageCheck className="mr-2 h-4 w-4" />Recepcionar</Button>;
             case RecipeStatus.ReceivedAtSkol:
                  return <Button size="sm" onClick={() => handleUpdateStatus(recipe, RecipeStatus.ReadyForPickup)}><Truck className="mr-2 h-4 w-4" />Marcar Retiro</Button>;
             case RecipeStatus.ReadyForPickup:
-                 return <Button size="sm" onClick={() => handleUpdateStatus(recipe, RecipeStatus.Dispensed)}><CheckCircle className="mr-2 h-4 w-4" />Dispensar</Button>;
+                 return <Button size="sm" onClick={() => handleUpdateStatus(recipe, RecipeStatus.Dispensed)}><CheckCheck className="mr-2 h-4 w-4" />Dispensar</Button>;
             case RecipeStatus.Dispensed:
-                 return <Button size="sm" onClick={() => setRecipeToReprepare(recipe)}><Copy className="mr-2 h-4 w-4" />Re-preparar</Button>;
+                 const canReprepare = !isSubmitting && !isExpired && !cycleLimitReached;
+                 const { isExpired, cycleLimitReached } = {
+                    isExpired: new Date(recipe.dueDate) < new Date(),
+                    cycleLimitReached: (recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0) >= MAX_REPREPARATIONS + 1,
+                 };
+                 return <Button size="sm" onClick={() => setRecipeToReprepare(recipe)} disabled={!canReprepare}><Copy className="mr-2 h-4 w-4" />Re-preparar</Button>;
             default:
                 return <Button size="sm" asChild><Link href={`/recipes/${recipe.id}`}>Ver Detalle</Link></Button>;
         }
     }
 
     return (
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center w-full">
             <ActionButton />
             <RecipeActions recipe={recipe} />
         </div>
@@ -443,7 +481,7 @@ export default function RecipesPage() {
                 <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                 type="search"
-                placeholder="Buscar por ID, paciente..."
+                placeholder="Buscar por ID, paciente, principio activo..."
                 className="pl-8 w-full"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -461,7 +499,7 @@ export default function RecipesPage() {
                     <SelectItem value="all">Todos los estados</SelectItem>
                     {Object.values(RecipeStatus).map((status) => (
                     <SelectItem key={status} value={status}>
-                        {status}
+                        {statusConfig[status]?.text || status}
                     </SelectItem>
                     ))}
                 </SelectContent>
@@ -473,7 +511,8 @@ export default function RecipesPage() {
 
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <p>Cargando recetas...</p>
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="ml-2">Cargando recetas...</p>
         </div>
       ) : filteredRecipes.length === 0 ? (
         <Card className="w-full py-16 mt-8 shadow-none border-dashed">
@@ -544,7 +583,7 @@ export default function RecipesPage() {
                       {recipe.items[0]?.principalActiveIngredient || 'Múltiples ítems'}
                     </p>
                      <p className="text-xs text-muted-foreground pt-1">
-                        Creada: {format(new Date(recipe.createdAt), "d 'de' MMMM, yyyy", { locale: es })}
+                        Creada: {format(new Date(recipe.createdAt), "d MMM yyyy", { locale: es })}
                       </p>
                   </CardContent>
                   <CardFooter className="p-3 bg-muted/50">
@@ -556,7 +595,66 @@ export default function RecipesPage() {
         </>
       )}
 
-      {/* Dialog for Deletion */}
+      {/* --- DIALOGS --- */}
+
+      {/* View Detail Dialog */}
+      <Dialog open={!!recipeToView} onOpenChange={(open) => !open && setRecipeToView(null)}>
+        <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+                <DialogTitle>Detalle Receta: {recipeToView?.id}</DialogTitle>
+                <DialogDescription>
+                    Información completa de la receta y su historial.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="max-h-[70vh] overflow-y-auto p-1 pr-4">
+              <div className="space-y-6">
+                <div className="space-y-1">
+                  <h3 className="font-semibold">Paciente:</h3>
+                  <p className="text-muted-foreground">{getPatientName(recipeToView?.patientId || '')}</p>
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-semibold">Estado Actual:</h3>
+                  {recipeToView && <RecipeStatusBadge status={recipeToView.status} />}
+                </div>
+                <div className="space-y-2">
+                  <h3 className="font-semibold">Items:</h3>
+                  {recipeToView?.items.map((item, index) => (
+                    <div key={index} className="text-sm p-3 border rounded-md bg-muted/50">
+                      <p className="font-medium">{item.principalActiveIngredient} {item.concentrationValue}{item.concentrationUnit}</p>
+                      <p className="text-muted-foreground">{item.usageInstructions}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="space-y-2">
+                  <h3 className="font-semibold">Historial de Auditoría:</h3>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Fecha</TableHead>
+                        <TableHead>Estado</TableHead>
+                        <TableHead>Notas</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {recipeToView?.auditTrail?.map((entry, index) => (
+                        <TableRow key={index}>
+                           <TableCell>{format(new Date(entry.date), 'dd-MM-yy HH:mm')}</TableCell>
+                           <TableCell>{entry.status}</TableCell>
+                           <TableCell>{entry.notes}</TableCell>
+                        </TableRow>
+                      )).reverse()}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            </div>
+             <DialogFooter>
+                <Button variant="outline" onClick={() => setRecipeToView(null)}>Cerrar</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!recipeToDelete} onOpenChange={(open) => !open && setRecipeToDelete(null)}>
         <AlertDialogContent>
             <AlertDialogHeader>
@@ -567,7 +665,7 @@ export default function RecipesPage() {
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogCancel onClick={() => setRecipeToDelete(null)}>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={handleConfirmDelete} disabled={isSubmitting}>
+                <AlertDialogAction onClick={handleConfirmDelete} disabled={isSubmitting} className="bg-destructive hover:bg-destructive/90">
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Eliminar
                 </AlertDialogAction>
@@ -575,7 +673,7 @@ export default function RecipesPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Dialog for Rejection */}
+      {/* Rejection Dialog */}
       <Dialog open={!!recipeToReject} onOpenChange={(open) => {if (!open) {setRecipeToReject(null); setReason('');}}}>
         <DialogContent>
             <DialogHeader>
@@ -585,11 +683,11 @@ export default function RecipesPage() {
                 </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-                <Label htmlFor="reason-textarea">Motivo del Rechazo</Label>
+                <Label htmlFor="reason-textarea">Motivo del Rechazo *</Label>
                 <Textarea id="reason-textarea" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ej: Dosis inconsistente con la indicación."/>
             </div>
             <DialogFooter>
-                <Button variant="ghost" onClick={() => setRecipeToReject(null)}>Cancelar</Button>
+                <Button variant="ghost" onClick={() => {setRecipeToReject(null); setReason('');}}>Cancelar</Button>
                 <Button variant="destructive" onClick={handleConfirmReject} disabled={!reason.trim() || isSubmitting}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Confirmar Rechazo
@@ -598,7 +696,7 @@ export default function RecipesPage() {
         </DialogContent>
       </Dialog>
       
-      {/* Dialog for Cancellation */}
+      {/* Cancellation Dialog */}
        <Dialog open={!!recipeToCancel} onOpenChange={(open) => {if (!open) {setRecipeToCancel(null); setReason('');}}}>
         <DialogContent>
             <DialogHeader>
@@ -608,11 +706,11 @@ export default function RecipesPage() {
                 </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-                <Label htmlFor="reason-textarea">Motivo de la Anulación</Label>
+                <Label htmlFor="reason-textarea">Motivo de la Anulación *</Label>
                 <Textarea id="reason-textarea" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ej: Solicitado por el paciente."/>
             </div>
             <DialogFooter>
-                <Button variant="ghost" onClick={() => setRecipeToCancel(null)}>Cancelar</Button>
+                <Button variant="ghost" onClick={() => {setRecipeToCancel(null); setReason('');}}>Cancelar</Button>
                 <Button variant="destructive" onClick={handleConfirmCancel} disabled={!reason.trim() || isSubmitting}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Confirmar Anulación
@@ -621,7 +719,7 @@ export default function RecipesPage() {
         </DialogContent>
       </Dialog>
       
-      {/* Dialog for Re-preparation */}
+      {/* Re-preparation Dialog */}
       <Dialog open={!!recipeToReprepare} onOpenChange={(open) => { if (!open) { setRecipeToReprepare(null); setControlledFolio(''); } }}>
         <DialogContent>
           <DialogHeader>
