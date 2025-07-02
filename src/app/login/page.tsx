@@ -42,11 +42,11 @@ export default function LoginPage() {
     <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
       <div className="hidden bg-primary lg:flex flex-col items-center justify-center p-12 text-center text-primary-foreground">
         <Image
-          src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
+          src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20BLANCO.png?alt=media&token=d39d318e-4e52-4215-8941-1a1b4cae7948"
           alt="Skol Pharmacy Logo"
           width={120}
           height={120}
-          className="mb-8 filter brightness(0) invert(1)"
+          className="mb-8"
           priority
         />
         <div className="mx-auto max-w-md">
