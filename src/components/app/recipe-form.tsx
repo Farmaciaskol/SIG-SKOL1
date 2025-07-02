@@ -32,7 +32,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { addMonths } from 'date-fns';
-import { PHARMACEUTICAL_FORMS, CONCENTRATION_UNITS, DOSAGE_UNITS, TREATMENT_DURATION_UNITS, QUANTITY_TO_PREPARE_UNITS } from '@/lib/constants';
+import { PHARMACEUTICAL_FORMS, CONCENTRATION_UNITS, DOSAGE_UNITS, TREATMENT_DURATION_UNITS, QUANTITY_TO_PREPARE_UNITS, PHARMACEUTICAL_FORM_DEFAULTS } from '@/lib/constants';
 
 // Zod schema for form validation
 const recipeItemSchema = z.object({
@@ -328,7 +328,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
                         <Popover>
                           <PopoverTrigger asChild>
                             <FormControl>
-                              <Button variant="outline" className={cn("w-full justify-between text-left font-normal bg-card", !field.value && "text-muted-foreground")}>
+                              <Button variant="outline" className={cn("w-full justify-between text-left font-normal", !field.value && "text-muted-foreground")}>
                                 {field.value ? format(new Date(field.value), 'dd-MM-yyyy') : <span>dd-mm-aaaa</span>}
                                 <CalendarIcon className="h-4 w-4 opacity-50" />
                               </Button>
@@ -351,7 +351,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
                          <Popover>
                           <PopoverTrigger asChild>
                             <FormControl>
-                              <Button variant="outline" className={cn("w-full justify-between text-left font-normal bg-card", !field.value && "text-muted-foreground")}>
+                              <Button variant="outline" className={cn("w-full justify-between text-left font-normal", !field.value && "text-muted-foreground")}>
                                 {field.value ? format(new Date(field.value), 'dd-MM-yyyy') : <span>dd-mm-aaaa</span>}
                                 <CalendarIcon className="h-4 w-4 opacity-50" />
                               </Button>
@@ -517,7 +517,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
 
                 <div className="space-y-6">
                     {fields.map((item, index) => (
-                    <div key={item.id} className="p-4 border rounded-lg space-y-4 relative bg-card">
+                    <div key={item.id} className="p-4 border rounded-lg space-y-4 relative bg-muted">
                         <div className="flex justify-end">
                              {fields.length > 1 && (
                                 <Button type="button" variant="ghost" size="icon" className="text-red-500 hover:text-red-600 absolute top-2 right-2" onClick={() => remove(index)}>
@@ -539,7 +539,17 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
                             <FormField control={form.control} name={`items.${index}.pharmaceuticalForm`} render={({ field }) => (
                                 <FormItem className="md:col-span-2">
                                     <FormLabel>Forma Farmacéutica *</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <Select
+                                        onValueChange={(value) => {
+                                            field.onChange(value);
+                                            const defaults = PHARMACEUTICAL_FORM_DEFAULTS[value];
+                                            if (defaults) {
+                                                form.setValue(`items.${index}.concentrationUnit`, defaults.concentrationUnit, { shouldValidate: true });
+                                                form.setValue(`items.${index}.dosageUnit`, defaults.dosageUnit, { shouldValidate: true });
+                                                form.setValue(`items.${index}.totalQuantityUnit`, defaults.totalQuantityUnit, { shouldValidate: true });
+                                            }
+                                        }}
+                                        defaultValue={field.value}>
                                         <FormControl><SelectTrigger><SelectValue placeholder="Seleccione..." /></SelectTrigger></FormControl>
                                         <SelectContent>
                                             {PHARMACEUTICAL_FORMS.map(unit => <SelectItem key={unit} value={unit.toLowerCase()}>{unit}</SelectItem>)}
@@ -555,7 +565,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
                             <FormField control={form.control} name={`items.${index}.concentrationUnit`} render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Concentración (Unidad) *</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <Select onValueChange={field.onChange} value={field.value}>
                                         <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
                                         <SelectContent>
                                             {CONCENTRATION_UNITS.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}
@@ -571,7 +581,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
                             <FormField control={form.control} name={`items.${index}.dosageUnit`} render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Dosis (Unidad) *</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <Select onValueChange={field.onChange} value={field.value}>
                                         <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
                                         <SelectContent>
                                             {DOSAGE_UNITS.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}
@@ -595,7 +605,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
                             <FormField control={form.control} name={`items.${index}.treatmentDurationUnit`} render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Duración Trat. (Unidad) *</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <Select onValueChange={field.onChange} value={field.value}>
                                         <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
                                         <SelectContent>
                                             {TREATMENT_DURATION_UNITS.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}
@@ -611,7 +621,7 @@ export function RecipeForm({ recipeId }: RecipeFormProps) {
                             <FormField control={form.control} name={`items.${index}.totalQuantityUnit`} render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Cant. Total (Unidad) *</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <Select onValueChange={field.onChange} value={field.value}>
                                         <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
                                         <SelectContent>
                                             {QUANTITY_TO_PREPARE_UNITS.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}

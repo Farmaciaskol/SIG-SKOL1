@@ -81,3 +81,50 @@ export const QUANTITY_TO_PREPARE_UNITS = [
   'unidad(es)',
   'Otro'
 ];
+
+export const PHARMACEUTICAL_FORM_DEFAULTS: Record<string, {
+  concentrationUnit: string;
+  dosageUnit: string;
+  totalQuantityUnit: string;
+}> = {
+  'cápsulas': {
+    concentrationUnit: 'mg',
+    dosageUnit: 'cápsula(s)',
+    totalQuantityUnit: 'cápsula(s)',
+  },
+  'crema': {
+    concentrationUnit: '% p/p',
+    dosageUnit: 'aplicación(es)',
+    totalQuantityUnit: 'gramo(s)',
+  },
+  'solución': {
+    concentrationUnit: 'mg/mL',
+    dosageUnit: 'mL',
+    totalQuantityUnit: 'mL',
+  },
+  'gel': {
+    concentrationUnit: '% p/p',
+    dosageUnit: 'aplicación(es)',
+    totalQuantityUnit: 'gramo(s)',
+  },
+  'ungüento': {
+    concentrationUnit: '% p/p',
+    dosageUnit: 'aplicación(es)',
+    totalQuantityUnit: 'gramo(s)',
+  },
+  'comprimidos': {
+    concentrationUnit: 'mg',
+    dosageUnit: 'comprimido(s)',
+    totalQuantityUnit: 'comprimido(s)',
+  },
+  'gotas': {
+    concentrationUnit: 'mg/gota',
+    dosageUnit: 'gota(s)',
+    totalQuantityUnit: 'mL',
+  },
+  'inyectable': {
+    concentrationUnit: 'mg/mL',
+    dosageUnit: 'mL',
+    totalQuantityUnit: 'mL',
+  },
+};
