@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Lock, Mail } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -38,18 +39,18 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2 xl:min-h-screen">
+    <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
       <div className="hidden bg-primary lg:flex flex-col items-center justify-center p-12 text-center text-primary-foreground">
         <Image
           src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
           alt="Skol Pharmacy Logo"
-          width={100}
-          height={100}
-          className="mb-8"
+          width={120}
+          height={120}
+          className="mb-8 filter brightness(0) invert(1)"
           priority
         />
-        <div className="mx-auto max-w-sm">
-          <h2 className="text-3xl font-bold font-headline mb-4">
+        <div className="mx-auto max-w-md">
+          <h2 className="text-4xl font-bold font-headline mb-4">
             Sistema Integral de Gestión Skol
           </h2>
           <p className="text-base text-primary-foreground/80">
@@ -58,18 +59,17 @@ export default function LoginPage() {
         </div>
       </div>
       <div className="flex items-center justify-center py-12 min-h-screen bg-background">
-        <div className="mx-auto grid w-[350px] gap-6">
-            <div className="grid gap-2 text-center">
-                <h1 className="text-3xl font-bold font-headline">Acceso de Administrador</h1>
-                <p className="text-balance text-muted-foreground">
-                    Bienvenido de vuelta. Ingrese sus credenciales.
-                </p>
-            </div>
+        <Card className="mx-auto w-full max-w-sm shadow-xl border-0">
+          <CardHeader className="text-center space-y-2">
+            <CardTitle className="text-2xl font-bold font-headline">Acceso de Administrador</CardTitle>
+            <CardDescription>Bienvenido de vuelta. Ingrese sus credenciales.</CardDescription>
+          </CardHeader>
+          <CardContent>
             <form onSubmit={handleLogin} className="grid gap-4">
                 <div className="grid gap-2">
                     <Label htmlFor="email">Email</Label>
                     <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                             id="email"
                             type="email"
@@ -78,14 +78,14 @@ export default function LoginPage() {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             disabled={loading}
-                            className="pl-10"
+                            className="pl-9"
                         />
                     </div>
                 </div>
                 <div className="grid gap-2">
                     <Label htmlFor="password">Contraseña</Label>
                     <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                             id="password"
                             type="password"
@@ -93,7 +93,7 @@ export default function LoginPage() {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             disabled={loading}
-                            className="pl-10"
+                            className="pl-9"
                         />
                     </div>
                 </div>
@@ -101,13 +101,14 @@ export default function LoginPage() {
                     {loading ? 'Ingresando...' : 'Ingresar al Sistema'}
                 </Button>
             </form>
-            <div className="mt-4 text-center text-sm">
+            <div className="mt-6 text-center text-sm">
                 ¿Es usted un paciente?{' '}
-                <Link href="#" className="underline text-primary/80 hover:text-primary">
+                <Link href="#" className="underline text-accent hover:text-accent/90">
                     Ingrese al Portal de Pacientes
                 </Link>
             </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
