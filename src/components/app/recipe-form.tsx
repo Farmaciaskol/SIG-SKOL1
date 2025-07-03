@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -24,7 +22,8 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Upload, PlusCircle, X, Image as ImageIcon, Loader2, Wand2, Bot, Calendar as CalendarIcon, Trash2, Snowflake } from 'lucide-react';
-import { getPatients, getDoctors, getRecipe, getExternalPharmacies, Patient, Doctor, ExternalPharmacy, saveRecipe, RecipeStatus, getAppSettings, AppSettings } from '@/lib/data';
+import { getPatients, getDoctors, getRecipe, getExternalPharmacies, saveRecipe, getAppSettings } from '@/lib/data';
+import { type Patient, type Doctor, type ExternalPharmacy, RecipeStatus, type AppSettings } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { extractRecipeDataFromImage } from '@/ai/flows/extract-recipe-data-from-image';
 import { simplifyInstructions } from '@/ai/flows/simplify-instructions';
