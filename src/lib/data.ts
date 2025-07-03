@@ -7,6 +7,7 @@ import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, ControlledLogEntryType, ProactivePatientStatus, PatientActionNeeded, MonthlyDispensationBoxStatus, DispensationItemStatus, PharmacovigilanceReportStatus, type Recipe, type Doctor, type InventoryItem, type User, type Role, type ExternalPharmacy, type Patient, type PharmacovigilanceReport, type AppData, type AuditTrailEntry, type DispatchNote, type DispatchItem, type ControlledSubstanceLogEntry, type LotDetail, type AppSettings, type MonthlyDispensationBox, type PatientMessage } from './types';
 import { MAX_REPREPARATIONS } from './constants';
 import { addMonths } from 'date-fns';
+import { MOCK_INVENTORY } from './mock-data';
 
 // Helper function to recursively convert Firestore Timestamps to ISO strings
 function deepConvertTimestamps(obj: any): any {
@@ -64,7 +65,22 @@ export const getRecipes = async (patientId?: string): Promise<Recipe[]> => {
 export const getPatients = async (): Promise<Patient[]> => fetchCollection<Patient>('patients');
 export const getDoctors = async (): Promise<Doctor[]> => fetchCollection<Doctor>('doctors');
 export const getExternalPharmacies = async (): Promise<ExternalPharmacy[]> => fetchCollection<ExternalPharmacy>('externalPharmacies');
-export const getInventory = async (): Promise<InventoryItem[]> => fetchCollection<InventoryItem>('inventory');
+
+export const getInventory = async (): Promise<InventoryItem[]> => {
+    if (!db) return [];
+    let inventory = await fetchCollection<InventoryItem>('inventory');
+    if (inventory.length === 0) {
+        console.log("Inventory is empty. Seeding with one item for testing.");
+        const mockItem = MOCK_INVENTORY[0];
+        // Using a predefined ID from the mock data allows this to be idempotent.
+        const docRef = doc(db, 'inventory', mockItem.id); 
+        const { id, ...dataToSave } = mockItem; // Firestore `setDoc` doesn't need the id in the data payload if it's in the ref
+        await setDoc(docRef, dataToSave as any);
+        inventory = [{ ...mockItem }]; // Return the newly added item so the UI updates immediately
+    }
+    return inventory;
+};
+
 export const getUsers = async (): Promise<User[]> => fetchCollection<User>('users');
 export const getRoles = async (): Promise<Role[]> => fetchCollection<Role>('roles');
 export const getPharmacovigilanceReports = async (): Promise<PharmacovigilanceReport[]> => fetchCollection<PharmacovigilanceReport>('pharmacovigilanceReports');
