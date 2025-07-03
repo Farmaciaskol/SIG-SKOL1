@@ -216,7 +216,7 @@ export default function PatientDetailPage() {
         
         {/* Clinical Alerts */}
         {hasAlerts && (
-          <Alert variant="destructive" className="bg-yellow-50 border-yellow-300 text-yellow-800 [&>svg]:text-yellow-600">
+          <Alert variant="destructive" className="bg-orange-50 border-orange-300 text-orange-900 [&>svg]:text-orange-600">
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle className="font-bold">Alertas Clínicas Críticas</AlertTitle>
               <AlertDescription>
@@ -283,7 +283,7 @@ export default function PatientDetailPage() {
               <Accordion type="multiple" defaultValue={['history']} className="w-full space-y-6">
                   <Card>
                       <AccordionItem value="history" className="border-b-0">
-                          <AccordionTrigger className="text-xl font-semibold p-6"><FileText className="mr-3 h-5 w-5 text-primary"/>Historial de Recetas Magistrales</AccordionTrigger>
+                          <AccordionTrigger className="text-xl font-semibold p-6 hover:no-underline"><FileText className="mr-3 h-5 w-5 text-primary"/>Historial de Recetas Magistrales</AccordionTrigger>
                           <AccordionContent className="px-6 pb-6">
                               {recipes.length > 0 ? (
                                   <div className="space-y-4">
@@ -306,7 +306,7 @@ export default function PatientDetailPage() {
                   </Card>
                   <Card>
                       <AccordionItem value="controlled" className="border-b-0">
-                          <AccordionTrigger className="text-xl font-semibold p-6"><Lock className="mr-3 h-5 w-5 text-primary"/>Historial de Recetas Controladas</AccordionTrigger>
+                          <AccordionTrigger className="text-xl font-semibold p-6 hover:no-underline"><Lock className="mr-3 h-5 w-5 text-primary"/>Historial de Recetas Controladas</AccordionTrigger>
                           <AccordionContent className="px-6 pb-6">
                               {controlledLogs.length > 0 ? (
                                   <Table>
@@ -330,7 +330,7 @@ export default function PatientDetailPage() {
                   </Card>
                   <Card>
                       <AccordionItem value="pharma" className="border-b-0">
-                          <AccordionTrigger className="text-xl font-semibold p-6"><ShieldAlert className="mr-3 h-5 w-5 text-primary"/>Eventos de Farmacovigilancia</AccordionTrigger>
+                          <AccordionTrigger className="text-xl font-semibold p-6 hover:no-underline"><ShieldAlert className="mr-3 h-5 w-5 text-primary"/>Eventos de Farmacovigilancia</AccordionTrigger>
                           <AccordionContent className="px-6 pb-6">
                               {pharmaReports.length > 0 ? (
                                   <Table>
@@ -479,5 +479,3 @@ export default function PatientDetailPage() {
     </>
   );
 }
-
-    

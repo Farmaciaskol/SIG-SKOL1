@@ -4,36 +4,19 @@
 import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
-  CreditCard,
   Users,
-  CalendarDays,
-  Clock,
-  PlusCircle,
-  CheckCircle2,
   FlaskConical,
   Inbox,
+  PlusCircle,
+  CalendarDays,
+  Clock,
+  CheckCircle2,
+  Box,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getRecipes, getPatients, getInventory, getUsers, Recipe, Patient, InventoryItem, User, RecipeStatus } from '@/lib/data';
 import { differenceInDays } from 'date-fns';
-
-const BeakerIconCustom = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M4.5 3h15"></path>
-        <path d="M6 3v16a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V3"></path>
-        <path d="M6 14h12"></path>
-    </svg>
-);
-
-const UsersIconCustom = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-    <circle cx="9" cy="7" r="4"></circle>
-    <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-  </svg>
-);
 
 type KpiCardProps = {
   title: string;
@@ -46,8 +29,8 @@ const KpiCard = ({ title, value, icon: Icon, href }: KpiCardProps) => (
   <Link href={href}>
     <Card className="hover:shadow-md transition-shadow duration-300 cursor-pointer bg-card">
       <CardContent className="p-4 flex items-center gap-4">
-        <div className="p-3 rounded-full bg-sky-100 dark:bg-sky-500/10">
-          <Icon className="h-6 w-6 text-sky-600 dark:text-sky-400" />
+        <div className="p-3 rounded-full bg-primary/10">
+          <Icon className="h-6 w-6 text-primary" />
         </div>
         <div>
           <p className="text-sm font-medium text-slate-700">{title}</p>
@@ -110,8 +93,8 @@ export default function DashboardPage() {
     return [
       { title: 'Recetas del Portal Pendientes', value: data.recipes.filter(r => r.status === RecipeStatus.PendingReviewPortal).length, icon: Inbox, href: '/recipes?status=Pendiente+Revisión+-+Portal' },
       { title: 'En Preparación', value: data.recipes.filter(r => r.status === RecipeStatus.Preparation).length, icon: FlaskConical, href: '/recipes?status=En+Preparación' },
-      { title: 'Ítems con Stock Bajo', value: data.inventory.filter(i => i.stock < i.lowStockThreshold).length, icon: BeakerIconCustom, href: '/inventory' },
-      { title: 'Usuarios del Sistema', value: data.users.length, icon: UsersIconCustom, href: '/user-management' },
+      { title: 'Ítems con Stock Bajo', value: data.inventory.filter(i => i.stock < i.lowStockThreshold).length, icon: Box, href: '/inventory' },
+      { title: 'Usuarios del Sistema', value: data.users.length, icon: Users, href: '/user-management' },
     ];
   }, [data]);
   
@@ -169,9 +152,10 @@ export default function DashboardPage() {
             <CardTitle className="text-lg font-semibold text-slate-800">Próximas Dispensaciones Mensuales</CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
-            <div className="flex items-center text-sm text-slate-700">
-                <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
-                No hay dispensaciones crónicas que requieran acción en los próximos 30 días.
+            <div className="flex flex-col items-center text-center text-muted-foreground h-full justify-center py-6">
+              <CheckCircle2 className="h-10 w-10 text-green-500 mb-2" />
+              <p className="font-medium text-slate-700">Todo en orden</p>
+              <p className="text-sm">No hay dispensaciones crónicas que requieran acción en los próximos 30 días.</p>
             </div>
           </CardContent>
         </Card>
@@ -186,7 +170,7 @@ export default function DashboardPage() {
               delayedRecipes.map(recipe => (
                 <div key={recipe.id} className="flex items-center p-3 rounded-lg bg-orange-50 border-l-4 border-orange-400">
                   <div className="flex-grow">
-                    <p className="font-semibold text-sky-600"><Link href={`/recipes/${recipe.id}`} className="hover:underline">Receta: {recipe.id}</Link></p>
+                    <p className="font-semibold text-primary"><Link href={`/recipes/${recipe.id}`} className="hover:underline">Receta: {recipe.id}</Link></p>
                     <p className="text-sm text-slate-700">Paciente: {recipe.patientName}</p>
                     <p className="text-sm text-slate-500">En estado "{recipe.status}" por {recipe.daysDelayed} días.</p>
                   </div>
@@ -196,9 +180,10 @@ export default function DashboardPage() {
                 </div>
               ))
             ) : (
-                <div className="flex items-center text-sm text-slate-700">
-                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
-                    ¡Excelente! No hay recetas con retraso.
+                <div className="flex flex-col items-center text-center text-muted-foreground h-full justify-center py-6">
+                    <CheckCircle2 className="h-10 w-10 text-green-500 mb-2" />
+                    <p className="font-medium text-slate-700">¡Excelente!</p>
+                    <p className="text-sm">No hay recetas con retraso.</p>
                 </div>
             )}
           </CardContent>

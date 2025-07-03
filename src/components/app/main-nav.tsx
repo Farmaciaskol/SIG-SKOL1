@@ -53,14 +53,14 @@ import { Separator } from '../ui/separator';
 
 const menuGroups = [
     {
-      title: 'PRINCIPAL',
+      title: 'Principal',
       items: [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { href: '/recipes', label: 'Recetas', icon: FileText },
       ],
     },
     {
-      title: 'GESTIÓN',
+      title: 'Gestión',
       items: [
         { href: '/patients', label: 'Pacientes', icon: Users },
         { href: '/doctors', label: 'Médicos', icon: BriefcaseMedical },
@@ -68,7 +68,7 @@ const menuGroups = [
       ],
     },
     {
-      title: 'OPERACIONES',
+      title: 'Operaciones',
       items: [
         { href: '/inventory', label: 'Inventario Skol', icon: Warehouse },
         { href: '/monthly-dispensing', label: 'Dispensación Mensual', icon: Box },
@@ -79,7 +79,7 @@ const menuGroups = [
       ],
     },
     {
-      title: 'ADMINISTRACIÓN',
+      title: 'Administración',
       items: [
         { href: '/financial-management', label: 'Gestión Financiera', icon: CreditCard },
         { href: '/reports', label: 'Reportes', icon: BarChart2 },
@@ -98,7 +98,7 @@ export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElemen
   const pathname = usePathname();
   const [user] = useAuthState(auth);
   
-  const defaultOpenGroup = menuGroups.find(group => group.items.some(item => pathname.startsWith(item.href)))?.title || 'PRINCIPAL';
+  const defaultOpenGroup = menuGroups.find(group => group.items.some(item => pathname.startsWith(item.href)))?.title || 'Principal';
   const [openItems, setOpenItems] = React.useState([defaultOpenGroup]);
 
   const handleLogout = async () => {
@@ -139,12 +139,11 @@ export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElemen
           <SidebarContent className="p-0 flex-1">
             <Accordion type="multiple" value={openItems} onValueChange={setOpenItems} className="w-full px-4">
               {menuGroups.map((group) => (
-                <AccordionItem key={group.title} value={group.title} className="border-b-0 relative">
-                  {openItems.includes(group.title) && <div className="absolute left-[-16px] top-2 bottom-2 w-1 bg-primary rounded-full group-data-[collapsible=icon]:hidden" />}
+                <AccordionItem key={group.title} value={group.title} className="border-b-0">
                   <AccordionTrigger
-                    className="py-2 px-0 hover:no-underline hover:bg-transparent rounded-none text-foreground/60 font-semibold text-xs justify-start gap-1"
+                    className="py-2 px-0 hover:no-underline hover:bg-transparent rounded-none text-foreground/60 font-semibold text-xs justify-start gap-1 capitalize data-[state=open]:text-primary"
                   >
-                    <span className="tracking-wider uppercase">{group.title}</span>
+                    <span className="tracking-wider">{group.title}</span>
                   </AccordionTrigger>
                   <AccordionContent className="pl-2 pt-1 pb-1">
                     <SidebarMenu>

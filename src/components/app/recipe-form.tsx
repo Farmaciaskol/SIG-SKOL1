@@ -34,6 +34,7 @@ import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { addMonths } from 'date-fns';
 import { PHARMACEUTICAL_FORMS, CONCENTRATION_UNITS, DOSAGE_UNITS, TREATMENT_DURATION_UNITS, QUANTITY_TO_PREPARE_UNITS, PHARMACEUTICAL_FORM_DEFAULTS } from '@/lib/constants';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 
 // Zod schema for form validation
 const recipeItemSchema = z.object({
@@ -55,10 +56,12 @@ const recipeItemSchema = z.object({
 const recipeFormSchema = z.object({
   prescriptionDate: z.date({ required_error: "La fecha de prescripción es requerida." }),
   dueDate: z.date().optional(),
+  patientSelectionType: z.enum(['existing', 'new']).default('existing'),
   patientId: z.string().optional(),
   newPatientName: z.string().optional(),
   newPatientRut: z.string().optional(),
   dispatchAddress: z.string().optional(),
+  doctorSelectionType: z.enum(['existing', 'new']).default('existing'),
   doctorId: z.string().optional(),
   newDoctorName: z.string().optional(),
   newDoctorLicense: z.string().optional(),
@@ -71,11 +74,11 @@ const recipeFormSchema = z.object({
   controlledRecipeType: z.string().optional(),
   controlledRecipeFolio: z.string().optional(),
   items: z.array(recipeItemSchema).min(1, 'Debe haber al menos un ítem en la receta.'),
-}).refine(data => data.patientId || (data.newPatientName && data.newPatientRut), {
-  message: 'Debe seleccionar un paciente existente o ingresar los datos de uno nuevo (nombre y RUT).',
+}).refine(data => data.patientSelectionType === 'existing' ? !!data.patientId : !!data.newPatientName && !!data.newPatientRut, {
+  message: 'Debe seleccionar un paciente existente o ingresar el nombre y RUT de uno nuevo.',
   path: ['patientId'],
-}).refine(data => data.doctorId || (data.newDoctorName && data.newDoctorLicense && data.newDoctorSpecialty), {
-    message: 'Debe seleccionar un médico existente o ingresar los datos de uno nuevo (nombre, N° colegiatura y especialidad).',
+}).refine(data => data.doctorSelectionType === 'existing' ? !!data.doctorId : !!data.newDoctorName && !!data.newDoctorLicense && !!data.newDoctorSpecialty, {
+    message: 'Debe seleccionar un médico existente o ingresar nombre, N° colegiatura y especialidad de uno nuevo.',
     path: ['doctorId']
 }).superRefine((data, ctx) => {
     if (data.isControlled) {
@@ -139,10 +142,12 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
     defaultValues: {
       prescriptionDate: new Date(),
       dueDate: addMonths(new Date(), 6),
+      patientSelectionType: 'existing',
       patientId: '',
       newPatientName: '',
       newPatientRut: '',
       dispatchAddress: '',
+      doctorSelectionType: 'existing',
       doctorId: '',
       newDoctorName: '',
       newDoctorLicense: '',
@@ -168,6 +173,8 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
         ...recipeData,
         prescriptionDate: recipeData.prescriptionDate ? parseISO(recipeData.prescriptionDate) : new Date(),
         dueDate: recipeData.dueDate ? parseISO(recipeData.dueDate) : addMonths(new Date(), 6),
+        patientSelectionType: recipeData.patientId ? 'existing' : 'new',
+        doctorSelectionType: recipeData.doctorId ? 'existing' : 'new',
         patientId: recipeData.patientId ?? '',
         newPatientName: recipeData.newPatientName ?? '',
         newPatientRut: recipeData.newPatientRut ?? '',
@@ -246,6 +253,8 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
   }, [recipeId, copyFromId, toast, router, form, loadFormData]);
 
   const watchedItems = form.watch('items');
+  const patientSelectionType = form.watch('patientSelectionType');
+  const doctorSelectionType = form.watch('doctorSelectionType');
 
   useEffect(() => {
     const calculateTotals = () => {
@@ -298,16 +307,21 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
     try {
       const result = await extractRecipeDataFromImage({ photoDataUri: previewImage });
       
-      if (result.patientName) form.setValue('newPatientName', result.patientName);
+      if (result.patientName) {
+        form.setValue('newPatientName', result.patientName);
+        form.setValue('patientSelectionType', 'new');
+      }
       if (result.patientRut) form.setValue('newPatientRut', result.patientRut);
-      if (result.doctorName) form.setValue('newDoctorName', result.doctorName);
+      if (result.doctorName) {
+        form.setValue('newDoctorName', result.doctorName);
+        form.setValue('doctorSelectionType', 'new');
+      }
       if (result.doctorRut) form.setValue('newDoctorRut', result.doctorRut);
       if (result.doctorLicense) form.setValue('newDoctorLicense', result.doctorLicense);
       if (result.doctorSpecialty) form.setValue('newDoctorSpecialty', result.doctorSpecialty);
       if (result.prescriptionDate) form.setValue('prescriptionDate', parseISO(result.prescriptionDate));
       
       if (result.items && result.items.length > 0) {
-        // AI might not return all fields, so we merge with defaults
         const filledItems = result.items.map(item => ({ ...defaultItem, ...item }));
         form.setValue('items', filledItems);
       }
@@ -463,71 +477,76 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
 
               {/* --- PACIENTE --- */}
               <div>
-                 <h2 className="text-2xl font-semibold mb-4 text-slate-700">Paciente</h2>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                    <div className="md:col-span-2">
-                        <FormField
-                            control={form.control}
-                            name="patientId"
-                            render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Paciente *</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl>
-                                    <SelectTrigger>
-                                    <SelectValue placeholder="Seleccione o ingrese nuevo abajo" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {patients.map(p => <SelectItem key={p.id} value={p.id}>{p.name} - {p.rut}</SelectItem>)}
-                                </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                            )}
-                        />
-                    </div>
-                    <FormField control={form.control} name="newPatientName" render={({ field }) => (<FormItem><FormLabel>Nombre Paciente (Nuevo/IA) *</FormLabel><FormControl><Input placeholder="Nombre Apellido" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="newPatientRut" render={({ field }) => (<FormItem><FormLabel>RUT Paciente (Nuevo/IA) *</FormLabel><FormControl><Input placeholder="12.345.678-9" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <div className="md:col-span-2">
-                         <FormField control={form.control} name="dispatchAddress" render={({ field }) => (<FormItem><FormLabel>Dirección de Despacho</FormLabel><FormControl><Input placeholder="Ej: Calle Falsa 123, Comuna" {...field} /></FormControl><FormDescription className="text-xs text-slate-500">(Opcional. Por defecto, se retira en farmacia.)</FormDescription><FormMessage /></FormItem>)} />
-                    </div>
-                 </div>
+                 <h2 className="text-2xl font-semibold mb-4 text-slate-700">Paciente *</h2>
+                 <FormField
+                    control={form.control}
+                    name="patientSelectionType"
+                    render={({ field }) => (
+                        <Tabs value={field.value} onValueChange={(value) => field.onChange(value as 'existing' | 'new')} className="w-full">
+                            <TabsList className="grid w-full grid-cols-2">
+                                <TabsTrigger value="existing">Paciente Existente</TabsTrigger>
+                                <TabsTrigger value="new">Paciente Nuevo</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="existing" className="mt-4">
+                                <FormField control={form.control} name="patientId" render={({ field }) => (
+                                    <FormItem><FormLabel>Buscar Paciente</FormLabel>
+                                        <Select onValueChange={field.onChange} value={field.value}>
+                                            <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un paciente..." /></SelectTrigger></FormControl>
+                                            <SelectContent><>{patients.map(p => <SelectItem key={p.id} value={p.id}>{p.name} - {p.rut}</SelectItem>)}</></SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}/>
+                            </TabsContent>
+                            <TabsContent value="new" className="mt-4 space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <FormField control={form.control} name="newPatientName" render={({ field }) => (<FormItem><FormLabel>Nombre Paciente</FormLabel><FormControl><Input placeholder="Nombre Apellido" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={form.control} name="newPatientRut" render={({ field }) => (<FormItem><FormLabel>RUT Paciente</FormLabel><FormControl><Input placeholder="12.345.678-9" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                </div>
+                            </TabsContent>
+                        </Tabs>
+                    )}
+                />
+                 <FormField control={form.control} name="dispatchAddress" render={({ field }) => (<FormItem className="mt-4"><FormLabel>Dirección de Despacho</FormLabel><FormControl><Input placeholder="Ej: Calle Falsa 123, Comuna" {...field} /></FormControl><FormDescription className="text-xs text-slate-500">(Opcional. Por defecto, se retira en farmacia.)</FormDescription><FormMessage /></FormItem>)} />
               </div>
 
                <Separator />
 
               {/* --- MÉDICO --- */}
                <div>
-                 <h2 className="text-2xl font-semibold mb-4 text-slate-700">Médico</h2>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                     <div className="md:col-span-2">
-                        <FormField
-                            control={form.control}
-                            name="doctorId"
-                            render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Médico *</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl>
-                                    <SelectTrigger>
-                                    <SelectValue placeholder="Seleccione o ingrese nuevo abajo" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {doctors.map(d => <SelectItem key={d.id} value={d.id}>{d.name} - {d.specialty}</SelectItem>)}
-                                </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                            )}
-                        />
-                    </div>
-                    <FormField control={form.control} name="newDoctorName" render={({ field }) => (<FormItem><FormLabel>Nombre Médico (Nuevo/IA) *</FormLabel><FormControl><Input placeholder="Nombre Apellido" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="newDoctorLicense" render={({ field }) => (<FormItem><FormLabel>N° Colegiatura (Nuevo/IA) *</FormLabel><FormControl><Input placeholder="Ej: 12345" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="newDoctorRut" render={({ field }) => (<FormItem><FormLabel>RUT Médico (Opcional)</FormLabel><FormControl><Input placeholder="12.345.678-K" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="newDoctorSpecialty" render={({ field }) => (<FormItem><FormLabel>Especialidad Médico (Nuevo/IA) *</FormLabel><FormControl><Input placeholder="Ej: Cardiología" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                 </div>
+                 <h2 className="text-2xl font-semibold mb-4 text-slate-700">Médico *</h2>
+                 <FormField
+                    control={form.control}
+                    name="doctorSelectionType"
+                    render={({ field }) => (
+                        <Tabs value={field.value} onValueChange={(value) => field.onChange(value as 'existing' | 'new')} className="w-full">
+                            <TabsList className="grid w-full grid-cols-2">
+                                <TabsTrigger value="existing">Médico Existente</TabsTrigger>
+                                <TabsTrigger value="new">Médico Nuevo</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="existing" className="mt-4">
+                                <FormField control={form.control} name="doctorId" render={({ field }) => (
+                                    <FormItem><FormLabel>Buscar Médico</FormLabel>
+                                        <Select onValueChange={field.onChange} value={field.value}>
+                                            <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un médico..." /></SelectTrigger></FormControl>
+                                            <SelectContent><>{doctors.map(d => <SelectItem key={d.id} value={d.id}>{d.name} - {d.specialty}</SelectItem>)}</>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}/>
+                            </TabsContent>
+                            <TabsContent value="new" className="mt-4 space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <FormField control={form.control} name="newDoctorName" render={({ field }) => (<FormItem><FormLabel>Nombre Médico</FormLabel><FormControl><Input placeholder="Nombre Apellido" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={form.control} name="newDoctorLicense" render={({ field }) => (<FormItem><FormLabel>N° Colegiatura</FormLabel><FormControl><Input placeholder="Ej: 12345" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={form.control} name="newDoctorRut" render={({ field }) => (<FormItem><FormLabel>RUT Médico (Opcional)</FormLabel><FormControl><Input placeholder="12.345.678-K" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={form.control} name="newDoctorSpecialty" render={({ field }) => (<FormItem><FormLabel>Especialidad Médico</FormLabel><FormControl><Input placeholder="Ej: Cardiología" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                </div>
+                            </TabsContent>
+                        </Tabs>
+                    )}
+                />
               </div>
             </CardContent>
           </Card>
@@ -610,7 +629,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                     {fields.map((item, index) => (
                     <div key={item.id} className="p-4 border rounded-lg space-y-4 relative bg-muted/30">
                         <div className="flex justify-between items-start">
-                            <h3 className="font-semibold text-sky-600">Ítem #{index + 1}</h3>
+                            <h3 className="font-semibold text-primary">Ítem #{index + 1}</h3>
                              {fields.length > 1 && (
                                 <Button type="button" variant="ghost" size="icon" className="text-red-500 hover:text-red-600 h-7 w-7" onClick={() => remove(index)}>
                                     <Trash2 className="h-4 w-4" />
