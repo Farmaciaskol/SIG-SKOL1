@@ -120,7 +120,7 @@ export default function DispatchManagementPage() {
     const recipesToProcess = recipes.filter(r => 
         r.supplySource === 'Insumos de Skol' &&
         r.status === RecipeStatus.Validated &&
-        (r.skolSuppliedItemsDispatchStatus === SkolSuppliedItemsDispatchStatus.Pending || r.skolSuppliedItemsDispatchStatus === SkolSuppliedItemsDispatchStatus.PartiallyDispatched)
+        r.skolSuppliedItemsDispatchStatus !== SkolSuppliedItemsDispatchStatus.Dispatched
     );
     
     for (const recipe of recipesToProcess) {
