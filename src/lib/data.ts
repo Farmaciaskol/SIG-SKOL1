@@ -531,27 +531,56 @@ export const logDirectSaleDispensation = async (
     await batch.commit();
 };
 
-export const updatePatient = async (id: string, updates: Partial<Patient>): Promise<void> => {
+export const updatePatient = async (id: string, updates: Partial<Patient> & { password?: string }): Promise<void> => {
     if (!db) throw new Error("Firestore is not initialized.");
-    await updateDoc(doc(db, 'patients', id), updates as any);
+    
+    const { password, ...patientUpdates } = updates;
+
+    // --- Firebase Auth Password Update (Simulated) ---
+    // In a real application, a secure backend function (e.g., Firebase Function)
+    // would handle updating the user's password securely in Firebase Authentication.
+    if (password) {
+        // Example: await updateAuthUserPassword(id, password);
+        console.log(`(Simulado) Se ha solicitado un cambio de contraseña para el paciente ${id}.`);
+    }
+
+    await updateDoc(doc(db, 'patients', id), patientUpdates as any);
 };
 
-export const addPatient = async (patient: Omit<Patient, 'id' | 'proactiveStatus' | 'proactiveMessage' | 'actionNeeded' | 'commercialMedications'>): Promise<string> => {
+
+export const addPatient = async (patient: Omit<Patient, 'id' | 'proactiveStatus' | 'proactiveMessage' | 'actionNeeded' | 'commercialMedications'> & { password?: string }): Promise<string> => {
     if (!db) throw new Error("Firestore is not initialized.");
-    const patientData = {
-        ...patient,
+    
+    const { password, ...patientData } = patient;
+
+    // --- Firebase Auth User Creation (Simulated) ---
+    // In a real application, you would use a secure backend function (e.g., Firebase Function)
+    // to call the Firebase Admin SDK and create a user with the provided email and password.
+    // Never handle user creation with sensitive data directly on the client.
+    if (password && patientData.email) {
+        // Example: await createUserInBackend({ email: patientData.email, password });
+        console.log(`(Simulado) Creando usuario de Firebase Auth para ${patientData.email}`);
+    } else if (!patientData.email) {
+        throw new Error("El email es requerido para crear un paciente con acceso al portal.");
+    }
+    
+    const dataToSave: Omit<Patient, 'id'> = {
+        ...patientData,
         proactiveStatus: ProactivePatientStatus.OK,
         proactiveMessage: 'No requiere acción.',
         actionNeeded: PatientActionNeeded.NONE,
         commercialMedications: []
     };
-    const docRef = await addDoc(collection(db, 'patients'), patientData as any);
+    const docRef = await addDoc(collection(db, 'patients'), dataToSave as any);
     return docRef.id;
 }
+
 
 export const deletePatient = async (id: string): Promise<void> => {
     if (!db) throw new Error("Firestore is not initialized.");
     // TODO: Add logic to check for dependencies if needed (e.g., recipes)
+    // Also, you would need a backend function to delete the associated Firebase Auth user.
+    console.log(`(Simulado) Eliminando usuario de Firebase Auth para el paciente ${id}.`);
     await deleteDoc(doc(db, 'patients', id));
 };
 

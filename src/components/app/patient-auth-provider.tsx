@@ -8,15 +8,13 @@ import { Loader2 } from 'lucide-react';
 interface PatientAuthContextType {
   patient: Patient | null;
   loading: boolean;
-  setPatient: (patient: Patient) => void;
-  setTokenAndPatient: (token: string, patient: Patient) => void;
+  setPatient: (patient: Patient | null) => void;
   logout: () => void;
 }
 
 const PatientAuthContext = createContext<PatientAuthContextType | undefined>(undefined);
 
 const PATIENT_SESSION_KEY = 'patient-session-data';
-const PATIENT_TOKEN_KEY = 'patient-auth-token';
 
 export function PatientAuthProvider({ children }: { children: React.ReactNode }) {
   const [patient, setPatientState] = useState<Patient | null>(null);
@@ -39,23 +37,8 @@ export function PatientAuthProvider({ children }: { children: React.ReactNode })
     }
   }, []);
 
-  const setTokenAndPatient = useCallback((token: string, newPatient: Patient) => {
-    setPatient(newPatient);
-    try {
-        sessionStorage.setItem(PATIENT_TOKEN_KEY, token);
-    } catch(e) {
-        console.error("Failed to save patient token to sessionStorage", e);
-    }
-  }, [setPatient]);
-
-
   const logout = useCallback(() => {
     setPatient(null);
-     try {
-        sessionStorage.removeItem(PATIENT_TOKEN_KEY);
-    } catch (e) {
-        console.error("Failed to remove patient token from sessionStorage", e);
-    }
   }, [setPatient]);
 
   useEffect(() => {
@@ -77,7 +60,6 @@ export function PatientAuthProvider({ children }: { children: React.ReactNode })
     loading,
     setPatient,
     logout,
-    setTokenAndPatient
   };
 
   return (
