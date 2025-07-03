@@ -90,7 +90,7 @@ import {
   Calendar as CalendarIcon,
   Split,
 } from 'lucide-react';
-import { getRecipes, getPatients, getDoctors, getExternalPharmacies, deleteRecipe, updateRecipe, Recipe, Patient, Doctor, ExternalPharmacy, RecipeStatus, AuditTrailEntry } from '@/lib/data';
+import { getRecipes, getPatients, getDoctors, getExternalPharmacies, deleteRecipe, updateRecipe, logControlledMagistralDispensation, Recipe, Patient, Doctor, ExternalPharmacy, RecipeStatus, AuditTrailEntry } from '@/lib/data';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DateRange } from "react-day-picker";
@@ -183,11 +183,22 @@ export default function RecipesPage() {
   const handleUpdateStatus = async (recipe: Recipe, newStatus: RecipeStatus, notes?: string) => {
     setIsSubmitting(true);
     try {
+      // --- Connection to Controlled Drugs Module ---
+      if (newStatus === RecipeStatus.Dispensed && recipe.isControlled) {
+        const patient = patients.find(p => p.id === recipe.patientId);
+        if (patient) {
+          await logControlledMagistralDispensation(recipe, patient);
+          toast({ title: "Registro Controlado Creado", description: `La dispensación se ha registrado en el libro de control.` });
+        } else {
+          throw new Error("No se encontró el paciente para registrar la dispensación controlada.");
+        }
+      }
+
       const newAuditEntry: AuditTrailEntry = {
         status: newStatus,
         date: new Date().toISOString(),
         userId: 'system-user',
-        notes: notes || `Estado cambiado a ${newStatus}`
+        notes: notes || `Estado cambiado a ${statusConfig[newStatus].text}`
       };
       const updatedAuditTrail = [...(recipe.auditTrail || []), newAuditEntry];
       
@@ -213,7 +224,7 @@ export default function RecipesPage() {
         )
       );
     } catch (error) {
-       toast({ title: 'Error', description: 'No se pudo actualizar el estado de la receta.', variant: 'destructive' });
+       toast({ title: 'Error', description: `No se pudo actualizar el estado. ${error instanceof Error ? error.message : ''}`, variant: 'destructive' });
     } finally {
         setIsSubmitting(false);
     }

@@ -2,9 +2,10 @@
 import { db, storage } from './firebase';
 import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
-import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus } from './types';
+import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, ControlledLogEntryType } from './types';
 import type { Recipe, Doctor, InventoryItem, User, Role, ExternalPharmacy, Patient, PharmacovigilanceReport, AppData, AuditTrailEntry, DispatchNote, DispatchItem, ControlledSubstanceLogEntry } from './types';
 import { getMockData } from './mock-data';
+import { statusConfig } from './constants';
 
 export * from './types';
 
@@ -272,6 +273,7 @@ export const saveRecipe = async (data: any, imageUri: string | null, recipeId?: 
                 notes: 'Receta corregida y reenviada para validación.'
             };
             recipeDataForUpdate.status = RecipeStatus.PendingValidation;
+            recipeDataForUpdate.rejectionReason = ''; // Clear rejection reason
             recipeDataForUpdate.auditTrail = [...(existingRecipe.auditTrail || []), newAuditTrailEntry];
         }
 
@@ -389,4 +391,54 @@ export const processDispatch = async (pharmacyId: string, dispatchItems: Dispatc
     await batch.commit();
 
     return dispatchNoteId;
+};
+
+export const logControlledMagistralDispensation = async (recipe: Recipe, patient: Patient): Promise<void> => {
+    if (!db) {
+        throw new Error("Firestore is not initialized.");
+    }
+    if (!recipe.isControlled || !recipe.controlledRecipeFolio || !recipe.controlledRecipeType) {
+        throw new Error("Recipe is not a valid controlled substance recipe.");
+    }
+    if (recipe.items.length === 0) {
+        throw new Error("Recipe has no items to log.");
+    }
+
+    try {
+        const logCol = collection(db, 'controlledSubstanceLog');
+        const logSnapshot = await getDocs(logCol);
+        const newFolioNumber = logSnapshot.size + 1;
+        const internalFolio = `CSL-MG-${new Date().getFullYear()}-${String(newFolioNumber).padStart(4, '0')}`;
+        
+        const batch = writeBatch(db);
+
+        for (const item of recipe.items) {
+            const newLogEntry: Omit<ControlledSubstanceLogEntry, 'id'> = {
+                entryType: ControlledLogEntryType.MagistralDispensation,
+                dispensationDate: new Date().toISOString(),
+                internalFolio,
+                patientId: recipe.patientId,
+                doctorId: recipe.doctorId,
+                medicationName: `${item.principalActiveIngredient} ${item.concentrationValue}${item.concentrationUnit}`,
+                recipeId: recipe.id,
+                quantityDispensed: Number(item.totalQuantityValue),
+                quantityUnit: item.totalQuantityUnit,
+                controlledType: 'Psicotrópico', // This might need to be more dynamic if recipes can contain estupefacientes
+                prescriptionFolio: recipe.controlledRecipeFolio,
+                prescriptionType: recipe.controlledRecipeType as any,
+                retrievedBy_Name: patient.name,
+                retrievedBy_RUT: patient.rut,
+                prescriptionImageUrl: recipe.controlledRecipeImageUrl || recipe.prescriptionImageUrl,
+            };
+
+            const logDocRef = doc(logCol);
+            batch.set(logDocRef, newLogEntry);
+        }
+
+        await batch.commit();
+
+    } catch (error) {
+        console.error("Error logging controlled substance dispensation:", error);
+        throw new Error("Could not log controlled substance dispensation.");
+    }
 };
