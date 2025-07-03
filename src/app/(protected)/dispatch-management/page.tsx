@@ -134,11 +134,11 @@ export default function DispatchManagementPage() {
       const patient = patients.find(p => p.id === recipe.patientId);
 
       if (!Array.isArray(recipe.items) || recipe.items.length === 0) {
-        continue; // CRITICAL FIX: Skip recipes with no items to prevent crashes.
+        continue;
       }
 
       for (const recipeItem of recipe.items) {
-        if (!recipeItem?.principalActiveIngredient) continue;
+        if (!recipeItem?.principalActiveIngredient || !recipeItem.requiresFractionation) continue;
 
         const isAlreadyInActiveDispatch = dispatchNotes.some(dn => 
             dn.status === DispatchStatus.Active &&
