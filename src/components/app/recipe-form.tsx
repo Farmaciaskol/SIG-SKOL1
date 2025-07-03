@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray, useWatch } from 'react-hook-form';
@@ -27,6 +27,7 @@ import { getPatients, getDoctors, getRecipe, getExternalPharmacies, saveRecipe, 
 import { type Patient, type Doctor, type ExternalPharmacy, RecipeStatus, type AppSettings, type InventoryItem } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { simplifyInstructions } from '@/ai/flows/simplify-instructions';
+import { extractRecipeDataFromImage } from '@/ai/flows/extract-recipe-data-from-image';
 import Image from 'next/image';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -156,14 +157,14 @@ const RecipeItemCard = ({ index, remove, form, appSettings, inventory, isSimplif
     const supplySource = useWatch({ control, name: 'supplySource' });
     const requiresFractionationValue = useWatch({ control, name: `items.${index}.requiresFractionation` });
 
-    const filteredInventoryForPA = useMemo(() => {
+    const filteredInventoryForPA = React.useMemo(() => {
         if (!principalActiveIngredientValue?.trim()) {
             return inventory.filter(invItem => invItem.itemsPerBaseUnit && invItem.itemsPerBaseUnit > 0);
         }
         const lowerPAI = principalActiveIngredientValue.toLowerCase();
         return inventory.filter(invItem => 
             (invItem.itemsPerBaseUnit && invItem.itemsPerBaseUnit > 0) &&
-            (invItem.activePrinciple.toLowerCase().includes(lowerPAI))
+            (invItem.activePrinciple && invItem.activePrinciple.toLowerCase().includes(lowerPAI))
         );
     }, [principalActiveIngredientValue, inventory]);
 
@@ -363,16 +364,16 @@ const RecipeItemCard = ({ index, remove, form, appSettings, inventory, isSimplif
 export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [externalPharmacies, setExternalPharmacies] = useState<ExternalPharmacy[]>([]);
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  const [appSettings, setAppSettings] = useState<AppSettings | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isAiExtracting, setIsAiExtracting] = useState(false);
-  const [isSimplifying, setIsSimplifying] = useState<number | null>(null);
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [patients, setPatients] = React.useState<Patient[]>([]);
+  const [doctors, setDoctors] = React.useState<Doctor[]>([]);
+  const [externalPharmacies, setExternalPharmacies] = React.useState<ExternalPharmacy[]>([]);
+  const [inventory, setInventory] = React.useState<InventoryItem[]>([]);
+  const [appSettings, setAppSettings] = React.useState<AppSettings | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [isAiExtracting, setIsAiExtracting] = React.useState(false);
+  const [isSimplifying, setIsSimplifying] = React.useState<number | null>(null);
+  const [previewImage, setPreviewImage] = React.useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const isEditMode = !!recipeId;
 
@@ -408,7 +409,7 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
     name: 'items',
   });
 
-  const loadFormData = useCallback(async (recipeData: any) => {
+  const loadFormData = React.useCallback(async (recipeData: any) => {
     const valuesToSet = {
         ...recipeData,
         prescriptionDate: recipeData.prescriptionDate ? parseISO(recipeData.prescriptionDate) : new Date(),
@@ -440,7 +441,7 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
     }
   }, [form]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
@@ -516,7 +517,7 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
   const selectedPharmacyId = form.watch('externalPharmacyId');
   const supplySource = form.watch('supplySource');
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (selectedPharmacyId) {
         const selectedPharmacy = externalPharmacies.find(p => p.id === selectedPharmacyId);
         if (selectedPharmacy && selectedPharmacy.transportCost) {
@@ -525,7 +526,7 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
     }
   }, [selectedPharmacyId, externalPharmacies, form]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const calculateTotals = () => {
       watchedItems.forEach((item, index) => {
         const { frequency, treatmentDurationValue, treatmentDurationUnit } = item;
@@ -554,7 +555,7 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
     calculateTotals();
   }, [watchedItems, form]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const isSkolSource = supplySource === 'Insumos de Skol';
     fields.forEach((_item, index) => {
         form.setValue(`items.${index}.requiresFractionation`, isSkolSource, { shouldValidate: true });
@@ -1028,7 +1029,7 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
             </Button>
             <Button type="submit" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isEditMode && !copyFromId ? 'Guardar Cambios' : 'Guardar Receta'}
+                {isEditMode && !copyFromId ? 'Guardar Cambios' : 'Crear Receta'}
             </Button>
           </div>
         </div>
