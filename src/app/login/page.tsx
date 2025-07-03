@@ -37,9 +37,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-sky-800 lg:bg-transparent lg:grid lg:grid-cols-2">
+    <div className="min-h-screen w-full bg-sky-800 lg:bg-background lg:grid lg:grid-cols-2">
       {/* Left Branding Panel */}
-      <div className="hidden bg-sky-800 lg:flex flex-col items-center justify-center p-12 text-center">
+      <div className="hidden lg:flex flex-col items-center justify-center p-12 text-center bg-sky-800">
         <div className="space-y-4 max-w-md">
           <Image
             src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
@@ -59,14 +59,14 @@ export default function LoginPage() {
       </div>
       
       {/* Right Form Panel */}
-      <div className="flex items-center justify-center py-12 px-4 lg:bg-background">
+      <div className="flex items-center justify-center py-12 px-4">
         <div className="w-full max-w-sm space-y-8">
             <Image
                 src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
                 alt="Skol Pharmacy Logo"
                 width={120}
                 height={40}
-                className="mx-auto [filter:brightness(0)_invert(1)] lg:hidden"
+                className="mx-auto lg:hidden"
                 priority
             />
             <div className="w-full bg-card rounded-xl shadow-xl p-8 space-y-6">
@@ -114,7 +114,7 @@ export default function LoginPage() {
                     </div>
                   </div>
 
-                  <Button type="submit" className="w-full bg-sky-700 hover:bg-sky-800 text-white" disabled={loading}>
+                  <Button type="submit" className="w-full" disabled={loading}>
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {loading ? 'Ingresando...' : 'Ingresar al Sistema'}
                   </Button>

@@ -11,8 +11,8 @@
     --card-foreground: 215 25% 27%;
     --popover: 0 0% 100%;
     --popover-foreground: 215 25% 27%;
-    --primary: 197 71% 73%; /* Sky Blue #87CEEB */
-    --primary-foreground: 215 25% 20%;
+    --primary: 202 95% 32%; /* Darker blue based on sky-700 */
+    --primary-foreground: 0 0% 100%;
     --secondary: 214 23% 90%;
     --secondary-foreground: 215 39% 18%;
     --muted: 214 23% 90%;
@@ -23,7 +23,7 @@
     --destructive-foreground: 0 0% 100%;
     --border: 215 28% 84%;
     --input: 215 28% 84%;
-    --ring: 197 71% 73%;
+    --ring: 202 95% 32%;
     --radius: 0.75rem;
     --chart-1: 197 71% 73%;
     --chart-2: 195 100% 50%;
@@ -39,8 +39,8 @@
     --card-foreground: 220 17% 96%;
     --popover: 220 13% 10%;
     --popover-foreground: 220 17% 96%;
-    --primary: 197 71% 73%;
-    --primary-foreground: 215 25% 20%;
+    --primary: 202 95% 32%;
+    --primary-foreground: 0 0% 100%;
     --secondary: 215 25% 27%;
     --secondary-foreground: 220 17% 96%;
     --muted: 215 25% 27%;
@@ -51,7 +51,7 @@
     --destructive-foreground: 220 17% 96%;
     --border: 215 25% 27%;
     --input: 215 25% 27%;
-    --ring: 197 71% 73%;
+    --ring: 202 95% 32%;
     --radius: 0.75rem;
     --chart-1: 197 71% 73%;
     --chart-2: 195 100% 50%;
