@@ -213,163 +213,165 @@ const RecipeItemCard = ({
   }, [principalActiveIngredientValue, inventory]);
 
   return (
-    <Card className="p-4 relative">
-      {totalFields > 1 && (
-        <Button type="button" variant="ghost" size="icon"
-          className="absolute top-2 right-2 text-red-500 hover:text-red-600 h-7 w-7"
-          onClick={() => remove(index)}
-        >
-          <Trash2 className="h-4 w-4" />
-          <span className="sr-only">Eliminar Ítem</span>
-        </Button>
-      )}
+    <Card className="relative bg-card">
+      <CardContent className="p-4">
+        {totalFields > 1 && (
+          <Button type="button" variant="ghost" size="icon"
+            className="absolute top-2 right-2 text-red-500 hover:text-red-600 h-7 w-7"
+            onClick={() => remove(index)}
+          >
+            <Trash2 className="h-4 w-4" />
+            <span className="sr-only">Eliminar Ítem</span>
+          </Button>
+        )}
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <FormField control={control} name={`items.${index}.principalActiveIngredient`} render={({ field }) => (
-          <FormItem className="md:col-span-4"><FormLabel>Principio Activo Principal *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-        )} />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <FormField control={control} name={`items.${index}.principalActiveIngredient`} render={({ field }) => (
+            <FormItem className="md:col-span-4"><FormLabel>Principio Activo Principal *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+          )} />
 
-        <FormField control={control} name={`items.${index}.pharmaceuticalForm`} render={({ field }) => (
-          <FormItem className="md:col-span-2">
-            <FormLabel>Forma Farmacéutica *</FormLabel>
-            <Select onValueChange={(value) => {
-              field.onChange(value);
-              const defaults = PHARMACEUTICAL_FORM_DEFAULTS[value];
-              if (defaults && appSettings) {
-                setValue(`items.${index}.concentrationUnit`, defaults.concentrationUnit, { shouldValidate: true });
-                setValue(`items.${index}.dosageUnit`, defaults.dosageUnit, { shouldValidate: true });
-                setValue(`items.${index}.totalQuantityUnit`, defaults.totalQuantityUnit, { shouldValidate: true });
-              }
-            }} value={field.value}>
-              <FormControl><SelectTrigger><SelectValue placeholder="Seleccione..." /></SelectTrigger></FormControl>
-              <SelectContent>{appSettings?.pharmaceuticalForms.map(unit => <SelectItem key={unit} value={unit.toLowerCase()}>{unit}</SelectItem>)}</SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )} />
-
-        <FormField control={control} name={`items.${index}.concentrationValue`} render={({ field }) => (
-          <FormItem><FormLabel>Concentración(Valor) *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-        )} />
-        <FormField control={control} name={`items.${index}.concentrationUnit`} render={({ field }) => (
-          <FormItem>
-            <FormLabel>Concentración(Unidad) *</FormLabel>
-            <Select onValueChange={field.onChange} value={field.value}>
-              <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
-              <SelectContent>{appSettings?.concentrationUnits.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}</SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )} />
-
-        <FormField control={control} name={`items.${index}.dosageValue`} render={({ field }) => (
-          <FormItem><FormLabel>Dosis(Valor) *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-        )} />
-        <FormField control={control} name={`items.${index}.dosageUnit`} render={({ field }) => (
-          <FormItem>
-            <FormLabel>Dosis(Unidad) *</FormLabel>
-            <Select onValueChange={field.onChange} value={field.value}>
-              <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
-              <SelectContent>{appSettings?.dosageUnits.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}</SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )} />
-
-        <FormField control={control} name={`items.${index}.frequency`} render={({ field }) => (
-          <FormItem className="md:col-span-2">
-            <FormLabel>Frecuencia(horas) *</FormLabel>
-            <FormControl><Input placeholder="Ej: 8, 12, 24" {...field} /></FormControl>
-            <FormMessage />
-          </FormItem>
-        )} />
-
-        <FormField control={control} name={`items.${index}.treatmentDurationValue`} render={({ field }) => (
-          <FormItem><FormLabel>Duración Trat.(Valor) *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-        )} />
-        <FormField control={control} name={`items.${index}.treatmentDurationUnit`} render={({ field }) => (
-          <FormItem>
-            <FormLabel>Duración Trat.(Unidad) *</FormLabel>
-            <Select onValueChange={field.onChange} value={field.value}>
-              <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
-              <SelectContent>{appSettings?.treatmentDurationUnits.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}</SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )} />
-
-        <FormField control={control} name={`items.${index}.totalQuantityValue`} render={({ field }) => (
-          <FormItem><FormLabel>Cant. Total (Valor) *</FormLabel><FormControl><Input {...field} readOnly className="bg-muted/70 cursor-default" /></FormControl><FormMessage /></FormItem>
-        )} />
-        <FormField control={control} name={`items.${index}.totalQuantityUnit`} render={({ field }) => (
-          <FormItem>
-            <FormLabel>Cant. Total (Unidad) *</FormLabel>
-            <Select onValueChange={field.onChange} value={field.value}>
-              <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
-              <SelectContent>{appSettings?.quantityToPrepareUnits.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}</SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )} />
-
-        <FormField control={control} name={`items.${index}.usageInstructions`} render={({ field }) => (
-          <FormItem className="md:col-span-4">
-            <FormLabel>Instrucciones de Uso *</FormLabel>
-            <FormControl><Textarea placeholder="Instrucciones de uso para el paciente..." {...field} /></FormControl>
-            <FormMessage />
-          </FormItem>
-        )} />
-      </div>
-      <div className="space-y-4 pt-4">
-        <FormField control={control} name={`items.${index}.requiresFractionation`} render={({ field }) => (
-          <FormItem className="flex flex-row items-center space-x-2 pt-2">
-            <FormControl>
-              <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-            </FormControl>
-            <FormLabel className="!mt-0 font-normal text-sm text-slate-700">Insumo provisto por Skol (para fraccionamiento)</FormLabel>
-          </FormItem>
-        )} />
-
-        {supplySource === 'Insumos de Skol' && requiresFractionationValue && (
-          <FormField control={control} name={`items.${index}.sourceInventoryItemId`} render={({ field }) => (
-            <FormItem className="md:col-span-4">
-              <FormLabel>Insumo Base de Inventario Skol *</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar el producto a fraccionar..." />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {filteredInventoryForPA.length > 0 ? (
-                    filteredInventoryForPA.map(invItem => (
-                      <SelectItem key={invItem.id} value={invItem.id}>
-                        {invItem.name} (Stock: {invItem.quantity} {invItem.unit})
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <div className="p-2 text-center text-xs text-muted-foreground">
-                      <p>No se encontraron insumos.</p>
-                      <Button type="button" variant="link" className="p-0 h-auto text-xs" asChild>
-                        <Link href="/inventory" target="_blank">Crear producto en Inventario</Link>
-                      </Button>
-                    </div>
-                  )}
-                </SelectContent>
+          <FormField control={control} name={`items.${index}.pharmaceuticalForm`} render={({ field }) => (
+            <FormItem className="md:col-span-2">
+              <FormLabel>Forma Farmacéutica *</FormLabel>
+              <Select onValueChange={(value) => {
+                field.onChange(value);
+                const defaults = PHARMACEUTICAL_FORM_DEFAULTS[value];
+                if (defaults && appSettings) {
+                  setValue(`items.${index}.concentrationUnit`, defaults.concentrationUnit, { shouldValidate: true });
+                  setValue(`items.${index}.dosageUnit`, defaults.dosageUnit, { shouldValidate: true });
+                  setValue(`items.${index}.totalQuantityUnit`, defaults.totalQuantityUnit, { shouldValidate: true });
+                }
+              }} value={field.value}>
+                <FormControl><SelectTrigger><SelectValue placeholder="Seleccione..." /></SelectTrigger></FormControl>
+                <SelectContent>{appSettings?.pharmaceuticalForms.map(unit => <SelectItem key={unit} value={unit.toLowerCase()}>{unit}</SelectItem>)}</SelectContent>
               </Select>
-              <FormDescription className="text-xs text-slate-500">Seleccione la "caja" o producto base del cual se obtendrá este preparado.</FormDescription>
               <FormMessage />
             </FormItem>
           )} />
-        )}
-      </div>
 
-      <div className="flex justify-start pt-4">
-        <Button type="button" variant="outline" size="sm" onClick={() => handleSimplifyInstructions(index)} disabled={isSimplifying === index}>
-          {isSimplifying === index ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
-          {isSimplifying === index ? 'Simplificando...' : 'Simplificar (IA)'}
-        </Button>
-      </div>
+          <FormField control={control} name={`items.${index}.concentrationValue`} render={({ field }) => (
+            <FormItem><FormLabel>Concentración(Valor) *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+          )} />
+          <FormField control={control} name={`items.${index}.concentrationUnit`} render={({ field }) => (
+            <FormItem>
+              <FormLabel>Concentración(Unidad) *</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
+                <SelectContent>{appSettings?.concentrationUnits.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}</SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )} />
+
+          <FormField control={control} name={`items.${index}.dosageValue`} render={({ field }) => (
+            <FormItem><FormLabel>Dosis(Valor) *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+          )} />
+          <FormField control={control} name={`items.${index}.dosageUnit`} render={({ field }) => (
+            <FormItem>
+              <FormLabel>Dosis(Unidad) *</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
+                <SelectContent>{appSettings?.dosageUnits.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}</SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )} />
+
+          <FormField control={control} name={`items.${index}.frequency`} render={({ field }) => (
+            <FormItem className="md:col-span-2">
+              <FormLabel>Frecuencia(horas) *</FormLabel>
+              <FormControl><Input placeholder="Ej: 8, 12, 24" {...field} /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+
+          <FormField control={control} name={`items.${index}.treatmentDurationValue`} render={({ field }) => (
+            <FormItem><FormLabel>Duración Trat.(Valor) *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+          )} />
+          <FormField control={control} name={`items.${index}.treatmentDurationUnit`} render={({ field }) => (
+            <FormItem>
+              <FormLabel>Duración Trat.(Unidad) *</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
+                <SelectContent>{appSettings?.treatmentDurationUnits.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}</SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )} />
+
+          <FormField control={control} name={`items.${index}.totalQuantityValue`} render={({ field }) => (
+            <FormItem><FormLabel>Cant. Total (Valor) *</FormLabel><FormControl><Input {...field} readOnly className="bg-muted/70 cursor-default" /></FormControl><FormMessage /></FormItem>
+          )} />
+          <FormField control={control} name={`items.${index}.totalQuantityUnit`} render={({ field }) => (
+            <FormItem>
+              <FormLabel>Cant. Total (Unidad) *</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
+                <SelectContent>{appSettings?.quantityToPrepareUnits.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}</SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )} />
+
+          <FormField control={control} name={`items.${index}.usageInstructions`} render={({ field }) => (
+            <FormItem className="md:col-span-4">
+              <FormLabel>Instrucciones de Uso *</FormLabel>
+              <FormControl><Textarea placeholder="Instrucciones de uso para el paciente..." {...field} /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+        </div>
+        <div className="space-y-4 pt-4">
+          <FormField control={control} name={`items.${index}.requiresFractionation`} render={({ field }) => (
+            <FormItem className="flex flex-row items-center space-x-2 pt-2">
+              <FormControl>
+                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+              </FormControl>
+              <FormLabel className="!mt-0 font-normal text-sm text-slate-700">Insumo provisto por Skol (para fraccionamiento)</FormLabel>
+            </FormItem>
+          )} />
+
+          {supplySource === 'Insumos de Skol' && requiresFractionationValue && (
+            <FormField control={control} name={`items.${index}.sourceInventoryItemId`} render={({ field }) => (
+              <FormItem className="md:col-span-4">
+                <FormLabel>Insumo Base de Inventario Skol *</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar el producto a fraccionar..." />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {filteredInventoryForPA.length > 0 ? (
+                      filteredInventoryForPA.map(invItem => (
+                        <SelectItem key={invItem.id} value={invItem.id}>
+                          {invItem.name} (Stock: {invItem.quantity} {invItem.unit})
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <div className="p-2 text-center text-xs text-muted-foreground">
+                        <p>No se encontraron insumos.</p>
+                        <Button type="button" variant="link" className="p-0 h-auto text-xs" asChild>
+                          <Link href="/inventory" target="_blank">Crear producto en Inventario</Link>
+                        </Button>
+                      </div>
+                    )}
+                  </SelectContent>
+                </Select>
+                <FormDescription className="text-xs text-slate-500">Seleccione la "caja" o producto base del cual se obtendrá este preparado.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )} />
+          )}
+        </div>
+
+        <div className="flex justify-start pt-4">
+          <Button type="button" variant="outline" size="sm" onClick={() => handleSimplifyInstructions(index)} disabled={isSimplifying === index}>
+            {isSimplifying === index ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+            {isSimplifying === index ? 'Simplificando...' : 'Simplificar (IA)'}
+          </Button>
+        </div>
+      </CardContent>
     </Card>
   );
 };
@@ -627,55 +629,55 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex h-full w-full gap-6">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start"
+      >
         {/* Left Column (Image) */}
-        <div className="w-1/3 lg:w-2/5 xl:w-1/3 flex-shrink-0">
-          <Card className="flex flex-col h-full">
-            <CardHeader>
-              <CardTitle className="text-xl font-semibold">Imagen de la Receta</CardTitle>
-            </CardHeader>
-            <CardContent className="flex-grow flex flex-col items-center justify-center p-2">
-              <div
-                className="w-full flex-grow flex items-center justify-center border-2 border-dashed rounded-lg overflow-hidden bg-muted/50"
-              >
-                <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*,application/pdf" className="hidden" />
-                {previewImage ? (
-                  <Image 
-                      src={previewImage} 
-                      alt="Vista previa de receta" 
-                      width={400} 
-                      height={500} 
-                      className={cn(
-                          "h-auto w-full max-h-full object-contain transition-transform duration-300 ease-in-out cursor-pointer",
-                          isZoomed ? "scale-150" : ""
-                      )}
-                      onClick={(e) => {
-                          e.stopPropagation();
-                          setIsZoomed(!isZoomed);
-                      }}
-                  />
-                ) : (
-                  <div onClick={() => fileInputRef.current?.click()} className="text-center cursor-pointer p-4">
-                    <ImageIcon className="h-10 w-10 text-slate-400 mb-2 mx-auto" />
-                    <p className="text-sm text-slate-500 mb-1">Arrastra o haz clic para subir</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-            <CardFooter className="flex-shrink-0 grid grid-cols-2 gap-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
-                    Cambiar Imagen
-                </Button>
-                <Button type="button" onClick={handleExtractWithAI} disabled={!previewImage || isAiExtracting}>
-                    {isAiExtracting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
-                    {isAiExtracting ? 'Extrayendo...' : 'Extraer con IA'}
-                </Button>
-            </CardFooter>
-          </Card>
+        <div className="lg:col-span-1 lg:sticky top-8">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl font-semibold">Imagen de la Receta</CardTitle>
+              </CardHeader>
+              <CardContent className="flex-grow flex flex-col items-center justify-center p-2">
+                <div className="w-full h-96 flex items-center justify-center border-2 border-dashed rounded-lg overflow-hidden bg-muted/50">
+                  <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*,application/pdf" className="hidden" />
+                  {previewImage ? (
+                    <div className="relative w-full h-full">
+                       <Image 
+                          src={previewImage} 
+                          alt="Vista previa de receta" 
+                          width={400}
+                          height={500}
+                          className={cn(
+                            "absolute inset-0 h-full w-full object-contain transition-transform duration-300 ease-in-out cursor-pointer",
+                            isZoomed ? "scale-125" : "scale-100"
+                          )}
+                          onClick={() => setIsZoomed(!isZoomed)}
+                        />
+                    </div>
+                  ) : (
+                    <div onClick={() => fileInputRef.current?.click()} className="text-center cursor-pointer p-4">
+                      <ImageIcon className="h-10 w-10 text-slate-400 mb-2 mx-auto" />
+                      <p className="text-sm text-slate-500 mb-1">Arrastra o haz clic para subir</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+              <CardFooter className="flex-shrink-0 grid grid-cols-2 gap-2 pt-4">
+                  <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                      Cambiar Imagen
+                  </Button>
+                  <Button type="button" onClick={handleExtractWithAI} disabled={!previewImage || isAiExtracting}>
+                      {isAiExtracting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
+                      {isAiExtracting ? 'Extrayendo...' : 'Extraer con IA'}
+                  </Button>
+              </CardFooter>
+            </Card>
         </div>
 
         {/* Right Column (Form Fields) */}
-        <div className="flex-1 space-y-6 overflow-y-auto pr-4 pb-16">
+        <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardContent className="p-6">
               <h2 className="text-xl font-semibold mb-4 text-slate-700">Información General</h2>

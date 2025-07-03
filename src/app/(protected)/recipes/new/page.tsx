@@ -26,7 +26,7 @@ export default function NewRecipePage() {
 
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)]">
+    <div>
       <div className="flex-shrink-0 flex items-center gap-4 mb-4">
         <Button variant="outline" size="icon" asChild>
           <Link href="/recipes">
@@ -43,7 +43,7 @@ export default function NewRecipePage() {
         </div>
       </div>
       
-      <div className="flex-grow overflow-hidden">
+      <div>
         <RecipeForm copyFromId={copyFromId} patientId={patientId} />
       </div>
     </div>
