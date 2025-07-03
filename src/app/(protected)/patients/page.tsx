@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { getPatients, deletePatient, Patient, ProactivePatientStatus, PatientActionNeeded } from '@/lib/data';
-import { PlusCircle, Search, User, Heart, AlertTriangle, Pencil, Trash2, FileText, Repeat, Truck, CheckCircle2 } from 'lucide-react';
+import { PlusCircle, Search, User, Heart, AlertTriangle, Pencil, Trash2, FileText, Repeat, Truck, CheckCircle2, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PatientFormDialog } from '@/components/app/patient-form-dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -45,6 +45,7 @@ export default function PatientsPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
 
   const fetchData = useCallback(async () => {
@@ -80,6 +81,7 @@ export default function PatientsPage() {
 
   const handleDelete = async () => {
     if (!patientToDelete) return;
+    setIsDeleting(true);
     try {
       await deletePatient(patientToDelete.id);
       toast({ title: "Paciente Eliminado", description: `El paciente ${patientToDelete.name} ha sido eliminado.` });
@@ -88,6 +90,7 @@ export default function PatientsPage() {
       toast({ title: "Error", description: "No se pudo eliminar el paciente.", variant: "destructive" });
     } finally {
       setPatientToDelete(null);
+      setIsDeleting(false);
     }
   };
 
@@ -175,7 +178,7 @@ export default function PatientsPage() {
     <>
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-800 font-headline">Gestión de Pacientes</h1>
+          <h1 className="text-3xl font-bold tracking-tight font-headline text-slate-800">Gestión de Pacientes</h1>
           <p className="text-sm text-muted-foreground">
             Una visión 360° para una atención farmacéutica proactiva.
           </p>
@@ -271,7 +274,10 @@ export default function PatientsPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Eliminar
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
