@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { usePatientAuth } from '@/components/app/patient-auth-provider';
 import { getDashboardData, getMedicationInfo, submitPatientMessage, submitNewPrescription } from '@/lib/patient-actions';
 import { Patient, Recipe, PatientMessage, ProactivePatientStatus } from '@/lib/types';
-import { Loader2, AlertTriangle, CheckCircle, Clock, FileText, Bot, Send, MessageSquare, Copy, Upload, X, Image as ImageIcon, FileUp, CirclePlus } from 'lucide-react';
+import { Loader2, AlertTriangle, CheckCircle, Clock, FileText, Bot, Send, MessageSquare, Upload, X, FileUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -17,7 +17,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import React from 'react';
-import { Input } from '@/components/ui/input';
 
 const ProactiveActionCard = ({ patient }: { patient: Patient }) => {
     const statusConfig = {
@@ -275,7 +274,6 @@ export default function PatientPortalDashboardPage() {
               </Card>
             </div>
             
-            {/* Medication Info Modal */}
             <Dialog open={isMedInfoOpen} onOpenChange={setIsMedInfoOpen}>
                 <DialogContent>
                     <DialogHeader>
@@ -291,7 +289,6 @@ export default function PatientPortalDashboardPage() {
                 </DialogContent>
             </Dialog>
 
-             {/* Secure Messaging Modal */}
             <Dialog open={isMessagingOpen} onOpenChange={setIsMessagingOpen}>
                 <DialogContent className="sm:max-w-[425px]">
                   <DialogHeader>
@@ -327,7 +324,6 @@ const SecureMessagingModal = ({ patientId, initialMessages }: { patientId: strin
             setMessages(prev => [...prev, sentMessage]);
             setNewMessage("");
 
-            // Simulate auto-reply
             setTimeout(() => {
                 setMessages(prev => [...prev, {
                     id: `auto-${Date.now()}`,

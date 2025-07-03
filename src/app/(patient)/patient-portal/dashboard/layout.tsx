@@ -3,7 +3,7 @@
 
 import { usePatientAuth } from '@/components/app/patient-auth-provider';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Loader2, LogOut, User, Settings } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -65,7 +65,10 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
                 </DropdownMenuItem>
                 <DropdownMenuItem disabled><Settings className="mr-2 h-4 w-4" />Configuración</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout}>
+                <DropdownMenuItem onClick={() => {
+                  logout();
+                  router.push('/patient-portal/login');
+                }}>
                   <LogOut className="mr-2 h-4 w-4" />
                   Cerrar Sesión
                 </DropdownMenuItem>

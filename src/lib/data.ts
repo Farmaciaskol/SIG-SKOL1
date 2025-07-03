@@ -1,5 +1,6 @@
 
 
+
 import { db, storage } from './firebase';
 import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc, deleteDoc, writeBatch, query, where } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
@@ -7,7 +8,6 @@ import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, Controll
 import type { Recipe, Doctor, InventoryItem, User, Role, ExternalPharmacy, Patient, PharmacovigilanceReport, AppData, AuditTrailEntry, DispatchNote, DispatchItem, ControlledSubstanceLogEntry, LotDetail } from './types';
 import { getMockData } from './mock-data';
 import { MAX_REPREPARATIONS } from './constants';
-import { v4 as uuidv4 } from 'uuid';
 
 export * from './types';
 
@@ -641,8 +641,7 @@ export const updateMonthlyDispensationBox = async (boxId: string, updates: Parti
   await updateDoc(boxRef, dataToUpdate as any);
 };
 
-// PATIENT PORTAL FUNCTIONS
-
+// --- START PATIENT PORTAL FUNCTIONS ---
 export async function findPatientByRut(rut: string): Promise<Patient | null> {
   if (!db) return null;
   const q = query(collection(db, "patients"), where("rut", "==", rut));
@@ -694,3 +693,4 @@ export async function createRecipeFromPortal(patientId: string, imageDataUri: st
 
     return { id: recipeRef.id, ...newRecipe };
 }
+// --- END PATIENT PORTAL FUNCTIONS ---

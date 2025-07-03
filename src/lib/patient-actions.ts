@@ -13,7 +13,7 @@ import { simplifyMedicationInfo } from '@/ai/flows/simplify-medication-info';
 
 // --- PATIENT PORTAL ACTIONS ---
 
-export async function loginPatientByRut(rut: string) {
+export async function loginPatientByRut(rut: string): Promise<{ success: boolean; patient?: any; error?: string }> {
   try {
     const patient = await findPatientByRut(rut);
     if (!patient) {
@@ -27,11 +27,12 @@ export async function loginPatientByRut(rut: string) {
 }
 
 export async function getDashboardData(patientId: string) {
-    const [readyForPickup, activeMagistralRecipes, messages] = await Promise.all([
+    const [readyForPickup, allPatientRecipes, messages] = await Promise.all([
         getRecipesReadyForPickup(patientId),
-        getRecipes(patientId).then(recipes => recipes.filter(r => r.status !== 'Dispensada' && r.status !== 'Anulada' && r.status !== 'Rechazada')),
+        getRecipes(patientId),
         getMessagesForPatient(patientId)
     ]);
+    const activeMagistralRecipes = allPatientRecipes.filter(r => r.status !== 'Dispensada' && r.status !== 'Anulada' && r.status !== 'Rechazada');
     return { readyForPickup, activeMagistralRecipes, messages };
 }
 

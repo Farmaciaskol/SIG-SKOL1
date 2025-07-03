@@ -21,7 +21,11 @@ export function PatientAuthProvider({ children }: { children: React.ReactNode })
 
   const logout = useCallback(() => {
     setPatientState(null);
-    sessionStorage.removeItem(PATIENT_KEY);
+    try {
+        sessionStorage.removeItem(PATIENT_KEY);
+    } catch (error) {
+        console.error("Could not remove patient data from sessionStorage:", error);
+    }
   }, []);
 
   useEffect(() => {

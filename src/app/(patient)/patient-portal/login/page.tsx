@@ -30,7 +30,6 @@ export default function PatientPortalLoginPage() {
       const result = await loginPatientByRut(rut);
       if (result.success && result.patient) {
         setPatient(result.patient);
-        toast({ title: `Bienvenido, ${result.patient.name}`, description: "Serás redirigido a tu portal." });
         router.push('/patient-portal/dashboard');
       } else {
         toast({ title: "Error de Acceso", description: result.error, variant: 'destructive' });
