@@ -1,10 +1,11 @@
 
 
 
+
 import { db, storage } from './firebase';
 import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc, deleteDoc, writeBatch, query, where } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
-import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, ControlledLogEntryType, ProactivePatientStatus, PatientActionNeeded, MonthlyDispensationBox, MonthlyDispensationBoxStatus, DispensationItem, DispensationItemStatus, PatientMessage } from './types';
+import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, ControlledLogEntryType, ProactivePatientStatus, PatientActionNeeded, MonthlyDispensationBox, MonthlyDispensationBoxStatus, DispensationItemStatus, PatientMessage, PharmacovigilanceReportStatus } from './types';
 import type { Recipe, Doctor, InventoryItem, User, Role, ExternalPharmacy, Patient, PharmacovigilanceReport, AppData, AuditTrailEntry, DispatchNote, DispatchItem, ControlledSubstanceLogEntry, LotDetail } from './types';
 import { getMockData } from './mock-data';
 import { MAX_REPREPARATIONS } from './constants';
@@ -516,6 +517,18 @@ export const updatePharmacovigilanceReport = async (id: string, updates: Partial
     await updateDoc(reportRef, dataToUpdate);
 };
 
+export const addPharmacovigilanceReport = async (reportData: Omit<PharmacovigilanceReport, 'id' | 'reportedAt' | 'updatedAt' | 'status'>): Promise<string> => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    const newReport: Omit<PharmacovigilanceReport, 'id'> = {
+        ...reportData,
+        status: PharmacovigilanceReportStatus.New,
+        reportedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+    };
+    const docRef = await addDoc(collection(db, 'pharmacovigilanceReports'), newReport);
+    return docRef.id;
+};
+
 export const updateExternalPharmacy = async (id: string, updates: Partial<ExternalPharmacy>): Promise<void> => {
     if (!db) throw new Error("Firestore is not initialized.");
     await updateDoc(doc(db, 'externalPharmacies', id), updates as any);
@@ -640,57 +653,3 @@ export const updateMonthlyDispensationBox = async (boxId: string, updates: Parti
   const dataToUpdate = { ...updates, updatedAt: new Date().toISOString() };
   await updateDoc(boxRef, dataToUpdate as any);
 };
-
-// --- START PATIENT PORTAL FUNCTIONS ---
-export async function findPatientByRut(rut: string): Promise<Patient | null> {
-  if (!db) return null;
-  const q = query(collection(db, "patients"), where("rut", "==", rut));
-  const snapshot = await getDocs(q);
-  if (snapshot.empty) {
-    return null;
-  }
-  const patientDoc = snapshot.docs[0];
-  const data = deepConvertTimestamps(patientDoc.data());
-  return { id: patientDoc.id, ...data } as Patient;
-}
-
-export async function sendMessageFromPatient(patientId: string, content: string): Promise<PatientMessage> {
-    if (!db) throw new Error("Firestore not initialized");
-    const message: Omit<PatientMessage, 'id'> = {
-        patientId,
-        content,
-        sender: 'patient',
-        createdAt: new Date().toISOString(),
-        read: false,
-    };
-    const docRef = await addDoc(collection(db, 'patientMessages'), message);
-    return { id: docRef.id, ...message };
-}
-
-export async function createRecipeFromPortal(patientId: string, imageDataUri: string): Promise<Recipe> {
-    if (!db || !storage) throw new Error("Firestore/Storage not initialized");
-
-    const recipeRef = doc(collection(db, "recipes"));
-    const storageRef = ref(storage, `portal-uploads/${patientId}/${recipeRef.id}`);
-    
-    const uploadResult = await uploadString(storageRef, imageDataUri, 'data_url');
-    const imageUrl = await getDownloadURL(uploadResult.ref);
-
-    const newRecipe: Omit<Recipe, 'id'> = {
-        patientId: patientId,
-        doctorId: '', // To be filled by pharmacist
-        items: [], // To be filled by pharmacist
-        status: RecipeStatus.PendingReviewPortal,
-        paymentStatus: 'Pendiente',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        prescriptionDate: new Date().toISOString(), // Default to today, pharmacist can change
-        dueDate: new Date(new Date().setMonth(new Date().getMonth() + 6)).toISOString(), // Default expiry
-        prescriptionImageUrl: imageUrl,
-    };
-
-    await setDoc(recipeRef, newRecipe);
-
-    return { id: recipeRef.id, ...newRecipe };
-}
-// --- END PATIENT PORTAL FUNCTIONS ---
