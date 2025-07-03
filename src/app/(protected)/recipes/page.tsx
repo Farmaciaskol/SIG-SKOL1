@@ -89,6 +89,8 @@ import {
   Filter,
   Calendar as CalendarIcon,
   Split,
+  UserSquare,
+  FileClock,
 } from 'lucide-react';
 import { getRecipes, getPatients, getDoctors, getExternalPharmacies, deleteRecipe, updateRecipe, logControlledMagistralDispensation, Recipe, Patient, Doctor, ExternalPharmacy, RecipeStatus, AuditTrailEntry } from '@/lib/data';
 import { format, parseISO } from 'date-fns';
@@ -100,6 +102,18 @@ import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+
+const StatCard = ({ title, value, icon: Icon, onClick, active = false }: { title: string; value: string | number; icon: React.ElementType, onClick: () => void, active?: boolean }) => (
+  <Card className={cn("hover:shadow-md transition-shadow cursor-pointer", active && "ring-2 ring-primary")} onClick={onClick}>
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle className="text-sm font-medium">{title}</CardTitle>
+      <Icon className="h-4 w-4 text-muted-foreground" />
+    </CardHeader>
+    <CardContent>
+      <p className="text-2xl font-bold">{value}</p>
+    </CardContent>
+  </Card>
+);
 
 export default function RecipesPage() {
   const { toast } = useToast();
@@ -357,6 +371,15 @@ export default function RecipesPage() {
     }
   };
   
+  const stats = useMemo(() => {
+    return {
+      pendingPortal: recipes.filter(r => r.status === RecipeStatus.PendingReviewPortal).length,
+      pendingValidation: recipes.filter(r => r.status === RecipeStatus.PendingValidation).length,
+      inPreparation: recipes.filter(r => r.status === RecipeStatus.Preparation).length,
+      readyForPickup: recipes.filter(r => r.status === RecipeStatus.ReadyForPickup).length,
+    }
+  }, [recipes]);
+
   const filteredRecipes = useMemo(() => {
     return recipes
     .filter((recipe) => {
@@ -569,6 +592,37 @@ export default function RecipesPage() {
         </Button>
       </div>
 
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+        <StatCard 
+          title="Pendientes del Portal" 
+          value={stats.pendingPortal} 
+          icon={UserSquare}
+          onClick={() => setStatusFilter(RecipeStatus.PendingReviewPortal)}
+          active={statusFilter === RecipeStatus.PendingReviewPortal}
+        />
+        <StatCard 
+          title="Pendientes de Validación" 
+          value={stats.pendingValidation} 
+          icon={FileClock}
+          onClick={() => setStatusFilter(RecipeStatus.PendingValidation)}
+          active={statusFilter === RecipeStatus.PendingValidation}
+        />
+        <StatCard 
+          title="En Preparación" 
+          value={stats.inPreparation} 
+          icon={Truck}
+          onClick={() => setStatusFilter(RecipeStatus.Preparation)}
+          active={statusFilter === RecipeStatus.Preparation}
+        />
+        <StatCard 
+          title="Listas para Retiro" 
+          value={stats.readyForPickup} 
+          icon={Package}
+          onClick={() => setStatusFilter(RecipeStatus.ReadyForPickup)}
+          active={statusFilter === RecipeStatus.ReadyForPickup}
+        />
+      </div>
+
       <Card>
         <CardContent className="p-4">
           <Collapsible
@@ -709,6 +763,18 @@ export default function RecipesPage() {
                                     {React.createElement(statusConfig[recipe.status]?.icon || FileX, { className: 'h-3 w-3 mr-1.5' })}
                                     {statusConfig[recipe.status]?.text || recipe.status}
                                   </Badge>
+                                  {recipe.status === RecipeStatus.PendingReviewPortal && (
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <span><UserSquare className="h-5 w-5 text-purple-500" /></span>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Receta subida desde el Portal de Pacientes</p>
+                                        </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                  )}
                                   {recipe.items.some(item => item.requiresFractionation) && (
                                     <TooltipProvider>
                                       <Tooltip>
@@ -741,6 +807,18 @@ export default function RecipesPage() {
                         <Link href={`/recipes/${recipe.id}`} className="text-lg font-bold text-primary hover:underline">{recipe.id}</Link>
                     </div>
                     <div className="flex items-center gap-2">
+                      {recipe.status === RecipeStatus.PendingReviewPortal && (
+                        <TooltipProvider>
+                            <Tooltip>
+                            <TooltipTrigger asChild>
+                                <span><UserSquare className="h-5 w-5 text-purple-500" /></span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Receta del Portal</p>
+                            </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                      )}
                       {recipe.items.some(item => item.requiresFractionation) && (
                         <TooltipProvider>
                           <Tooltip>

@@ -265,8 +265,15 @@ export const saveRecipe = async (data: any, imageUri: string | null, recipeId?: 
     if (recipeId) { // Editing
         const recipeRef = doc(db, 'recipes', recipeId);
         const existingRecipe = await getRecipe(recipeId);
-        if (existingRecipe && existingRecipe.status === RecipeStatus.Rejected) {
-            const newAuditTrailEntry: AuditTrailEntry = { status: RecipeStatus.PendingValidation, date: new Date().toISOString(), userId: 'system-user', notes: 'Receta corregida y reenviada para validación.' };
+        if (existingRecipe && (existingRecipe.status === RecipeStatus.Rejected || existingRecipe.status === RecipeStatus.PendingReviewPortal)) {
+            const newAuditTrailEntry: AuditTrailEntry = { 
+                status: RecipeStatus.PendingValidation, 
+                date: new Date().toISOString(), 
+                userId: 'system-user', 
+                notes: existingRecipe.status === RecipeStatus.Rejected 
+                    ? 'Receta corregida y reenviada para validación.'
+                    : 'Receta del portal revisada y enviada a validación.'
+            };
             recipeDataForUpdate.status = RecipeStatus.PendingValidation;
             recipeDataForUpdate.rejectionReason = '';
             recipeDataForUpdate.auditTrail = [...(existingRecipe.auditTrail || []), newAuditTrailEntry];

@@ -11,6 +11,7 @@ import {
   PlusCircle,
   CheckCircle2,
   FlaskConical,
+  Inbox,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -107,9 +108,9 @@ export default function DashboardPage() {
     if (!data) return [];
     
     return [
+      { title: 'Recetas del Portal Pendientes', value: data.recipes.filter(r => r.status === RecipeStatus.PendingReviewPortal).length, icon: Inbox, href: '/recipes?status=Pendiente+Revisión+-+Portal' },
       { title: 'En Preparación', value: data.recipes.filter(r => r.status === RecipeStatus.Preparation).length, icon: FlaskConical, href: '/recipes?status=En+Preparación' },
       { title: 'Ítems con Stock Bajo', value: data.inventory.filter(i => i.stock < i.lowStockThreshold).length, icon: BeakerIconCustom, href: '/inventory' },
-      { title: 'Saldo Pendiente (Recetarios)', value: '$60.500', icon: CreditCard, href: '/financial-management' },
       { title: 'Usuarios del Sistema', value: data.users.length, icon: UsersIconCustom, href: '/user-management' },
     ];
   }, [data]);
