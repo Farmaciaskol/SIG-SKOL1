@@ -309,13 +309,12 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
   React.useEffect(() => {
     const calculateTotals = () => {
       watchedItems.forEach((item, index) => {
-        const { dosageValue, frequency, treatmentDurationValue, treatmentDurationUnit } = item;
+        const { frequency, treatmentDurationValue, treatmentDurationUnit } = item;
         
-        const dose = parseFloat(dosageValue);
         const freq = parseInt(frequency, 10);
         const duration = parseInt(treatmentDurationValue, 10);
 
-        if (!isNaN(dose) && !isNaN(freq) && freq > 0 && !isNaN(duration)) {
+        if (!isNaN(freq) && freq > 0 && !isNaN(duration)) {
           let durationInDays = duration;
           if (treatmentDurationUnit === 'semanas') {
             durationInDays = duration * 7;
@@ -335,6 +334,13 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
     };
     calculateTotals();
   }, [watchedItems, form]);
+
+  React.useEffect(() => {
+    const isSkolSource = supplySource === 'Insumos de Skol';
+    fields.forEach((_item, index) => {
+        form.setValue(`items.${index}.requiresFractionation`, isSkolSource, { shouldValidate: true });
+    });
+  }, [supplySource, fields, form]);
 
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -792,7 +798,7 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
                             )}/>
 
                             <FormField control={form.control} name={`items.${index}.totalQuantityValue`} render={({ field }) => (
-                                <FormItem><FormLabel>Cant. Total (Valor) *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem><FormLabel>Cant. Total (Valor) *</FormLabel><FormControl><Input {...field} disabled /></FormControl><FormMessage /></FormItem>
                             )}/>
                             <FormField control={form.control} name={`items.${index}.totalQuantityUnit`} render={({ field }) => (
                                 <FormItem>
@@ -864,21 +870,6 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
                                 />
                             )}
                         </div>
-                        
-                        <FormField
-                            control={form.control}
-                            name={`items.${index}.isRefrigerated`}
-                            render={({ field }) => (
-                            <FormItem className="flex flex-row items-center space-x-2 pt-2">
-                                <FormControl>
-                                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                                </FormControl>
-                                <FormLabel className="!mt-0 font-normal text-sm text-slate-700">
-                                    El preparado final requiere refrigeración
-                                </FormLabel>
-                            </FormItem>
-                            )}
-                        />
 
                         <div className="flex justify-start">
                             <Button type="button" variant="outline" size="sm" onClick={() => handleSimplifyInstructions(index)} disabled={isSimplifying === index}>
