@@ -13,13 +13,14 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, User, Mail, Phone, MapPin, AlertTriangle, Pencil, Clock, Wand2, FlaskConical, FileText, CheckCircle2, BriefcaseMedical, DollarSign, Calendar, Lock, ShieldAlert, Eye, PlusCircle } from 'lucide-react';
+import { Loader2, User, Mail, Phone, MapPin, AlertTriangle, Pencil, Clock, Wand2, FlaskConical, FileText, CheckCircle2, BriefcaseMedical, DollarSign, Calendar, Lock, ShieldAlert, Eye, PlusCircle, Search } from 'lucide-react';
 import { format, parseISO, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DispensationDialog } from '@/components/app/dispensation-dialog';
 import { PatientFormDialog } from '@/components/app/patient-form-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 
 const StatCard = ({ title, value, icon: Icon }: { title: string; value: string | number; icon: React.ElementType }) => (
   <Card>
@@ -65,6 +66,7 @@ export default function PatientDetailPage() {
   const [isAssociateDoctorModalOpen, setIsAssociateDoctorModalOpen] = useState(false);
   const [doctorsToAssociate, setDoctorsToAssociate] = useState<string[]>([]);
   const [isSavingAssociation, setIsSavingAssociation] = useState(false);
+  const [doctorSearchTerm, setDoctorSearchTerm] = useState('');
 
 
   const fetchData = useCallback(async () => {
@@ -151,6 +153,7 @@ export default function PatientDetailPage() {
 
   const handleOpenAssociateModal = () => {
     setDoctorsToAssociate(patient?.associatedDoctorIds || []);
+    setDoctorSearchTerm('');
     setIsAssociateDoctorModalOpen(true);
   };
   
@@ -422,15 +425,29 @@ export default function PatientDetailPage() {
       />
 
       <Dialog open={isAssociateDoctorModalOpen} onOpenChange={setIsAssociateDoctorModalOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
             <DialogHeader>
                 <DialogTitle>Asociar Médicos a {patient.name}</DialogTitle>
                 <DialogDescription>
-                    Seleccione los médicos que tratan a este paciente. Los cambios se guardarán al cerrar esta ventana.
+                    Busque y seleccione los médicos que tratan a este paciente.
                 </DialogDescription>
             </DialogHeader>
-            <div className="space-y-2 py-4 max-h-80 overflow-y-auto">
-                {allDoctors.map(doctor => (
+            <div className="relative mt-2 mb-4">
+              <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nombre o especialidad..."
+                value={doctorSearchTerm}
+                onChange={(e) => setDoctorSearchTerm(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+            <div className="space-y-2 py-2 max-h-60 overflow-y-auto pr-2">
+                {allDoctors
+                  .filter(doctor =>
+                    doctor.name.toLowerCase().includes(doctorSearchTerm.toLowerCase()) ||
+                    doctor.specialty.toLowerCase().includes(doctorSearchTerm.toLowerCase())
+                  )
+                  .map(doctor => (
                     <div key={doctor.id} className="flex items-center space-x-3 rounded-md p-2 hover:bg-muted/50">
                         <Checkbox
                             id={`doc-${doctor.id}`}
@@ -443,7 +460,7 @@ export default function PatientDetailPage() {
                                 );
                             }}
                         />
-                        <label htmlFor={`doc-${doctor.id}`} className="w-full">
+                        <label htmlFor={`doc-${doctor.id}`} className="w-full cursor-pointer">
                             <p className="font-medium">{doctor.name}</p>
                             <p className="text-sm text-muted-foreground">{doctor.specialty}</p>
                         </label>
@@ -462,3 +479,5 @@ export default function PatientDetailPage() {
     </>
   );
 }
+
+    
