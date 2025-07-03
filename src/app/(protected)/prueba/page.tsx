@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -9,15 +10,17 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Database, UploadCloud, Wand2 } from 'lucide-react';
 
 // Firebase Imports
-import { db, storage } from '@/lib/firebase';
+import { db, storage, auth } from '@/lib/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
+import { useAuthState } from 'react-firebase-hooks/auth';
 
 // Genkit Flow Import
 import { testFlow } from '@/ai/flows/test-flow';
 
 export default function TestPage() {
   const { toast } = useToast();
+  const [user] = useAuthState(auth);
 
   // State for Database Test
   const [dbLoading, setDbLoading] = useState(false);
@@ -72,6 +75,11 @@ export default function TestPage() {
   };
 
   const handleStorageTest = async () => {
+    if (!user) {
+      toast({ title: 'Error', description: 'Debe estar autenticado para subir archivos.', variant: 'destructive' });
+      return;
+    }
+
     if (!fileToUpload || !previewImage) {
       toast({ title: 'Atención', description: 'Por favor, seleccione un archivo para subir.', variant: 'default' });
       return;
@@ -84,7 +92,7 @@ export default function TestPage() {
         return;
     }
     try {
-      const storageRef = ref(storage, `test-uploads/${Date.now()}-${fileToUpload.name}`);
+      const storageRef = ref(storage, `test-uploads/${user.uid}/${Date.now()}-${fileToUpload.name}`);
       const uploadResult = await uploadString(storageRef, previewImage, 'data_url');
       const downloadUrl = await getDownloadURL(uploadResult.ref);
       
