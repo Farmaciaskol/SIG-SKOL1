@@ -496,4 +496,22 @@ export const deleteExternalPharmacy = async (id: string): Promise<void> => {
     if (!db) throw new Error("Firestore is not initialized.");
     await deleteDoc(doc(db, 'externalPharmacies', id));
 };
+
+export const registerPaymentForPharmacy = async (recipeIds: string[]): Promise<void> => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    if (recipeIds.length === 0) return;
+
+    const batch = writeBatch(db);
+    const now = new Date().toISOString();
+
+    recipeIds.forEach(id => {
+        const recipeRef = doc(db, 'recipes', id);
+        batch.update(recipeRef, {
+            paymentStatus: 'Pagado',
+            updatedAt: now
+        });
+    });
+
+    await batch.commit();
+};
     

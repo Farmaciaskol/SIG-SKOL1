@@ -1,9 +1,11 @@
+
 'use client';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   getRecipes,
   getExternalPharmacies,
+  registerPaymentForPharmacy,
   Recipe,
   ExternalPharmacy,
   RecipeStatus
@@ -30,6 +32,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Banknote, FileText, CheckCircle2, Loader2, CircleDollarSign } from 'lucide-react';
@@ -62,6 +74,9 @@ export default function FinancialManagementPage() {
   const [loading, setLoading] = useState(true);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [pharmacies, setPharmacies] = useState<ExternalPharmacy[]>([]);
+  
+  const [pharmacyToPay, setPharmacyToPay] = useState<PharmacyFinancials | null>(null);
+  const [isPaying, setIsPaying] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -89,7 +104,7 @@ export default function FinancialManagementPage() {
   }, [fetchData]);
 
   const financialDataByPharmacy = useMemo<PharmacyFinancials[]>(() => {
-    if (!pharmacies.length || !recipes.length) return [];
+    if (!pharmacies.length) return [];
 
     return pharmacies.map(pharmacy => {
       const pharmacyRecipes = recipes.filter(r => r.externalPharmacyId === pharmacy.id);
@@ -124,6 +139,29 @@ export default function FinancialManagementPage() {
     };
   }, [financialDataByPharmacy, recipes]);
   
+  const handleConfirmPayment = async () => {
+    if (!pharmacyToPay) return;
+    setIsPaying(true);
+    try {
+        const recipeIdsToPay = pharmacyToPay.pendingRecipes.map(r => r.id);
+        await registerPaymentForPharmacy(recipeIdsToPay);
+        toast({
+            title: "Pago Registrado",
+            description: `Se ha registrado el pago para ${pharmacyToPay.pharmacyName}.`,
+        });
+        fetchData();
+        setPharmacyToPay(null);
+    } catch (error) {
+        toast({
+            title: "Error al Registrar Pago",
+            description: `No se pudo completar la operación. ${error instanceof Error ? error.message : ''}`,
+            variant: 'destructive'
+        });
+    } finally {
+        setIsPaying(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -134,93 +172,113 @@ export default function FinancialManagementPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-800 font-headline">Gestión Financiera</h1>
-          <p className="text-sm text-muted-foreground">
-            Control de costos y pagos a recetarios externos.
-          </p>
+    <>
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-800 font-headline">Gestión Financiera</h1>
+            <p className="text-sm text-muted-foreground">
+              Control de costos y pagos a recetarios externos.
+            </p>
+          </div>
         </div>
+
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <StatCard title="Saldo Pendiente Total" value={globalStats.totalPending} icon={Banknote} />
+          <StatCard title="Total Pagado (Histórico)" value={globalStats.totalPaid} icon={CheckCircle2} />
+          <StatCard title="Recetarios con Saldo" value={globalStats.pharmaciesWithDebt} icon={FileText} />
+          <StatCard title="Total Recetas con Costo" value={globalStats.totalRecipesWithCost} icon={FileText} />
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Detalle de Saldos por Recetario</CardTitle>
+            <CardDescription>
+              Revisa las recetas pendientes de pago para cada socio.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {financialDataByPharmacy.length > 0 ? (
+              <Accordion type="single" collapsible className="w-full space-y-4">
+                {financialDataByPharmacy.map(data => (
+                  <AccordionItem value={data.pharmacyId} key={data.pharmacyId} className="border rounded-lg overflow-hidden">
+                      <AccordionTrigger className="text-lg font-semibold text-slate-700 hover:no-underline px-6 py-4 bg-muted/50 data-[state=open]:border-b">
+                          <div className="flex justify-between items-center w-full pr-4">
+                              <span>{data.pharmacyName}</span>
+                              <Badge variant={data.pendingBalance > 0 ? "destructive" : "default"}>
+                                  Saldo: ${data.pendingBalance.toLocaleString('es-CL')}
+                              </Badge>
+                          </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="p-6 pt-4 space-y-4">
+                          {data.pendingRecipes.length > 0 ? (
+                              <>
+                                  <Table>
+                                      <TableHeader>
+                                          <TableRow>
+                                          <TableHead>ID Receta</TableHead>
+                                          <TableHead>Fecha</TableHead>
+                                          <TableHead>Estado Receta</TableHead>
+                                          <TableHead className="text-right">Costo</TableHead>
+                                          </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                          {data.pendingRecipes.map(recipe => (
+                                          <TableRow key={recipe.id}>
+                                              <TableCell className="font-mono">
+                                                  <Link href={`/recipes/${recipe.id}`} className="text-primary hover:underline">{recipe.id}</Link>
+                                              </TableCell>
+                                              <TableCell>{format(new Date(recipe.createdAt), "d MMM, yyyy", { locale: es })}</TableCell>
+                                              <TableCell><Badge variant="secondary">{recipe.status}</Badge></TableCell>
+                                              <TableCell className="text-right">${(recipe.preparationCost || 0).toLocaleString('es-CL')}</TableCell>
+                                          </TableRow>
+                                          ))}
+                                      </TableBody>
+                                  </Table>
+                                  <div className="flex justify-end pt-4">
+                                      <Button onClick={() => setPharmacyToPay(data)} disabled={data.pendingRecipes.length === 0 || isPaying}>
+                                          <CircleDollarSign className="mr-2 h-4 w-4" />
+                                          Registrar Pago
+                                      </Button>
+                                  </div>
+                              </>
+                          ) : (
+                              <p className="text-center text-muted-foreground py-4">Este recetario no tiene saldos pendientes.</p>
+                          )}
+                      </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            ) : (
+              <div className="text-center py-16 border-2 border-dashed rounded-lg">
+                  <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-slate-700">¡Todo al día!</h3>
+                  <p className="text-muted-foreground mt-2">
+                      No hay saldos pendientes de pago con ningún recetario.
+                  </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Saldo Pendiente Total" value={globalStats.totalPending} icon={Banknote} />
-        <StatCard title="Total Pagado (Histórico)" value={globalStats.totalPaid} icon={CheckCircle2} />
-        <StatCard title="Recetarios con Saldo" value={globalStats.pharmaciesWithDebt} icon={FileText} />
-        <StatCard title="Total Recetas con Costo" value={globalStats.totalRecipesWithCost} icon={FileText} />
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Detalle de Saldos por Recetario</CardTitle>
-          <CardDescription>
-            Revisa las recetas pendientes de pago para cada socio.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {financialDataByPharmacy.length > 0 ? (
-            <Accordion type="single" collapsible className="w-full space-y-4">
-              {financialDataByPharmacy.map(data => (
-                <AccordionItem value={data.pharmacyId} key={data.pharmacyId} className="border rounded-lg overflow-hidden">
-                    <AccordionTrigger className="text-lg font-semibold text-slate-700 hover:no-underline px-6 py-4 bg-muted/50 data-[state=open]:border-b">
-                        <div className="flex justify-between items-center w-full pr-4">
-                            <span>{data.pharmacyName}</span>
-                            <Badge variant={data.pendingBalance > 0 ? "destructive" : "default"}>
-                                Saldo: ${data.pendingBalance.toLocaleString('es-CL')}
-                            </Badge>
-                        </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="p-6 pt-4 space-y-4">
-                        {data.pendingRecipes.length > 0 ? (
-                            <>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                        <TableHead>ID Receta</TableHead>
-                                        <TableHead>Fecha</TableHead>
-                                        <TableHead>Estado Receta</TableHead>
-                                        <TableHead className="text-right">Costo</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {data.pendingRecipes.map(recipe => (
-                                        <TableRow key={recipe.id}>
-                                            <TableCell className="font-mono">
-                                                <Link href={`/recipes/${recipe.id}`} className="text-primary hover:underline">{recipe.id}</Link>
-                                            </TableCell>
-                                            <TableCell>{format(new Date(recipe.createdAt), "d MMM, yyyy", { locale: es })}</TableCell>
-                                            <TableCell><Badge variant="secondary">{recipe.status}</Badge></TableCell>
-                                            <TableCell className="text-right">${(recipe.preparationCost || 0).toLocaleString('es-CL')}</TableCell>
-                                        </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                                <div className="flex justify-end pt-4">
-                                    <Button disabled>
-                                        <CircleDollarSign className="mr-2 h-4 w-4" />
-                                        Registrar Pago (Próximamente)
-                                    </Button>
-                                </div>
-                            </>
-                        ) : (
-                            <p className="text-center text-muted-foreground py-4">Este recetario no tiene saldos pendientes.</p>
-                        )}
-                    </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          ) : (
-            <div className="text-center py-16 border-2 border-dashed rounded-lg">
-                <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-slate-700">¡Todo al día!</h3>
-                <p className="text-muted-foreground mt-2">
-                    No hay saldos pendientes de pago con ningún recetario.
-                </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+      <AlertDialog open={!!pharmacyToPay} onOpenChange={(open) => !open && setPharmacyToPay(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Confirmar Pago a {pharmacyToPay?.pharmacyName}</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Se registrará el pago de ${pharmacyToPay?.pendingBalance.toLocaleString('es-CL')} correspondiente a {pharmacyToPay?.pendingRecipes.length} receta(s). Esta acción actualizará el estado de las recetas a "Pagado" y es irreversible.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setPharmacyToPay(null)}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleConfirmPayment} disabled={isPaying}>
+                    {isPaying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Confirmar Pago
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
