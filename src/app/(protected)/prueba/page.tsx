@@ -91,9 +91,28 @@ export default function TestPage() {
       const successMsg = `Archivo subido exitosamente. URL: ${downloadUrl}`;
       setStorageResult(successMsg);
       toast({ title: 'Éxito en Storage', description: 'El archivo se ha subido correctamente.' });
-    } catch (error) {
-      console.error(error);
-      const errorMsg = error instanceof Error ? error.message : 'Ocurrió un error desconocido.';
+    } catch (error: any) {
+      console.error("Storage test failed:", error);
+      let errorMsg = 'Ocurrió un error desconocido al intentar subir el archivo.';
+      if (error.code) {
+        switch (error.code) {
+          case 'storage/unauthorized':
+            errorMsg = "Error de autorización: No tiene permiso para subir archivos. Verifique que está autenticado y que las reglas de Firebase Storage lo permiten.";
+            break;
+          case 'storage/object-not-found':
+          case 'storage/bucket-not-found':
+            errorMsg = "Error de configuración: El bucket de almacenamiento no parece estar configurado correctamente en su proyecto de Firebase.";
+            break;
+          case 'storage/quota-exceeded':
+            errorMsg = "Ha excedido su cuota de almacenamiento de Firebase.";
+            break;
+          default:
+            errorMsg = `Ocurrió un error inesperado (${error.code}). Por favor, revise la consola para más detalles.`;
+        }
+      } else if (error instanceof Error) {
+        errorMsg = error.message;
+      }
+      
       setStorageResult(`Error: ${errorMsg}`);
       toast({ title: 'Error en Storage', description: errorMsg, variant: 'destructive' });
     } finally {
