@@ -12,8 +12,8 @@ export default function EditRecipePage() {
   const id = params.id as string;
 
   return (
-     <div className="space-y-4">
-      <div className="flex items-center gap-4">
+     <div className="flex flex-col h-[calc(100vh-8rem)]">
+      <div className="flex-shrink-0 flex items-center gap-4 mb-4">
         <Button variant="outline" size="icon" asChild>
           <Link href="/recipes">
             <ChevronLeft className="h-4 w-4" />
@@ -25,7 +25,9 @@ export default function EditRecipePage() {
         </div>
       </div>
       
-      <RecipeForm recipeId={id} />
+      <div className="flex-grow overflow-hidden">
+        <RecipeForm recipeId={id} />
+      </div>
     </div>
   );
 }
