@@ -181,7 +181,7 @@ export const saveRecipe = async (data: any, imageUri: string | null, recipeId?: 
     if (!patientId && data.newPatientName && data.newPatientRut) {
         const newPatientRef = doc(collection(db, 'patients'));
         patientId = newPatientRef.id;
-        await setDoc(newPatientRef, { name: data.newPatientName, rut: data.newPatientRut, email: '', phone: '', isChronic: false, proactiveStatus: 'OK', proactiveMessage: 'No requiere acción.', actionNeeded: 'NONE', chronicCareStatus: 'OK' });
+        await setDoc(newPatientRef, { name: data.newPatientName, rut: data.newPatientRut, email: '', phone: '', isChronic: false, proactiveStatus: 'OK', proactiveMessage: 'No requiere acción.', actionNeeded: 'NONE' });
     }
 
     let doctorId = data.doctorId;
@@ -407,16 +407,15 @@ export const updatePatient = async (id: string, updates: Partial<Patient>): Prom
     await updateDoc(doc(db, 'patients', id), updates as any);
 };
 
-export const addPatient = async (patient: Omit<Patient, 'id' | 'proactiveStatus' | 'proactiveMessage' | 'actionNeeded' | 'chronicCareStatus'>): Promise<string> => {
+export const addPatient = async (patient: Omit<Patient, 'id' | 'proactiveStatus' | 'proactiveMessage' | 'actionNeeded'>): Promise<string> => {
     if (!db) throw new Error("Firestore is not initialized.");
     const patientData = {
         ...patient,
         proactiveStatus: ProactivePatientStatus.OK,
         proactiveMessage: 'No requiere acción.',
         actionNeeded: PatientActionNeeded.NONE,
-        chronicCareStatus: 'OK'
     };
-    const docRef = await addDoc(collection(db, 'patients'), patientData);
+    const docRef = await addDoc(collection(db, 'patients'), patientData as any);
     return docRef.id;
 }
 

@@ -151,9 +151,8 @@ export interface Patient {
   adverseReactions?: AdverseReaction[];
   associatedDoctorIds?: string[];
   pharmacovigilanceEvents?: PharmacovigilanceReference[];
-  // Legacy field, to be replaced by proactive fields
-  chronicCareStatus: 'OK' | 'Atención' | 'Urgente';
-  // New proactive fields
+  
+  // Proactive fields
   proactiveStatus: ProactivePatientStatus;
   proactiveMessage: string;
   actionNeeded: PatientActionNeeded;
