@@ -556,7 +556,7 @@ export default function RecipesPage() {
   }
 
   return (
-    <div className="space-y-6 p-4 md:p-8">
+    <div className="space-y-6">
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight font-headline">Gestión de Recetas</h2>
@@ -672,6 +672,7 @@ export default function RecipesPage() {
                             <TableHead className="p-4"><Checkbox onCheckedChange={toggleSelectAll} checked={selectedRecipes.length === filteredRecipes.length && filteredRecipes.length > 0} /></TableHead>
                             <TableHead>ID Receta</TableHead>
                             <TableHead>Paciente</TableHead>
+                            <TableHead>Preparado</TableHead>
                             <TableHead>Fecha Creación</TableHead>
                             <TableHead>Estado</TableHead>
                             <TableHead className="text-right">Acciones</TableHead>
@@ -683,6 +684,23 @@ export default function RecipesPage() {
                             <TableCell className="p-4"><Checkbox onCheckedChange={() => toggleSelectRecipe(recipe.id)} checked={selectedRecipes.includes(recipe.id)}/></TableCell>
                             <TableCell className="font-mono text-primary">{recipe.id}</TableCell>
                             <TableCell className="font-medium">{getPatientName(recipe.patientId)}</TableCell>
+                            <TableCell>
+                                {recipe.items.length > 0 ? (
+                                    <div className="flex flex-col">
+                                    <span className="font-medium text-foreground">
+                                        {recipe.items[0].principalActiveIngredient}{' '}
+                                        {recipe.items[0].concentrationValue}
+                                        {recipe.items[0].concentrationUnit}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground truncate" style={{maxWidth: '25ch'}}>
+                                        {recipe.items[0].usageInstructions}
+                                    </span>
+                                    {recipe.items.length > 1 && <span className="text-xs font-bold text-muted-foreground mt-1">+ {recipe.items.length - 1} más</span>}
+                                    </div>
+                                ) : (
+                                    'N/A'
+                                )}
+                            </TableCell>
                             <TableCell>{format(new Date(recipe.createdAt), "d 'de' MMMM, yyyy", { locale: es })}</TableCell>
                             <TableCell><RecipeStatusBadge status={recipe.status} /></TableCell>
                             <TableCell className="text-right"><RecipeActions recipe={recipe} /></TableCell>
@@ -704,9 +722,27 @@ export default function RecipesPage() {
                     </div>
                     <RecipeStatusBadge status={recipe.status} />
                   </CardHeader>
-                  <CardContent className="space-y-1 pb-4">
+                  <CardContent className="space-y-2 pb-4">
                     <p className="font-bold text-lg">{getPatientName(recipe.patientId)}</p>
-                    <p className="text-sm text-muted-foreground">{recipe.items[0]?.principalActiveIngredient || 'Múltiples ítems'}</p>
+                    {recipe.items.length > 0 ? (
+                        <div>
+                        <p className="font-medium text-sm">
+                            {recipe.items[0].principalActiveIngredient}{' '}
+                            {recipe.items[0].concentrationValue}
+                            {recipe.items[0].concentrationUnit}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                            {recipe.items[0].usageInstructions}
+                        </p>
+                        {recipe.items.length > 1 && (
+                            <p className="text-xs font-bold text-muted-foreground mt-1">
+                            + {recipe.items.length - 1} más
+                            </p>
+                        )}
+                        </div>
+                    ) : (
+                        <p className="text-sm text-muted-foreground">Sin preparado</p>
+                    )}
                      <p className="text-xs text-muted-foreground pt-1">Creada: {format(new Date(recipe.createdAt), "d MMM yyyy", { locale: es })}</p>
                   </CardContent>
                   <CardFooter className="p-3 bg-muted/50"><MobileRecipeActions recipe={recipe} /></CardFooter>
