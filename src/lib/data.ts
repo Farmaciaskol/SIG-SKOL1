@@ -9,7 +9,7 @@ import { statusConfig } from './constants';
 
 export * from './types';
 
-const USE_MOCK_DATA_ON_EMPTY_FIRESTORE = false;
+const USE_MOCK_DATA_ON_EMPTY_FIRESTORE = true;
 
 // A flag to prevent seeding more than once per app load
 const seededCollections = new Set<string>();
