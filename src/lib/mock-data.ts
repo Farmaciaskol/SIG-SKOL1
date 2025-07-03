@@ -240,7 +240,24 @@ const recipes: Recipe[] = [
     internalPreparationLot: 'SKOL-24-001',
     preparationExpiryDate: formatISO(addMonths(now, 3)),
     auditTrail: [{status: RecipeStatus.ReadyForPickup, date: formatISO(subDays(now, 1)), userId: 'user-2', notes: 'Marcado para retiro.'}]
-  }
+  },
+  // 7. Recipe from patient portal, pending review
+  {
+    id: 'rec-portal-01',
+    patientId: 'pat-2',
+    doctorId: 'doc-4',
+    items: [{ principalActiveIngredient: 'Progesterona', pharmaceuticalForm: 'cápsulas', concentrationValue: '100', concentrationUnit: 'mg', dosageValue: '1', dosageUnit: 'cápsula(s)', frequency: '24', treatmentDurationValue: '30', treatmentDurationUnit: 'días', totalQuantityValue: '30', totalQuantityUnit: 'cápsula(s)', usageInstructions: 'Tomar 1 cápsula al día.' }],
+    status: RecipeStatus.PendingReviewPortal,
+    paymentStatus: 'Pendiente',
+    createdAt: formatISO(subDays(now, 1)),
+    updatedAt: formatISO(subDays(now, 1)),
+    dueDate: formatISO(addMonths(now, 6)),
+    externalPharmacyId: 'ext-pharma-1',
+    supplySource: 'Stock del Recetario Externo',
+    preparationCost: 19000,
+    prescriptionImageUrl: 'https://placehold.co/600x400.png',
+    auditTrail: [{status: RecipeStatus.PendingReviewPortal, date: formatISO(subDays(now, 1)), userId: 'patient-portal', notes: 'Receta subida desde el portal.'}]
+  },
 ];
 
 // --- PHARMACOVIGILANCE REPORTS ---
@@ -255,7 +272,7 @@ const controlledSubstanceLog: ControlledSubstanceLogEntry[] = [
         id: 'csl-1', 
         entryType: ControlledLogEntryType.MagistralDispensation, 
         dispensationDate: formatISO(subDays(now, 35)), 
-        internalFolio: 'CSL-24-001', 
+        internalFolio: 'CSL-MG-2024-0001', 
         patientId: 'pat-2', 
         doctorId: 'doc-5', 
         medicationName: 'Clonazepam 0.25mg', 
@@ -272,7 +289,7 @@ const controlledSubstanceLog: ControlledSubstanceLogEntry[] = [
         id: 'csl-2', 
         entryType: ControlledLogEntryType.DirectSale, 
         dispensationDate: formatISO(subDays(now, 10)), 
-        internalFolio: 'CSL-24-002', 
+        internalFolio: 'CSL-DV-2024-0002', 
         patientId: 'pat-4', 
         doctorId: 'doc-3', 
         medicationName: 'Morfina Clorhidrato Ampolla', 
