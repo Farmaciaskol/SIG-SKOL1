@@ -10,17 +10,12 @@ import {
   Clock,
   PlusCircle,
   CheckCircle2,
+  FlaskConical,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getRecipes, getPatients, getInventory, getUsers, Recipe, Patient, InventoryItem, User, RecipeStatus } from '@/lib/data';
 import { differenceInDays } from 'date-fns';
-
-const BoxIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line>
-  </svg>
-);
 
 const BeakerIconCustom = (props: React.SVGProps<SVGSVGElement>) => (
     <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -50,12 +45,12 @@ const KpiCard = ({ title, value, icon: Icon, href }: KpiCardProps) => (
   <Link href={href}>
     <Card className="hover:shadow-md transition-shadow duration-300 cursor-pointer bg-card">
       <CardContent className="p-4 flex items-center gap-4">
-        <div className="p-3 rounded-full bg-sky-100">
-          <Icon className="h-6 w-6 text-sky-600" />
+        <div className="p-3 rounded-full bg-sky-100 dark:bg-sky-500/10">
+          <Icon className="h-6 w-6 text-sky-600 dark:text-sky-400" />
         </div>
         <div>
-          <p className="text-sm text-foreground">{title}</p>
-          <p className="text-2xl font-bold">{value}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400">{title}</p>
+          <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{value}</p>
         </div>
       </CardContent>
     </Card>
@@ -112,7 +107,7 @@ export default function DashboardPage() {
     if (!data) return [];
     
     return [
-      { title: 'Cajas en Preparación', value: data.recipes.filter(r => r.status === RecipeStatus.Preparation).length, icon: BoxIcon, href: '/monthly-dispensing' },
+      { title: 'En Preparación', value: data.recipes.filter(r => r.status === RecipeStatus.Preparation).length, icon: FlaskConical, href: '/recipes?status=En+Preparación' },
       { title: 'Ítems con Stock Bajo', value: data.inventory.filter(i => i.stock < i.lowStockThreshold).length, icon: BeakerIconCustom, href: '/inventory' },
       { title: 'Saldo Pendiente (Recetarios)', value: '$60.500', icon: CreditCard, href: '/financial-management' },
       { title: 'Usuarios del Sistema', value: data.users.length, icon: UsersIconCustom, href: '/user-management' },
@@ -137,8 +132,8 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full bg-background">
-        <p>Cargando dashboard...</p>
+      <div className="flex items-center justify-center h-full">
+        <p className="text-slate-500">Cargando dashboard...</p>
       </div>
     );
   }
@@ -147,8 +142,8 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between space-y-2 md:space-y-0">
         <div>
-            <h1 className="text-3xl font-bold tracking-tight font-headline">Dashboard</h1>
-            <p className="text-sm text-muted-foreground">{formattedDate}</p>
+            <h1 className="text-3xl font-bold text-slate-800 tracking-tight font-headline">Dashboard</h1>
+            <p className="text-sm text-slate-500">{formattedDate}</p>
         </div>
         <div className="flex items-center space-x-2">
             <Button variant="outline" asChild className="bg-card hover:bg-muted">
@@ -169,11 +164,11 @@ export default function DashboardPage() {
       <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center gap-3 border-b pb-4">
-            <CalendarDays className="h-5 w-5 text-muted-foreground" />
-            <CardTitle>Próximas Dispensaciones Mensuales</CardTitle>
+            <CalendarDays className="h-5 w-5 text-slate-500" />
+            <CardTitle className="text-lg font-semibold text-slate-800">Próximas Dispensaciones Mensuales</CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
-            <div className="flex items-center text-sm text-foreground">
+            <div className="flex items-center text-sm text-slate-700">
                 <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
                 No hay dispensaciones crónicas que requieran acción en los próximos 30 días.
             </div>
@@ -182,17 +177,17 @@ export default function DashboardPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center gap-3 border-b pb-4">
-            <Clock className="h-5 w-5 text-muted-foreground" />
-            <CardTitle>Recetas con Retraso</CardTitle>
+            <Clock className="h-5 w-5 text-slate-500" />
+            <CardTitle className="text-lg font-semibold text-slate-800">Recetas con Retraso</CardTitle>
           </CardHeader>
           <CardContent className="pt-4 space-y-3">
             {delayedRecipes.length > 0 ? (
               delayedRecipes.map(recipe => (
                 <div key={recipe.id} className="flex items-center p-3 rounded-lg bg-orange-50 border-l-4 border-orange-400">
                   <div className="flex-grow">
-                    <p className="font-semibold text-primary"><Link href={`/recipes/${recipe.id}`} className="hover:underline">Receta: {recipe.id}</Link></p>
-                    <p className="text-sm text-foreground">Paciente: {recipe.patientName}</p>
-                    <p className="text-sm text-muted-foreground">En estado "{recipe.status}" por {recipe.daysDelayed} días.</p>
+                    <p className="font-semibold text-sky-600"><Link href={`/recipes/${recipe.id}`} className="hover:underline">Receta: {recipe.id}</Link></p>
+                    <p className="text-sm text-slate-700">Paciente: {recipe.patientName}</p>
+                    <p className="text-sm text-slate-500">En estado "{recipe.status}" por {recipe.daysDelayed} días.</p>
                   </div>
                   <Button variant="ghost" size="sm" asChild>
                     <Link href={`/recipes/${recipe.id}`}>Revisar</Link>
@@ -200,7 +195,7 @@ export default function DashboardPage() {
                 </div>
               ))
             ) : (
-                <div className="flex items-center text-sm text-foreground">
+                <div className="flex items-center text-sm text-slate-700">
                     <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
                     ¡Excelente! No hay recetas con retraso.
                 </div>
