@@ -41,6 +41,9 @@ import { useRouter } from 'next/navigation';
 import React from 'react';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { InventoryItemForm } from './inventory-item-form';
+
 
 // Zod schema for form validation
 const recipeItemSchema = z.object({
@@ -152,7 +155,8 @@ const RecipeItemCard = ({
   inventory,
   isSimplifying,
   handleSimplifyInstructions,
-  totalFields
+  totalFields,
+  onOpenInventoryForm,
 }: {
   index: number;
   remove: (index: number) => void;
@@ -162,6 +166,7 @@ const RecipeItemCard = ({
   isSimplifying: number | null;
   handleSimplifyInstructions: (index: number) => void;
   totalFields: number;
+  onOpenInventoryForm: () => void;
 }) => {
   const {
     control,
@@ -351,8 +356,8 @@ const RecipeItemCard = ({
                     ) : (
                       <div className="p-2 text-center text-xs text-muted-foreground">
                         <p>No se encontraron insumos.</p>
-                        <Button type="button" variant="link" className="p-0 h-auto text-xs" asChild>
-                          <Link href="/inventory" target="_blank">Crear producto en Inventario</Link>
+                        <Button type="button" variant="link" className="p-0 h-auto text-xs" onClick={onOpenInventoryForm}>
+                          Crear producto en Inventario
                         </Button>
                       </div>
                     )}
@@ -390,6 +395,7 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
   const [previewImage, setPreviewImage] = React.useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [isZoomed, setIsZoomed] = React.useState(false);
+  const [isInventoryFormOpen, setIsInventoryFormOpen] = React.useState(false);
 
   const isEditMode = !!recipeId;
 
@@ -456,6 +462,21 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
       setPreviewImage(recipeData.prescriptionImageUrl);
     }
   }, [form]);
+  
+  const refreshInventory = async () => {
+    try {
+      const inventoryData = await getInventory();
+      setInventory(inventoryData);
+    } catch (error) {
+      toast({ title: "Error", description: "No se pudo refrescar la lista de inventario.", variant: "destructive" });
+    }
+  };
+  
+  const handleInventoryFormFinished = () => {
+    setIsInventoryFormOpen(false);
+    refreshInventory();
+  };
+
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -628,270 +649,284 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
   }
 
   return (
-    <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start"
-      >
-        {/* Left Column (Image) */}
-        <div className="lg:col-span-1 lg:sticky top-8">
+    <>
+      <Dialog open={isInventoryFormOpen} onOpenChange={setIsInventoryFormOpen}>
+        <DialogContent className="sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-semibold">Crear Nuevo Producto de Inventario</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Configure un nuevo producto para la gestión de stock. Podrá seleccionarlo inmediatamente en esta receta.
+            </DialogDescription>
+          </DialogHeader>
+          <InventoryItemForm onFinished={handleInventoryFormFinished} />
+        </DialogContent>
+      </Dialog>
+
+      <Form {...form}>
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start"
+        >
+          {/* Left Column (Image) */}
+          <div className="lg:col-span-1 lg:sticky top-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-xl font-semibold">Imagen de la Receta</CardTitle>
+                </CardHeader>
+                <CardContent className="flex-grow flex flex-col items-center justify-center p-2">
+                  <div className="w-full h-96 flex items-center justify-center border-2 border-dashed rounded-lg overflow-hidden bg-muted/50">
+                    <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*,application/pdf" className="hidden" />
+                    {previewImage ? (
+                      <div className="relative w-full h-full">
+                         <Image 
+                            src={previewImage} 
+                            alt="Vista previa de receta" 
+                            width={400}
+                            height={500}
+                            className={cn(
+                              "absolute inset-0 h-full w-full object-contain transition-transform duration-300 ease-in-out cursor-pointer",
+                              isZoomed ? "scale-125" : "scale-100"
+                            )}
+                            onClick={() => setIsZoomed(!isZoomed)}
+                          />
+                      </div>
+                    ) : (
+                      <div onClick={() => fileInputRef.current?.click()} className="text-center cursor-pointer p-4">
+                        <ImageIcon className="h-10 w-10 text-slate-400 mb-2 mx-auto" />
+                        <p className="text-sm text-slate-500 mb-1">Arrastra o haz clic para subir</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+                <CardFooter className="flex-shrink-0 grid grid-cols-2 gap-2 pt-4">
+                    <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                        Cambiar Imagen
+                    </Button>
+                    <Button type="button" onClick={handleExtractWithAI} disabled={!previewImage || isAiExtracting}>
+                        {isAiExtracting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
+                        {isAiExtracting ? 'Extrayendo...' : 'Extraer con IA'}
+                    </Button>
+                </CardFooter>
+              </Card>
+          </div>
+
+          {/* Right Column (Form Fields) */}
+          <div className="lg:col-span-2 space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle className="text-xl font-semibold">Imagen de la Receta</CardTitle>
-              </CardHeader>
-              <CardContent className="flex-grow flex flex-col items-center justify-center p-2">
-                <div className="w-full h-96 flex items-center justify-center border-2 border-dashed rounded-lg overflow-hidden bg-muted/50">
-                  <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*,application/pdf" className="hidden" />
-                  {previewImage ? (
-                    <div className="relative w-full h-full">
-                       <Image 
-                          src={previewImage} 
-                          alt="Vista previa de receta" 
-                          width={400}
-                          height={500}
-                          className={cn(
-                            "absolute inset-0 h-full w-full object-contain transition-transform duration-300 ease-in-out cursor-pointer",
-                            isZoomed ? "scale-125" : "scale-100"
-                          )}
-                          onClick={() => setIsZoomed(!isZoomed)}
-                        />
-                    </div>
-                  ) : (
-                    <div onClick={() => fileInputRef.current?.click()} className="text-center cursor-pointer p-4">
-                      <ImageIcon className="h-10 w-10 text-slate-400 mb-2 mx-auto" />
-                      <p className="text-sm text-slate-500 mb-1">Arrastra o haz clic para subir</p>
-                    </div>
-                  )}
+              <CardContent className="p-6">
+                <h2 className="text-xl font-semibold mb-4 text-slate-700">Información General</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <FormItem>
+                    <FormLabel>ID Receta</FormLabel>
+                    <FormControl><Input disabled value={isEditMode && !copyFromId ? recipeId : "Nuevo (se genera al guardar)"} /></FormControl>
+                  </FormItem>
+                  <FormField control={form.control} name="prescriptionDate" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Fecha Prescripción *</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button variant="outline" className={cn("w-full justify-between text-left font-normal", !field.value && "text-slate-500")}>
+                              {field.value ? format(field.value, 'dd-MM-yyyy') : <span>dd-mm-aaaa</span>}
+                              <CalendarIcon className="h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="dueDate" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Fecha Vencimiento</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button variant="outline" className={cn("w-full justify-between text-left font-normal", !field.value && "text-slate-500")}>
+                              {field.value ? format(field.value, 'dd-MM-yyyy') : <span>dd-mm-aaaa</span>}
+                              <CalendarIcon className="h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} /></PopoverContent>
+                      </Popover>
+                      <FormDescription className="text-xs text-slate-500">(Por defecto 6 meses, editable.)</FormDescription>
+                    </FormItem>
+                  )} />
                 </div>
               </CardContent>
-              <CardFooter className="flex-shrink-0 grid grid-cols-2 gap-2 pt-4">
-                  <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
-                      Cambiar Imagen
-                  </Button>
-                  <Button type="button" onClick={handleExtractWithAI} disabled={!previewImage || isAiExtracting}>
-                      {isAiExtracting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
-                      {isAiExtracting ? 'Extrayendo...' : 'Extraer con IA'}
-                  </Button>
-              </CardFooter>
             </Card>
-        </div>
 
-        {/* Right Column (Form Fields) */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardContent className="p-6">
-              <h2 className="text-xl font-semibold mb-4 text-slate-700">Información General</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <FormItem>
-                  <FormLabel>ID Receta</FormLabel>
-                  <FormControl><Input disabled value={isEditMode && !copyFromId ? recipeId : "Nuevo (se genera al guardar)"} /></FormControl>
-                </FormItem>
-                <FormField control={form.control} name="prescriptionDate" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Fecha Prescripción *</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button variant="outline" className={cn("w-full justify-between text-left font-normal", !field.value && "text-slate-500")}>
-                            {field.value ? format(field.value, 'dd-MM-yyyy') : <span>dd-mm-aaaa</span>}
-                            <CalendarIcon className="h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="dueDate" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Fecha Vencimiento</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button variant="outline" className={cn("w-full justify-between text-left font-normal", !field.value && "text-slate-500")}>
-                            {field.value ? format(field.value, 'dd-MM-yyyy') : <span>dd-mm-aaaa</span>}
-                            <CalendarIcon className="h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} /></PopoverContent>
-                    </Popover>
-                    <FormDescription className="text-xs text-slate-500">(Por defecto 6 meses, editable.)</FormDescription>
-                  </FormItem>
-                )} />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <h2 className="text-xl font-semibold mb-4 text-slate-700">Paciente *</h2>
-              <FormField control={form.control} name="patientSelectionType" render={({ field }) => (
-                <Tabs value={field.value} onValueChange={(value) => field.onChange(value as 'existing' | 'new')} className="w-full">
-                  <TabsList className="grid w-full grid-cols-2"><TabsTrigger value="existing">Paciente Existente</TabsTrigger><TabsTrigger value="new">Paciente Nuevo</TabsTrigger></TabsList>
-                  <TabsContent value="existing" className="mt-4">
-                    <FormField control={form.control} name="patientId" render={({ field }) => (
-                      <FormItem><FormLabel>Buscar Paciente</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un paciente..." /></SelectTrigger></FormControl>
-                          <SelectContent><>{patients.map(p => <SelectItem key={p.id} value={p.id}>{p.name} - {p.rut}</SelectItem>)}</>
-                          </SelectContent>
-                        </Select><FormMessage />
-                      </FormItem>
-                    )} />
-                  </TabsContent>
-                  <TabsContent value="new" className="mt-4 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField control={form.control} name="newPatientName" render={({ field }) => (<FormItem><FormLabel>Nombre Paciente</FormLabel><FormControl><Input placeholder="Nombre Apellido" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                      <FormField control={form.control} name="newPatientRut" render={({ field }) => (<FormItem><FormLabel>RUT Paciente</FormLabel><FormControl><Input placeholder="12.345.678-9" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              )} />
-              <FormField control={form.control} name="dispatchAddress" render={({ field }) => (
-                <FormItem className="mt-4"><FormLabel>Dirección de Despacho</FormLabel><FormControl><Input placeholder="Ej: Calle Falsa 123, Comuna" {...field} /></FormControl><FormDescription className="text-xs text-slate-500">(Opcional. Por defecto, se retira en farmacia.)</FormDescription><FormMessage /></FormItem>
-              )} />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <h2 className="text-xl font-semibold mb-4 text-slate-700">Médico *</h2>
-              <FormField control={form.control} name="doctorSelectionType" render={({ field }) => (
-                <Tabs value={field.value} onValueChange={(value) => field.onChange(value as 'existing' | 'new')} className="w-full">
-                  <TabsList className="grid w-full grid-cols-2"><TabsTrigger value="existing">Médico Existente</TabsTrigger><TabsTrigger value="new">Médico Nuevo</TabsTrigger></TabsList>
-                  <TabsContent value="existing" className="mt-4">
-                    <FormField control={form.control} name="doctorId" render={({ field }) => (
-                      <FormItem><FormLabel>Buscar Médico</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un médico..." /></SelectTrigger></FormControl>
-                          <SelectContent><>{doctors.map(d => <SelectItem key={d.id} value={d.id}>{d.name} - {d.specialty}</SelectItem>)}</>
-                          </SelectContent>
-                        </Select><FormMessage />
-                      </FormItem>
-                    )} />
-                  </TabsContent>
-                  <TabsContent value="new" className="mt-4 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField control={form.control} name="newDoctorName" render={({ field }) => (<FormItem><FormLabel>Nombre Médico</FormLabel><FormControl><Input placeholder="Nombre Apellido" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                      <FormField control={form.control} name="newDoctorLicense" render={({ field }) => (<FormItem><FormLabel>N° Colegiatura</FormLabel><FormControl><Input placeholder="Ej: 12345" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                      <FormField control={form.control} name="newDoctorRut" render={({ field }) => (<FormItem><FormLabel>RUT Médico (Opcional)</FormLabel><FormControl><Input placeholder="12.345.678-K" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                      <FormField control={form.control} name="newDoctorSpecialty" render={({ field }) => (<FormItem><FormLabel>Especialidad Médico</FormLabel><FormControl><Input placeholder="Ej: Cardiología" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              )} />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <h2 className="text-xl font-semibold mb-6 text-slate-700">Recetario e Insumos</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
-                <FormField control={form.control} name="externalPharmacyId" render={({ field }) => (
-                  <FormItem><FormLabel>Recetario Asignado *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un recetario..." /></SelectTrigger></FormControl>
-                      <SelectContent>{externalPharmacies.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
-                    </Select><FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="supplySource" render={({ field }) => (
-                  <FormItem><FormLabel>Origen de Insumos *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un origen..." /></SelectTrigger></FormControl>
-                      <SelectContent><SelectItem value="Stock del Recetario">Stock del Recetario</SelectItem><SelectItem value="Insumos de Skol">Insumos de Skol</SelectItem></SelectContent>
-                    </Select><FormMessage />
-                  </FormItem>
-                )} />
-                <div className="md:col-span-1">
-                  <FormField control={form.control} name="preparationCost" render={({ field }) => (
-                    <FormItem><FormLabel>Costo Preparación (CLP) *</FormLabel>
-                      <FormControl><Input type="number" placeholder="Ej: 15000" {...field} /></FormControl>
-                      <FormDescription className="text-xs text-slate-500">Costo que Skol pagará al recetario.</FormDescription><FormMessage />
-                    </FormItem>
-                  )} />
-                </div>
-                <div className="md:col-span-1">
-                  <FormField control={form.control} name="transportCost" render={({ field }) => (
-                    <FormItem><FormLabel>Costo de Despacho (CLP)</FormLabel>
-                      <FormControl><Input type="number" placeholder="Ej: 3500" {...field} /></FormControl>
-                      <FormDescription className="text-xs text-slate-500">Se llena por defecto al elegir el recetario.</FormDescription><FormMessage />
-                    </FormItem>
-                  )} />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold text-slate-700">Preparado Magistral</h2>
-                <Button type="button" variant="link" onClick={() => append(defaultItem)} className="text-primary hover:text-primary/80"><PlusCircle className="mr-2 h-4 w-4" />Añadir</Button>
-              </div>
-              <div className="space-y-6">
-                {fields.map((item, index) => (
-                  <RecipeItemCard key={item.id} index={index} remove={remove} form={form} appSettings={appSettings} inventory={inventory} isSimplifying={isSimplifying} handleSimplifyInstructions={handleSimplifyInstructions} totalFields={fields.length} />
-                ))}
-              </div>
-              <FormField control={form.control} name="items" render={() => (<FormItem><FormMessage className="mt-4" /></FormItem>)} />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold text-slate-700">Medicamento Controlado</h2>
-                <FormField control={form.control} name="isControlled" render={({ field }) => (
-                  <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                    <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                    <FormLabel className="font-normal">Es Controlado</FormLabel>
-                  </FormItem>
-                )} />
-              </div>
-              {isControlled && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField control={form.control} name="controlledRecipeType" render={({ field }) => (
-                      <FormItem><FormLabel>Tipo de Receta Controlada *</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl><SelectTrigger><SelectValue placeholder="Seleccione tipo..." /></SelectTrigger></FormControl>
-                          <SelectContent><SelectItem value="Receta Cheque">Receta Cheque</SelectItem><SelectItem value="Receta Retenida">Receta Retenida</SelectItem></SelectContent>
-                        </Select><FormMessage />
-                      </FormItem>
-                    )} />
-                    <FormField control={form.control} name="controlledRecipeFolio" render={({ field }) => (
-                      <FormItem><FormLabel>Folio Receta *</FormLabel>
-                        <FormControl><Input placeholder="Ej: F123456 o Folio Cheque" {...field} /></FormControl><FormMessage />
-                      </FormItem>
-                    )} />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormItem><FormLabel>Folio Interno Skol</FormLabel><FormControl><Input disabled placeholder="Se genera automáticamente" /></FormControl></FormItem>
-                    <FormItem>
-                      <FormLabel>Adjuntar Imagen Receta Controlada (Opcional)</FormLabel>
-                      <div className="flex items-center gap-2">
-                        <Button type="button" variant="outline">Seleccionar archivo</Button>
-                        <span className="text-xs text-slate-500">Sin archivos seleccionados</span>
+            <Card>
+              <CardContent className="p-6">
+                <h2 className="text-xl font-semibold mb-4 text-slate-700">Paciente *</h2>
+                <FormField control={form.control} name="patientSelectionType" render={({ field }) => (
+                  <Tabs value={field.value} onValueChange={(value) => field.onChange(value as 'existing' | 'new')} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2"><TabsTrigger value="existing">Paciente Existente</TabsTrigger><TabsTrigger value="new">Paciente Nuevo</TabsTrigger></TabsList>
+                    <TabsContent value="existing" className="mt-4">
+                      <FormField control={form.control} name="patientId" render={({ field }) => (
+                        <FormItem><FormLabel>Buscar Paciente</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un paciente..." /></SelectTrigger></FormControl>
+                            <SelectContent><>{patients.map(p => <SelectItem key={p.id} value={p.id}>{p.name} - {p.rut}</SelectItem>)}</>
+                            </SelectContent>
+                          </Select><FormMessage />
+                        </FormItem>
+                      )} />
+                    </TabsContent>
+                    <TabsContent value="new" className="mt-4 space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField control={form.control} name="newPatientName" render={({ field }) => (<FormItem><FormLabel>Nombre Paciente</FormLabel><FormControl><Input placeholder="Nombre Apellido" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="newPatientRut" render={({ field }) => (<FormItem><FormLabel>RUT Paciente</FormLabel><FormControl><Input placeholder="12.345.678-9" {...field} /></FormControl><FormMessage /></FormItem>)} />
                       </div>
+                    </TabsContent>
+                  </Tabs>
+                )} />
+                <FormField control={form.control} name="dispatchAddress" render={({ field }) => (
+                  <FormItem className="mt-4"><FormLabel>Dirección de Despacho</FormLabel><FormControl><Input placeholder="Ej: Calle Falsa 123, Comuna" {...field} /></FormControl><FormDescription className="text-xs text-slate-500">(Opcional. Por defecto, se retira en farmacia.)</FormDescription><FormMessage /></FormItem>
+                )} />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <h2 className="text-xl font-semibold mb-4 text-slate-700">Médico *</h2>
+                <FormField control={form.control} name="doctorSelectionType" render={({ field }) => (
+                  <Tabs value={field.value} onValueChange={(value) => field.onChange(value as 'existing' | 'new')} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2"><TabsTrigger value="existing">Médico Existente</TabsTrigger><TabsTrigger value="new">Médico Nuevo</TabsTrigger></TabsList>
+                    <TabsContent value="existing" className="mt-4">
+                      <FormField control={form.control} name="doctorId" render={({ field }) => (
+                        <FormItem><FormLabel>Buscar Médico</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un médico..." /></SelectTrigger></FormControl>
+                            <SelectContent><>{doctors.map(d => <SelectItem key={d.id} value={d.id}>{d.name} - {d.specialty}</SelectItem>)}</>
+                            </SelectContent>
+                          </Select><FormMessage />
+                        </FormItem>
+                      )} />
+                    </TabsContent>
+                    <TabsContent value="new" className="mt-4 space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField control={form.control} name="newDoctorName" render={({ field }) => (<FormItem><FormLabel>Nombre Médico</FormLabel><FormControl><Input placeholder="Nombre Apellido" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="newDoctorLicense" render={({ field }) => (<FormItem><FormLabel>N° Colegiatura</FormLabel><FormControl><Input placeholder="Ej: 12345" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="newDoctorRut" render={({ field }) => (<FormItem><FormLabel>RUT Médico (Opcional)</FormLabel><FormControl><Input placeholder="12.345.678-K" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="newDoctorSpecialty" render={({ field }) => (<FormItem><FormLabel>Especialidad Médico</FormLabel><FormControl><Input placeholder="Ej: Cardiología" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                )} />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <h2 className="text-xl font-semibold mb-6 text-slate-700">Recetario e Insumos</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+                  <FormField control={form.control} name="externalPharmacyId" render={({ field }) => (
+                    <FormItem><FormLabel>Recetario Asignado *</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un recetario..." /></SelectTrigger></FormControl>
+                        <SelectContent>{externalPharmacies.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+                      </Select><FormMessage />
                     </FormItem>
+                  )} />
+                  <FormField control={form.control} name="supplySource" render={({ field }) => (
+                    <FormItem><FormLabel>Origen de Insumos *</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un origen..." /></SelectTrigger></FormControl>
+                        <SelectContent><SelectItem value="Stock del Recetario">Stock del Recetario</SelectItem><SelectItem value="Insumos de Skol">Insumos de Skol</SelectItem></SelectContent>
+                      </Select><FormMessage />
+                    </FormItem>
+                  )} />
+                  <div className="md:col-span-1">
+                    <FormField control={form.control} name="preparationCost" render={({ field }) => (
+                      <FormItem><FormLabel>Costo Preparación (CLP) *</FormLabel>
+                        <FormControl><Input type="number" placeholder="Ej: 15000" {...field} /></FormControl>
+                        <FormDescription className="text-xs text-slate-500">Costo que Skol pagará al recetario.</FormDescription><FormMessage />
+                      </FormItem>
+                    )} />
+                  </div>
+                  <div className="md:col-span-1">
+                    <FormField control={form.control} name="transportCost" render={({ field }) => (
+                      <FormItem><FormLabel>Costo de Despacho (CLP)</FormLabel>
+                        <FormControl><Input type="number" placeholder="Ej: 3500" {...field} /></FormControl>
+                        <FormDescription className="text-xs text-slate-500">Se llena por defecto al elegir el recetario.</FormDescription><FormMessage />
+                      </FormItem>
+                    )} />
                   </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="ghost" asChild><Link href="/recipes">Cancelar</Link></Button>
-            <Button type="submit" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isEditMode && !copyFromId ? 'Guardar Cambios' : 'Crear Receta'}
-            </Button>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-semibold text-slate-700">Preparado Magistral</h2>
+                  <Button type="button" variant="link" onClick={() => append(defaultItem)} className="text-primary hover:text-primary/80"><PlusCircle className="mr-2 h-4 w-4" />Añadir</Button>
+                </div>
+                <div className="space-y-6">
+                  {fields.map((item, index) => (
+                    <RecipeItemCard key={item.id} index={index} remove={remove} form={form} appSettings={appSettings} inventory={inventory} isSimplifying={isSimplifying} handleSimplifyInstructions={handleSimplifyInstructions} totalFields={fields.length} onOpenInventoryForm={() => setIsInventoryFormOpen(true)} />
+                  ))}
+                </div>
+                <FormField control={form.control} name="items" render={() => (<FormItem><FormMessage className="mt-4" /></FormItem>)} />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-semibold text-slate-700">Medicamento Controlado</h2>
+                  <FormField control={form.control} name="isControlled" render={({ field }) => (
+                    <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                      <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                      <FormLabel className="font-normal">Es Controlado</FormLabel>
+                    </FormItem>
+                  )} />
+                </div>
+                {isControlled && (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormField control={form.control} name="controlledRecipeType" render={({ field }) => (
+                        <FormItem><FormLabel>Tipo de Receta Controlada *</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Seleccione tipo..." /></SelectTrigger></FormControl>
+                            <SelectContent><SelectItem value="Receta Cheque">Receta Cheque</SelectItem><SelectItem value="Receta Retenida">Receta Retenida</SelectItem></SelectContent>
+                          </Select><FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name="controlledRecipeFolio" render={({ field }) => (
+                        <FormItem><FormLabel>Folio Receta *</FormLabel>
+                          <FormControl><Input placeholder="Ej: F123456 o Folio Cheque" {...field} /></FormControl><FormMessage />
+                        </FormItem>
+                      )} />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormItem><FormLabel>Folio Interno Skol</FormLabel><FormControl><Input disabled placeholder="Se genera automáticamente" /></FormControl></FormItem>
+                      <FormItem>
+                        <FormLabel>Adjuntar Imagen Receta Controlada (Opcional)</FormLabel>
+                        <div className="flex items-center gap-2">
+                          <Button type="button" variant="outline">Seleccionar archivo</Button>
+                          <span className="text-xs text-slate-500">Sin archivos seleccionados</span>
+                        </div>
+                      </FormItem>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="ghost" asChild><Link href="/recipes">Cancelar</Link></Button>
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isEditMode && !copyFromId ? 'Guardar Cambios' : 'Crear Receta'}
+              </Button>
+            </div>
           </div>
-        </div>
-      </form>
-    </Form>
+        </form>
+      </Form>
+    </>
   );
 }
