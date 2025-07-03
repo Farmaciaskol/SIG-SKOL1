@@ -66,41 +66,31 @@ type FilterStatus = 'all' | 'OK' | 'Stock Bajo' | 'Agotado' | 'Próximo a Vencer
 
 
 const inventoryFormSchema = z.object({
-  // Section 1
   name: z.string().min(1, "El nombre comercial es requerido."),
   activePrinciple: z.string().min(1, "El principio activo es requerido."),
   sku: z.string().optional(),
   manufacturer: z.string().optional(),
   barcode: z.string().optional(),
   unit: z.string().min(1, "La unidad de compra/stock es requerida (ej: caja, frasco)."),
-  itemsPerBaseUnit: z.coerce.number().min(1, "Debe indicar al menos 1 unidad por envase.").describe("Unidades por envase. Ej: 30 si la caja trae 30 comprimidos."),
-
-  // Section 2
+  itemsPerBaseUnit: z.coerce.number().min(1, "Debe indicar al menos 1 unidad por envase."),
   pharmaceuticalForm: z.string().min(1, "La forma farmacéutica es requerida."),
   doseValue: z.coerce.number().min(0, "La dosis debe ser un número positivo."),
   doseUnit: z.string().min(1, "La unidad de dosis es requerida."),
   administrationRoute: z.string().optional(),
-  
-  // Section 3
   saleCondition: z.string().min(1, "La condición de venta es requerida."),
   isBioequivalent: z.boolean().default(false),
   requiresRefrigeration: z.boolean().default(false),
   isControlled: z.boolean().default(false),
   controlledType: z.string().optional(),
   atcCode: z.string().optional(),
-  
-  // Section 4
   lowStockThreshold: z.coerce.number().min(0, "El stock mínimo no puede ser negativo."),
   maxStock: z.coerce.number().optional(),
   mainProvider: z.string().optional(),
   location: z.string().optional(),
-  costPrice: z.coerce.number().min(0, "El costo neto es requerido.").describe("Costo por Unidad de Compra (ej: costo de la caja)."),
+  costPrice: z.coerce.number().min(0, "El costo neto es requerido."),
   salePrice: z.coerce.number().min(0, "El precio de venta es requerido."),
-  
-  // Section 5
   mainIndications: z.string().optional(),
   internalNotes: z.string().optional(),
-
 }).refine(data => !data.isControlled || (data.isControlled && data.controlledType), {
     message: "El tipo de controlado es requerido si el producto es controlado.",
     path: ["controlledType"],
@@ -257,7 +247,7 @@ const InventoryItemForm = ({ item, onFinished }: { item?: InventoryItem; onFinis
                             <FormField control={form.control} name="controlledType" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Tipo de Controlado *</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <Select onValueChange={field.onChange} value={field.value}>
                                         <FormControl><SelectTrigger><SelectValue placeholder="Seleccione..." /></SelectTrigger></FormControl>
                                         <SelectContent>
                                             <SelectItem value="Psicotrópico">Psicotrópico</SelectItem>
@@ -569,7 +559,6 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
             const sortedLots = [...lots]
                 .filter(lot => {
                     if (lot.quantity <= 0 || !lot.expiryDate) return false;
-                    // Check if expiryDate is a valid date string
                     return !isNaN(parseISO(lot.expiryDate).getTime());
                 })
                 .sort((a, b) => parseISO(a.expiryDate).getTime() - parseISO(b.expiryDate).getTime());
