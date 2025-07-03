@@ -725,3 +725,49 @@ export const sendMessageFromPatient = async (patientId: string, content: string)
         ...newMessage
     }
 };
+
+export const submitNewPrescription = async (patientId: string, imageDataUri: string): Promise<string> => {
+    if (!db || !storage) throw new Error("Firestore or Storage is not initialized.");
+    
+    const recipeRef = doc(collection(db, 'recipes'));
+    const recipeId = recipeRef.id;
+
+    const storageRef = ref(storage, `portal-prescriptions/${recipeId}`);
+    
+    let imageUrl: string;
+    try {
+        const uploadResult = await uploadString(storageRef, imageDataUri, 'data_url');
+        imageUrl = await getDownloadURL(uploadResult.ref);
+    } catch (storageError: any) {
+        console.error("Firebase Storage upload failed in submitNewPrescription:", storageError);
+        throw new Error(`Error al subir imagen desde el portal. Verifique las reglas de Storage. Código: ${storageError.code || 'UNKNOWN'}`);
+    }
+
+    const firstAuditEntry: AuditTrailEntry = {
+        status: RecipeStatus.PendingReviewPortal,
+        date: new Date().toISOString(),
+        userId: patientId,
+        notes: 'Receta subida por el paciente desde el portal.'
+    };
+    
+    const newRecipe: Omit<Recipe, 'id'> = {
+        patientId,
+        doctorId: '', 
+        items: [], 
+        status: RecipeStatus.PendingReviewPortal,
+        paymentStatus: 'Pendiente',
+        prescriptionDate: new Date().toISOString(),
+        dueDate: addMonths(new Date(), 6).toISOString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        prescriptionImageUrl: imageUrl,
+        auditTrail: [firstAuditEntry],
+        externalPharmacyId: '', 
+        supplySource: 'Stock del Recetario',
+        preparationCost: 0,
+    };
+
+    await setDoc(recipeRef, newRecipe);
+
+    return recipeId;
+};
