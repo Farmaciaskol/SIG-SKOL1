@@ -108,8 +108,7 @@ export default function DispatchManagementPage() {
     } finally {
       setLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     fetchData();
@@ -131,8 +130,14 @@ export default function DispatchManagementPage() {
       const patient = patients.find(p => p.id === recipe.patientId);
       if (!patient) continue;
 
-      for (const recipeItem of recipe.items) {
-        if (!recipeItem.requiresFractionation) continue;
+      // Handle cases where `items` is an array and where it might be missing (flat structure)
+      const itemsToProcess: any[] = (Array.isArray(recipe.items) && recipe.items.length > 0)
+        ? recipe.items
+        : [recipe];
+
+      for (const recipeItem of itemsToProcess) {
+        // Ensure recipeItem is not null and has the required property
+        if (!recipeItem || !recipeItem.requiresFractionation) continue;
 
         // Don't add if already dispatched
         const isAlreadyDispatched = dispatchNotes.some(dn => 
