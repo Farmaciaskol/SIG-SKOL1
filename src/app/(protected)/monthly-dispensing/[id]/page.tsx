@@ -8,12 +8,11 @@ import {
   getMonthlyDispensationBox,
   updateMonthlyDispensationBox,
   getPatient,
-  getRecipes,
-  getInventory,
   MonthlyDispensationBox,
   Patient,
   DispensationItem,
   DispensationItemStatus,
+  MonthlyDispensationBoxStatus,
 } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -27,6 +26,16 @@ import { ChevronLeft, Loader2, User, Calendar, CheckCircle, AlertTriangle, XCirc
 import { format, parse } from 'date-fns';
 import { es } from 'date-fns/locale';
 import React from 'react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 const itemStatusConfig: Record<DispensationItemStatus, { text: string; icon: React.ElementType; color: string }> = {
   [DispensationItemStatus.OkToInclude]: { text: 'OK para Incluir', icon: CheckCircle, color: 'text-green-500' },
@@ -42,9 +51,11 @@ export default function DispensationDetailPage() {
   const id = params.id as string;
 
   const [box, setBox] = useState<MonthlyDispensationBox | null>(null);
+  const [originalBox, setOriginalBox] = useState<MonthlyDispensationBox | null>(null);
   const [patient, setPatient] = useState<Patient | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!id) return;
@@ -53,6 +64,7 @@ export default function DispensationDetailPage() {
       const boxData = await getMonthlyDispensationBox(id);
       if (boxData) {
         setBox(boxData);
+        setOriginalBox(JSON.parse(JSON.stringify(boxData))); // Deep copy for comparison
         const patientData = await getPatient(boxData.patientId);
         setPatient(patientData);
       } else {
@@ -83,13 +95,13 @@ export default function DispensationDetailPage() {
     });
   };
   
-  const handleSaveChanges = async () => {
+  const saveProgress = async () => {
       if (!box) return;
       setIsSaving(true);
       try {
           await updateMonthlyDispensationBox(box.id, { items: box.items });
-          toast({ title: 'Cambios Guardados', description: 'La caja de dispensación ha sido actualizada.' });
-          fetchData();
+          toast({ title: 'Progreso Guardado', description: 'Los cambios en la caja han sido guardados.' });
+          fetchData(); // Refreshes originalBox as well
       } catch (error) {
            console.error('Failed to save changes:', error);
            toast({ title: 'Error', description: 'No se pudieron guardar los cambios.', variant: 'destructive' });
@@ -97,6 +109,36 @@ export default function DispensationDetailPage() {
           setIsSaving(false);
       }
   }
+
+  const handleMarkAsReadyClick = () => {
+    if (!box) return;
+    const itemsWithIssues = box.items.filter(i => i.status === DispensationItemStatus.RequiresAttention).length;
+    if (itemsWithIssues > 0) {
+      setShowConfirmation(true);
+    } else {
+      handleConfirmReadyForPickup();
+    }
+  };
+
+  const handleConfirmReadyForPickup = async () => {
+    if (!box) return;
+    setIsSaving(true);
+    setShowConfirmation(false);
+    try {
+      await updateMonthlyDispensationBox(box.id, { 
+        items: box.items, 
+        status: MonthlyDispensationBoxStatus.ReadyForPickup 
+      });
+      toast({ title: 'Caja Lista para Retiro', description: 'El estado de la caja ha sido actualizado.' });
+      fetchData();
+    } catch (error) {
+      console.error('Failed to mark as ready:', error);
+      toast({ title: 'Error', description: 'No se pudo actualizar el estado de la caja.', variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
 
   if (loading) {
     return (
@@ -113,7 +155,13 @@ export default function DispensationDetailPage() {
   
   const formattedPeriod = format(parse(box.period, 'yyyy-MM', new Date()), 'MMMM yyyy', { locale: es });
 
+  const itemsToIncludeCount = box.items.filter(i => i.status === DispensationItemStatus.OkToInclude || i.status === DispensationItemStatus.ManuallyAdded).length;
+  const itemsWithAttentionCount = box.items.filter(i => i.status === DispensationItemStatus.RequiresAttention).length;
+  const canMarkAsReady = box.status === MonthlyDispensationBoxStatus.InPreparation;
+
+
   return (
+    <>
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="outline" size="icon" className="h-10 w-10" asChild>
@@ -139,46 +187,56 @@ export default function DispensationDetailPage() {
                                   <TableRow>
                                       <TableHead className="w-1/3">Medicamento</TableHead>
                                       <TableHead>Validación del Sistema</TableHead>
-                                      <TableHead className="w-[150px]">Acción Farmacéutico</TableHead>
+                                      <TableHead className="w-[200px]">Acción Farmacéutico</TableHead>
                                       <TableHead className="w-1/4">Notas</TableHead>
                                   </TableRow>
                               </TableHeader>
                               <TableBody>
-                                  {box.items.map(item => (
-                                      <TableRow key={item.id}>
-                                          <TableCell>
-                                              <p className="font-semibold text-slate-800">{item.name}</p>
-                                              <p className="text-xs text-muted-foreground">{item.details}</p>
-                                          </TableCell>
-                                          <TableCell>
-                                            <div className="flex items-center gap-2">
-                                                {React.createElement(itemStatusConfig[item.status].icon, { className: `h-4 w-4 ${itemStatusConfig[item.status].color}` })}
-                                                <p className="text-sm">{item.reason}</p>
-                                            </div>
-                                          </TableCell>
-                                          <TableCell>
-                                              <Select 
-                                                value={item.status} 
-                                                onValueChange={(value) => handleItemChange(item.id, 'status', value as DispensationItemStatus)}
-                                              >
-                                                  <SelectTrigger><SelectValue /></SelectTrigger>
-                                                  <SelectContent>
-                                                      {Object.values(DispensationItemStatus).map(s => (
-                                                        <SelectItem key={s} value={s}>{itemStatusConfig[s].text}</SelectItem>
-                                                      ))}
-                                                  </SelectContent>
-                                              </Select>
-                                          </TableCell>
-                                          <TableCell>
-                                              <Textarea
-                                                placeholder="Anotaciones..." 
-                                                className="text-xs"
-                                                value={item.pharmacistNotes || ''}
-                                                onChange={(e) => handleItemChange(item.id, 'pharmacistNotes', e.target.value)}
-                                              />
-                                          </TableCell>
-                                      </TableRow>
-                                  ))}
+                                  {box.items.map(item => {
+                                      const originalItem = originalBox?.items.find(i => i.id === item.id);
+                                      const isOverridden = originalItem && originalItem.status !== item.status;
+
+                                      return (
+                                        <TableRow key={item.id}>
+                                            <TableCell>
+                                                <p className="font-semibold text-slate-800">{item.name}</p>
+                                                <p className="text-xs text-muted-foreground">{item.details}</p>
+                                            </TableCell>
+                                            <TableCell>
+                                              <div className="flex items-center gap-2">
+                                                  {React.createElement(itemStatusConfig[item.status].icon, { className: `h-4 w-4 ${itemStatusConfig[item.status].color}` })}
+                                                  <p className="text-sm">{item.reason}</p>
+                                              </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-2">
+                                                    <Select 
+                                                      value={item.status} 
+                                                      onValueChange={(value) => handleItemChange(item.id, 'status', value as DispensationItemStatus)}
+                                                      disabled={!canMarkAsReady}
+                                                    >
+                                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                                        <SelectContent>
+                                                            {Object.values(DispensationItemStatus).map(s => (
+                                                              <SelectItem key={s} value={s}>{itemStatusConfig[s].text}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    {isOverridden && <Badge variant="outline">Manual</Badge>}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Textarea
+                                                  placeholder="Anotaciones..." 
+                                                  className="text-xs"
+                                                  value={item.pharmacistNotes || ''}
+                                                  onChange={(e) => handleItemChange(item.id, 'pharmacistNotes', e.target.value)}
+                                                  disabled={!canMarkAsReady}
+                                                />
+                                            </TableCell>
+                                        </TableRow>
+                                      );
+                                  })}
                               </TableBody>
                           </Table>
                       </div>
@@ -193,17 +251,17 @@ export default function DispensationDetailPage() {
                   <CardContent className="space-y-4">
                      <p>Estado Actual: <Badge className="text-base">{box.status}</Badge></p>
                      <Separator />
-                     <p className="text-sm font-semibold">Ítems a Incluir: {box.items.filter(i => i.status === 'OK para Incluir' || i.status === 'Añadido Manualmente').length}</p>
-                     <p className="text-sm font-semibold text-orange-600">Ítems con Alertas: {box.items.filter(i => i.status === 'Requiere Atención').length}</p>
+                     <p className="text-sm font-semibold">Ítems a Incluir: {itemsToIncludeCount}</p>
+                     <p className="text-sm font-semibold text-orange-600">Ítems con Alertas: {itemsWithAttentionCount}</p>
                   </CardContent>
                   <CardFooter className="flex flex-col gap-2">
-                     <Button className="w-full" onClick={handleSaveChanges} disabled={isSaving}>
-                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
-                        Guardar Cambios
-                     </Button>
-                     <Button className="w-full" variant="outline" disabled={true}>
-                        <Package className="mr-2 h-4 w-4"/>
+                     <Button className="w-full" onClick={handleMarkAsReadyClick} disabled={!canMarkAsReady || isSaving}>
+                        {isSaving && box.status === MonthlyDispensationBoxStatus.InPreparation ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Package className="mr-2 h-4 w-4"/>}
                         Marcar como Lista para Retiro
+                     </Button>
+                     <Button className="w-full" variant="outline" onClick={saveProgress} disabled={!canMarkAsReady || isSaving}>
+                         {isSaving && box.status !== MonthlyDispensationBoxStatus.InPreparation ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
+                        Guardar Progreso
                      </Button>
                      <Button className="w-full" variant="outline" disabled={true}>
                         <Printer className="mr-2 h-4 w-4"/>
@@ -214,5 +272,23 @@ export default function DispensationDetailPage() {
           </div>
       </div>
     </div>
+    <AlertDialog open={showConfirmation} onOpenChange={setShowConfirmation}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>¿Confirmar y Continuar?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Hay {itemsWithAttentionCount} ítem(s) que requieren atención. ¿Está seguro que desea marcar esta caja como lista para retiro de todas formas?
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setShowConfirmation(false)}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleConfirmReadyForPickup} disabled={isSaving}>
+                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                    Confirmar de todos modos
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
