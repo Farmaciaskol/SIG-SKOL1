@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
@@ -177,6 +178,7 @@ const pharmacyFormSchema = z.object({
   address: z.string().optional(),
   paymentDetails: z.string().optional(),
   defaultPaymentModel: z.string().min(1, { message: 'El modelo de pago es requerido.' }),
+  transportCost: z.coerce.number().optional(),
 });
 
 type PharmacyFormValues = z.infer<typeof pharmacyFormSchema>;
@@ -213,6 +215,7 @@ export default function ExternalPrescriptionsPage() {
       address: '',
       paymentDetails: '',
       defaultPaymentModel: 'Por Receta',
+      transportCost: 0,
     },
   });
 
@@ -248,7 +251,7 @@ export default function ExternalPrescriptionsPage() {
     } else {
       form.reset({
         name: '', contactPerson: '', email: '', phone: '', address: '',
-        paymentDetails: '', defaultPaymentModel: 'Por Receta',
+        paymentDetails: '', defaultPaymentModel: 'Por Receta', transportCost: 0,
       });
     }
     setIsFormOpen(true);
@@ -427,27 +430,40 @@ export default function ExternalPrescriptionsPage() {
                  <FormField control={form.control} name="address" render={({ field }) => (
                     <FormItem><FormLabel>Dirección</FormLabel><FormControl><Input placeholder="Ej: Av. Principal 123, Santiago" {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
-                 <FormField
-                    control={form.control}
-                    name="defaultPaymentModel"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Modelo de Pago por Defecto *</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                            <SelectTrigger>
-                            <SelectValue placeholder="Seleccione un modelo..." />
-                            </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            <SelectItem value="Por Receta">Por Receta</SelectItem>
-                            <SelectItem value="Factura Mensual">Factura Mensual</SelectItem>
-                        </SelectContent>
-                        </Select>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="defaultPaymentModel"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Modelo de Pago por Defecto *</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                                <SelectTrigger>
+                                <SelectValue placeholder="Seleccione un modelo..." />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                <SelectItem value="Por Receta">Por Receta</SelectItem>
+                                <SelectItem value="Factura Mensual">Factura Mensual</SelectItem>
+                            </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="transportCost"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Costo de Despacho por Defecto (CLP)</FormLabel>
+                            <FormControl><Input type="number" placeholder="Ej: 3500" {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                </div>
                  <FormField control={form.control} name="paymentDetails" render={({ field }) => (
                     <FormItem><FormLabel>Detalles de Pago</FormLabel><FormControl><Textarea placeholder="Ej: Cuenta Corriente Banco XYZ, N° 123-456-789, a nombre de..." {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>

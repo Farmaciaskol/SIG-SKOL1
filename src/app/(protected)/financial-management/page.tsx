@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
@@ -17,6 +18,7 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
+  CardFooter,
 } from '@/components/ui/card';
 import {
   Accordion,
@@ -31,6 +33,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableFooter as UiTableFooter,
 } from '@/components/ui/table';
 import {
   AlertDialog,
@@ -67,13 +70,15 @@ type PharmacyFinancials = {
   pendingBalance: number;
   paidAmount: number;
   pendingRecipes: Recipe[];
+  totalPreparationCost: number;
+  totalTransportCost: number;
 };
 
 export default function FinancialManagementPage() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [pharmacies, setPharmacies] = useState<ExternalPharmacy[]>([]);
+  const [pharmacies, setExternalPharmacies] = useState<ExternalPharmacy[]>([]);
   
   const [pharmacyToPay, setPharmacyToPay] = useState<PharmacyFinancials | null>(null);
   const [isPaying, setIsPaying] = useState(false);
@@ -86,7 +91,7 @@ export default function FinancialManagementPage() {
         getExternalPharmacies(),
       ]);
       setRecipes(recipesData);
-      setPharmacies(pharmaciesData);
+      setExternalPharmacies(pharmaciesData);
     } catch (error) {
       console.error('Failed to fetch financial data:', error);
       toast({
@@ -110,11 +115,13 @@ export default function FinancialManagementPage() {
       const pharmacyRecipes = recipes.filter(r => r.externalPharmacyId === pharmacy.id);
       
       const pendingRecipes = pharmacyRecipes.filter(r => r.paymentStatus === 'Pendiente' && r.status !== RecipeStatus.Cancelled && r.status !== RecipeStatus.Rejected);
-      const pendingBalance = pendingRecipes.reduce((acc, r) => acc + (r.preparationCost || 0), 0);
+      const totalPreparationCost = pendingRecipes.reduce((acc, r) => acc + (r.preparationCost || 0), 0);
+      const totalTransportCost = pendingRecipes.reduce((acc, r) => acc + (r.transportCost || 0), 0);
+      const pendingBalance = totalPreparationCost + totalTransportCost;
       
       const paidAmount = pharmacyRecipes
         .filter(r => r.paymentStatus === 'Pagado')
-        .reduce((acc, r) => acc + (r.preparationCost || 0), 0);
+        .reduce((acc, r) => acc + (r.preparationCost || 0) + (r.transportCost || 0), 0);
         
       return {
         pharmacyId: pharmacy.id,
@@ -122,6 +129,8 @@ export default function FinancialManagementPage() {
         pendingBalance,
         paidAmount,
         pendingRecipes,
+        totalPreparationCost,
+        totalTransportCost,
       };
     }).filter(p => p.pendingBalance > 0 || p.paidAmount > 0); // Only show pharmacies with financial activity
   }, [recipes, pharmacies]);
@@ -219,7 +228,8 @@ export default function FinancialManagementPage() {
                                           <TableHead>ID Receta</TableHead>
                                           <TableHead>Fecha</TableHead>
                                           <TableHead>Estado Receta</TableHead>
-                                          <TableHead className="text-right">Costo</TableHead>
+                                          <TableHead className="text-right">Costo Prep.</TableHead>
+                                          <TableHead className="text-right">Costo Despacho</TableHead>
                                           </TableRow>
                                       </TableHeader>
                                       <TableBody>
@@ -231,9 +241,17 @@ export default function FinancialManagementPage() {
                                               <TableCell>{format(new Date(recipe.createdAt), "d MMM, yyyy", { locale: es })}</TableCell>
                                               <TableCell><Badge variant="secondary">{recipe.status}</Badge></TableCell>
                                               <TableCell className="text-right">${(recipe.preparationCost || 0).toLocaleString('es-CL')}</TableCell>
+                                              <TableCell className="text-right">${(recipe.transportCost || 0).toLocaleString('es-CL')}</TableCell>
                                           </TableRow>
                                           ))}
                                       </TableBody>
+                                      <UiTableFooter>
+                                        <TableRow>
+                                            <TableCell colSpan={3} className="font-bold text-right text-slate-700">TOTALES</TableCell>
+                                            <TableCell className="font-bold text-right text-slate-700">${data.totalPreparationCost.toLocaleString('es-CL')}</TableCell>
+                                            <TableCell className="font-bold text-right text-slate-700">${data.totalTransportCost.toLocaleString('es-CL')}</TableCell>
+                                        </TableRow>
+                                      </UiTableFooter>
                                   </Table>
                                   <div className="flex justify-end pt-4">
                                       <Button onClick={() => setPharmacyToPay(data)} disabled={data.pendingRecipes.length === 0 || isPaying}>

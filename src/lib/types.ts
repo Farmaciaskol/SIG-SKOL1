@@ -146,6 +146,7 @@ export interface Recipe {
   externalPharmacyId?: string;
   supplySource?: 'Stock del Recetario' | 'Insumos de Skol';
   preparationCost?: number;
+  transportCost?: number;
   isControlled?: boolean;
   controlledRecipeType?: string;
   controlledRecipeFolio?: string;
@@ -213,6 +214,7 @@ export interface ExternalPharmacy {
   address?: string;
   paymentDetails?: string; // e.g., bank account info
   defaultPaymentModel?: 'Por Receta' | 'Factura Mensual';
+  transportCost?: number;
 }
 
 export interface LotDetail {
@@ -298,6 +300,16 @@ export interface PatientMessage {
     read: boolean;
 }
 
+export interface AppSettings {
+    id: 'global';
+    pharmaceuticalForms: string[];
+    concentrationUnits: string[];
+    dosageUnits: string[];
+    treatmentDurationUnits: string[];
+    quantityToPrepareUnits: string[];
+}
+
+
 export interface AppData {
   recipes: Recipe[];
   patients: Patient[];
@@ -311,4 +323,5 @@ export interface AppData {
   controlledSubstanceLog: ControlledSubstanceLogEntry[];
   monthlyDispensations: MonthlyDispensationBox[];
   patientMessages: PatientMessage[];
+  appSettings?: AppSettings;
 }

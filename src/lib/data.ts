@@ -1,4 +1,5 @@
 
+
 import { db, storage } from './firebase';
 import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc, deleteDoc, writeBatch, query, where } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
@@ -223,7 +224,7 @@ export const deleteUser = async (id: string): Promise<void> => {
 
 export const addExternalPharmacy = async (pharmacy: Omit<ExternalPharmacy, 'id'>): Promise<string> => {
     if (!db) throw new Error("Firestore is not initialized.");
-    const pharmacyData = { ...pharmacy, contactPerson: pharmacy.contactPerson || '', email: pharmacy.email || '', phone: pharmacy.phone || '', address: pharmacy.address || '', paymentDetails: pharmacy.paymentDetails || '' };
+    const pharmacyData = { ...pharmacy, contactPerson: pharmacy.contactPerson || '', email: pharmacy.email || '', phone: pharmacy.phone || '', address: pharmacy.address || '', paymentDetails: pharmacy.paymentDetails || '', transportCost: pharmacy.transportCost || 0 };
     const docRef = await addDoc(collection(db, 'externalPharmacies'), pharmacyData);
     return docRef.id;
 };
@@ -272,7 +273,9 @@ export const saveRecipe = async (data: any, imageUri: string | null, recipeId?: 
     const recipeDataForUpdate: Partial<Recipe> = {
         patientId: patientId, doctorId: doctorId, dispatchAddress: data.dispatchAddress, items: data.items,
         prescriptionDate: data.prescriptionDate, dueDate: data.dueDate, updatedAt: new Date().toISOString(),
-        externalPharmacyId: data.externalPharmacyId, supplySource: data.supplySource, preparationCost: Number(data.preparationCost),
+        externalPharmacyId: data.externalPharmacyId, supplySource: data.supplySource, 
+        preparationCost: Number(data.preparationCost),
+        transportCost: Number(data.transportCost) || 0,
         isControlled: data.isControlled, controlledRecipeType: data.controlledRecipeType, controlledRecipeFolio: data.controlledRecipeFolio,
         prescriptionImageUrl: imageUrl,
     };

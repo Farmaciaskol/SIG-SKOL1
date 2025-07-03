@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -23,7 +24,7 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Upload, PlusCircle, X, Image as ImageIcon, Loader2, Wand2, Bot, Calendar as CalendarIcon, Trash2 } from 'lucide-react';
-import { getPatients, getDoctors, getRecipe, getExternalPharmacies, Patient, Doctor, ExternalPharmacy, saveRecipe, RecipeStatus } from '@/lib/data';
+import { getPatients, getDoctors, getRecipe, getExternalPharmacies, Patient, Doctor, ExternalPharmacy, saveRecipe, RecipeStatus, getAppSettings, AppSettings } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { extractRecipeDataFromImage } from '@/ai/flows/extract-recipe-data-from-image';
 import { simplifyInstructions } from '@/ai/flows/simplify-instructions';
@@ -33,7 +34,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { addMonths } from 'date-fns';
-import { PHARMACEUTICAL_FORMS, CONCENTRATION_UNITS, DOSAGE_UNITS, TREATMENT_DURATION_UNITS, QUANTITY_TO_PREPARE_UNITS, PHARMACEUTICAL_FORM_DEFAULTS } from '@/lib/constants';
+import { PHARMACEUTICAL_FORM_DEFAULTS } from '@/lib/constants';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 
 // Zod schema for form validation
@@ -70,6 +71,7 @@ const recipeFormSchema = z.object({
   externalPharmacyId: z.string().min(1, 'Debe seleccionar un recetario.'),
   supplySource: z.string().min(1, 'Debe seleccionar un origen de insumos.'),
   preparationCost: z.coerce.number().min(0, 'El costo de preparación debe ser un número positivo.'),
+  transportCost: z.coerce.number().min(0, 'El costo de despacho debe ser un número positivo.').optional(),
   isControlled: z.boolean().default(false).optional(),
   controlledRecipeType: z.string().optional(),
   controlledRecipeFolio: z.string().optional(),
@@ -129,6 +131,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [externalPharmacies, setExternalPharmacies] = useState<ExternalPharmacy[]>([]);
+  const [appSettings, setAppSettings] = useState<AppSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAiExtracting, setIsAiExtracting] = useState(false);
   const [isSimplifying, setIsSimplifying] = useState<number | null>(null);
@@ -156,6 +159,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
       externalPharmacyId: '',
       supplySource: '',
       preparationCost: 0,
+      transportCost: 0,
       isControlled: false,
       controlledRecipeType: '',
       controlledRecipeFolio: '',
@@ -187,6 +191,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
         externalPharmacyId: recipeData.externalPharmacyId ?? '',
         supplySource: recipeData.supplySource ?? '',
         preparationCost: recipeData.preparationCost ?? 0,
+        transportCost: recipeData.transportCost ?? 0,
         isControlled: recipeData.isControlled ?? false,
         controlledRecipeType: recipeData.controlledRecipeType ?? '',
         controlledRecipeFolio: recipeData.controlledRecipeFolio ?? '',
@@ -203,14 +208,16 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [patientsData, doctorsData, externalPharmaciesData] = await Promise.all([
+        const [patientsData, doctorsData, externalPharmaciesData, settingsData] = await Promise.all([
             getPatients(), 
             getDoctors(),
             getExternalPharmacies(),
+            getAppSettings(),
         ]);
         setPatients(patientsData);
         setDoctors(doctorsData);
         setExternalPharmacies(externalPharmaciesData);
+        setAppSettings(settingsData);
 
         const recipeToLoad = copyFromId || recipeId;
 
@@ -255,6 +262,16 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
   const watchedItems = form.watch('items');
   const patientSelectionType = form.watch('patientSelectionType');
   const doctorSelectionType = form.watch('doctorSelectionType');
+  const selectedPharmacyId = form.watch('externalPharmacyId');
+
+  useEffect(() => {
+    if (selectedPharmacyId) {
+        const selectedPharmacy = externalPharmacies.find(p => p.id === selectedPharmacyId);
+        if (selectedPharmacy && selectedPharmacy.transportCost) {
+            form.setValue('transportCost', selectedPharmacy.transportCost);
+        }
+    }
+  }, [selectedPharmacyId, externalPharmacies, form]);
 
   useEffect(() => {
     const calculateTotals = () => {
@@ -554,7 +571,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
           <Card>
             <CardContent className="p-6">
                 <h2 className="text-2xl font-semibold mb-6 text-slate-700">Recetario e Insumos</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
                 <FormField
                     control={form.control}
                     name="externalPharmacyId"
@@ -596,7 +613,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                     </FormItem>
                     )}
                 />
-                <div className="md:col-span-2">
+                <div className="md:col-span-1">
                     <FormField
                         control={form.control}
                         name="preparationCost"
@@ -607,6 +624,22 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                             <Input type="number" placeholder="Ej: 15000" {...field} />
                             </FormControl>
                             <FormDescription className="text-xs text-slate-500">Costo que Skol pagará al recetario.</FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                </div>
+                 <div className="md:col-span-1">
+                    <FormField
+                        control={form.control}
+                        name="transportCost"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Costo de Despacho (CLP)</FormLabel>
+                            <FormControl>
+                            <Input type="number" placeholder="Ej: 3500" {...field} />
+                            </FormControl>
+                            <FormDescription className="text-xs text-slate-500">Se llena por defecto al elegir el recetario.</FormDescription>
                             <FormMessage />
                         </FormItem>
                         )}
@@ -654,7 +687,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                                         onValueChange={(value) => {
                                             field.onChange(value);
                                             const defaults = PHARMACEUTICAL_FORM_DEFAULTS[value];
-                                            if (defaults) {
+                                            if (defaults && appSettings) {
                                                 form.setValue(`items.${index}.concentrationUnit`, defaults.concentrationUnit, { shouldValidate: true });
                                                 form.setValue(`items.${index}.dosageUnit`, defaults.dosageUnit, { shouldValidate: true });
                                                 form.setValue(`items.${index}.totalQuantityUnit`, defaults.totalQuantityUnit, { shouldValidate: true });
@@ -663,7 +696,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                                         value={field.value}>
                                         <FormControl><SelectTrigger><SelectValue placeholder="Seleccione..." /></SelectTrigger></FormControl>
                                         <SelectContent>
-                                            {PHARMACEUTICAL_FORMS.map(unit => <SelectItem key={unit} value={unit.toLowerCase()}>{unit}</SelectItem>)}
+                                            {appSettings?.pharmaceuticalForms.map(unit => <SelectItem key={unit} value={unit.toLowerCase()}>{unit}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -679,7 +712,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                                     <Select onValueChange={field.onChange} value={field.value}>
                                         <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
                                         <SelectContent>
-                                            {CONCENTRATION_UNITS.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}
+                                            {appSettings?.concentrationUnits.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -695,7 +728,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                                     <Select onValueChange={field.onChange} value={field.value}>
                                         <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
                                         <SelectContent>
-                                            {DOSAGE_UNITS.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}
+                                            {appSettings?.dosageUnits.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -719,7 +752,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                                     <Select onValueChange={field.onChange} value={field.value}>
                                         <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
                                         <SelectContent>
-                                            {TREATMENT_DURATION_UNITS.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}
+                                            {appSettings?.treatmentDurationUnits.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -735,7 +768,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                                     <Select onValueChange={field.onChange} value={field.value}>
                                         <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
                                         <SelectContent>
-                                            {QUANTITY_TO_PREPARE_UNITS.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}
+                                            {appSettings?.quantityToPrepareUnits.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
