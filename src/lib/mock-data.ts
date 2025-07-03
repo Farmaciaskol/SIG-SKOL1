@@ -25,7 +25,7 @@ const doctors: Doctor[] = [
 // --- PATIENTS ---
 const patients: Patient[] = [
     { id: 'pat-01', name: 'Gaspar Mendoza', rut: '11.111.111-1', email: 'gaspar.mendoza@email.com', phone: '+56987654321', gender: 'Masculino', address: 'Av. Siempre Viva 742, Santiago', isChronic: true, proactiveStatus: ProactivePatientStatus.ATTENTION, proactiveMessage: 'Receta de Minoxidil vence en 15 días.', actionNeeded: PatientActionNeeded.REPREPARE_CYCLE, chronicCareStatus: 'Atención', allergies: ['Penicilina'], commercialMedications: ['Aspirina 100mg'] },
-    { id: 'pat-02', name: 'Lucía Fernández', rut: '22.222.222-2', email: 'lucia.fernandez@email.com', phone: '+56912345678', gender: 'Femenino', address: 'Pasaje El Roble 123, Providencia', isChronic: true, proactiveStatus: ProactivePatientStatus.URGENT, proactiveMessage: 'Ciclo de Fenobarbital vencido. Requiere nueva receta.', actionNeeded: PatientActionNeeded.CREATE_NEW_RECIPE, chronicCareStatus: 'Urgente', allergies: [], commercialMedications: ['Losartan 50mg', 'Metformina 850mg'] },
+    { id: 'pat-02', name: 'Lucía Fernández', rut: '22.222.222-2', email: 'lucia.fernandez@email.com', phone: '+56912345678', gender: 'Femenino', address: 'Pasaje El Roble 123, Providencia', isChronic: true, proactiveStatus: ProactivePatientStatus.URGENT, proactiveMessage: 'Ciclo de Fenobarbital vencido. Requiere nueva receta.', actionNeeded: PatientActionNeeded.CREATE_NEW_RECIPE, chronicCareStatus: 'Urgente', allergies: [], commercialMedications: ['Losartan 50mg', 'Metformina 850mg'], adverseReactions: [{ medication: 'Enalapril', description: 'Tos seca persistente' }] },
     { id: 'pat-03', name: 'Benjamín Soto', rut: '33.333.333-3', email: 'benjamin.soto@email.com', phone: '+56955555555', gender: 'Masculino', address: 'Calle Los Cerezos 45, La Florida', isChronic: false, proactiveStatus: ProactivePatientStatus.OK, proactiveMessage: 'No requiere acción.', actionNeeded: PatientActionNeeded.NONE, chronicCareStatus: 'OK', allergies: ['AINEs'] },
     { id: 'pat-04', name: 'Catalina Flores', rut: '21.345.678-K', email: 'catalina.flores@email.com', phone: '923456789', gender: 'Femenino', address: 'Pasaje Secreto 456, Las Condes', isChronic: false, proactiveStatus: ProactivePatientStatus.OK, proactiveMessage: 'No requiere acción.', actionNeeded: PatientActionNeeded.NONE, chronicCareStatus: 'OK', allergies: ['AINEs'], commercialMedications: [], adverseReactions: [{ medication: 'Clonazepam', description: 'Somnolencia excesiva'}] },
 ];
@@ -85,7 +85,19 @@ const recipes: Recipe[] = [
 ];
 
 
-const pharmacovigilanceReports: PharmacovigilanceReport[] = [];
+const pharmacovigilanceReports: PharmacovigilanceReport[] = [
+    {
+        id: 'fv-001',
+        reportedAt: subDays(today, 20).toISOString(),
+        reporterName: 'Lucía Fernández (Paciente)',
+        patientId: 'pat-02',
+        recipeId: 'rec-dispensed-controlled-01',
+        involvedMedications: 'Clonazepam 0.25mg',
+        problemDescription: 'El paciente reporta somnolencia excesiva y mareos durante el día.',
+        status: PharmacovigilanceReportStatus.UnderInvestigation,
+        updatedAt: subDays(today, 18).toISOString(),
+    }
+];
 const controlledSubstanceLog: ControlledSubstanceLogEntry[] = [
     {
         id: 'csl-001',
@@ -103,6 +115,23 @@ const controlledSubstanceLog: ControlledSubstanceLogEntry[] = [
         prescriptionType: 'Receta Retenida',
         retrievedBy_Name: 'Lucía Fernández',
         retrievedBy_RUT: '22.222.222-2',
+    },
+    {
+        id: 'csl-002',
+        entryType: ControlledLogEntryType.MagistralDispensation,
+        dispensationDate: subDays(today, 2).toISOString(),
+        internalFolio: `CSL-MG-${today.getFullYear()}-0002`,
+        patientId: 'pat-02',
+        doctorId: 'doc-02',
+        medicationName: 'Fenobarbital 2mg/gota',
+        recipeId: 'rec-received-01',
+        quantityDispensed: 30,
+        quantityUnit: 'mL',
+        controlledType: 'Psicotrópico',
+        prescriptionFolio: 'A12345670',
+        prescriptionType: 'Receta Cheque',
+        retrievedBy_Name: 'Tutor Legal',
+        retrievedBy_RUT: '10.111.222-3',
     }
 ];
 const dispatchNotes: DispatchNote[] = [];

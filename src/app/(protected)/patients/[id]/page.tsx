@@ -2,16 +2,18 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { getPatient, getRecipes, getDoctors, Patient, Recipe, Doctor } from '@/lib/data';
+import { getPatient, getRecipes, getDoctors, getControlledSubstanceLogForPatient, getPharmacovigilanceReportsForPatient, Patient, Recipe, Doctor, ControlledSubstanceLogEntry, PharmacovigilanceReport, PharmacovigilanceReportStatus } from '@/lib/data';
 import { analyzePatientHistory, AnalyzePatientHistoryOutput } from '@/ai/flows/analyze-patient-history';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, User, Mail, Phone, MapPin, AlertTriangle, Pencil, Clock, Wand2, FlaskConical, FileText, CheckCircle2, BriefcaseMedical, DollarSign, Calendar, ChevronDown, PlusCircle } from 'lucide-react';
+import { Loader2, User, Mail, Phone, MapPin, AlertTriangle, Pencil, Clock, Wand2, FlaskConical, FileText, CheckCircle2, BriefcaseMedical, DollarSign, Calendar, Lock, ShieldAlert, Eye } from 'lucide-react';
 import { format, parseISO, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -29,6 +31,15 @@ const StatCard = ({ title, value, icon: Icon }: { title: string; value: string |
   </Card>
 );
 
+const statusStyles: Record<PharmacovigilanceReportStatus, string> = {
+  [PharmacovigilanceReportStatus.New]: 'bg-yellow-100 text-yellow-800',
+  [PharmacovigilanceReportStatus.UnderInvestigation]: 'bg-sky-100 text-sky-800',
+  [PharmacovigilanceReportStatus.ActionRequired]: 'bg-orange-100 text-orange-800',
+  [PharmacovigilanceReportStatus.Resolved]: 'bg-green-100 text-green-800',
+  [PharmacovigilanceReportStatus.Closed]: 'bg-slate-200 text-slate-800',
+};
+
+
 export default function PatientDetailPage() {
   const params = useParams();
   const { toast } = useToast();
@@ -37,6 +48,8 @@ export default function PatientDetailPage() {
   const [patient, setPatient] = useState<Patient | null>(null);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [controlledLogs, setControlledLogs] = useState<ControlledSubstanceLogEntry[]>([]);
+  const [pharmaReports, setPharmaReports] = useState<PharmacovigilanceReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalyzePatientHistoryOutput | null>(null);
@@ -46,14 +59,18 @@ export default function PatientDetailPage() {
     if (!id) return;
     setLoading(true);
     try {
-      const [patientData, allRecipes, allDoctors] = await Promise.all([
+      const [patientData, allRecipes, allDoctors, controlledLogsData, pharmaReportsData] = await Promise.all([
         getPatient(id),
         getRecipes(),
-        getDoctors()
+        getDoctors(),
+        getControlledSubstanceLogForPatient(id),
+        getPharmacovigilanceReportsForPatient(id),
       ]);
       
       if (patientData) {
         setPatient(patientData);
+        setControlledLogs(controlledLogsData);
+        setPharmaReports(pharmaReportsData);
         const patientRecipes = allRecipes.filter(r => r.patientId === id);
         setRecipes(patientRecipes);
         
@@ -114,7 +131,7 @@ export default function PatientDetailPage() {
         estimatedMonthlyCost: `$${monthlyCost.toLocaleString('es-CL')}`,
         activeMedicationsCount: activeMedications.size,
         historicalRecipesCount: recipes.length,
-        lastDispensationDate: lastDispensation?.dispensationDate ? format(parseISO(lastDispensation.dispensationDate), 'dd-MM-yyyy') : 'N/A'
+        lastDispensationDate: lastDispensation?.dispensationDate && isValid(parseISO(lastDispensation.dispensationDate)) ? format(parseISO(lastDispensation.dispensationDate), 'dd-MM-yyyy') : 'N/A'
     };
   }, [patient, recipes]);
 
@@ -134,9 +151,10 @@ export default function PatientDetailPage() {
       </div>
     );
   }
+  
+  const hasAlerts = (patient.allergies && patient.allergies.length > 0) || (patient.adverseReactions && patient.adverseReactions.length > 0);
 
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start gap-4">
         <div className="flex items-center gap-4">
@@ -147,7 +165,7 @@ export default function PatientDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2 self-start md:self-center">
-          <Button variant="outline"><Clock className="mr-2 h-4 w-4"/> Reportar Evento FV</Button>
+          <Button variant="outline"><ShieldAlert className="mr-2 h-4 w-4"/> Reportar Evento FV</Button>
           <Button onClick={handleAnalyzeHistory} disabled={isAnalyzing}>
             {isAnalyzing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />} Analizar Historial (IA)
           </Button>
@@ -156,13 +174,14 @@ export default function PatientDetailPage() {
       </div>
       
       {/* Clinical Alerts */}
-      {(patient.allergies && patient.allergies.length > 0) && (
+      {hasAlerts && (
         <Alert variant="destructive" className="bg-yellow-50 border-yellow-300 text-yellow-800 [&>svg]:text-yellow-600">
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle className="font-bold">Alertas Clínicas Críticas</AlertTitle>
             <AlertDescription>
                 <ul className="list-disc pl-5">
-                   {patient.allergies.map(allergy => <li key={allergy}>Alergia: {allergy}</li>)}
+                   {patient.allergies?.map(allergy => <li key={`allergy-${allergy}`}>Alergia: <span className="font-semibold">{allergy}</span></li>)}
+                   {patient.adverseReactions?.map(reaction => <li key={`reaction-${reaction.medication}`}>Reacción Adversa a <span className="font-semibold">{reaction.medication}</span>: {reaction.description}</li>)}
                 </ul>
             </AlertDescription>
         </Alert>
@@ -188,12 +207,12 @@ export default function PatientDetailPage() {
                 {isAnalyzing ? (
                    <div className="flex items-center text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analizando historial...</div>
                 ) : analysisResult ? (
-                  <div className="p-4 bg-green-50 border-l-4 border-green-400 rounded-r-lg">
+                  <div className="p-4 bg-primary/10 border-l-4 border-primary rounded-r-lg">
                     <div className="flex items-start gap-3">
-                      <CheckCircle2 className="h-5 w-5 text-green-600 mt-1" />
+                      <CheckCircle2 className="h-5 w-5 text-primary mt-1" />
                       <div>
-                        <h4 className="font-bold text-green-800">Análisis Completo</h4>
-                        <p className="text-sm text-green-700">{analysisResult.analysis}</p>
+                        <h4 className="font-bold text-primary-foreground/90">Análisis Completo</h4>
+                        <p className="text-sm text-primary-foreground/80">{analysisResult.analysis}</p>
                       </div>
                     </div>
                   </div>
@@ -222,16 +241,8 @@ export default function PatientDetailPage() {
             {/* Timeline and History */}
             <Accordion type="multiple" defaultValue={['history']} className="w-full space-y-6">
                 <Card>
-                    <AccordionItem value="timeline" className="border-b-0">
-                        <AccordionTrigger className="text-xl font-semibold p-6">Línea de Tiempo del Paciente</AccordionTrigger>
-                        <AccordionContent className="px-6 pb-6">
-                            <p className="text-muted-foreground">La línea de tiempo está en construcción.</p>
-                        </AccordionContent>
-                    </AccordionItem>
-                </Card>
-                <Card>
                     <AccordionItem value="history" className="border-b-0">
-                        <AccordionTrigger className="text-xl font-semibold p-6">Historial de Recetas</AccordionTrigger>
+                        <AccordionTrigger className="text-xl font-semibold p-6"><FileText className="mr-3 h-5 w-5 text-primary"/>Historial de Recetas Magistrales</AccordionTrigger>
                         <AccordionContent className="px-6 pb-6">
                              {recipes.length > 0 ? (
                                  <div className="space-y-4">
@@ -241,13 +252,65 @@ export default function PatientDetailPage() {
                                                 <p className="font-bold text-primary">{recipe.id}</p>
                                                 <Badge variant="secondary">{recipe.status}</Badge>
                                              </div>
-                                             <p className="text-sm text-muted-foreground">Fecha: {format(parseISO(recipe.prescriptionDate), 'dd-MM-yyyy')}</p>
+                                             <p className="text-sm text-muted-foreground">Fecha: {isValid(parseISO(recipe.prescriptionDate)) ? format(parseISO(recipe.prescriptionDate), 'dd-MM-yyyy') : 'Fecha inválida'}</p>
                                              <p className="text-sm font-medium mt-2">{recipe.items[0].principalActiveIngredient}</p>
                                          </div>
                                      ))}
                                  </div>
                              ) : (
                                 <p className="text-muted-foreground">No hay recetas históricas para este paciente.</p>
+                             )}
+                        </AccordionContent>
+                    </AccordionItem>
+                </Card>
+                 <Card>
+                    <AccordionItem value="controlled" className="border-b-0">
+                        <AccordionTrigger className="text-xl font-semibold p-6"><Lock className="mr-3 h-5 w-5 text-primary"/>Historial de Recetas Controladas</AccordionTrigger>
+                        <AccordionContent className="px-6 pb-6">
+                             {controlledLogs.length > 0 ? (
+                                 <Table>
+                                    <TableHeader><TableRow><TableHead>Fecha</TableHead><TableHead>Medicamento</TableHead><TableHead>Folio Receta</TableHead><TableHead>Retirado por</TableHead></TableRow></TableHeader>
+                                    <TableBody>
+                                        {controlledLogs.map(log => (
+                                            <TableRow key={log.id}>
+                                                <TableCell>{isValid(parseISO(log.dispensationDate)) ? format(parseISO(log.dispensationDate), 'dd-MM-yy') : ''}</TableCell>
+                                                <TableCell>{log.medicationName}</TableCell>
+                                                <TableCell className="font-mono">{log.prescriptionFolio}</TableCell>
+                                                <TableCell>{log.retrievedBy_Name}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                 </Table>
+                             ) : (
+                                <p className="text-muted-foreground">No hay dispensaciones controladas registradas.</p>
+                             )}
+                        </AccordionContent>
+                    </AccordionItem>
+                </Card>
+                 <Card>
+                    <AccordionItem value="pharma" className="border-b-0">
+                        <AccordionTrigger className="text-xl font-semibold p-6"><ShieldAlert className="mr-3 h-5 w-5 text-primary"/>Eventos de Farmacovigilancia</AccordionTrigger>
+                        <AccordionContent className="px-6 pb-6">
+                             {pharmaReports.length > 0 ? (
+                                <Table>
+                                    <TableHeader><TableRow><TableHead>Fecha</TableHead><TableHead>Problema</TableHead><TableHead>Estado</TableHead><TableHead></TableHead></TableRow></TableHeader>
+                                    <TableBody>
+                                        {pharmaReports.map(report => (
+                                            <TableRow key={report.id}>
+                                                <TableCell>{isValid(parseISO(report.reportedAt)) ? format(parseISO(report.reportedAt), 'dd-MM-yy') : ''}</TableCell>
+                                                <TableCell className="max-w-[200px] truncate">{report.problemDescription}</TableCell>
+                                                <TableCell><Badge className={statusStyles[report.status]}>{report.status}</Badge></TableCell>
+                                                <TableCell>
+                                                  <Button variant="ghost" size="sm" asChild>
+                                                    <Link href={`/pharmacovigilance/${report.id}`}><Eye className="mr-2 h-4 w-4"/> Ver</Link>
+                                                  </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                 </Table>
+                             ) : (
+                                <p className="text-muted-foreground">No hay eventos de farmacovigilancia para este paciente.</p>
                              )}
                         </AccordionContent>
                     </AccordionItem>
@@ -293,6 +356,5 @@ export default function PatientDetailPage() {
             </Card>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 }

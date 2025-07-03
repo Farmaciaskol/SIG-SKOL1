@@ -1,6 +1,6 @@
 
 import { db, storage } from './firebase';
-import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc, deleteDoc, writeBatch, query, where } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, ControlledLogEntryType } from './types';
 import type { Recipe, Doctor, InventoryItem, User, Role, ExternalPharmacy, Patient, PharmacovigilanceReport, AppData, AuditTrailEntry, DispatchNote, DispatchItem, ControlledSubstanceLogEntry } from './types';
@@ -38,15 +38,16 @@ function deepConvertTimestamps(obj: any): any {
 }
 
 
-async function fetchCollection<T extends { id: string }>(collectionName: keyof AppData & string): Promise<T[]> {
+async function fetchCollection<T extends { id: string }>(collectionName: keyof AppData & string, q?: any): Promise<T[]> {
   if (!db) {
     console.error("Firestore is not initialized.");
     return [];
   }
   try {
-    let querySnapshot = await getDocs(collection(db, collectionName));
+    const collRef = collection(db, collectionName);
+    let querySnapshot = q ? await getDocs(q) : await getDocs(collRef);
     
-    if (querySnapshot.empty && USE_MOCK_DATA_ON_EMPTY_FIRESTORE && !seededCollections.has(collectionName)) {
+    if (querySnapshot.empty && !q && USE_MOCK_DATA_ON_EMPTY_FIRESTORE && !seededCollections.has(collectionName)) {
       console.warn(`Firestore collection '${collectionName}' is empty. Seeding with mock data...`);
       const mockData = getMockData()[collectionName];
       if (mockData && mockData.length > 0) {
@@ -58,7 +59,7 @@ async function fetchCollection<T extends { id: string }>(collectionName: keyof A
         await batch.commit();
         console.log(`Successfully seeded ${mockData.length} documents into '${collectionName}'.`);
         seededCollections.add(collectionName);
-        querySnapshot = await getDocs(collection(db, collectionName));
+        querySnapshot = await getDocs(collRef);
       }
     }
 
@@ -85,6 +86,20 @@ export const getRoles = async (): Promise<Role[]> => fetchCollection<Role>('role
 export const getPharmacovigilanceReports = async (): Promise<PharmacovigilanceReport[]> => fetchCollection<PharmacovigilanceReport>('pharmacovigilanceReports');
 export const getDispatchNotes = async (): Promise<DispatchNote[]> => fetchCollection<DispatchNote>('dispatchNotes');
 export const getControlledSubstanceLog = async (): Promise<ControlledSubstanceLogEntry[]> => fetchCollection<ControlledSubstanceLogEntry>('controlledSubstanceLog');
+
+// Filtered fetch functions
+export const getControlledSubstanceLogForPatient = async (patientId: string): Promise<ControlledSubstanceLogEntry[]> => {
+    if (!db) return [];
+    const q = query(collection(db, "controlledSubstanceLog"), where("patientId", "==", patientId));
+    return fetchCollection<ControlledSubstanceLogEntry>('controlledSubstanceLog', q);
+}
+
+export const getPharmacovigilanceReportsForPatient = async (patientId: string): Promise<PharmacovigilanceReport[]> => {
+    if (!db) return [];
+    const q = query(collection(db, "pharmacovigilanceReports"), where("patientId", "==", patientId));
+    return fetchCollection<PharmacovigilanceReport>('pharmacovigilanceReports', q);
+}
+
 
 // Single document fetch functions
 async function getDocument<T>(collectionName: string, id: string): Promise<T | null> {
@@ -259,7 +274,8 @@ export const processDispatch = async (pharmacyId: string, dispatchItems: Dispatc
         if (!recipeUpdates[item.recipeId]) {
             const recipeSnap = await getDoc(doc(db, 'recipes', item.recipeId));
             const recipeData = recipeSnap.data() as Recipe;
-            const itemsToDispatch = Array.isArray(recipeData.items) ? recipeData.items.filter(i => i.requiresFractionation).length : (recipeData.requiresFractionation ? 1 : 0);
+            const itemsToProcess = Array.isArray(recipeData.items) ? recipeData.items : [recipeData];
+            const itemsToDispatch = itemsToProcess.filter(i => i.requiresFractionation).length;
             recipeUpdates[item.recipeId] = { itemsToDispatch, dispatchedItems: 0 };
         }
         recipeUpdates[item.recipeId].dispatchedItems++;
