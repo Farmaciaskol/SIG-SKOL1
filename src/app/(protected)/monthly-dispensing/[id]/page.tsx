@@ -26,6 +26,7 @@ import { Separator } from '@/components/ui/separator';
 import { ChevronLeft, Loader2, User, Calendar, CheckCircle, AlertTriangle, XCircle, Printer, Box, Save, Package } from 'lucide-react';
 import { format, parse } from 'date-fns';
 import { es } from 'date-fns/locale';
+import React from 'react';
 
 const itemStatusConfig: Record<DispensationItemStatus, { text: string; icon: React.ElementType; color: string }> = {
   [DispensationItemStatus.OkToInclude]: { text: 'OK para Incluir', icon: CheckCircle, color: 'text-green-500' },

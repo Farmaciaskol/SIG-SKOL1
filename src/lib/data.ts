@@ -614,4 +614,3 @@ export const updateMonthlyDispensationBox = async (boxId: string, updates: Parti
   const dataToUpdate = { ...updates, updatedAt: new Date().toISOString() };
   await updateDoc(boxRef, dataToUpdate as any);
 };
-    
