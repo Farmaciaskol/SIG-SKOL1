@@ -88,7 +88,7 @@ import {
   ShieldCheck,
   Filter,
   Calendar as CalendarIcon,
-  PackageSplit,
+  Split,
 } from 'lucide-react';
 import { getRecipes, getPatients, getDoctors, getExternalPharmacies, deleteRecipe, updateRecipe, Recipe, Patient, Doctor, ExternalPharmacy, RecipeStatus, AuditTrailEntry } from '@/lib/data';
 import { format, parseISO } from 'date-fns';
@@ -688,7 +688,7 @@ export default function RecipesPage() {
                                     </Link>
                                     {recipe.items.some(item => item.requiresFractionation) && (
                                         <TooltipProvider><Tooltip><TooltipTrigger>
-                                            <PackageSplit className="h-4 w-4 text-orange-500" />
+                                            <Split className="h-4 w-4 text-orange-500" />
                                         </TooltipTrigger><TooltipContent><p>Requiere Fraccionamiento</p></TooltipContent></Tooltip></TooltipProvider>
                                     )}
                                 </div>
@@ -697,7 +697,7 @@ export default function RecipesPage() {
                             <TableCell>
                                 {recipe.items.length > 0 ? (
                                     <div className="flex flex-col">
-                                    <span className="font-medium text-slate-800">
+                                    <span className="text-sm font-medium text-slate-800">
                                         {recipe.items[0].principalActiveIngredient}{' '}
                                         {recipe.items[0].concentrationValue}
                                         {recipe.items[0].concentrationUnit}
@@ -728,10 +728,10 @@ export default function RecipesPage() {
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <div className="flex items-center gap-2">
                         <Checkbox onCheckedChange={() => toggleSelectRecipe(recipe.id)} checked={selectedRecipes.includes(recipe.id)}/>
-                        <Link href={`/recipes/${recipe.id}`} className="font-semibold text-primary hover:underline">{recipe.id}</Link>
+                        <Link href={`/recipes/${recipe.id}`} className="text-lg font-bold text-primary hover:underline">{recipe.id}</Link>
                          {recipe.items.some(item => item.requiresFractionation) && (
                             <TooltipProvider><Tooltip><TooltipTrigger>
-                                <PackageSplit className="h-4 w-4 text-orange-500" />
+                                <Split className="h-4 w-4 text-orange-500" />
                             </TooltipTrigger><TooltipContent><p>Requiere Fraccionamiento</p></TooltipContent></Tooltip></TooltipProvider>
                         )}
                     </div>
@@ -771,10 +771,10 @@ export default function RecipesPage() {
       <Dialog open={!!recipeToView} onOpenChange={(open) => !open && setRecipeToView(null)}>
         <DialogContent className="sm:max-w-2xl"><DialogHeader><DialogTitle className="text-xl font-semibold">Detalle Receta: {recipeToView?.id}</DialogTitle><DialogDescription>Información completa de la receta y su historial.</DialogDescription></DialogHeader>
             <div className="max-h-[70vh] overflow-y-auto p-1 pr-4"><div className="space-y-6">
-                <div className="space-y-1"><h3 className="font-semibold text-slate-700">Paciente:</h3><p className="text-slate-500">{getPatientName(recipeToView?.patientId || '')}</p></div>
-                <div className="space-y-1"><h3 className="font-semibold text-slate-700">Estado Actual:</h3>{recipeToView && <RecipeStatusBadge status={recipeToView.status} />}</div>
-                <div className="space-y-2"><h3 className="font-semibold text-slate-700">Items:</h3>{recipeToView?.items.map((item, index) => ( <div key={index} className="text-sm p-3 border rounded-md bg-muted/50"><p className="font-medium text-slate-800">{item.principalActiveIngredient} {item.concentrationValue}{item.concentrationUnit}</p><p className="text-slate-500">{item.usageInstructions}</p></div>))}</div>
-                <div className="space-y-2"><h3 className="font-semibold text-slate-700">Historial de Auditoría:</h3><Table><TableHeader><TableRow><TableHead>Fecha</TableHead><TableHead>Estado</TableHead><TableHead>Notas</TableHead></TableRow></TableHeader><TableBody>{recipeToView?.auditTrail?.slice().reverse().map((entry, index) => (<TableRow key={index}><TableCell>{format(parseISO(entry.date), 'dd-MM-yy HH:mm')}</TableCell><TableCell>{statusConfig[entry.status]?.text || entry.status}</TableCell><TableCell>{entry.notes}</TableCell></TableRow>))}</TableBody></Table></div>
+                <div className="space-y-1"><h3 className="text-sm font-semibold text-slate-700">Paciente:</h3><p className="text-slate-500">{getPatientName(recipeToView?.patientId || '')}</p></div>
+                <div className="space-y-1"><h3 className="text-sm font-semibold text-slate-700">Estado Actual:</h3>{recipeToView && <RecipeStatusBadge status={recipeToView.status} />}</div>
+                <div className="space-y-2"><h3 className="text-sm font-semibold text-slate-700">Items:</h3>{recipeToView?.items.map((item, index) => ( <div key={index} className="text-sm p-3 border rounded-md bg-muted/50"><p className="font-medium text-slate-800">{item.principalActiveIngredient} {item.concentrationValue}{item.concentrationUnit}</p><p className="text-slate-500">{item.usageInstructions}</p></div>))}</div>
+                <div className="space-y-2"><h3 className="text-sm font-semibold text-slate-700">Historial de Auditoría:</h3><Table><TableHeader><TableRow><TableHead>Fecha</TableHead><TableHead>Estado</TableHead><TableHead>Notas</TableHead></TableRow></TableHeader><TableBody>{recipeToView?.auditTrail?.slice().reverse().map((entry, index) => (<TableRow key={index}><TableCell>{format(parseISO(entry.date), 'dd-MM-yy HH:mm')}</TableCell><TableCell>{statusConfig[entry.status]?.text || entry.status}</TableCell><TableCell>{entry.notes}</TableCell></TableRow>))}</TableBody></Table></div>
             </div></div><DialogFooter><Button variant="outline" onClick={() => setRecipeToView(null)}>Cerrar</Button></DialogFooter>
         </DialogContent>
       </Dialog>
