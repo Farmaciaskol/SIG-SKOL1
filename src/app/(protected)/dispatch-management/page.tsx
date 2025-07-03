@@ -122,8 +122,8 @@ export default function DispatchManagementPage() {
     const recipesToProcess = recipes.filter(r => 
         r.status === RecipeStatus.Validated &&
         r.supplySource === 'Insumos de Skol' &&
-        r.items.some(item => item.requiresFractionation) &&
-        r.skolSuppliedItemsDispatchStatus !== SkolSuppliedItemsDispatchStatus.Dispatched
+        (!r.skolSuppliedItemsDispatchStatus ||
+         r.skolSuppliedItemsDispatchStatus !== SkolSuppliedItemsDispatchStatus.Dispatched)
     );
     
     for (const recipe of recipesToProcess) {
@@ -133,6 +133,13 @@ export default function DispatchManagementPage() {
       for (const recipeItem of recipe.items) {
         if (!recipeItem.requiresFractionation) continue;
 
+        // Don't add if already dispatched
+        const isAlreadyDispatched = dispatchNotes.some(dn => 
+            dn.items.some(item => item.recipeId === recipe.id && item.recipeItemName === recipeItem.principalActiveIngredient)
+        );
+
+        if (isAlreadyDispatched) continue;
+        
         const inventoryItem = inventory.find(i => 
           i.name.toLowerCase().includes(recipeItem.principalActiveIngredient.toLowerCase()) && i.itemsPerBaseUnit
         );
@@ -150,7 +157,7 @@ export default function DispatchManagementPage() {
       }
     }
     return items;
-  }, [loading, recipes, patients, inventory]);
+  }, [loading, recipes, patients, inventory, dispatchNotes]);
 
 
   const itemsToDispatchGroupedByPharmacy = useMemo<GroupedItems>(() => {
@@ -221,6 +228,7 @@ export default function DispatchManagementPage() {
             const itemId = `${item.recipe.id}-${item.inventoryItem!.id}`;
             const state = validationState[itemId];
             if (!state || state.isValidated !== 'valid' || !state.lotNumber) {
+                // This should not happen if called correctly, but as a safeguard.
                 throw new Error(`Ítem ${item.inventoryItem!.name} no está validado.`);
             }
             dispatchItems.push({
@@ -359,7 +367,8 @@ export default function DispatchManagementPage() {
                  <Accordion type="multiple" defaultValue={Object.keys(itemsToDispatchGroupedByPharmacy)} className="w-full space-y-4">
                     {Object.entries(itemsToDispatchGroupedByPharmacy).map(([pharmacyId, items]) => {
                         const validItems = items.filter(item => !item.error && item.inventoryItem);
-                        const allItemsValidated = validItems.length > 0 && validItems.every(item => validationState[`${item.recipe.id}-${item.inventoryItem!.id}`]?.isValidated === 'valid');
+                        const validatedItems = validItems.filter(item => validationState[`${item.recipe.id}-${item.inventoryItem!.id}`]?.isValidated === 'valid');
+                        const canGenerateDispatch = validatedItems.length > 0;
                         const totalItemsCount = items.length;
 
                         return (
@@ -437,10 +446,13 @@ export default function DispatchManagementPage() {
                                     </Card>
                                 )})}
                                 <div className="flex justify-end mt-4">
-                                    <Button disabled={!allItemsValidated || isDispatching} onClick={() => handleGenerateDispatchNote(pharmacyId, validItems)}>
+                                     <Button
+                                        disabled={!canGenerateDispatch || isDispatching}
+                                        onClick={() => handleGenerateDispatchNote(pharmacyId, validatedItems)}
+                                    >
                                         {isDispatching && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                         <Package className="mr-2 h-4 w-4" />
-                                        Generar Nota de Despacho
+                                        Generar Nota de Despacho ({validatedItems.length} Ítems)
                                     </Button>
                                 </div>
                                 </AccordionContent>
@@ -546,3 +558,5 @@ export default function DispatchManagementPage() {
     </>
   );
 }
+
+    
