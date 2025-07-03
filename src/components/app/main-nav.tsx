@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from 'next/link';
@@ -22,6 +23,7 @@ import {
   UserSquare,
   LogOut,
   MoreHorizontal,
+  Wand2,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -73,6 +75,7 @@ const menuGroups = [
         { href: '/dispatch-management', label: 'Gestión Despachos', icon: Truck },
         { href: '/pharmacovigilance', label: 'Farmacovigilancia', icon: ShieldAlert },
         { href: '/controlled-drugs', label: 'Controlados', icon: Lock },
+        { href: '/simplify-instructions', label: 'Simplificar Indicaciones', icon: Wand2 },
       ],
     },
     {
@@ -220,7 +223,7 @@ export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElemen
             <SidebarTrigger className="md:hidden" />
             <div className="flex-1" />
           </header>
-          <div className="mx-auto max-w-7xl px-6 md:px-8">
+          <div className="mx-auto max-w-7xl px-6 md:px-8 pb-8">
             {props.children}
           </div>
         </main>

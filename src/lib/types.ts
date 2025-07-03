@@ -1,5 +1,6 @@
 
 
+
 export enum RecipeStatus {
   PendingReviewPortal = 'Pendiente Revisión - Portal',
   PendingValidation = 'Pendiente Validación',
@@ -121,6 +122,7 @@ export interface Recipe {
   internalPreparationLot?: string;
   compoundingDate?: string; // ISO String
   preparationExpiryDate?: string; // ISO String
+  requiresFractionation?: boolean; // Legacy support
 }
 
 export interface AdverseReaction {
@@ -146,6 +148,7 @@ export interface Patient {
   isChronic: boolean;
   preferredDispensationDay?: number;
   allergies?: string[];
+  commercialMedications?: string[];
   adverseReactions?: AdverseReaction[];
   associatedDoctorIds?: string[];
   pharmacovigilanceEvents?: PharmacovigilanceReference[];

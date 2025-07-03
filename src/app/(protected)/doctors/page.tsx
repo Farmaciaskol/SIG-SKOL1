@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { getDoctors, getPatients, getRecipes, addDoctor, Doctor, Patient, Recipe, RecipeStatus } from '@/lib/data';
+import { getDoctors, getPatients, getRecipes, addDoctor, updateDoctor, deleteDoctor, Doctor, Patient, Recipe, RecipeStatus } from '@/lib/data';
 import { PlusCircle, Search, Phone, Mail, Pencil, Trash2, Users, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -22,6 +22,16 @@ import {
   DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import {
   Form,
   FormControl,
@@ -41,142 +51,6 @@ type DoctorWithStats = Doctor & {
   patients: Patient[];
 };
 
-const DoctorCard = ({ doctor }: { doctor: DoctorWithStats }) => {
-  const getProgressColor = (value: number) => {
-    if (isNaN(value)) return 'bg-gray-300';
-    const roundedValue = Math.round(value);
-    if (roundedValue >= 90) return 'bg-green-500';
-    if (roundedValue >= 50) return 'bg-yellow-400';
-    return 'bg-red-500';
-  };
-
-  const formatPercentage = (value: number) => {
-    if (isNaN(value)) return 'N/A';
-    return `${Math.round(value)}%`;
-  }
-
-  return (
-    <Dialog>
-      <Card className="flex flex-col">
-        <CardHeader>
-          <CardTitle className="text-lg font-bold text-slate-800">{doctor.name}</CardTitle>
-          <p className="text-sm font-medium text-primary">{doctor.specialty}</p>
-        </CardHeader>
-        <CardContent className="flex-grow space-y-6">
-          <div>
-            <p className="text-xs text-muted-foreground">Reg: {doctor.license || 'N/A'} | RUT: {doctor.rut || 'N/A'}</p>
-            <div className="mt-4 space-y-2">
-              {doctor.phone && (
-                <div className="flex items-center gap-3 text-sm">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-slate-700">{doctor.phone}</span>
-                </div>
-              )}
-              {doctor.email && (
-                <div className="flex items-center gap-3 text-sm">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-slate-700">{doctor.email}</span>
-                </div>
-              )}
-            </div>
-          </div>
-          <div className="border-t pt-4">
-            <div className="grid grid-cols-2 gap-4 text-center">
-              <div>
-                <p className="text-2xl font-bold text-slate-800">{doctor.patientsAssociated}</p>
-                <p className="text-xs text-muted-foreground">Pacientes Asociados</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-800">{doctor.activeRecipes}</p>
-                <p className="text-xs text-muted-foreground">Recetas Activas</p>
-              </div>
-            </div>
-          </div>
-          <div className="border-t pt-4 space-y-4">
-            <h3 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
-              Calidad y Cumplimiento
-            </h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <p className="text-slate-700">Emisión Correcta</p>
-                <p className="font-semibold text-slate-800">{formatPercentage(doctor.correctEmissionRate)}</p>
-              </div>
-              <Progress
-                value={isNaN(doctor.correctEmissionRate) ? 0 : doctor.correctEmissionRate}
-                aria-label={`${formatPercentage(doctor.correctEmissionRate)} de emisión correcta`}
-                indicatorClassName={getProgressColor(doctor.correctEmissionRate)}
-              />
-            </div>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <p className="text-slate-700">Cumplimiento Crónicos</p>
-                <p className="font-semibold text-slate-800">{formatPercentage(doctor.chronicComplianceRate)}</p>
-              </div>
-              <Progress
-                value={isNaN(doctor.chronicComplianceRate) ? 0 : doctor.chronicComplianceRate}
-                aria-label={`${formatPercentage(doctor.chronicComplianceRate)} de cumplimiento crónico`}
-                indicatorClassName={getProgressColor(doctor.chronicComplianceRate)}
-              />
-            </div>
-          </div>
-        </CardContent>
-        <CardFooter className="bg-muted/50 p-3 flex justify-between items-center">
-            <DialogTrigger asChild>
-                 <Button variant="link" className="p-0 h-auto">Ver Pacientes</Button>
-            </DialogTrigger>
-         
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-red-100 hover:text-red-600">
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardFooter>
-      </Card>
-      
-      {/* Patients Modal */}
-      <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-              <DialogTitle>Pacientes de {doctor.name}</DialogTitle>
-              <DialogDescription>
-                  Lista de pacientes que han recibido recetas de este médico.
-              </DialogDescription>
-          </DialogHeader>
-          <div className="max-h-80 overflow-y-auto">
-              <Table>
-                  <TableHeader>
-                      <TableRow>
-                          <TableHead>Nombre</TableHead>
-                          <TableHead>RUT</TableHead>
-                          <TableHead>Es Crónico</TableHead>
-                      </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                      {doctor.patients.length > 0 ? doctor.patients.map(patient => (
-                          <TableRow key={patient.id}>
-                              <TableCell className="font-medium">
-                                  <Link href={`/patients/${patient.id}`} className="hover:underline text-primary">
-                                      {patient.name}
-                                  </Link>
-                              </TableCell>
-                              <TableCell>{patient.rut}</TableCell>
-                              <TableCell>{patient.isChronic ? 'Sí' : 'No'}</TableCell>
-                          </TableRow>
-                      )) : (
-                          <TableRow>
-                              <TableCell colSpan={3} className="text-center">No hay pacientes asociados.</TableCell>
-                          </TableRow>
-                      )}
-                  </TableBody>
-              </Table>
-          </div>
-      </DialogContent>
-    </Dialog>
-  );
-};
-
 const doctorFormSchema = z.object({
   name: z.string().min(1, { message: 'El nombre es requerido.' }),
   specialty: z.string().min(1, { message: 'La especialidad es requerida.' }),
@@ -188,6 +62,7 @@ const doctorFormSchema = z.object({
 
 type DoctorFormValues = z.infer<typeof doctorFormSchema>;
 
+
 export default function DoctorsPage() {
   const [loading, setLoading] = useState(true);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -195,18 +70,13 @@ export default function DoctorsPage() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null);
+  const [doctorToDelete, setDoctorToDelete] = useState<Doctor | null>(null);
   const { toast } = useToast();
 
   const form = useForm<DoctorFormValues>({
     resolver: zodResolver(doctorFormSchema),
-    defaultValues: {
-      name: '',
-      specialty: '',
-      license: '',
-      rut: '',
-      phone: '',
-      email: '',
-    },
+    defaultValues: { name: '', specialty: '', license: '', rut: '', phone: '', email: '' },
   });
 
   const fetchData = useCallback(async () => {
@@ -236,24 +106,55 @@ export default function DoctorsPage() {
     fetchData();
   }, [fetchData]);
 
+  const openFormForNew = () => {
+    form.reset({ name: '', specialty: '', license: '', rut: '', phone: '', email: '' });
+    setEditingDoctor(null);
+    setIsFormOpen(true);
+  };
+  
+  const openFormForEdit = (doctor: Doctor) => {
+    form.reset(doctor);
+    setEditingDoctor(doctor);
+    setIsFormOpen(true);
+  };
+
   const onSubmit = async (data: DoctorFormValues) => {
     try {
-      await addDoctor(data);
-      toast({
-        title: 'Médico Añadido',
-        description: 'El nuevo médico ha sido registrado correctamente.',
-      });
+      if (editingDoctor) {
+        await updateDoctor(editingDoctor.id, data);
+        toast({ title: 'Médico Actualizado', description: 'Los datos del médico han sido actualizados.' });
+      } else {
+        await addDoctor(data);
+        toast({ title: 'Médico Añadido', description: 'El nuevo médico ha sido registrado.' });
+      }
       form.reset();
       setIsFormOpen(false);
+      setEditingDoctor(null);
       await fetchData();
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'No se pudo añadir el médico.',
+        description: `No se pudo guardar el médico. ${error instanceof Error ? error.message : ''}`,
         variant: 'destructive',
       });
     }
   };
+  
+  const handleDeleteDoctor = async () => {
+    if (!doctorToDelete) return;
+    try {
+      await deleteDoctor(doctorToDelete.id);
+      toast({ title: 'Médico Eliminado', description: `${doctorToDelete.name} ha sido eliminado.` });
+      setDoctorToDelete(null);
+      await fetchData();
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: `No se pudo eliminar el médico. ${error instanceof Error ? error.message : ''}`,
+        variant: 'destructive',
+      });
+    }
+  }
 
   const doctorStats = useMemo<DoctorWithStats[]>(() => {
     if (loading) {
@@ -306,9 +207,146 @@ export default function DoctorsPage() {
   if (loading) {
     return <div className="flex items-center justify-center h-full"><p className="text-muted-foreground">Cargando médicos...</p></div>;
   }
+  
+  const DoctorCard = ({ doctor }: { doctor: DoctorWithStats }) => {
+    const getProgressColor = (value: number) => {
+      if (isNaN(value)) return 'bg-gray-300';
+      const roundedValue = Math.round(value);
+      if (roundedValue >= 90) return 'bg-green-500';
+      if (roundedValue >= 50) return 'bg-yellow-400';
+      return 'bg-red-500';
+    };
+
+    const formatPercentage = (value: number) => {
+      if (isNaN(value)) return 'N/A';
+      return `${Math.round(value)}%`;
+    }
+
+    return (
+        <Card className="flex flex-col">
+            <CardHeader>
+            <CardTitle className="text-lg font-bold text-slate-800">{doctor.name}</CardTitle>
+            <p className="text-sm font-medium text-primary">{doctor.specialty}</p>
+            </CardHeader>
+            <CardContent className="flex-grow space-y-6">
+            <div>
+                <p className="text-xs text-muted-foreground">Reg: {doctor.license || 'N/A'} | RUT: {doctor.rut || 'N/A'}</p>
+                <div className="mt-4 space-y-2">
+                {doctor.phone && (
+                    <div className="flex items-center gap-3 text-sm">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-slate-700">{doctor.phone}</span>
+                    </div>
+                )}
+                {doctor.email && (
+                    <div className="flex items-center gap-3 text-sm">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-slate-700">{doctor.email}</span>
+                    </div>
+                )}
+                </div>
+            </div>
+            <div className="border-t pt-4">
+                <div className="grid grid-cols-2 gap-4 text-center">
+                <div>
+                    <p className="text-2xl font-bold text-slate-800">{doctor.patientsAssociated}</p>
+                    <p className="text-xs text-muted-foreground">Pacientes Asociados</p>
+                </div>
+                <div>
+                    <p className="text-2xl font-bold text-slate-800">{doctor.activeRecipes}</p>
+                    <p className="text-xs text-muted-foreground">Recetas Activas</p>
+                </div>
+                </div>
+            </div>
+            <div className="border-t pt-4 space-y-4">
+                <h3 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
+                Calidad y Cumplimiento
+                </h3>
+                <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                    <p className="text-slate-700">Emisión Correcta</p>
+                    <p className="font-semibold text-slate-800">{formatPercentage(doctor.correctEmissionRate)}</p>
+                </div>
+                <Progress
+                    value={isNaN(doctor.correctEmissionRate) ? 0 : doctor.correctEmissionRate}
+                    aria-label={`${formatPercentage(doctor.correctEmissionRate)} de emisión correcta`}
+                    indicatorClassName={getProgressColor(doctor.correctEmissionRate)}
+                />
+                </div>
+                <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                    <p className="text-slate-700">Cumplimiento Crónicos</p>
+                    <p className="font-semibold text-slate-800">{formatPercentage(doctor.chronicComplianceRate)}</p>
+                </div>
+                <Progress
+                    value={isNaN(doctor.chronicComplianceRate) ? 0 : doctor.chronicComplianceRate}
+                    aria-label={`${formatPercentage(doctor.chronicComplianceRate)} de cumplimiento crónico`}
+                    indicatorClassName={getProgressColor(doctor.chronicComplianceRate)}
+                />
+                </div>
+            </div>
+            </CardContent>
+            <CardFooter className="bg-muted/50 p-3 flex justify-between items-center">
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button variant="link" className="p-0 h-auto">Ver Pacientes</Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-xl">
+                        <DialogHeader>
+                            <DialogTitle>Pacientes de {doctor.name}</DialogTitle>
+                            <DialogDescription>
+                                Lista de pacientes que han recibido recetas de este médico.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="max-h-80 overflow-y-auto">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Nombre</TableHead>
+                                        <TableHead>RUT</TableHead>
+                                        <TableHead>Es Crónico</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {doctor.patients.length > 0 ? doctor.patients.map(patient => (
+                                        <TableRow key={patient.id}>
+                                            <TableCell className="font-medium">
+                                                <Link href={`/patients/${patient.id}`} className="hover:underline text-primary">
+                                                    {patient.name}
+                                                </Link>
+                                            </TableCell>
+                                            <TableCell>{patient.rut}</TableCell>
+                                            <TableCell>{patient.isChronic ? 'Sí' : 'No'}</TableCell>
+                                        </TableRow>
+                                    )) : (
+                                        <TableRow>
+                                            <TableCell colSpan={3} className="text-center">No hay pacientes asociados.</TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            
+            <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openFormForEdit(doctor)}>
+                    <Pencil className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-red-100 hover:text-red-600" onClick={() => setDoctorToDelete(doctor)}>
+                    <Trash2 className="h-4 w-4" />
+                </Button>
+            </div>
+            </CardFooter>
+        </Card>
+    );
+    };
 
   return (
-    <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+    <Dialog open={isFormOpen} onOpenChange={(open) => {
+      if (!open) setEditingDoctor(null);
+      setIsFormOpen(open);
+    }}>
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-800 font-headline">Gestión de Médicos</h1>
@@ -316,11 +354,9 @@ export default function DoctorsPage() {
             Panel de control para gestionar la relación con los prescriptores.
           </p>
         </div>
-        <DialogTrigger asChild>
-          <Button>
-            <PlusCircle className="mr-2 h-4 w-4" /> Nuevo Médico
-          </Button>
-        </DialogTrigger>
+        <Button onClick={openFormForNew}>
+          <PlusCircle className="mr-2 h-4 w-4" /> Nuevo Médico
+        </Button>
       </div>
 
       <Card className="mb-6">
@@ -352,20 +388,19 @@ export default function DoctorsPage() {
               <p className="text-muted-foreground mt-2 max-w-sm">
                   Intenta ajustar tu búsqueda o crea un nuevo médico para empezar.
               </p>
-              <DialogTrigger asChild>
-                <Button className="mt-6">
-                    <PlusCircle className="mr-2 h-4 w-4" /> Crear Primer Médico
-                </Button>
-              </DialogTrigger>
+              <Button className="mt-6" onClick={openFormForNew}>
+                  <PlusCircle className="mr-2 h-4 w-4" /> Crear Primer Médico
+              </Button>
               </div>
           </Card>
       )}
 
+      {/* --- Add/Edit Dialog --- */}
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
-            <DialogTitle>Añadir Nuevo Médico</DialogTitle>
+            <DialogTitle>{editingDoctor ? 'Editar Médico' : 'Añadir Nuevo Médico'}</DialogTitle>
             <DialogDescription>
-                Complete el formulario para registrar un nuevo médico prescriptor.
+                {editingDoctor ? 'Actualice los datos del médico.' : 'Complete el formulario para registrar un nuevo médico prescriptor.'}
             </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -397,12 +432,28 @@ export default function DoctorsPage() {
                     <Button type="button" variant="ghost" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
                     <Button type="submit" disabled={form.formState.isSubmitting}>
                         {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Guardar Médico
+                        {editingDoctor ? 'Guardar Cambios' : 'Guardar Médico'}
                     </Button>
                 </DialogFooter>
             </form>
         </Form>
       </DialogContent>
+      
+      {/* --- Delete Confirmation Dialog --- */}
+      <AlertDialog open={!!doctorToDelete} onOpenChange={(open) => !open && setDoctorToDelete(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Esta acción no se puede deshacer. Se eliminará permanentemente al médico <span className="font-bold">{doctorToDelete?.name}</span> del sistema.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setDoctorToDelete(null)}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteDoctor} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

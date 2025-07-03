@@ -1,4 +1,5 @@
 
+
 import { addMonths, subDays } from 'date-fns';
 import type { AppData, Patient, Doctor, Recipe, InventoryItem, User, Role, ExternalPharmacy, PharmacovigilanceReport, ControlledSubstanceLogEntry, DispatchNote } from './types';
 import { RecipeStatus, ProactivePatientStatus, PatientActionNeeded, SkolSuppliedItemsDispatchStatus, DispatchStatus, PharmacovigilanceReportStatus, ControlledLogEntryType } from './types';
@@ -22,9 +23,9 @@ const doctors: Doctor[] = [
 
 // --- PATIENTS ---
 const patients: Patient[] = [
-    { id: 'pat-01', name: 'Gaspar Mendoza', rut: '11.111.111-1', email: 'gaspar.mendoza@email.com', phone: '+56987654321', isChronic: true, proactiveStatus: ProactivePatientStatus.ATTENTION, proactiveMessage: 'Receta de Minoxidil vence en 15 días.', actionNeeded: PatientActionNeeded.REPREPARE_CYCLE, chronicCareStatus: 'Atención' },
-    { id: 'pat-02', name: 'Lucía Fernández', rut: '22.222.222-2', email: 'lucia.fernandez@email.com', phone: '+56912345678', isChronic: true, proactiveStatus: ProactivePatientStatus.URGENT, proactiveMessage: 'Ciclo de Fenobarbital vencido. Requiere nueva receta.', actionNeeded: PatientActionNeeded.CREATE_NEW_RECIPE, chronicCareStatus: 'Urgente' },
-    { id: 'pat-03', name: 'Benjamín Soto', rut: '33.333.333-3', email: 'benjamin.soto@email.com', phone: '+56955555555', isChronic: false, proactiveStatus: ProactivePatientStatus.OK, proactiveMessage: 'No requiere acción.', actionNeeded: PatientActionNeeded.NONE, chronicCareStatus: 'OK' },
+    { id: 'pat-01', name: 'Gaspar Mendoza', rut: '11.111.111-1', email: 'gaspar.mendoza@email.com', phone: '+56987654321', isChronic: true, proactiveStatus: ProactivePatientStatus.ATTENTION, proactiveMessage: 'Receta de Minoxidil vence en 15 días.', actionNeeded: PatientActionNeeded.REPREPARE_CYCLE, chronicCareStatus: 'Atención', allergies: ['Penicilina'], commercialMedications: ['Aspirina 100mg'] },
+    { id: 'pat-02', name: 'Lucía Fernández', rut: '22.222.222-2', email: 'lucia.fernandez@email.com', phone: '+56912345678', isChronic: true, proactiveStatus: ProactivePatientStatus.URGENT, proactiveMessage: 'Ciclo de Fenobarbital vencido. Requiere nueva receta.', actionNeeded: PatientActionNeeded.CREATE_NEW_RECIPE, chronicCareStatus: 'Urgente', allergies: [], commercialMedications: ['Losartan 50mg', 'Metformina 850mg'] },
+    { id: 'pat-03', name: 'Benjamín Soto', rut: '33.333.333-3', email: 'benjamin.soto@email.com', phone: '+56955555555', isChronic: false, proactiveStatus: ProactivePatientStatus.OK, proactiveMessage: 'No requiere acción.', actionNeeded: PatientActionNeeded.NONE, chronicCareStatus: 'OK', allergies: ['AINEs'] },
     { id: 'pat-04', name: 'Martina Rojas', rut: '44.444.444-4', email: 'martina.rojas@email.com', phone: '+56944444444', isChronic: false, proactiveStatus: ProactivePatientStatus.OK, proactiveMessage: 'No requiere acción.', actionNeeded: PatientActionNeeded.NONE, chronicCareStatus: 'OK' },
 ];
 
