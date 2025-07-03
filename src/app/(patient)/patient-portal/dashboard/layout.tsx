@@ -19,7 +19,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import Link from 'next/link';
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { patient, loading, token, logout } = usePatientAuth();
+  const { patient, loading, logout } = usePatientAuth();
   const router = useRouter();
 
   useEffect(() => {

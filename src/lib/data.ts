@@ -3,7 +3,7 @@
 import { db, storage } from './firebase';
 import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc, deleteDoc, writeBatch, query, where } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
-import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, ControlledLogEntryType, ProactivePatientStatus, PatientActionNeeded, MonthlyDispensationBox, MonthlyDispensationBoxStatus, DispensationItem, DispensationItemStatus, PatientAuthToken, PatientMessage } from './types';
+import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, ControlledLogEntryType, ProactivePatientStatus, PatientActionNeeded, MonthlyDispensationBox, MonthlyDispensationBoxStatus, DispensationItem, DispensationItemStatus, PatientMessage } from './types';
 import type { Recipe, Doctor, InventoryItem, User, Role, ExternalPharmacy, Patient, PharmacovigilanceReport, AppData, AuditTrailEntry, DispatchNote, DispatchItem, ControlledSubstanceLogEntry, LotDetail } from './types';
 import { getMockData } from './mock-data';
 import { MAX_REPREPARATIONS } from './constants';
@@ -653,54 +653,6 @@ export async function findPatientByRut(rut: string): Promise<Patient | null> {
   const patientDoc = snapshot.docs[0];
   const data = deepConvertTimestamps(patientDoc.data());
   return { id: patientDoc.id, ...data } as Patient;
-}
-
-export async function createPatientAuthToken(patientId: string): Promise<PatientAuthToken> {
-    if (!db) throw new Error("Firestore is not initialized.");
-    const token = uuidv4();
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes expiry
-
-    const authToken: Omit<PatientAuthToken, 'id'> = {
-        patientId,
-        token,
-        expiresAt: expiresAt.toISOString(),
-        used: false,
-    };
-    
-    const docRef = await addDoc(collection(db, 'patientAuthTokens'), authToken);
-
-    return { id: docRef.id, ...authToken };
-}
-
-export async function validatePatientAuthToken(token: string): Promise<{ patient: Patient | null; token: string | null; error?: string }> {
-    if (!db) return { patient: null, token: null, error: "Database not initialized" };
-    const q = query(collection(db, "patientAuthTokens"), where("token", "==", token));
-    const snapshot = await getDocs(q);
-
-    if (snapshot.empty) {
-        return { patient: null, token: null, error: "Token not found" };
-    }
-
-    const tokenDoc = snapshot.docs[0];
-    const tokenData = tokenDoc.data() as PatientAuthToken;
-
-    if (tokenData.used) {
-        return { patient: null, token: null, error: "Token has already been used" };
-    }
-    
-    if (new Date(tokenData.expiresAt) < new Date()) {
-        return { patient: null, token: null, error: "Token has expired" };
-    }
-    
-    const patient = await getPatient(tokenData.patientId);
-    if (!patient) {
-         return { patient: null, token: null, error: "Associated patient not found" };
-    }
-
-    // Mark token as used
-    await updateDoc(doc(db, "patientAuthTokens", tokenDoc.id), { used: true });
-
-    return { patient, token: tokenData.token };
 }
 
 export async function sendMessageFromPatient(patientId: string, content: string): Promise<PatientMessage> {

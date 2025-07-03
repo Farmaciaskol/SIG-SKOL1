@@ -1,7 +1,7 @@
 
 
 import { addMonths, subDays, subMinutes } from 'date-fns';
-import type { AppData, Patient, Doctor, Recipe, InventoryItem, User, Role, ExternalPharmacy, PharmacovigilanceReport, ControlledSubstanceLogEntry, DispatchNote, MonthlyDispensationBox, PatientAuthToken, PatientMessage } from './types';
+import type { AppData, Patient, Doctor, Recipe, InventoryItem, User, Role, ExternalPharmacy, PharmacovigilanceReport, ControlledSubstanceLogEntry, DispatchNote, MonthlyDispensationBox, PatientMessage } from './types';
 import { RecipeStatus, ProactivePatientStatus, PatientActionNeeded, SkolSuppliedItemsDispatchStatus, DispatchStatus, PharmacovigilanceReportStatus, ControlledLogEntryType, MonthlyDispensationBoxStatus, DispensationItemStatus } from './types';
 import { MAX_REPREPARATIONS } from './constants';
 
@@ -203,7 +203,6 @@ const monthlyDispensations: MonthlyDispensationBox[] = [
   }
 ];
 
-const patientAuthTokens: PatientAuthToken[] = [];
 const patientMessages: PatientMessage[] = [
     { id: 'msg-01', patientId: 'pat-01', sender: 'pharmacist', content: 'Hola Gaspar, tu preparado de Minoxidil está listo para retiro.', createdAt: subDays(today, 1).toISOString(), read: false },
     { id: 'msg-02', patientId: 'pat-01', sender: 'patient', content: '¡Perfecto! ¿Hasta qué hora puedo pasar a buscarlo hoy?', createdAt: subMinutes(subDays(today, 1), -10).toISOString(), read: true },
@@ -224,7 +223,6 @@ export function getMockData(): AppData {
         pharmacovigilanceReports,
         controlledSubstanceLog,
         monthlyDispensations,
-        patientAuthTokens,
         patientMessages,
     };
 }

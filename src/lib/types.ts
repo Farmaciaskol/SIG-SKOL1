@@ -289,14 +289,6 @@ export interface PharmacovigilanceReport {
   updatedAt: string; // ISO String
 }
 
-export interface PatientAuthToken {
-    id: string;
-    patientId: string;
-    token: string;
-    expiresAt: string; // ISO String
-    used: boolean;
-}
-
 export interface PatientMessage {
     id: string;
     patientId: string;
@@ -318,6 +310,5 @@ export interface AppData {
   pharmacovigilanceReports: PharmacovigilanceReport[];
   controlledSubstanceLog: ControlledSubstanceLogEntry[];
   monthlyDispensations: MonthlyDispensationBox[];
-  patientAuthTokens: PatientAuthToken[];
   patientMessages: PatientMessage[];
 }

@@ -3,59 +3,56 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Patient } from '@/lib/types';
-import { validatePatientToken } from '@/lib/actions';
 
 interface PatientAuthContextType {
   patient: Patient | null;
-  token: string | null;
   loading: boolean;
-  setTokenAndPatient: (token: string, patient: Patient) => void;
+  setPatient: (patient: Patient) => void;
   logout: () => void;
 }
 
 const PatientAuthContext = createContext<PatientAuthContextType | undefined>(undefined);
 
-const TOKEN_KEY = 'patient-auth-token';
+const PATIENT_KEY = 'patient-session-data';
 
 export function PatientAuthProvider({ children }: { children: React.ReactNode }) {
-  const [patient, setPatient] = useState<Patient | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [patient, setPatientState] = useState<Patient | null>(null);
   const [loading, setLoading] = useState(true);
 
   const logout = useCallback(() => {
-    setPatient(null);
-    setToken(null);
-    sessionStorage.removeItem(TOKEN_KEY);
+    setPatientState(null);
+    sessionStorage.removeItem(PATIENT_KEY);
   }, []);
 
   useEffect(() => {
-    const initializeAuth = async () => {
-      const storedToken = sessionStorage.getItem(TOKEN_KEY);
-      if (storedToken) {
-        setToken(storedToken);
-        const result = await validatePatientToken(storedToken);
-        if (result.success && result.patient) {
-          setPatient(result.patient);
-        } else {
-          logout(); // Token is invalid or expired
+    const initializeAuth = () => {
+      try {
+        const storedPatient = sessionStorage.getItem(PATIENT_KEY);
+        if (storedPatient) {
+          setPatientState(JSON.parse(storedPatient));
         }
+      } catch (error) {
+        console.error("Failed to parse patient data from sessionStorage", error);
+        logout();
       }
       setLoading(false);
     };
     initializeAuth();
   }, [logout]);
   
-  const setTokenAndPatient = (newToken: string, newPatient: Patient) => {
-    sessionStorage.setItem(TOKEN_KEY, newToken);
-    setToken(newToken);
-    setPatient(newPatient);
+  const setPatient = (newPatient: Patient) => {
+    try {
+        sessionStorage.setItem(PATIENT_KEY, JSON.stringify(newPatient));
+        setPatientState(newPatient);
+    } catch (error) {
+        console.error("Failed to save patient data to sessionStorage", error);
+    }
   };
 
   const value = {
     patient,
-    token,
     loading,
-    setTokenAndPatient,
+    setPatient,
     logout,
   };
 

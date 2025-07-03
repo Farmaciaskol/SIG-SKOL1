@@ -6,8 +6,6 @@ import {
   getRecipes, 
   updatePatient, 
   findPatientByRut,
-  createPatientAuthToken,
-  validatePatientAuthToken as validateTokenDb,
   getRecipesReadyForPickup,
   getMessagesForPatient,
   createRecipeFromPortal as createRecipeDb,
@@ -75,35 +73,16 @@ export async function runProactiveAnalysisForAllPatients(): Promise<{ success: b
 
 // --- PATIENT PORTAL ACTIONS ---
 
-export async function generatePatientMagicLink(rut: string) {
+export async function loginPatientByRut(rut: string) {
   try {
     const patient = await findPatientByRut(rut);
     if (!patient) {
       return { success: false, error: "RUT no encontrado o no registrado. Por favor, contacte a la farmacia." };
     }
-    if (!patient.email) {
-      return { success: false, error: "No hay un correo electrónico asociado a este RUT para enviar el enlace." };
-    }
-    const authToken = await createPatientAuthToken(patient.id);
-    const magicLink = `/patient-portal/auth?token=${authToken.token}`;
-    return { success: true, magicLink };
+    return { success: true, patient };
   } catch (error) {
-    console.error("Error generating magic link:", error);
+    console.error("Error logging in patient by RUT:", error);
     return { success: false, error: "Ocurrió un error en el servidor." };
-  }
-}
-
-export async function validatePatientToken(token: string) {
-  try {
-    const validationResult = await validateTokenDb(token);
-    if (validationResult.patient) {
-        return { success: true, patient: validationResult.patient, token: validationResult.token };
-    } else {
-        return { success: false, error: validationResult.error };
-    }
-  } catch (error) {
-    console.error("Error validating token:", error);
-    return { success: false, error: "Ocurrió un error en el servidor al validar el token." };
   }
 }
 
