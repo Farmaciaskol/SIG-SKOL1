@@ -85,6 +85,9 @@ const inventory: InventoryItem[] = [
     costPrice: 8000, 
     isControlled: true, 
     controlledType: 'Psicotrópico',
+    activePrincipleContentValue: 2,
+    activePrincipleContentUnit: 'mg',
+    itemsPerBaseUnit: 30,
     lots: [{ lotNumber: 'CLONA-2312C', quantity: 8, expiryDate: formatISO(addDays(now, 180)) }]
   },
   { 
@@ -165,7 +168,27 @@ const recipes: Recipe[] = [
     preparationCost: 22000, 
     auditTrail: [{status: RecipeStatus.Validated, date: formatISO(subDays(now, 2)), userId: 'user-2', notes: 'Receta validada.'}] 
   },
-  // 3. Standard recipe (non-fractionated), pending validation
+  // 3. NEW Recipe requiring fractionation (controlled), ready for dispatch
+  {
+    id: 'rec-frac-03',
+    patientId: 'pat-1',
+    doctorId: 'doc-5',
+    items: [{ principalActiveIngredient: 'Clonazepam', pharmaceuticalForm: 'cápsulas', concentrationValue: '0.5', concentrationUnit: 'mg', dosageValue: '1', dosageUnit: 'cápsula(s)', frequency: '24', treatmentDurationValue: '30', treatmentDurationUnit: 'días', totalQuantityValue: '30', totalQuantityUnit: 'cápsula(s)', usageInstructions: 'Tomar 1 cápsula por la noche antes de dormir.', requiresFractionation: true }],
+    status: RecipeStatus.Validated,
+    paymentStatus: 'Pendiente',
+    isControlled: true,
+    controlledRecipeType: 'Receta Retenida',
+    controlledRecipeFolio: 'RR-C78901',
+    createdAt: formatISO(subDays(now, 4)),
+    updatedAt: formatISO(subDays(now, 1)),
+    dueDate: formatISO(addMonths(now, 6)),
+    externalPharmacyId: 'ext-pharma-1',
+    supplySource: 'Insumos de Skol',
+    skolSuppliedItemsDispatchStatus: SkolSuppliedItemsDispatchStatus.Pending,
+    preparationCost: 21500,
+    auditTrail: [{status: RecipeStatus.Validated, date: formatISO(subDays(now, 1)), userId: 'user-2', notes: 'Receta validada.'}]
+  },
+  // 4. Standard recipe (non-fractionated), pending validation
   {
     id: 'rec-std-01',
     patientId: 'pat-3',
@@ -181,7 +204,7 @@ const recipes: Recipe[] = [
     preparationCost: 12000,
     auditTrail: [{status: RecipeStatus.PendingValidation, date: formatISO(subDays(now, 1)), userId: 'user-2', notes: 'Receta creada.'}]
   },
-  // 4. Dispensed controlled recipe
+  // 5. Dispensed controlled recipe
   {
     id: 'rec-ctrl-01',
     patientId: 'pat-2',
@@ -200,7 +223,7 @@ const recipes: Recipe[] = [
     preparationCost: 18000,
     auditTrail: [{status: RecipeStatus.Dispensed, date: formatISO(subDays(now, 35)), userId: 'user-2', notes: 'Dispensado al paciente.'}]
   },
-  // 5. Recipe ready for pickup
+  // 6. Recipe ready for pickup
   {
     id: 'rec-pickup-01',
     patientId: 'pat-5',
