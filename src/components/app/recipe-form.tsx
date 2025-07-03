@@ -67,7 +67,7 @@ const recipeFormSchema = z.object({
   newDoctorLicense: z.string().optional(),
   newDoctorRut: z.string().optional(),
   newDoctorSpecialty: z.string().optional(),
-  externalPharmacyId: z.string().min(1, 'Debe seleccionar un recetario externo.'),
+  externalPharmacyId: z.string().min(1, 'Debe seleccionar un recetario.'),
   supplySource: z.string().min(1, 'Debe seleccionar un origen de insumos.'),
   preparationCost: z.coerce.number().min(0, 'El costo de preparación debe ser un número positivo.'),
   isControlled: z.boolean().default(false).optional(),
@@ -560,7 +560,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                     name="externalPharmacyId"
                     render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Recetario Externo Asignado *</FormLabel>
+                        <FormLabel>Recetario Asignado *</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                             <SelectTrigger>
@@ -588,7 +588,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                             </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                            <SelectItem value="Stock del Recetario Externo">Stock del Recetario Externo</SelectItem>
+                            <SelectItem value="Stock del Recetario">Stock del Recetario</SelectItem>
                             <SelectItem value="Insumos de Skol">Insumos de Skol</SelectItem>
                         </SelectContent>
                         </Select>

@@ -363,7 +363,7 @@ export default function DispatchManagementPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-800 font-headline">Gestión de Despachos</h1>
           <p className="text-sm text-muted-foreground">
-            Control logístico del envío de insumos Skol a recetarios externos.
+            Control logístico del envío de insumos Skol a recetarios.
           </p>
         </div>
       </div>

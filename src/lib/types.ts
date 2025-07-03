@@ -144,7 +144,7 @@ export interface Recipe {
   updatedAt: string; // ISO String
   prescriptionDate: string; // ISO String
   externalPharmacyId?: string;
-  supplySource?: 'Stock del Recetario Externo' | 'Insumos de Skol';
+  supplySource?: 'Stock del Recetario' | 'Insumos de Skol';
   preparationCost?: number;
   isControlled?: boolean;
   controlledRecipeType?: string;

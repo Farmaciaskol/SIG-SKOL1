@@ -10,13 +10,10 @@ import {
   LayoutDashboard,
   FileText,
   Users,
-  BriefcaseMedical,
   Warehouse,
-  Box,
   Truck,
   ShieldAlert,
   Lock,
-  CreditCard,
   BarChart2,
   UserCog,
   Settings,
@@ -24,6 +21,11 @@ import {
   LogOut,
   MoreHorizontal,
   Wand2,
+  Stethoscope,
+  Building2,
+  Package,
+  CalendarDays,
+  DollarSign,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -63,15 +65,15 @@ const menuGroups = [
       title: 'Gestión',
       items: [
         { href: '/patients', label: 'Pacientes', icon: Users },
-        { href: '/doctors', label: 'Médicos', icon: BriefcaseMedical },
-        { href: '/external-prescriptions', label: 'Recetarios Ext.', icon: Warehouse },
+        { href: '/doctors', label: 'Médicos', icon: Stethoscope },
+        { href: '/external-prescriptions', label: 'Recetarios', icon: Building2 },
       ],
     },
     {
       title: 'Operaciones',
       items: [
-        { href: '/inventory', label: 'Inventario Skol', icon: Warehouse },
-        { href: '/monthly-dispensing', label: 'Dispensación Mensual', icon: Box },
+        { href: '/inventory', label: 'Inventario Skol', icon: Package },
+        { href: '/monthly-dispensing', label: 'Dispensación Mensual', icon: CalendarDays },
         { href: '/dispatch-management', label: 'Gestión Despachos', icon: Truck },
         { href: '/pharmacovigilance', label: 'Farmacovigilancia', icon: ShieldAlert },
         { href: '/controlled-drugs', label: 'Controlados', icon: Lock },
@@ -81,7 +83,7 @@ const menuGroups = [
     {
       title: 'Administración',
       items: [
-        { href: '/financial-management', label: 'Gestión Financiera', icon: CreditCard },
+        { href: '/financial-management', label: 'Gestión Financiera', icon: DollarSign },
         { href: '/reports', label: 'Reportes', icon: BarChart2 },
         { href: '/user-management', label: 'Gestión Usuarios', icon: UserCog },
         { href: '/settings', label: 'Configuración', icon: Settings },

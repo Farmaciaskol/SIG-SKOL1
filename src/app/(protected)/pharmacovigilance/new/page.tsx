@@ -228,7 +228,7 @@ export default function NewPharmacovigilanceReportPage() {
                             name="externalPharmacyId"
                             render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Recetario Externo</FormLabel>
+                                <FormLabel>Recetario</FormLabel>
                                 <Select onValueChange={field.onChange} value={field.value} disabled={loading}>
                                 <FormControl>
                                     <SelectTrigger>

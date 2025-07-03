@@ -343,7 +343,7 @@ export default function ExternalPrescriptionsPage() {
       <>
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-800 font-headline">Gestión de Recetarios Externos</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-800 font-headline">Gestión de Recetarios</h1>
             <p className="text-sm text-muted-foreground">
               Panel de control para gestionar la relación con los socios.
             </p>
@@ -403,7 +403,7 @@ export default function ExternalPrescriptionsPage() {
 
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-            <DialogTitle>{editingPharmacy ? 'Editar Recetario' : 'Añadir Nuevo Recetario'}</DialogTitle>
+            <DialogTitle>{editingPharmacy ? 'Editar Recetario' : 'Nuevo Recetario'}</DialogTitle>
             <DialogDescription>
                 {editingPharmacy ? 'Actualice los datos del socio.' : 'Complete el formulario para registrar un nuevo socio.'}
             </DialogDescription>
@@ -411,7 +411,7 @@ export default function ExternalPrescriptionsPage() {
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-2 max-h-[70vh] overflow-y-auto pr-4">
                 <FormField control={form.control} name="name" render={({ field }) => (
-                    <FormItem><FormLabel>Nombre Recetario *</FormLabel><FormControl><Input placeholder="Ej: Farmacias Magistrales S.A." {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Nombre del Recetario *</FormLabel><FormControl><Input placeholder="Ej: Farmacias Magistrales S.A." {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormField control={form.control} name="contactPerson" render={({ field }) => (
