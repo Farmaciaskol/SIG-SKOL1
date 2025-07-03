@@ -1,13 +1,26 @@
+
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { getPatients, Patient, ProactivePatientStatus, PatientActionNeeded } from '@/lib/data';
+import { getPatients, deletePatient, Patient, ProactivePatientStatus, PatientActionNeeded } from '@/lib/data';
 import { PlusCircle, Search, User, Heart, AlertTriangle, Pencil, Trash2, FileText, Repeat, Truck, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { PatientFormDialog } from '@/components/app/patient-form-dialog';
+import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 const statusStyles: Record<ProactivePatientStatus, string> = {
   [ProactivePatientStatus.URGENT]: 'border-red-500 bg-red-50',
@@ -29,21 +42,55 @@ export default function PatientsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterStatus>('all');
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null);
+  const { toast } = useToast();
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const patientsData = await getPatients();
+      setPatients(patientsData);
+    } catch (error) {
+      console.error("Failed to fetch patients data:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const patientsData = await getPatients();
-        setPatients(patientsData);
-      } catch (error) {
-        console.error("Failed to fetch patients data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
-  }, []);
+  }, [fetchData]);
+
+  const handleOpenForm = (patient: Patient | null) => {
+    setSelectedPatient(patient);
+    setIsFormOpen(true);
+  };
+
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
+    setSelectedPatient(null);
+  };
+
+  const handleSuccess = () => {
+    fetchData();
+    handleCloseForm();
+  };
+
+  const handleDelete = async () => {
+    if (!patientToDelete) return;
+    try {
+      await deletePatient(patientToDelete.id);
+      toast({ title: "Paciente Eliminado", description: `El paciente ${patientToDelete.name} ha sido eliminado.` });
+      fetchData();
+    } catch (error) {
+      toast({ title: "Error", description: "No se pudo eliminar el paciente.", variant: "destructive" });
+    } finally {
+      setPatientToDelete(null);
+    }
+  };
+
 
   const filteredPatients = useMemo(() => {
     return patients
@@ -112,10 +159,10 @@ export default function PatientsPage() {
                     </Link>
                 </Button>
                 <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenForm(patient)}>
                         <Pencil className="h-4 w-4 text-muted-foreground" />
                     </Button>
-                     <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-red-100 hover:text-red-600">
+                     <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-red-100 hover:text-red-600" onClick={() => setPatientToDelete(patient)}>
                         <Trash2 className="h-4 w-4 text-muted-foreground hover:text-red-600" />
                     </Button>
                 </div>
@@ -133,7 +180,7 @@ export default function PatientsPage() {
             Una visión 360° para una atención farmacéutica proactiva.
           </p>
         </div>
-        <Button>
+        <Button onClick={() => handleOpenForm(null)}>
           <PlusCircle className="mr-2 h-4 w-4" /> Nuevo Paciente
         </Button>
       </div>
@@ -194,7 +241,7 @@ export default function PatientsPage() {
               <p className="text-muted-foreground mt-2 max-w-sm">
               Intenta ajustar tu búsqueda o filtros, o crea un nuevo paciente para empezar.
               </p>
-              <Button className="mt-6">
+              <Button className="mt-6" onClick={() => handleOpenForm(null)}>
                   <PlusCircle className="mr-2 h-4 w-4" /> Crear Primer Paciente
               </Button>
             </div>
@@ -206,6 +253,28 @@ export default function PatientsPage() {
             ))}
         </div>
       )}
+
+      <PatientFormDialog
+        patient={selectedPatient}
+        isOpen={isFormOpen}
+        onOpenChange={setIsFormOpen}
+        onSuccess={handleSuccess}
+      />
+
+      <AlertDialog open={!!patientToDelete} onOpenChange={() => setPatientToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Se eliminará permanentemente al paciente <span className="font-bold">{patientToDelete?.name}</span> del sistema.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

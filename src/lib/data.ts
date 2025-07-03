@@ -2,7 +2,7 @@
 import { db, storage } from './firebase';
 import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc, deleteDoc, writeBatch, query, where } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
-import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, ControlledLogEntryType } from './types';
+import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, ControlledLogEntryType, ProactivePatientStatus, PatientActionNeeded } from './types';
 import type { Recipe, Doctor, InventoryItem, User, Role, ExternalPharmacy, Patient, PharmacovigilanceReport, AppData, AuditTrailEntry, DispatchNote, DispatchItem, ControlledSubstanceLogEntry } from './types';
 import { getMockData } from './mock-data';
 import { statusConfig } from './constants';
@@ -400,4 +400,28 @@ export const logDirectSaleDispensation = async (
     batch.set(doc(logCol), newLogEntry);
     
     await batch.commit();
+};
+
+export const updatePatient = async (id: string, updates: Partial<Patient>): Promise<void> => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    await updateDoc(doc(db, 'patients', id), updates as any);
+};
+
+export const addPatient = async (patient: Omit<Patient, 'id' | 'proactiveStatus' | 'proactiveMessage' | 'actionNeeded' | 'chronicCareStatus'>): Promise<string> => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    const patientData = {
+        ...patient,
+        proactiveStatus: ProactivePatientStatus.OK,
+        proactiveMessage: 'No requiere acción.',
+        actionNeeded: PatientActionNeeded.NONE,
+        chronicCareStatus: 'OK'
+    };
+    const docRef = await addDoc(collection(db, 'patients'), patientData);
+    return docRef.id;
+}
+
+export const deletePatient = async (id: string): Promise<void> => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    // TODO: Add logic to check for dependencies if needed (e.g., recipes)
+    await deleteDoc(doc(db, 'patients', id));
 };

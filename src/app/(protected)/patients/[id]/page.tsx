@@ -17,6 +17,7 @@ import { Loader2, User, Mail, Phone, MapPin, AlertTriangle, Pencil, Clock, Wand2
 import { format, parseISO, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DispensationDialog } from '@/components/app/dispensation-dialog';
+import { PatientFormDialog } from '@/components/app/patient-form-dialog';
 
 const StatCard = ({ title, value, icon: Icon }: { title: string; value: string | number; icon: React.ElementType }) => (
   <Card>
@@ -55,6 +56,7 @@ export default function PatientDetailPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalyzePatientHistoryOutput | null>(null);
   const [isDispensationDialogOpen, setIsDispensationDialogOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
 
   const fetchData = useCallback(async () => {
@@ -175,7 +177,7 @@ export default function PatientDetailPage() {
             <Button onClick={handleAnalyzeHistory} disabled={isAnalyzing}>
               {isAnalyzing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />} Analizar Historial (IA)
             </Button>
-            <Button><Pencil className="mr-2 h-4 w-4"/> Editar Paciente</Button>
+            <Button onClick={() => setIsEditModalOpen(true)}><Pencil className="mr-2 h-4 w-4"/> Editar Paciente</Button>
           </div>
         </div>
         
@@ -356,7 +358,12 @@ export default function PatientDetailPage() {
                       ))}
                     </ul>
                   ) : (
-                      <p className="text-sm text-muted-foreground">No hay médicos asociados a las recetas de este paciente.</p>
+                    <div className="text-center p-4 border-2 border-dashed rounded-lg">
+                        <p className="text-sm text-muted-foreground mb-4">No hay médicos asociados.</p>
+                        <Button asChild variant="outline">
+                            <Link href="/doctors"><PlusCircle className="mr-2 h-4 w-4"/>Asociar Médico</Link>
+                        </Button>
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -373,6 +380,13 @@ export default function PatientDetailPage() {
           onDispensationSuccess={fetchData}
         />
       )}
+
+      <PatientFormDialog
+        patient={patient}
+        isOpen={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
+        onSuccess={fetchData}
+      />
     </>
   );
 }
