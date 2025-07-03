@@ -489,6 +489,13 @@ export default function RecipesPage() {
 };
 
   const MobileRecipeActions = ({ recipe }: { recipe: Recipe }) => {
+    // These calculations are needed in multiple places, so define them once.
+    const dispensedCount = recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0;
+    const isExpired = recipe.dueDate ? new Date(recipe.dueDate) < new Date() : false;
+    const cycleLimitReached = dispensedCount >= MAX_REPREPARATIONS + 1;
+    const canReprepare = recipe.status === RecipeStatus.Dispensed && !isExpired && !cycleLimitReached;
+    const canEdit = recipe.status !== RecipeStatus.Dispensed && recipe.status !== RecipeStatus.Cancelled;
+
     const ActionButton = () => {
         switch (recipe.status) {
             case RecipeStatus.PendingValidation:
@@ -504,23 +511,11 @@ export default function RecipesPage() {
             case RecipeStatus.ReadyForPickup:
                  return <Button size="sm" onClick={() => handleUpdateStatus(recipe, RecipeStatus.Dispensed)}><CheckCheck className="mr-2 h-4 w-4" />Dispensar</Button>;
             case RecipeStatus.Dispensed:
-                const { isExpired, cycleLimitReached } = {
-                    isExpired: new Date(recipe.dueDate) < new Date(),
-                    cycleLimitReached: (recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0) >= MAX_REPREPARATIONS + 1,
-                };
-                const canReprepare = !isSubmitting && !isExpired && !cycleLimitReached;
                  return <Button size="sm" onClick={() => setRecipeToReprepare(recipe)} disabled={!canReprepare}><Copy className="mr-2 h-4 w-4" />Re-preparar</Button>;
             default:
                 return <Button size="sm" onClick={() => setRecipeToView(recipe)}>Ver Detalle</Button>;
         }
     }
-    
-    const { isExpired, cycleLimitReached } = {
-        isExpired: new Date(recipe.dueDate) < new Date(),
-        cycleLimitReached: (recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0) >= MAX_REPREPARATIONS + 1,
-    };
-    const canEdit = recipe.status !== RecipeStatus.Dispensed && recipe.status !== RecipeStatus.Cancelled;
-    const canReprepare = recipe.status === RecipeStatus.Dispensed && !isExpired && !(cycleLimitReached);
 
     return (
         <div className="flex justify-between items-center w-full">
@@ -537,6 +532,12 @@ export default function RecipesPage() {
                     <DropdownMenuItem disabled={!canEdit} onSelect={() => canEdit && router.push(`/recipes/${recipe.id}`)}><Pencil className="mr-2 h-4 w-4" />Editar</DropdownMenuItem>
                      {(recipe.status === RecipeStatus.ReceivedAtSkol || recipe.status === RecipeStatus.ReadyForPickup) && (
                         <DropdownMenuItem onClick={() => setRecipeToPrint(recipe)}><Printer className="mr-2 h-4 w-4" />Imprimir Etiqueta</DropdownMenuItem>
+                    )}
+                    {recipe.status === RecipeStatus.Dispensed && (
+                         <DropdownMenuItem disabled={!canReprepare} onSelect={() => canReprepare && setRecipeToReprepare(recipe)}>
+                           <Copy className="mr-2 h-4 w-4" />
+                           <span>Re-preparar</span>
+                         </DropdownMenuItem>
                     )}
                     {recipe.status === RecipeStatus.PendingValidation && (
                         <DropdownMenuItem className="text-red-500 focus:text-red-500" onClick={() => setRecipeToReject(recipe)}><XCircle className="mr-2 h-4 w-4" />Rechazar</DropdownMenuItem>
