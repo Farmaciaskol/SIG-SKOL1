@@ -137,10 +137,24 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
   const form = useForm<RecipeFormValues>({
     resolver: zodResolver(recipeFormSchema),
     defaultValues: {
-      items: [defaultItem],
-      isControlled: false,
       prescriptionDate: new Date(),
       dueDate: addMonths(new Date(), 6),
+      patientId: '',
+      newPatientName: '',
+      newPatientRut: '',
+      dispatchAddress: '',
+      doctorId: '',
+      newDoctorName: '',
+      newDoctorLicense: '',
+      newDoctorRut: '',
+      newDoctorSpecialty: '',
+      externalPharmacyId: '',
+      supplySource: '',
+      preparationCost: 0,
+      isControlled: false,
+      controlledRecipeType: '',
+      controlledRecipeFolio: '',
+      items: [defaultItem],
     },
   });
 
@@ -150,16 +164,29 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
   });
 
   const loadFormData = useCallback(async (recipeData: any) => {
-    form.reset({
-      ...recipeData,
-      prescriptionDate: recipeData.prescriptionDate ? parseISO(recipeData.prescriptionDate) : new Date(),
-      dueDate: recipeData.dueDate ? parseISO(recipeData.dueDate) : addMonths(new Date(), 6),
-      preparationCost: recipeData.preparationCost,
-      patientId: recipeData.patientId,
-      doctorId: recipeData.doctorId,
-      isControlled: recipeData.isControlled || false,
-      items: recipeData.items.length > 0 ? recipeData.items : [defaultItem],
-    });
+    const valuesToSet = {
+        ...recipeData,
+        prescriptionDate: recipeData.prescriptionDate ? parseISO(recipeData.prescriptionDate) : new Date(),
+        dueDate: recipeData.dueDate ? parseISO(recipeData.dueDate) : addMonths(new Date(), 6),
+        patientId: recipeData.patientId ?? '',
+        newPatientName: recipeData.newPatientName ?? '',
+        newPatientRut: recipeData.newPatientRut ?? '',
+        dispatchAddress: recipeData.dispatchAddress ?? '',
+        doctorId: recipeData.doctorId ?? '',
+        newDoctorName: recipeData.newDoctorName ?? '',
+        newDoctorLicense: recipeData.newDoctorLicense ?? '',
+        newDoctorRut: recipeData.newDoctorRut ?? '',
+        newDoctorSpecialty: recipeData.newDoctorSpecialty ?? '',
+        externalPharmacyId: recipeData.externalPharmacyId ?? '',
+        supplySource: recipeData.supplySource ?? '',
+        preparationCost: recipeData.preparationCost ?? 0,
+        isControlled: recipeData.isControlled ?? false,
+        controlledRecipeType: recipeData.controlledRecipeType ?? '',
+        controlledRecipeFolio: recipeData.controlledRecipeFolio ?? '',
+        items: recipeData.items && recipeData.items.length > 0 ? recipeData.items : [defaultItem],
+    };
+    form.reset(valuesToSet);
+
     if (recipeData.prescriptionImageUrl) {
       setPreviewImage(recipeData.prescriptionImageUrl);
     }
@@ -445,7 +472,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                             render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Paciente *</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl>
                                     <SelectTrigger>
                                     <SelectValue placeholder="Seleccione o ingrese nuevo abajo" />
@@ -460,10 +487,10 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                             )}
                         />
                     </div>
-                    <FormField control={form.control} name="newPatientName" render={({ field }) => (<FormItem><FormLabel>Nombre Paciente (Nuevo/IA) *</FormLabel><FormControl><Input placeholder="Nombre Apellido" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="newPatientRut" render={({ field }) => (<FormItem><FormLabel>RUT Paciente (Nuevo/IA) *</FormLabel><FormControl><Input placeholder="12.345.678-9" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="newPatientName" render={({ field }) => (<FormItem><FormLabel>Nombre Paciente (Nuevo/IA) *</FormLabel><FormControl><Input placeholder="Nombre Apellido" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="newPatientRut" render={({ field }) => (<FormItem><FormLabel>RUT Paciente (Nuevo/IA) *</FormLabel><FormControl><Input placeholder="12.345.678-9" {...field} /></FormControl><FormMessage /></FormItem>)} />
                     <div className="md:col-span-2">
-                         <FormField control={form.control} name="dispatchAddress" render={({ field }) => (<FormItem><FormLabel>Dirección de Despacho</FormLabel><FormControl><Input placeholder="Ej: Calle Falsa 123, Comuna" {...field} value={field.value ?? ''} /></FormControl><FormDescription className="text-xs text-slate-500">(Opcional. Por defecto, se retira en farmacia.)</FormDescription><FormMessage /></FormItem>)} />
+                         <FormField control={form.control} name="dispatchAddress" render={({ field }) => (<FormItem><FormLabel>Dirección de Despacho</FormLabel><FormControl><Input placeholder="Ej: Calle Falsa 123, Comuna" {...field} /></FormControl><FormDescription className="text-xs text-slate-500">(Opcional. Por defecto, se retira en farmacia.)</FormDescription><FormMessage /></FormItem>)} />
                     </div>
                  </div>
               </div>
@@ -481,7 +508,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                             render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Médico *</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl>
                                     <SelectTrigger>
                                     <SelectValue placeholder="Seleccione o ingrese nuevo abajo" />
@@ -496,10 +523,10 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                             )}
                         />
                     </div>
-                    <FormField control={form.control} name="newDoctorName" render={({ field }) => (<FormItem><FormLabel>Nombre Médico (Nuevo/IA) *</FormLabel><FormControl><Input placeholder="Nombre Apellido" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="newDoctorLicense" render={({ field }) => (<FormItem><FormLabel>N° Colegiatura (Nuevo/IA) *</FormLabel><FormControl><Input placeholder="Ej: 12345" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="newDoctorRut" render={({ field }) => (<FormItem><FormLabel>RUT Médico (Opcional)</FormLabel><FormControl><Input placeholder="12.345.678-K" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="newDoctorSpecialty" render={({ field }) => (<FormItem><FormLabel>Especialidad Médico (Nuevo/IA) *</FormLabel><FormControl><Input placeholder="Ej: Cardiología" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="newDoctorName" render={({ field }) => (<FormItem><FormLabel>Nombre Médico (Nuevo/IA) *</FormLabel><FormControl><Input placeholder="Nombre Apellido" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="newDoctorLicense" render={({ field }) => (<FormItem><FormLabel>N° Colegiatura (Nuevo/IA) *</FormLabel><FormControl><Input placeholder="Ej: 12345" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="newDoctorRut" render={({ field }) => (<FormItem><FormLabel>RUT Médico (Opcional)</FormLabel><FormControl><Input placeholder="12.345.678-K" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="newDoctorSpecialty" render={({ field }) => (<FormItem><FormLabel>Especialidad Médico (Nuevo/IA) *</FormLabel><FormControl><Input placeholder="Ej: Cardiología" {...field} /></FormControl><FormMessage /></FormItem>)} />
                  </div>
               </div>
             </CardContent>
@@ -515,7 +542,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                     render={({ field }) => (
                     <FormItem>
                         <FormLabel>Recetario Externo Asignado *</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                             <SelectTrigger>
                             <SelectValue placeholder="Seleccione un recetario..." />
@@ -535,7 +562,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                     render={({ field }) => (
                     <FormItem>
                         <FormLabel>Origen de Insumos *</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                             <SelectTrigger>
                             <SelectValue placeholder="Seleccione un origen..." />
@@ -774,7 +801,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                         render={({ field }) => (
                         <FormItem>
                             <FormLabel>Tipo de Receta Controlada *</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                                 <SelectTrigger>
                                 <SelectValue placeholder="Seleccione tipo..." />
@@ -796,7 +823,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                         <FormItem>
                             <FormLabel>Folio Receta *</FormLabel>
                             <FormControl>
-                            <Input placeholder="Ej: F123456 o Folio Cheque" {...field} value={field.value ?? ''}/>
+                            <Input placeholder="Ej: F123456 o Folio Cheque" {...field} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
