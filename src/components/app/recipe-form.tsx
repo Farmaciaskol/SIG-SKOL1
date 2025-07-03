@@ -52,7 +52,6 @@ const recipeItemSchema = z.object({
   totalQuantityUnit: z.string().min(1, "La unidad de la Cantidad Total es requerida."),
   usageInstructions: z.string().min(1, "Las Instrucciones de Uso son requeridas."),
   requiresFractionation: z.boolean().optional(),
-  isRefrigerated: z.boolean().default(false).optional(),
   sourceInventoryItemId: z.string().optional(),
 });
 
@@ -135,7 +134,6 @@ const defaultItem = {
   totalQuantityUnit: '',
   usageInstructions: '',
   requiresFractionation: false,
-  isRefrigerated: false,
   sourceInventoryItemId: '',
 };
 
@@ -697,188 +695,212 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
                 </div>
 
                 <div className="space-y-6">
-                    {fields.map((item, index) => (
-                    <div key={item.id} className="p-4 border rounded-lg space-y-4 relative bg-muted/30">
-                        <div className="flex justify-between items-start">
-                            <h3 className="font-semibold text-primary">Ítem #{index + 1}</h3>
-                             {fields.length > 1 && (
-                                <Button type="button" variant="ghost" size="icon" className="text-red-500 hover:text-red-600 h-7 w-7" onClick={() => remove(index)}>
-                                    <Trash2 className="h-4 w-4" />
-                                    <span className="sr-only">Eliminar Ítem</span>
-                                </Button>
-                            )}
-                        </div>
+                    {fields.map((item, index) => {
+                       const principalActiveIngredientValue = form.watch(`items.${index}.principalActiveIngredient`);
 
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <FormField control={form.control} name={`items.${index}.principalActiveIngredient`} render={({ field }) => (
-                                <FormItem className="md:col-span-4">
-                                    <FormLabel>Principio Activo Principal *</FormLabel>
-                                    <FormControl><Input {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}/>
-                            
-                            <FormField control={form.control} name={`items.${index}.pharmaceuticalForm`} render={({ field }) => (
-                                <FormItem className="md:col-span-2">
-                                    <FormLabel>Forma Farmacéutica *</FormLabel>
-                                    <Select
-                                        onValueChange={(value) => {
-                                            field.onChange(value);
-                                            const defaults = PHARMACEUTICAL_FORM_DEFAULTS[value];
-                                            if (defaults && appSettings) {
-                                                form.setValue(`items.${index}.concentrationUnit`, defaults.concentrationUnit, { shouldValidate: true });
-                                                form.setValue(`items.${index}.dosageUnit`, defaults.dosageUnit, { shouldValidate: true });
-                                                form.setValue(`items.${index}.totalQuantityUnit`, defaults.totalQuantityUnit, { shouldValidate: true });
-                                            }
-                                        }}
-                                        value={field.value}>
-                                        <FormControl><SelectTrigger><SelectValue placeholder="Seleccione..." /></SelectTrigger></FormControl>
-                                        <SelectContent>
-                                            {appSettings?.pharmaceuticalForms.map(unit => <SelectItem key={unit} value={unit.toLowerCase()}>{unit}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}/>
+                        const filteredInventoryForPA = React.useMemo(() => {
+                            if (!principalActiveIngredientValue?.trim()) {
+                                return inventory.filter(invItem => invItem.itemsPerBaseUnit && invItem.itemsPerBaseUnit > 0);
+                            }
+                            const lowerPAI = principalActiveIngredientValue.toLowerCase();
+                            return inventory.filter(invItem => 
+                                (invItem.itemsPerBaseUnit && invItem.itemsPerBaseUnit > 0) &&
+                                (invItem.activePrinciple.toLowerCase().includes(lowerPAI))
+                            );
+                        }, [principalActiveIngredientValue, inventory]);
 
-                            <FormField control={form.control} name={`items.${index}.concentrationValue`} render={({ field }) => (
-                                <FormItem><FormLabel>Concentración (Valor) *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                            )}/>
-                            <FormField control={form.control} name={`items.${index}.concentrationUnit`} render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Concentración (Unidad) *</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value}>
-                                        <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
-                                        <SelectContent>
-                                            {appSettings?.concentrationUnits.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}/>
+                        return (
+                            <div key={item.id} className="p-4 border rounded-lg space-y-4 relative bg-muted/30">
+                                <div className="flex justify-between items-start">
+                                    <h3 className="font-semibold text-primary">Ítem #{index + 1}</h3>
+                                    {fields.length > 1 && (
+                                        <Button type="button" variant="ghost" size="icon" className="text-red-500 hover:text-red-600 h-7 w-7" onClick={() => remove(index)}>
+                                            <Trash2 className="h-4 w-4" />
+                                            <span className="sr-only">Eliminar Ítem</span>
+                                        </Button>
+                                    )}
+                                </div>
 
-                            <FormField control={form.control} name={`items.${index}.dosageValue`} render={({ field }) => (
-                                <FormItem><FormLabel>Dosis (Valor) *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                            )}/>
-                            <FormField control={form.control} name={`items.${index}.dosageUnit`} render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Dosis (Unidad) *</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value}>
-                                        <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
-                                        <SelectContent>
-                                            {appSettings?.dosageUnits.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}/>
-                            
-                            <FormField control={form.control} name={`items.${index}.frequency`} render={({ field }) => (
-                                <FormItem className="md:col-span-2">
-                                    <FormLabel>Frecuencia (horas) *</FormLabel>
-                                    <FormControl><Input placeholder="Ej: 8, 12, 24" {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}/>
-
-                            <FormField control={form.control} name={`items.${index}.treatmentDurationValue`} render={({ field }) => (
-                                <FormItem><FormLabel>Duración Trat. (Valor) *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                            )}/>
-                            <FormField control={form.control} name={`items.${index}.treatmentDurationUnit`} render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Duración Trat. (Unidad) *</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value}>
-                                        <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
-                                        <SelectContent>
-                                            {appSettings?.treatmentDurationUnits.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}/>
-
-                            <FormField control={form.control} name={`items.${index}.totalQuantityValue`} render={({ field }) => (
-                                <FormItem><FormLabel>Cant. Total (Valor) *</FormLabel><FormControl><Input {...field} disabled /></FormControl><FormMessage /></FormItem>
-                            )}/>
-                            <FormField control={form.control} name={`items.${index}.totalQuantityUnit`} render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Cant. Total (Unidad) *</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value}>
-                                        <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
-                                        <SelectContent>
-                                            {appSettings?.quantityToPrepareUnits.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}/>
-                            
-                            <FormField control={form.control} name={`items.${index}.usageInstructions`} render={({ field }) => (
-                                <FormItem className="md:col-span-4">
-                                    <FormLabel>Instrucciones de Uso *</FormLabel>
-                                    <FormControl><Textarea placeholder="Instrucciones de uso para el paciente..." {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}/>
-                        </div>
-                        
-                         <div className="space-y-4">
-                            <FormField
-                                control={form.control}
-                                name={`items.${index}.requiresFractionation`}
-                                render={({ field }) => (
-                                <FormItem className="flex flex-row items-center space-x-2 pt-2">
-                                    <FormControl>
-                                        <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                                    </FormControl>
-                                    <FormLabel className="!mt-0 font-normal text-sm text-slate-700">
-                                        Insumo provisto por Skol (para fraccionamiento)
-                                    </FormLabel>
-                                </FormItem>
-                                )}
-                            />
-
-                            {supplySource === 'Insumos de Skol' && watchedItems[index].requiresFractionation && (
-                                <FormField
-                                    control={form.control}
-                                    name={`items.${index}.sourceInventoryItemId`}
-                                    render={({ field }) => (
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    <FormField control={form.control} name={`items.${index}.principalActiveIngredient`} render={({ field }) => (
                                         <FormItem className="md:col-span-4">
-                                            <FormLabel>Insumo Base de Inventario Skol *</FormLabel>
-                                            <Select onValueChange={field.onChange} value={field.value}>
-                                                <FormControl>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Seleccionar el producto a fraccionar..." />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent>
-                                                    {inventory
-                                                        .filter(invItem => invItem.itemsPerBaseUnit && invItem.itemsPerBaseUnit > 0)
-                                                        .map(invItem => (
-                                                            <SelectItem key={invItem.id} value={invItem.id}>
-                                                                {invItem.name} (Stock: {invItem.quantity} {invItem.unit})
-                                                            </SelectItem>
-                                                        ))}
-                                                </SelectContent>
-                                            </Select>
-                                            <FormDescription className="text-xs text-slate-500">
-                                                Seleccione la "caja" o producto base del cual se obtendrá este preparado.
-                                            </FormDescription>
+                                            <FormLabel>Principio Activo Principal *</FormLabel>
+                                            <FormControl><Input {...field} /></FormControl>
                                             <FormMessage />
                                         </FormItem>
-                                    )}
-                                />
-                            )}
-                        </div>
+                                    )}/>
+                                    
+                                    <FormField control={form.control} name={`items.${index}.pharmaceuticalForm`} render={({ field }) => (
+                                        <FormItem className="md:col-span-2">
+                                            <FormLabel>Forma Farmacéutica *</FormLabel>
+                                            <Select
+                                                onValueChange={(value) => {
+                                                    field.onChange(value);
+                                                    const defaults = PHARMACEUTICAL_FORM_DEFAULTS[value];
+                                                    if (defaults && appSettings) {
+                                                        form.setValue(`items.${index}.concentrationUnit`, defaults.concentrationUnit, { shouldValidate: true });
+                                                        form.setValue(`items.${index}.dosageUnit`, defaults.dosageUnit, { shouldValidate: true });
+                                                        form.setValue(`items.${index}.totalQuantityUnit`, defaults.totalQuantityUnit, { shouldValidate: true });
+                                                    }
+                                                }}
+                                                value={field.value}>
+                                                <FormControl><SelectTrigger><SelectValue placeholder="Seleccione..." /></SelectTrigger></FormControl>
+                                                <SelectContent>
+                                                    {appSettings?.pharmaceuticalForms.map(unit => <SelectItem key={unit} value={unit.toLowerCase()}>{unit}</SelectItem>)}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}/>
 
-                        <div className="flex justify-start">
-                            <Button type="button" variant="outline" size="sm" onClick={() => handleSimplifyInstructions(index)} disabled={isSimplifying === index}>
-                                {isSimplifying === index ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
-                                {isSimplifying === index ? 'Simplificando...' : 'Simplificar (IA)'}
-                            </Button>
-                        </div>
-                    </div>
-                    ))}
+                                    <FormField control={form.control} name={`items.${index}.concentrationValue`} render={({ field }) => (
+                                        <FormItem><FormLabel>Concentración (Valor) *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                    )}/>
+                                    <FormField control={form.control} name={`items.${index}.concentrationUnit`} render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Concentración (Unidad) *</FormLabel>
+                                            <Select onValueChange={field.onChange} value={field.value}>
+                                                <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
+                                                <SelectContent>
+                                                    {appSettings?.concentrationUnits.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}/>
+
+                                    <FormField control={form.control} name={`items.${index}.dosageValue`} render={({ field }) => (
+                                        <FormItem><FormLabel>Dosis (Valor) *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                    )}/>
+                                    <FormField control={form.control} name={`items.${index}.dosageUnit`} render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Dosis (Unidad) *</FormLabel>
+                                            <Select onValueChange={field.onChange} value={field.value}>
+                                                <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
+                                                <SelectContent>
+                                                    {appSettings?.dosageUnits.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}/>
+                                    
+                                    <FormField control={form.control} name={`items.${index}.frequency`} render={({ field }) => (
+                                        <FormItem className="md:col-span-2">
+                                            <FormLabel>Frecuencia (horas) *</FormLabel>
+                                            <FormControl><Input placeholder="Ej: 8, 12, 24" {...field} /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}/>
+
+                                    <FormField control={form.control} name={`items.${index}.treatmentDurationValue`} render={({ field }) => (
+                                        <FormItem><FormLabel>Duración Trat. (Valor) *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                    )}/>
+                                    <FormField control={form.control} name={`items.${index}.treatmentDurationUnit`} render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Duración Trat. (Unidad) *</FormLabel>
+                                            <Select onValueChange={field.onChange} value={field.value}>
+                                                <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
+                                                <SelectContent>
+                                                    {appSettings?.treatmentDurationUnits.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}/>
+
+                                    <FormField control={form.control} name={`items.${index}.totalQuantityValue`} render={({ field }) => (
+                                        <FormItem><FormLabel>Cant. Total (Valor) *</FormLabel><FormControl><Input {...field} readOnly className="bg-muted/70 cursor-default" /></FormControl><FormMessage /></FormItem>
+                                    )}/>
+                                    <FormField control={form.control} name={`items.${index}.totalQuantityUnit`} render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Cant. Total (Unidad) *</FormLabel>
+                                            <Select onValueChange={field.onChange} value={field.value}>
+                                                <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
+                                                <SelectContent>
+                                                    {appSettings?.quantityToPrepareUnits.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}/>
+                                    
+                                    <FormField control={form.control} name={`items.${index}.usageInstructions`} render={({ field }) => (
+                                        <FormItem className="md:col-span-4">
+                                            <FormLabel>Instrucciones de Uso *</FormLabel>
+                                            <FormControl><Textarea placeholder="Instrucciones de uso para el paciente..." {...field} /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}/>
+                                </div>
+                                
+                                <div className="space-y-4">
+                                    <FormField
+                                        control={form.control}
+                                        name={`items.${index}.requiresFractionation`}
+                                        render={({ field }) => (
+                                        <FormItem className="flex flex-row items-center space-x-2 pt-2">
+                                            <FormControl>
+                                                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                            </FormControl>
+                                            <FormLabel className="!mt-0 font-normal text-sm text-slate-700">
+                                                Insumo provisto por Skol (para fraccionamiento)
+                                            </FormLabel>
+                                        </FormItem>
+                                        )}
+                                    />
+
+                                    {supplySource === 'Insumos de Skol' && watchedItems[index].requiresFractionation && (
+                                        <FormField
+                                            control={form.control}
+                                            name={`items.${index}.sourceInventoryItemId`}
+                                            render={({ field }) => (
+                                                <FormItem className="md:col-span-4">
+                                                    <FormLabel>Insumo Base de Inventario Skol *</FormLabel>
+                                                    <Select onValueChange={field.onChange} value={field.value}>
+                                                        <FormControl>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Seleccionar el producto a fraccionar..." />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            {filteredInventoryForPA.length > 0 ? (
+                                                                filteredInventoryForPA.map(invItem => (
+                                                                    <SelectItem key={invItem.id} value={invItem.id}>
+                                                                        {invItem.name} (Stock: {invItem.quantity} {invItem.unit})
+                                                                    </SelectItem>
+                                                                ))
+                                                            ) : (
+                                                                <div className="p-2 text-center text-xs text-muted-foreground">
+                                                                    <p>No se encontraron insumos.</p>
+                                                                    <Button type="button" variant="link" className="p-0 h-auto text-xs" asChild>
+                                                                        <Link href="/inventory" target="_blank">
+                                                                            Crear producto en Inventario
+                                                                        </Link>
+                                                                    </Button>
+                                                                </div>
+                                                            )}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormDescription className="text-xs text-slate-500">
+                                                        Seleccione la "caja" o producto base del cual se obtendrá este preparado.
+                                                    </FormDescription>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    )}
+                                </div>
+
+                                <div className="flex justify-start">
+                                    <Button type="button" variant="outline" size="sm" onClick={() => handleSimplifyInstructions(index)} disabled={isSimplifying === index}>
+                                        {isSimplifying === index ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                                        {isSimplifying === index ? 'Simplificando...' : 'Simplificar (IA)'}
+                                    </Button>
+                                </div>
+                            </div>
+                        )
+                    })}
                 </div>
 
                 <FormField
