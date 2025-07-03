@@ -309,7 +309,7 @@ export default function DoctorsPage() {
 
   return (
     <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-      <div className="space-y-6 p-4 md:p-8">
+      <div className="space-y-6">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <div>
             <h2 className="text-3xl font-bold tracking-tight font-headline">Gestión de Médicos</h2>

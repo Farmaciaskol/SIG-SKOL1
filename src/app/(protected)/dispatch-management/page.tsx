@@ -250,7 +250,7 @@ export default function DispatchManagementPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full p-8">
+      <div className="flex items-center justify-center h-full">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <p className="ml-2">Cargando módulo de despachos...</p>
       </div>
@@ -258,7 +258,7 @@ export default function DispatchManagementPage() {
   }
 
   return (
-    <div className="space-y-6 p-4 md:p-8">
+    <div className="space-y-6">
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight font-headline">Gestión de Despachos</h2>

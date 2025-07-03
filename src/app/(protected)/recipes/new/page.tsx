@@ -12,7 +12,7 @@ export default function NewRecipePage() {
   const copyFromId = searchParams.get('copyFrom') ?? undefined;
 
   return (
-    <div className="space-y-4 p-4 md:p-8 pt-6">
+    <div className="space-y-4">
       <div className="flex items-center gap-4">
         <Button variant="outline" size="icon" asChild>
           <Link href="/recipes">

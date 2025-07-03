@@ -137,14 +137,14 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full bg-background p-8">
+      <div className="flex items-center justify-center h-full bg-background">
         <p>Cargando dashboard...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 p-4 md:p-8 bg-background">
+    <div className="space-y-6 bg-background">
       <div className="flex flex-col md:flex-row md:items-center justify-between space-y-2 md:space-y-0">
         <div>
             <h2 className="text-3xl font-bold tracking-tight font-headline">Dashboard</h2>
