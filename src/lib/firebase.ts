@@ -1,7 +1,8 @@
+
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
-import { getAuth, type Auth } from "firebase/auth";
-import { getFirestore, type Firestore } from "firebase/firestore";
-import { getStorage, type FirebaseStorage } from "firebase/storage";
+import { getAuth, connectAuthEmulator, type Auth } from "firebase/auth";
+import { getFirestore, connectFirestoreEmulator, type Firestore } from "firebase/firestore";
+import { getStorage, connectStorageEmulator, type FirebaseStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -25,6 +26,24 @@ if (firebaseConfig.apiKey) {
     auth = getAuth(app);
     db = getFirestore(app);
     storage = getStorage(app);
+
+    // Connect to emulators in development for safer local testing
+    if (process.env.NODE_ENV === 'development') {
+        try {
+            console.log("Connecting to Firebase Emulators...");
+            connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
+            connectFirestoreEmulator(db, '127.0.0.1', 8080);
+            connectStorageEmulator(storage, "127.0.0.1", 9199);
+            console.log("Successfully connected to Firebase Emulators.");
+        } catch (e: any) {
+             // It's okay if it fails to connect, we just log it.
+             // This can happen on hot reloads if it's already connected.
+            if (e.code !== 'failed-precondition') {
+                 console.error('Error connecting to Firebase emulators. Is the emulator suite running?', e);
+            }
+        }
+    }
+
   } catch (e) {
     console.error('Error initializing Firebase. Please check your credentials in the .env file.', e);
     // If initialization fails, we reset the variables to undefined.
