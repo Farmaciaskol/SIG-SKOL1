@@ -56,8 +56,15 @@ export async function submitNewPrescription(patientId: string, imageDataUri: str
     const recipeId = recipeRef.id;
 
     const storageRef = ref(storage, `portal-prescriptions/${recipeId}`);
-    const uploadResult = await uploadString(storageRef, imageDataUri, 'data_url');
-    const imageUrl = await getDownloadURL(uploadResult.ref);
+    
+    let imageUrl: string;
+    try {
+        const uploadResult = await uploadString(storageRef, imageDataUri, 'data_url');
+        imageUrl = await getDownloadURL(uploadResult.ref);
+    } catch (storageError: any) {
+        console.error("Firebase Storage upload failed in submitNewPrescription:", storageError);
+        throw new Error(`Error al subir imagen desde el portal. Verifique las reglas de Storage. Código: ${storageError.code || 'UNKNOWN'}`);
+    }
 
     const firstAuditEntry: AuditTrailEntry = {
         status: RecipeStatus.PendingReviewPortal,
@@ -79,7 +86,7 @@ export async function submitNewPrescription(patientId: string, imageDataUri: str
         prescriptionImageUrl: imageUrl,
         auditTrail: [firstAuditEntry],
         externalPharmacyId: '', 
-        supplySource: 'Stock del Recetario Externo',
+        supplySource: 'Stock del Recetario',
         preparationCost: 0,
     };
 

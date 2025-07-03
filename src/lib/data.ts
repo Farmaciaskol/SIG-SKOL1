@@ -4,6 +4,7 @@
 
 
 
+
 import { db, storage } from './firebase';
 import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc, deleteDoc, writeBatch, query, where } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
@@ -249,8 +250,13 @@ export const saveRecipe = async (data: any, imageUri: string | null, recipeId?: 
 
     if (imageUri && storage && imageUri.startsWith('data:')) {
         const storageRef = ref(storage, `prescriptions/${effectiveRecipeId}`);
-        const uploadResult = await uploadString(storageRef, imageUri, 'data_url');
-        imageUrl = await getDownloadURL(uploadResult.ref);
+        try {
+            const uploadResult = await uploadString(storageRef, imageUri, 'data_url');
+            imageUrl = await getDownloadURL(uploadResult.ref);
+        } catch (storageError: any) {
+            console.error("Firebase Storage upload failed in saveRecipe:", storageError);
+            throw new Error(`Error al subir imagen. Verifique las reglas de Storage. Código: ${storageError.code || 'UNKNOWN'}`);
+        }
     } else if (imageUri) {
         imageUrl = imageUri;
     }
@@ -462,8 +468,13 @@ export const logDirectSaleDispensation = async (
     let finalImageUrl: string | undefined;
     if (controlledRecipeFormat === 'physical' && imageUri) {
       const storageRef = ref(storage, `controlled-prescriptions/${patientId}-${Date.now()}`);
-      const uploadResult = await uploadString(storageRef, imageUri, 'data_url');
-      finalImageUrl = await getDownloadURL(uploadResult.ref);
+      try {
+        const uploadResult = await uploadString(storageRef, imageUri, 'data_url');
+        finalImageUrl = await getDownloadURL(uploadResult.ref);
+      } catch (storageError: any) {
+        console.error("Firebase Storage upload failed in logDirectSaleDispensation:", storageError);
+        throw new Error(`Error al subir imagen de receta controlada. Verifique las reglas de Storage. Código: ${storageError.code || 'UNKNOWN'}`);
+      }
     }
 
     const newLogEntry: Omit<ControlledSubstanceLogEntry, 'id'> = {
