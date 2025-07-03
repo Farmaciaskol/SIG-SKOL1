@@ -14,6 +14,30 @@ const USE_MOCK_DATA_ON_EMPTY_FIRESTORE = true;
 // A flag to prevent seeding more than once per app load
 const seededCollections = new Set<string>();
 
+// Helper function to recursively convert Firestore Timestamps to ISO strings
+function deepConvertTimestamps(obj: any): any {
+  if (obj === null || typeof obj !== 'object') {
+    return obj;
+  }
+
+  if (obj instanceof Timestamp) {
+    return obj.toDate().toISOString();
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(item => deepConvertTimestamps(item));
+  }
+
+  const newObj: { [key: string]: any } = {};
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      newObj[key] = deepConvertTimestamps(obj[key]);
+    }
+  }
+  return newObj;
+}
+
+
 async function fetchCollection<T extends { id: string }>(collectionName: keyof AppData & string): Promise<T[]> {
   if (!db) {
     console.error("Firestore is not initialized.");
@@ -43,13 +67,9 @@ async function fetchCollection<T extends { id: string }>(collectionName: keyof A
 
     return querySnapshot.docs.map(doc => {
       const data = doc.data();
-      // Convert Firestore Timestamps to ISO strings for dates
-      for (const key in data) {
-        if (data[key] instanceof Timestamp) {
-          data[key] = data[key].toDate().toISOString();
-        }
-      }
-      return { id: doc.id, ...data } as T;
+      // Recursively convert Firestore Timestamps to ISO strings for all dates
+      const convertedData = deepConvertTimestamps(data);
+      return { id: doc.id, ...convertedData } as T;
     });
   } catch (error) {
     console.error(`Error fetching ${collectionName}:`, error);
@@ -85,17 +105,14 @@ export const getRecipe = async (id: string): Promise<Recipe | null> => {
 
         if (docSnap.exists()) {
             const data = docSnap.data();
-             // Convert Firestore Timestamps to ISO strings for dates
-            for (const key in data) {
-                if (data[key] instanceof Timestamp) {
-                data[key] = data[key].toDate().toISOString();
-                }
-            }
+            // Recursively convert Firestore Timestamps to ISO strings for all dates
+            const convertedData = deepConvertTimestamps(data);
+            
             // Ensure auditTrail is an array
-            if (!data.auditTrail) {
-                data.auditTrail = [];
+            if (!convertedData.auditTrail) {
+                convertedData.auditTrail = [];
             }
-            return { id: docSnap.id, ...data } as Recipe;
+            return { id: docSnap.id, ...convertedData } as Recipe;
         } else {
             console.log(`Document with id ${id} not found in recipes collection.`);
             return null;
