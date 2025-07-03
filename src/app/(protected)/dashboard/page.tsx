@@ -8,14 +8,15 @@ import {
   FlaskConical,
   Inbox,
   PlusCircle,
-  CalendarDays,
   Clock,
   CheckCircle2,
   Box,
+  Wand2,
+  AlertCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getRecipes, getPatients, getInventory, getUsers, Recipe, Patient, InventoryItem, User, RecipeStatus } from '@/lib/data';
+import { getRecipes, getPatients, getInventory, getUsers, Recipe, Patient, InventoryItem, User, RecipeStatus, ProactivePatientStatus } from '@/lib/data';
 import { differenceInDays } from 'date-fns';
 
 type KpiCardProps = {
@@ -40,6 +41,92 @@ const KpiCard = ({ title, value, icon: Icon, href }: KpiCardProps) => (
     </Card>
   </Link>
 );
+
+const ProactiveAlertsCard = ({ patients }: { patients: Patient[] }) => {
+  const alerts = patients.filter(
+    (p) =>
+      p.proactiveStatus === ProactivePatientStatus.URGENT ||
+      p.proactiveStatus === ProactivePatientStatus.ATTENTION
+  ).sort((a, b) => { // Sort urgent ones first
+      if (a.proactiveStatus === ProactivePatientStatus.URGENT && b.proactiveStatus !== ProactivePatientStatus.URGENT) return -1;
+      if (a.proactiveStatus !== ProactivePatientStatus.URGENT && b.proactiveStatus === ProactivePatientStatus.URGENT) return 1;
+      return 0;
+  });
+
+  const statusConfig = {
+    [ProactivePatientStatus.URGENT]: {
+      icon: AlertCircle,
+      color: 'text-red-600',
+      bgColor: 'bg-red-50',
+      borderColor: 'border-red-400',
+    },
+    [ProactivePatientStatus.ATTENTION]: {
+      icon: Clock,
+      color: 'text-yellow-600',
+      bgColor: 'bg-yellow-50',
+      borderColor: 'border-yellow-400',
+    },
+    [ProactivePatientStatus.OK]: { // Default, won't be used but good for completeness
+      icon: CheckCircle2,
+      color: 'text-green-600',
+      bgColor: 'bg-green-50',
+      borderColor: 'border-green-400',
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center gap-3 border-b pb-4">
+        <Wand2 className="h-5 w-5 text-muted-foreground" />
+        <CardTitle className="text-lg font-semibold text-slate-800">Alertas Proactivas (IA)</CardTitle>
+      </CardHeader>
+      <CardContent className="pt-4 space-y-3">
+        {alerts.length > 0 ? (
+          alerts.map((patient) => {
+            const config = statusConfig[patient.proactiveStatus];
+            if (!config) return null;
+            const Icon = config.icon;
+            return (
+              <div
+                key={patient.id}
+                className={`flex items-start p-3 rounded-lg ${config.bgColor} border-l-4 ${config.borderColor}`}
+              >
+                <Icon
+                  className={`h-5 w-5 ${config.color} mr-3 mt-0.5 flex-shrink-0`}
+                />
+                <div className="flex-grow">
+                  <p className="font-semibold text-primary">
+                    <Link
+                      href={`/patients/${patient.id}`}
+                      className="hover:underline"
+                    >
+                      Paciente: {patient.name}
+                    </Link>
+                  </p>
+                  <p className="text-sm text-slate-700">
+                    {patient.proactiveMessage}
+                  </p>
+                </div>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href={`/patients/${patient.id}`}>Revisar</Link>
+                </Button>
+              </div>
+            );
+          })
+        ) : (
+          <div className="flex flex-col items-center text-center text-muted-foreground h-full justify-center py-6">
+            <CheckCircle2 className="h-10 w-10 text-green-500 mb-2" />
+            <p className="font-medium text-slate-700">Todo en orden</p>
+            <p className="text-sm">
+              Ningún paciente crónico requiere atención inmediata.
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
 
 export default function DashboardPage() {
   const [data, setData] = useState<{
@@ -114,7 +201,7 @@ export default function DashboardPage() {
       }));
   }, [data]);
 
-  if (loading) {
+  if (loading || !data) {
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-muted-foreground">Cargando dashboard...</p>
@@ -146,19 +233,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-        <Card>
-          <CardHeader className="flex flex-row items-center gap-3 border-b pb-4">
-            <CalendarDays className="h-5 w-5 text-muted-foreground" />
-            <CardTitle className="text-lg font-semibold text-slate-800">Próximas Dispensaciones Mensuales</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="flex flex-col items-center text-center text-muted-foreground h-full justify-center py-6">
-              <CheckCircle2 className="h-10 w-10 text-green-500 mb-2" />
-              <p className="font-medium text-slate-700">Todo en orden</p>
-              <p className="text-sm">No hay dispensaciones crónicas que requieran acción en los próximos 30 días.</p>
-            </div>
-          </CardContent>
-        </Card>
+        <ProactiveAlertsCard patients={data.patients} />
 
         <Card>
           <CardHeader className="flex flex-row items-center gap-3 border-b pb-4">
