@@ -36,6 +36,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getInventory, logDirectSaleDispensation, Patient, Doctor, InventoryItem } from '@/lib/data';
 import { Loader2, Upload, X } from 'lucide-react';
 import Image from 'next/image';
+import { format } from 'date-fns';
 
 interface DispensationDialogProps {
   isOpen: boolean;
