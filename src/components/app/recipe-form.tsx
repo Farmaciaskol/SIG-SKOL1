@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -22,8 +23,8 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Upload, PlusCircle, X, Image as ImageIcon, Loader2, Wand2, Bot, Calendar as CalendarIcon, Trash2, Snowflake } from 'lucide-react';
-import { getPatients, getDoctors, getRecipe, getExternalPharmacies, saveRecipe, getAppSettings } from '@/lib/data';
-import { type Patient, type Doctor, type ExternalPharmacy, RecipeStatus, type AppSettings } from '@/lib/types';
+import { getPatients, getDoctors, getRecipe, getExternalPharmacies, saveRecipe, getAppSettings, getInventory } from '@/lib/data';
+import { type Patient, type Doctor, type ExternalPharmacy, RecipeStatus, type AppSettings, type InventoryItem } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { extractRecipeDataFromImage } from '@/ai/flows/extract-recipe-data-from-image';
 import { simplifyInstructions } from '@/ai/flows/simplify-instructions';
@@ -52,6 +53,7 @@ const recipeItemSchema = z.object({
   usageInstructions: z.string().min(1, "Las Instrucciones de Uso son requeridas."),
   requiresFractionation: z.boolean().optional(),
   isRefrigerated: z.boolean().default(false).optional(),
+  sourceInventoryItemId: z.string().optional(),
 });
 
 const recipeFormSchema = z.object({
@@ -99,6 +101,15 @@ const recipeFormSchema = z.object({
             });
         }
     }
+    data.items.forEach((item, index) => {
+        if (data.supplySource === 'Insumos de Skol' && item.requiresFractionation && !item.sourceInventoryItemId) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Debe seleccionar el insumo base del inventario.",
+                path: [`items.${index}.sourceInventoryItemId`],
+            });
+        }
+    });
 });
 
 
@@ -124,6 +135,7 @@ const defaultItem = {
   usageInstructions: '',
   requiresFractionation: false,
   isRefrigerated: false,
+  sourceInventoryItemId: '',
 };
 
 export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
@@ -132,6 +144,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [externalPharmacies, setExternalPharmacies] = useState<ExternalPharmacy[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [appSettings, setAppSettings] = useState<AppSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAiExtracting, setIsAiExtracting] = useState(false);
@@ -209,16 +222,18 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [patientsData, doctorsData, externalPharmaciesData, settingsData] = await Promise.all([
+        const [patientsData, doctorsData, externalPharmaciesData, settingsData, inventoryData] = await Promise.all([
             getPatients(), 
             getDoctors(),
             getExternalPharmacies(),
             getAppSettings(),
+            getInventory(),
         ]);
         setPatients(patientsData);
         setDoctors(doctorsData);
         setExternalPharmacies(externalPharmaciesData);
         setAppSettings(settingsData);
+        setInventory(inventoryData);
 
         const recipeToLoad = copyFromId || recipeId;
 
@@ -264,6 +279,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
   const patientSelectionType = form.watch('patientSelectionType');
   const doctorSelectionType = form.watch('doctorSelectionType');
   const selectedPharmacyId = form.watch('externalPharmacyId');
+  const supplySource = form.watch('supplySource');
 
   useEffect(() => {
     if (selectedPharmacyId) {
@@ -386,7 +402,6 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
   };
 
   const isControlled = form.watch('isControlled');
-  const supplySource = form.watch('supplySource');
 
   if (loading) {
     return (
@@ -785,7 +800,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                             )}/>
                         </div>
                         
-                         {supplySource === 'Insumos de Skol' && (
+                         <div className="space-y-4">
                             <FormField
                                 control={form.control}
                                 name={`items.${index}.requiresFractionation`}
@@ -800,7 +815,39 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                                 </FormItem>
                                 )}
                             />
-                        )}
+
+                            {supplySource === 'Insumos de Skol' && watchedItems[index].requiresFractionation && (
+                                <FormField
+                                    control={form.control}
+                                    name={`items.${index}.sourceInventoryItemId`}
+                                    render={({ field }) => (
+                                        <FormItem className="md:col-span-4">
+                                            <FormLabel>Insumo Base de Inventario Skol *</FormLabel>
+                                            <Select onValueChange={field.onChange} value={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Seleccionar el producto a fraccionar..." />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {inventory
+                                                        .filter(invItem => invItem.itemsPerBaseUnit && invItem.itemsPerBaseUnit > 0)
+                                                        .map(invItem => (
+                                                            <SelectItem key={invItem.id} value={invItem.id}>
+                                                                {invItem.name} (Stock: {invItem.quantity} {invItem.unit})
+                                                            </SelectItem>
+                                                        ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormDescription className="text-xs text-slate-500">
+                                                Seleccione la "caja" o producto base del cual se obtendrá este preparado.
+                                            </FormDescription>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            )}
+                        </div>
                         
                         <FormField
                             control={form.control}

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
@@ -138,7 +139,7 @@ export default function DispatchManagementPage() {
       }
 
       for (const recipeItem of recipe.items) {
-        if (!recipeItem?.principalActiveIngredient || !recipeItem.requiresFractionation) continue;
+        if (!recipeItem?.principalActiveIngredient || !recipeItem.requiresFractionation || !recipeItem.sourceInventoryItemId) continue;
 
         const isAlreadyInActiveDispatch = dispatchNotes.some(dn => 
             dn.status === DispatchStatus.Active &&
@@ -147,9 +148,7 @@ export default function DispatchManagementPage() {
 
         if (isAlreadyInActiveDispatch) continue;
         
-        const inventoryItem = inventory.find(i => 
-          i.name.toLowerCase().includes(recipeItem.principalActiveIngredient.toLowerCase()) && i.itemsPerBaseUnit
-        );
+        const inventoryItem = inventory.find(i => i.id === recipeItem.sourceInventoryItemId);
 
         if (inventoryItem) {
              if (inventoryItem.lots && inventoryItem.lots.length > 0 && inventoryItem.itemsPerBaseUnit && recipeItem.totalQuantityValue) {
@@ -159,7 +158,7 @@ export default function DispatchManagementPage() {
                  items.push({ recipe, patient, inventoryItem, recipeItem, error: 'El insumo no tiene lotes con stock o no está configurado para fraccionamiento.' });
             }
         } else {
-            items.push({ recipe, patient, inventoryItem: undefined, recipeItem, error: 'Insumo base no encontrado en el inventario.' });
+            items.push({ recipe, patient, inventoryItem: undefined, recipeItem, error: 'Insumo base no encontrado en el inventario. Verifique la configuración de la receta.' });
         }
       }
     }

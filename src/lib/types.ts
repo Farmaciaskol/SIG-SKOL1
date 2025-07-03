@@ -122,6 +122,7 @@ export interface RecipeItem {
   usageInstructions: string;
   requiresFractionation?: boolean;
   isRefrigerated?: boolean;
+  sourceInventoryItemId?: string;
 }
 
 export interface AuditTrailEntry {
@@ -227,13 +228,13 @@ export interface LotDetail {
 export interface InventoryItem {
   id: string;
   name: string;
-  quantity: number;
   unit: string;
+  quantity: number;
   lowStockThreshold: number;
-  sku?: string;
-  barcode?: string;
   costPrice: number;
   salePrice: number;
+  sku?: string;
+  barcode?: string;
   isControlled?: boolean;
   controlledType?: 'Psicotrópico' | 'Estupefaciente';
   requiresRefrigeration?: boolean;
