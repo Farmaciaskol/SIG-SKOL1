@@ -241,7 +241,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
       if (result.patientName) form.setValue('newPatientName', result.patientName);
       if (result.patientRut) form.setValue('newPatientRut', result.patientRut);
       if (result.doctorName) form.setValue('newDoctorName', result.doctorName);
-      if (result.doctorRut) form.setValue('newDoctorRut', result.doctorLicense);
+      if (result.doctorRut) form.setValue('newDoctorRut', result.doctorRut);
       if (result.doctorLicense) form.setValue('newDoctorLicense', result.doctorLicense);
       if (result.doctorSpecialty) form.setValue('newDoctorSpecialty', result.doctorSpecialty);
       if (result.prescriptionDate) form.setValue('prescriptionDate', parseISO(result.prescriptionDate));
