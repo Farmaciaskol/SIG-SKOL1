@@ -40,13 +40,12 @@ import { Loader2 } from 'lucide-react';
 const patientFormSchema = z.object({
   name: z.string().min(1, { message: 'El nombre es requerido.' }),
   rut: z.string().min(1, { message: 'El RUT es requerido.' }),
-  email: z.string().email('Email inválido.'),
-  phone: z.string(),
+  email: z.string().email('Email inválido.').optional().or(z.literal('')),
+  phone: z.string().optional(),
   address: z.string().optional(),
   gender: z.enum(['Masculino', 'Femenino', 'Otro']),
   isChronic: z.boolean().default(false),
   allergies: z.string().optional(),
-  commercialMedications: z.string().optional(),
 });
 
 type PatientFormValues = z.infer<typeof patientFormSchema>;
@@ -67,7 +66,7 @@ export function PatientFormDialog({ patient, isOpen, onOpenChange, onSuccess }: 
         resolver: zodResolver(patientFormSchema),
         defaultValues: {
             name: '', rut: '', email: '', phone: '', address: '',
-            gender: 'Masculino', isChronic: false, allergies: '', commercialMedications: ''
+            gender: 'Masculino', isChronic: false, allergies: ''
         },
     });
 
@@ -76,18 +75,17 @@ export function PatientFormDialog({ patient, isOpen, onOpenChange, onSuccess }: 
             form.reset({
                 name: patient.name,
                 rut: patient.rut,
-                email: patient.email,
-                phone: patient.phone,
+                email: patient.email || '',
+                phone: patient.phone || '',
                 address: patient.address || '',
                 gender: patient.gender || 'Masculino',
                 isChronic: patient.isChronic || false,
                 allergies: patient.allergies?.join(', ') || '',
-                commercialMedications: patient.commercialMedications?.join(', ') || '',
             });
         } else if (isOpen && !patient) {
             form.reset({
                 name: '', rut: '', email: '', phone: '', address: '',
-                gender: 'Masculino', isChronic: false, allergies: '', commercialMedications: ''
+                gender: 'Masculino', isChronic: false, allergies: ''
             });
         }
     }, [isOpen, patient, form]);
@@ -98,7 +96,6 @@ export function PatientFormDialog({ patient, isOpen, onOpenChange, onSuccess }: 
             const dataToSave = {
                 ...values,
                 allergies: values.allergies?.split(',').map(s => s.trim()).filter(Boolean),
-                commercialMedications: values.commercialMedications?.split(',').map(s => s.trim()).filter(Boolean),
             };
 
             if (isEditMode && patient) {
@@ -139,7 +136,7 @@ export function PatientFormDialog({ patient, isOpen, onOpenChange, onSuccess }: 
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <FormField control={form.control} name="email" render={({ field }) => (
-                                <FormItem><FormLabel>Email *</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
                             )}/>
                             <FormField control={form.control} name="phone" render={({ field }) => (
                                 <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
@@ -171,9 +168,6 @@ export function PatientFormDialog({ patient, isOpen, onOpenChange, onSuccess }: 
                         </div>
                         <FormField control={form.control} name="allergies" render={({ field }) => (
                             <FormItem><FormLabel>Alergias Conocidas</FormLabel><FormControl><Textarea placeholder="Separadas por comas. Ej: Penicilina, AINEs" {...field} /></FormControl><FormMessage /></FormItem>
-                        )}/>
-                        <FormField control={form.control} name="commercialMedications" render={({ field }) => (
-                            <FormItem><FormLabel>Medicamentos Comerciales Activos</FormLabel><FormControl><Textarea placeholder="Separados por comas. Ej: Losartan 50mg, Aspirina 100mg" {...field} /></FormControl><FormMessage /></FormItem>
                         )}/>
 
                         <DialogFooter className="pt-4 sticky bottom-0 bg-background">
