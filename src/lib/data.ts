@@ -233,6 +233,9 @@ export const saveRecipe = async (data: any, imageFile: File | null, userId: stri
     if (imageFile && storage) {
         const storageRef = ref(storage, `prescriptions/${effectiveRecipeId}`);
         try {
+            if (!auth.currentUser) {
+                throw new Error("Authentication is required to upload files.");
+            }
             const uploadResult = await uploadBytes(storageRef, imageFile);
             imageUrl = await getDownloadURL(uploadResult.ref);
         } catch (storageError: any) {
@@ -417,7 +420,7 @@ export const logDirectSaleDispensation = async (
     prescriptionFolio: string;
     prescriptionType: 'Receta Cheque' | 'Receta Retenida';
     controlledRecipeFormat: 'electronic' | 'physical';
-    prescriptionImageUrl?: string;
+    prescriptionImageFile?: File;
   }
 ): Promise<void> => {
     if (!db || !storage || !auth) throw new Error("Firestore, Storage or Auth is not initialized.");
@@ -427,7 +430,7 @@ export const logDirectSaleDispensation = async (
         throw new Error("Usuario no autenticado. No se puede registrar la dispensación.");
     }
     
-    const { patientId, doctorId, inventoryItemId, lotNumber, quantity, prescriptionFolio, prescriptionType, controlledRecipeFormat, prescriptionImageUrl: imageUri } = data;
+    const { patientId, doctorId, inventoryItemId, lotNumber, quantity, prescriptionFolio, prescriptionType, controlledRecipeFormat, prescriptionImageFile } = data;
 
     const inventoryRef = doc(db, 'inventory', inventoryItemId);
     const logCol = collection(db, 'controlledSubstanceLog');
@@ -459,10 +462,13 @@ export const logDirectSaleDispensation = async (
     const patient = patientSnap.data() as Patient;
     
     let finalImageUrl: string | undefined;
-    if (controlledRecipeFormat === 'physical' && imageUri && imageUri.startsWith('data:')) {
+    if (controlledRecipeFormat === 'physical' && prescriptionImageFile) {
       const storageRef = ref(storage, `controlled-prescriptions/${patientId}-${Date.now()}`);
       try {
-        const uploadResult = await uploadBytes(storageRef, new Blob()); // This should be the file object
+        if (!user) {
+          throw new Error("Authentication is required to upload files.");
+        }
+        const uploadResult = await uploadBytes(storageRef, prescriptionImageFile);
         finalImageUrl = await getDownloadURL(uploadResult.ref);
       } catch (storageError: any) {
         console.error("Firebase Storage upload failed in logDirectSaleDispensation:", storageError);
@@ -474,8 +480,6 @@ export const logDirectSaleDispensation = async (
         }
         throw new Error(userMessage);
       }
-    } else if (imageUri) {
-      finalImageUrl = imageUri;
     }
 
     const newLogEntry: Omit<ControlledSubstanceLogEntry, 'id'> = {

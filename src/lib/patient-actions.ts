@@ -10,7 +10,7 @@ import type { PatientMessage, Recipe } from './types';
 import { RecipeStatus } from './types';
 import { simplifyMedicationInfo } from '@/ai/flows/simplify-medication-info';
 import { db, storage, auth } from './firebase';
-import { ref, uploadString, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { doc, collection, setDoc } from 'firebase/firestore';
 import { addMonths } from 'date-fns';
 import type { AuditTrailEntry } from './types';
@@ -68,7 +68,10 @@ export async function submitNewPrescription(patientId: string, imageDataUri: str
     
     let imageUrl: string;
     try {
-        const uploadResult = await uploadString(storageRef, imageDataUri, 'data_url');
+        const response = await fetch(imageDataUri);
+        const blob = await response.blob();
+        
+        const uploadResult = await uploadBytes(storageRef, blob);
         imageUrl = await getDownloadURL(uploadResult.ref);
     } catch (storageError: any) {
         console.error("Firebase Storage upload failed in submitNewPrescription:", storageError);

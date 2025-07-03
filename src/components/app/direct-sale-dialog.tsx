@@ -138,10 +138,10 @@ export function DirectSaleDialog({ isOpen, onOpenChange, onSuccess }: DirectSale
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      form.setValue('physicalScan', file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreviewImage(reader.result as string);
-        form.setValue('physicalScan', reader.result as string);
       };
       reader.readAsDataURL(file);
     }
@@ -158,7 +158,7 @@ export function DirectSaleDialog({ isOpen, onOpenChange, onSuccess }: DirectSale
             prescriptionFolio: data.electronicFolio || `Fisica-${Date.now()}`,
             prescriptionType: data.prescriptionType,
             controlledRecipeFormat: data.prescriptionFormat,
-            prescriptionImageUrl: data.prescriptionFormat === 'physical' ? data.physicalScan : undefined,
+            prescriptionImageFile: data.prescriptionFormat === 'physical' ? data.physicalScan : undefined,
         });
 
         toast({
