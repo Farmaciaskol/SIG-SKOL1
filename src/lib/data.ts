@@ -5,14 +5,8 @@ import { db, storage } from './firebase';
 import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc, deleteDoc, writeBatch, query, where, limit } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, ControlledLogEntryType, ProactivePatientStatus, PatientActionNeeded, MonthlyDispensationBoxStatus, DispensationItemStatus, PharmacovigilanceReportStatus, type Recipe, type Doctor, type InventoryItem, type User, type Role, type ExternalPharmacy, type Patient, type PharmacovigilanceReport, type AppData, type AuditTrailEntry, type DispatchNote, type DispatchItem, type ControlledSubstanceLogEntry, type LotDetail, type AppSettings, type MonthlyDispensationBox, type PatientMessage } from './types';
-import { getMockData } from './mock-data';
 import { MAX_REPREPARATIONS } from './constants';
 import { addMonths } from 'date-fns';
-
-const USE_MOCK_DATA_ON_EMPTY_FIRESTORE = true;
-
-// A flag to prevent seeding more than once per app load
-const seededCollections = new Set<string>();
 
 // Helper function to recursively convert Firestore Timestamps to ISO strings
 function deepConvertTimestamps(obj: any): any {
@@ -45,24 +39,8 @@ async function fetchCollection<T extends { id: string }>(collectionName: keyof A
   }
   try {
     const collRef = collection(db, collectionName);
-    let querySnapshot = q ? await getDocs(q) : await getDocs(collRef);
+    const querySnapshot = q ? await getDocs(q) : await getDocs(collRef);
     
-    if (querySnapshot.empty && !q && USE_MOCK_DATA_ON_EMPTY_FIRESTORE && !seededCollections.has(collectionName)) {
-      console.warn(`Firestore collection '${collectionName}' is empty. Seeding with mock data...`);
-      const mockData = getMockData()[collectionName];
-      if (mockData && mockData.length > 0) {
-        const batch = writeBatch(db);
-        mockData.forEach((item: any) => {
-          const docRef = doc(db, collectionName, item.id);
-          batch.set(docRef, item);
-        });
-        await batch.commit();
-        console.log(`Successfully seeded ${mockData.length} documents into '${collectionName}'.`);
-        seededCollections.add(collectionName);
-        querySnapshot = await getDocs(collRef);
-      }
-    }
-
     return querySnapshot.docs.map(doc => {
       const data = doc.data();
       const convertedData = deepConvertTimestamps(data);
@@ -142,40 +120,7 @@ async function getDocument<T>(collectionName: string, id: string): Promise<T | n
     }
     try {
         const docRef = doc(db, collectionName, id);
-        let docSnap = await getDoc(docRef);
-
-        // If document doesn't exist, try to seed the collection once.
-        if (!docSnap.exists() && USE_MOCK_DATA_ON_EMPTY_FIRESTORE && !seededCollections.has(collectionName)) {
-            console.warn(`Document '${id}' in collection '${collectionName}' not found. Attempting to seed collection...`);
-            const mockData = getMockData()[collectionName as keyof AppData];
-            
-            // Logic for collections stored as arrays in mock-data
-            if (mockData && Array.isArray(mockData)) {
-                const collRef = collection(db, collectionName);
-                const querySnapshot = await getDocs(query(collRef, limit(1)));
-                if (querySnapshot.empty) {
-                    const batch = writeBatch(db);
-                    mockData.forEach((item: any) => {
-                        const newDocRef = doc(db, collectionName, item.id);
-                        batch.set(newDocRef, item);
-                    });
-                    await batch.commit();
-                    console.log(`Successfully seeded ${mockData.length} documents into '${collectionName}'.`);
-                    // After seeding, try fetching the document again
-                    docSnap = await getDoc(docRef);
-                }
-            } 
-            // Logic for "collections" that are single documents (like appSettings)
-            else if (mockData && !Array.isArray(mockData) && (mockData as any).id === id) {
-                await setDoc(docRef, mockData);
-                console.log(`Successfully seeded single document '${collectionName}/${id}'.`);
-                // After seeding, try fetching the document again
-                docSnap = await getDoc(docRef);
-            }
-            
-            seededCollections.add(collectionName); // Mark as checked to prevent re-seeding
-        }
-
+        const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
             const data = docSnap.data();
