@@ -108,7 +108,8 @@ export default function DispatchManagementPage() {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -144,15 +145,15 @@ export default function DispatchManagementPage() {
           i.name.toLowerCase().includes(recipeItem.principalActiveIngredient.toLowerCase()) && i.itemsPerBaseUnit
         );
 
-        if (inventoryItem && inventoryItem.lots?.length && inventoryItem.itemsPerBaseUnit && recipeItem.totalQuantityValue) {
-          const quantityToDispatch = Math.ceil(Number(recipeItem.totalQuantityValue) / inventoryItem.itemsPerBaseUnit);
-          items.push({ recipe, patient, inventoryItem, recipeItem, quantityToDispatch });
+        if (inventoryItem && inventoryItem.itemsPerBaseUnit && recipeItem.totalQuantityValue) {
+             if (inventoryItem.lots && inventoryItem.lots.length > 0) {
+                 const quantityToDispatch = Math.ceil(Number(recipeItem.totalQuantityValue) / inventoryItem.itemsPerBaseUnit);
+                 items.push({ recipe, patient, inventoryItem, recipeItem, quantityToDispatch });
+            } else {
+                 items.push({ recipe, patient, inventoryItem, recipeItem, error: 'El insumo no tiene lotes con stock disponible.' });
+            }
         } else {
-          let error = 'No se encontró el insumo en el inventario o no está configurado para fraccionamiento.';
-          if (inventoryItem && (!inventoryItem.lots || inventoryItem.lots.length === 0)) {
-            error = 'El insumo no tiene lotes con stock disponible.';
-          }
-          items.push({ recipe, patient, inventoryItem, recipeItem, error });
+            items.push({ recipe, patient, inventoryItem: undefined, recipeItem, error: 'No se encontró el insumo en el inventario o no está configurado para fraccionamiento.' });
         }
       }
     }
@@ -223,8 +224,16 @@ export default function DispatchManagementPage() {
     setIsDispatching(true);
     try {
         const dispatchItems: DispatchItem[] = [];
-        for (const item of items) {
-            // This function is only called with valid items, so we can use non-null assertions.
+        const validatedItems = items.filter(item => {
+            const itemId = item.inventoryItem ? `${item.recipe.id}-${item.inventoryItem.id}` : '';
+            return validationState[itemId]?.isValidated === 'valid';
+        });
+
+        if (validatedItems.length === 0) {
+            throw new Error("No hay ítems validados para generar la nota de despacho.");
+        }
+
+        for (const item of validatedItems) {
             const itemId = `${item.recipe.id}-${item.inventoryItem!.id}`;
             const state = validationState[itemId];
             if (!state || state.isValidated !== 'valid' || !state.lotNumber) {
@@ -249,7 +258,7 @@ export default function DispatchManagementPage() {
 
         // Reset validation state for the dispatched items
         const newValidationState = { ...validationState };
-        items.forEach(item => {
+        validatedItems.forEach(item => {
             const itemId = `${item.recipe.id}-${item.inventoryItem!.id}`;
             delete newValidationState[itemId];
         });
@@ -366,8 +375,8 @@ export default function DispatchManagementPage() {
             {Object.keys(itemsToDispatchGroupedByPharmacy).length > 0 ? (
                  <Accordion type="multiple" defaultValue={Object.keys(itemsToDispatchGroupedByPharmacy)} className="w-full space-y-4">
                     {Object.entries(itemsToDispatchGroupedByPharmacy).map(([pharmacyId, items]) => {
-                        const validItems = items.filter(item => !item.error && item.inventoryItem);
-                        const validatedItems = validItems.filter(item => validationState[`${item.recipe.id}-${item.inventoryItem!.id}`]?.isValidated === 'valid');
+                        const validItemsForDispatch = items.filter(item => !item.error && item.inventoryItem);
+                        const validatedItems = validItemsForDispatch.filter(item => validationState[`${item.recipe.id}-${item.inventoryItem!.id}`]?.isValidated === 'valid');
                         const canGenerateDispatch = validatedItems.length > 0;
                         const totalItemsCount = items.length;
 
@@ -448,7 +457,7 @@ export default function DispatchManagementPage() {
                                 <div className="flex justify-end mt-4">
                                      <Button
                                         disabled={!canGenerateDispatch || isDispatching}
-                                        onClick={() => handleGenerateDispatchNote(pharmacyId, validatedItems)}
+                                        onClick={() => handleGenerateDispatchNote(pharmacyId, items)}
                                     >
                                         {isDispatching && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                         <Package className="mr-2 h-4 w-4" />
@@ -558,5 +567,3 @@ export default function DispatchManagementPage() {
     </>
   );
 }
-
-    
