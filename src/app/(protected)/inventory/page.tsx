@@ -140,7 +140,12 @@ const InventoryItemForm = ({ item, onFinished }: { item?: InventoryItem; onFinis
                 )}/>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormField control={form.control} name="unit" render={({ field }) => (
-                        <FormItem><FormLabel>Unidad de Medida *</FormLabel><FormControl><Input placeholder="Ej: g, mg, comprimidos" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem>
+                            <FormLabel>Unidad de Compra/Stock *</FormLabel>
+                            <FormControl><Input placeholder="Ej: caja, frasco, kg" {...field} /></FormControl>
+                            <FormDescription className="text-xs">La unidad en la que compras y almacenas el producto.</FormDescription>
+                            <FormMessage />
+                        </FormItem>
                     )}/>
                     <FormField control={form.control} name="lowStockThreshold" render={({ field }) => (
                         <FormItem><FormLabel>Umbral Stock Bajo *</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl><FormMessage /></FormItem>
@@ -184,18 +189,34 @@ const InventoryItemForm = ({ item, onFinished }: { item?: InventoryItem; onFinis
                 )}
                 
                 <Card className="bg-muted/50">
-                    <CardHeader><CardTitle className="text-xl font-semibold">Para Fraccionamiento (Opcional)</CardTitle></CardHeader>
+                    <CardHeader>
+                        <CardTitle className="text-xl font-semibold">Detalles para Dispensación Fraccionada (Opcional)</CardTitle>
+                    </CardHeader>
                     <CardContent className="space-y-4">
-                        <FormDescription>Rellene esta sección si este producto es un insumo que se enviará a recetarios para ser fraccionado.</FormDescription>
+                        <FormDescription>
+                            Completa esta sección si el producto se vende en unidades más pequeñas que la unidad de stock (ej. una caja que contiene comprimidos).
+                        </FormDescription>
                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                              <FormField control={form.control} name="itemsPerBaseUnit" render={({ field }) => (
-                                <FormItem><FormLabel>Sub-unidades por Unidad</FormLabel><FormControl><Input type="number" placeholder="Ej: 30" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl></FormItem>
+                                <FormItem>
+                                    <FormLabel>Unidades por Unidad de Stock</FormLabel>
+                                    <FormControl><Input type="number" placeholder="Ej: 30" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl>
+                                    <FormDescription className="text-xs">Ej: 30 (comprimidos por caja)</FormDescription>
+                                </FormItem>
                             )}/>
                             <FormField control={form.control} name="activePrincipleContentValue" render={({ field }) => (
-                                <FormItem><FormLabel>Contenido P.A.</FormLabel><FormControl><Input type="number" placeholder="Ej: 100" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl></FormItem>
+                                <FormItem>
+                                    <FormLabel>Contenido P.A. por Unidad</FormLabel>
+                                    <FormControl><Input type="number" placeholder="Ej: 100" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl>
+                                    <FormDescription className="text-xs">Ej: 100 (para 100mg)</FormDescription>
+                                </FormItem>
                             )}/>
                             <FormField control={form.control} name="activePrincipleContentUnit" render={({ field }) => (
-                                <FormItem><FormLabel>Unidad P.A.</FormLabel><FormControl><Input placeholder="Ej: mg" {...field} /></FormControl></FormItem>
+                                <FormItem>
+                                    <FormLabel>Unidad del P.A.</FormLabel>
+                                    <FormControl><Input placeholder="Ej: mg" {...field} /></FormControl>
+                                    <FormDescription className="text-xs">Ej: mg, g, %</FormDescription>
+                                </FormItem>
                             )}/>
                         </div>
                     </CardContent>
@@ -205,7 +226,7 @@ const InventoryItemForm = ({ item, onFinished }: { item?: InventoryItem; onFinis
                     <Button type="button" variant="ghost" onClick={onFinished}>Cancelar</Button>
                     <Button type="submit" disabled={isSubmitting}>
                         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Guardar Producto
+                        {isEditMode ? 'Guardar Cambios' : 'Crear Producto'}
                     </Button>
                 </DialogFooter>
             </form>
@@ -555,9 +576,9 @@ export default function InventoryPage() {
             }}>
                 <DialogContent className="sm:max-w-2xl">
                     <DialogHeader>
-                        <DialogTitle className="text-2xl font-semibold">{editingItem ? 'Editar' : 'Definir'} Producto</DialogTitle>
+                        <DialogTitle className="text-2xl font-semibold">{editingItem ? 'Editar' : 'Crear'} Producto</DialogTitle>
                         <DialogDescription className="text-muted-foreground">
-                            {editingItem ? 'Actualice los detalles del producto.' : 'Complete el formulario para definir un nuevo producto en el inventario.'}
+                            {editingItem ? 'Actualice los detalles del producto.' : 'Complete el formulario para crear un nuevo producto en el inventario.'}
                         </DialogDescription>
                     </DialogHeader>
                     <InventoryItemForm item={editingItem} onFinished={handleFormFinished} />
@@ -581,7 +602,7 @@ export default function InventoryPage() {
                     </p>
                 </div>
                 <Button onClick={handleAddNew}>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Definir Producto
+                    <PlusCircle className="mr-2 h-4 w-4" /> Crear Producto
                 </Button>
             </div>
 
@@ -633,7 +654,7 @@ export default function InventoryPage() {
                             Intenta ajustar tu búsqueda o define un nuevo producto para empezar.
                         </p>
                         <Button className="mt-6" onClick={handleAddNew}>
-                            <PlusCircle className="mr-2 h-4 w-4" /> Definir Primer Producto
+                            <PlusCircle className="mr-2 h-4 w-4" /> Crear Primer Producto
                         </Button>
                     </div>
                 </Card>
