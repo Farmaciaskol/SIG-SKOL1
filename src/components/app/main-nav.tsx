@@ -26,6 +26,7 @@ import {
   Package,
   CalendarDays,
   DollarSign,
+  Inbox,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -58,6 +59,7 @@ const menuGroups = [
       title: 'Principal',
       items: [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { href: '/portal-inbox', label: 'Bandeja Portal', icon: Inbox },
         { href: '/recipes', label: 'Recetas', icon: FileText },
       ],
     },

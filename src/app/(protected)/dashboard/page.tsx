@@ -182,7 +182,7 @@ const DelayedRecipesCard = ({ recipes, patients }: { recipes: Recipe[], patients
 };
 
 const RecentRecipesCard = ({ recipes, patients }: { recipes: Recipe[], patients: Patient[] }) => {
-    const recentRecipes = recipes.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
+    const recentRecipes = recipes.filter(r => r.status !== RecipeStatus.PendingReviewPortal).sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
     const getPatientName = (patientId: string) => patients.find(p => p.id === patientId)?.name || 'N/A';
 
     return (
@@ -278,7 +278,7 @@ export default function DashboardPage() {
         .reduce((sum, r) => sum + (r.preparationCost || 0) + (r.transportCost || 0), 0);
 
     return [
-      { title: 'Recetas del Portal Pendientes', value: data.recipes.filter(r => r.status === RecipeStatus.PendingReviewPortal).length, icon: Inbox, href: '/recipes?status=Pendiente+Revisión+-+Portal' },
+      { title: 'Bandeja de Entrada Portal', value: data.recipes.filter(r => r.status === RecipeStatus.PendingReviewPortal).length, icon: Inbox, href: '/portal-inbox' },
       { title: 'En Preparación', value: data.recipes.filter(r => r.status === RecipeStatus.Preparation).length, icon: FlaskConical, href: '/recipes?status=En+Preparación' },
       { title: 'Ítems con Stock Bajo', value: data.inventory.filter(i => i.quantity < i.lowStockThreshold).length, icon: Box, href: '/inventory' },
       { title: 'Recetas por Pagar', value: `$${pendingPayments.toLocaleString('es-CL')}`, icon: DollarSign, href: '/financial-management' },

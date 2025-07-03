@@ -91,6 +91,7 @@ import {
   Split,
   UserSquare,
   FileClock,
+  Inbox,
 } from 'lucide-react';
 import { getRecipes, getPatients, getDoctors, getExternalPharmacies, deleteRecipe, updateRecipe, logControlledMagistralDispensation, Recipe, Patient, Doctor, ExternalPharmacy, RecipeStatus, AuditTrailEntry } from '@/lib/data';
 import { format, parseISO } from 'date-fns';
@@ -383,6 +384,11 @@ export default function RecipesPage() {
   const filteredRecipes = useMemo(() => {
     return recipes
     .filter((recipe) => {
+      // Exclude portal recipes from this main view
+      if (recipe.status === RecipeStatus.PendingReviewPortal) {
+        return false;
+      }
+
       const lowerCaseSearchTerm = searchTerm.toLowerCase();
       
       const searchMatch = searchTerm === '' ||
@@ -607,10 +613,10 @@ export default function RecipesPage() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
         <StatCard 
-          title="Pendientes del Portal" 
+          title="Bandeja de Entrada Portal" 
           value={stats.pendingPortal} 
-          icon={UserSquare}
-          onClick={() => setStatusFilter(RecipeStatus.PendingReviewPortal)}
+          icon={Inbox}
+          onClick={() => router.push('/portal-inbox')}
           active={statusFilter === RecipeStatus.PendingReviewPortal}
         />
         <StatCard 
