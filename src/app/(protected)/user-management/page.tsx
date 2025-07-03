@@ -8,8 +8,8 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { User, Role, getUsers, getRoles, addUser } from '@/lib/data';
-import { PlusCircle, MoreHorizontal, Loader2 } from 'lucide-react';
+import { User, Role, getUsers, getRoles, addUser, updateUser, deleteUser } from '@/lib/data';
+import { PlusCircle, MoreHorizontal, Loader2, Pencil, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +24,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import {
   Form,
   FormControl,
@@ -56,6 +66,9 @@ export default function UserManagementPage() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+
   const { toast } = useToast();
 
   const form = useForm<UserFormValues>({
@@ -81,15 +94,37 @@ export default function UserManagementPage() {
     fetchData();
   }, [fetchData]);
   
+  const handleOpenForm = (user: User | null) => {
+    setEditingUser(user);
+    form.reset(user ? { name: user.name, email: user.email, roleId: user.roleId } : { name: '', email: '', roleId: '' });
+    setIsFormOpen(true);
+  }
+
   const onSubmit = async (data: UserFormValues) => {
     try {
-      await addUser(data);
-      toast({ title: 'Usuario Creado', description: `El usuario ${data.name} ha sido añadido.` });
+      if (editingUser) {
+        await updateUser(editingUser.id, data);
+        toast({ title: 'Usuario Actualizado', description: `El usuario ${data.name} ha sido actualizado.` });
+      } else {
+        await addUser(data);
+        toast({ title: 'Usuario Creado', description: `El usuario ${data.name} ha sido añadido.` });
+      }
       setIsFormOpen(false);
-      form.reset();
       fetchData();
     } catch(error) {
-       toast({ title: 'Error', description: `No se pudo crear el usuario. ${error instanceof Error ? error.message : ''}`, variant: 'destructive' });
+       toast({ title: 'Error', description: `No se pudo guardar el usuario. ${error instanceof Error ? error.message : ''}`, variant: 'destructive' });
+    }
+  }
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+    try {
+      await deleteUser(userToDelete.id);
+      toast({ title: 'Usuario Eliminado', description: `${userToDelete.name} ha sido eliminado.` });
+      setUserToDelete(null);
+      fetchData();
+    } catch (error) {
+      toast({ title: 'Error', description: 'No se pudo eliminar el usuario.', variant: 'destructive' });
     }
   }
 
@@ -97,7 +132,7 @@ export default function UserManagementPage() {
     return roles.find(r => r.id === roleId)?.name || 'Sin Rol';
   };
 
-  const UserActions = () => (
+  const UserActions = ({ user }: { user: User }) => (
     <DropdownMenu>
         <DropdownMenuTrigger asChild>
         <Button aria-haspopup="true" size="icon" variant="ghost">
@@ -106,21 +141,21 @@ export default function UserManagementPage() {
         </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-        <DropdownMenuItem>Editar</DropdownMenuItem>
-        <DropdownMenuItem>Eliminar</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleOpenForm(user)}><Pencil className="mr-2 h-4 w-4" />Editar</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setUserToDelete(user)} className="text-red-600 focus:text-red-600"><Trash2 className="mr-2 h-4 w-4" />Eliminar</DropdownMenuItem>
         </DropdownMenuContent>
     </DropdownMenu>
   );
 
   return (
-    <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+    <>
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
         <div>
             <h1 className="text-3xl font-bold tracking-tight text-slate-800 font-headline">Gestión de Usuarios</h1>
             <p className="text-sm text-muted-foreground">Añade, edita y gestiona los roles y permisos de los usuarios del sistema.</p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button onClick={() => setIsFormOpen(true)}>
+          <Button onClick={() => handleOpenForm(null)}>
             <PlusCircle className="mr-2 h-4 w-4" /> Añadir Usuario
           </Button>
         </div>
@@ -155,7 +190,7 @@ export default function UserManagementPage() {
                             <Badge variant="secondary">{getRoleName(user.roleId)}</Badge>
                             </TableCell>
                             <TableCell className="text-right">
-                                <UserActions />
+                                <UserActions user={user} />
                             </TableCell>
                         </TableRow>
                         ))}
@@ -179,7 +214,7 @@ export default function UserManagementPage() {
                                         </div>
                                     </div>
                                     <div className="md:hidden">
-                                        <UserActions />
+                                        <UserActions user={user} />
                                     </div>
                                 </div>
                             </CardHeader>
@@ -195,51 +230,70 @@ export default function UserManagementPage() {
         </CardContent>
       </Card>
 
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Añadir Nuevo Usuario</DialogTitle>
-          <DialogDescription>
-            Complete el formulario para registrar un nuevo usuario en el sistema.
-          </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-2">
-                <FormField control={form.control} name="name" render={({ field }) => (
-                    <FormItem><FormLabel>Nombre Completo</FormLabel><FormControl><Input placeholder="Ej: Ana Pérez" {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
-                 <FormField control={form.control} name="email" render={({ field }) => (
-                    <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="ej: email@dominio.com" {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
-                <FormField
-                    control={form.control}
-                    name="roleId"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Rol</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                            <SelectTrigger>
-                            <SelectValue placeholder="Seleccione un rol..." />
-                            </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            {roles.map(role => <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>)}
-                        </SelectContent>
-                        </Select>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-                <DialogFooter className="pt-4">
-                    <Button type="button" variant="ghost" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
-                    <Button type="submit" disabled={form.formState.isSubmitting}>
-                        {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Crear Usuario
-                    </Button>
-                </DialogFooter>
-            </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+      <Dialog open={isFormOpen} onOpenChange={(open) => { if (!open) setEditingUser(null); setIsFormOpen(open); }}>
+        <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+            <DialogTitle>{editingUser ? 'Editar Usuario' : 'Añadir Nuevo Usuario'}</DialogTitle>
+            <DialogDescription>
+                {editingUser ? 'Actualice los datos del usuario.' : 'Complete el formulario para registrar un nuevo usuario en el sistema.'}
+            </DialogDescription>
+            </DialogHeader>
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-2">
+                    <FormField control={form.control} name="name" render={({ field }) => (
+                        <FormItem><FormLabel>Nombre Completo</FormLabel><FormControl><Input placeholder="Ej: Ana Pérez" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                    <FormField control={form.control} name="email" render={({ field }) => (
+                        <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="ej: email@dominio.com" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                    <FormField
+                        control={form.control}
+                        name="roleId"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Rol</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                                <SelectTrigger>
+                                <SelectValue placeholder="Seleccione un rol..." />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {roles.map(role => <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>)}
+                            </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <DialogFooter className="pt-4">
+                        <Button type="button" variant="ghost" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
+                        <Button type="submit" disabled={form.formState.isSubmitting}>
+                            {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {editingUser ? 'Guardar Cambios' : 'Crear Usuario'}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </Form>
+        </DialogContent>
+      </Dialog>
+      
+      <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Se eliminará permanentemente al usuario <span className="font-bold">{userToDelete?.name}</span> del sistema.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteUser} className="bg-destructive hover:bg-destructive/90">
+                Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

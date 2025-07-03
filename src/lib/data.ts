@@ -174,6 +174,19 @@ export const addUser = async (user: Omit<User, 'id'>): Promise<string> => {
     return docRef.id;
 };
 
+export const updateUser = async (id: string, updates: Partial<User>): Promise<void> => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    const userRef = doc(db, 'users', id);
+    await updateDoc(userRef, updates);
+};
+
+export const deleteUser = async (id: string): Promise<void> => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    const userRef = doc(db, 'users', id);
+    await deleteDoc(userRef);
+};
+
+
 export const addExternalPharmacy = async (pharmacy: Omit<ExternalPharmacy, 'id'>): Promise<string> => {
     if (!db) throw new Error("Firestore is not initialized.");
     const pharmacyData = { ...pharmacy, contactPerson: pharmacy.contactPerson || '', email: pharmacy.email || '', phone: pharmacy.phone || '', address: pharmacy.address || '', paymentDetails: pharmacy.paymentDetails || '' };
@@ -474,4 +487,3 @@ export const updatePharmacovigilanceReport = async (id: string, updates: Partial
     await updateDoc(reportRef, dataToUpdate);
 };
     
-
