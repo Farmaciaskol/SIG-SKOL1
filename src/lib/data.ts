@@ -333,7 +333,7 @@ export const saveRecipe = async (data: any, imageUri: string | null, recipeId?: 
 export const addInventoryItem = async (item: Omit<InventoryItem, 'id' | 'quantity' | 'lots'>): Promise<string> => {
     if (!db) throw new Error("Firestore is not initialized.");
     const itemData = { ...item, quantity: 0, lots: [] };
-    const docRef = await addDoc(collection(db, 'inventory'), itemData);
+    const docRef = await addDoc(collection(db, 'inventory'), itemData as any);
     return docRef.id;
 };
 

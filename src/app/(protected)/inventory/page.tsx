@@ -67,21 +67,26 @@ type FilterStatus = 'all' | 'OK' | 'Stock Bajo' | 'Agotado' | 'Próximo a Vencer
 
 const inventoryFormSchema = z.object({
   name: z.string().min(1, "El nombre del producto es requerido."),
-  unit: z.string().min(1, "La unidad es requerida."),
-  lowStockThreshold: z.number().min(0, "El umbral no puede ser negativo."),
+  unit: z.string().min(1, "La unidad de compra es requerida."),
+  lowStockThreshold: z.coerce.number().min(0, "El stock mínimo no puede ser negativo."),
+  costPrice: z.coerce.number().min(0, "El costo neto es requerido."),
+  salePrice: z.coerce.number().min(0, "El precio de venta es requerido."),
   sku: z.string().optional(),
   barcode: z.string().optional(),
-  costPrice: z.number().optional(),
   isControlled: z.boolean().default(false),
   controlledType: z.string().optional(),
   requiresRefrigeration: z.boolean().default(false),
   activePrincipleContentValue: z.number().optional(),
   activePrincipleContentUnit: z.string().optional(),
   itemsPerBaseUnit: z.number().optional(),
+  mainProvider: z.string().optional(),
+  maxStock: z.coerce.number().optional(),
+  location: z.string().optional(),
 }).refine(data => !data.isControlled || (data.isControlled && data.controlledType), {
     message: "El tipo de controlado es requerido.",
     path: ["controlledType"],
 });
+
 
 type InventoryFormValues = z.infer<typeof inventoryFormSchema>;
 
@@ -104,6 +109,10 @@ const InventoryItemForm = ({ item, onFinished }: { item?: InventoryItem; onFinis
             activePrincipleContentValue: item?.activePrincipleContentValue || 0,
             activePrincipleContentUnit: item?.activePrincipleContentUnit || '',
             itemsPerBaseUnit: item?.itemsPerBaseUnit || 0,
+            mainProvider: item?.mainProvider || '',
+            maxStock: item?.maxStock || undefined,
+            location: item?.location || '',
+            salePrice: item?.salePrice || 0,
         },
     });
     
@@ -148,13 +157,20 @@ const InventoryItemForm = ({ item, onFinished }: { item?: InventoryItem; onFinis
                             </FormItem>
                         )}/>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <FormField control={form.control} name="sku" render={({ field }) => (
-                                <FormItem><FormLabel>SKU</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                             <FormField control={form.control} name="unit" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Unidad de Compra/Stock *</FormLabel>
+                                    <FormControl><Input placeholder="Ej: caja, frasco, kg" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
                             )}/>
-                             <FormField control={form.control} name="barcode" render={({ field }) => (
-                                <FormItem><FormLabel>Código de Barras</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormField control={form.control} name="sku" render={({ field }) => (
+                                <FormItem><FormLabel>SKU / Código ISP</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                             )}/>
                         </div>
+                         <FormField control={form.control} name="barcode" render={({ field }) => (
+                            <FormItem><FormLabel>Código de Barras</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                        )}/>
                         <div className="flex items-center space-x-6">
                             <FormField control={form.control} name="isControlled" render={({ field }) => (
                                 <FormItem className="flex flex-row items-center space-x-2 pt-2"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel className="!mt-0">Es Controlado</FormLabel></FormItem>
@@ -183,29 +199,48 @@ const InventoryItemForm = ({ item, onFinished }: { item?: InventoryItem; onFinis
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Stock y Costos</CardTitle>
+                        <CardTitle>Información de Inventario y Costos (Logística)</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <FormField control={form.control} name="unit" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Unidad de Compra/Stock *</FormLabel>
-                                    <FormControl><Input placeholder="Ej: caja, frasco, kg" {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}/>
-                            <FormField control={form.control} name="costPrice" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Precio de Costo (por Unidad de Compra)</FormLabel>
-                                    <FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}/>
-                        </div>
-                        <FormField control={form.control} name="lowStockThreshold" render={({ field }) => (
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                       <FormField control={form.control} name="lowStockThreshold" render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Umbral Stock Bajo (en Unidades de Compra) *</FormLabel>
-                                <FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl>
+                                <FormLabel>Stock Mínimo *</FormLabel>
+                                <FormControl><Input type="number" placeholder="Ej: 10" {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}/>
+                        <FormField control={form.control} name="maxStock" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Stock Máximo</FormLabel>
+                                <FormControl><Input type="number" placeholder="Ej: 50" {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}/>
+                        <FormField control={form.control} name="costPrice" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Costo Neto *</FormLabel>
+                                <FormControl><Input type="number" placeholder="Ej: 1500" {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}/>
+                        <FormField control={form.control} name="salePrice" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Precio de Venta al Público *</FormLabel>
+                                <FormControl><Input type="number" placeholder="Ej: 2990" {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}/>
+                         <FormField control={form.control} name="mainProvider" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Proveedor Principal</FormLabel>
+                                <FormControl><Input placeholder="Ej: CENABAST" {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}/>
+                         <FormField control={form.control} name="location" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Ubicación en Bodega</FormLabel>
+                                <FormControl><Input placeholder="Ej: Estante A-03" {...field} /></FormControl>
                                 <FormMessage />
                             </FormItem>
                         )}/>
@@ -599,7 +634,7 @@ export default function InventoryPage() {
             }}>
                 <DialogContent className="sm:max-w-2xl">
                     <DialogHeader>
-                        <DialogTitle className="text-2xl font-semibold">{editingItem ? 'Editar Producto de Inventario' : 'Definir Nuevo Producto de Inventario'}</DialogTitle>
+                        <DialogTitle className="text-2xl font-semibold">{editingItem ? 'Editar Producto de Inventario' : 'Crear Producto'}</DialogTitle>
                         <DialogDescription className="text-muted-foreground">
                             {editingItem ? 'Actualice la configuración del producto.' : 'Configure un nuevo producto para la gestión de stock, lotes y su uso en recetas.'}
                         </DialogDescription>

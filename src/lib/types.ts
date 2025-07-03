@@ -227,21 +227,23 @@ export interface LotDetail {
 export interface InventoryItem {
   id: string;
   name: string;
-  quantity: number; // This is the calculated total stock from all lots
+  quantity: number;
   unit: string;
   lowStockThreshold: number;
   sku?: string;
   barcode?: string;
-  costPrice?: number;
+  costPrice: number;
+  salePrice: number;
   isControlled?: boolean;
   controlledType?: 'Psicotrópico' | 'Estupefaciente';
   requiresRefrigeration?: boolean;
-  // For fractionation
   activePrincipleContentValue?: number;
   activePrincipleContentUnit?: string;
   itemsPerBaseUnit?: number;
-  // Lots
   lots?: LotDetail[];
+  mainProvider?: string;
+  maxStock?: number;
+  location?: string;
 }
 
 export interface User {
