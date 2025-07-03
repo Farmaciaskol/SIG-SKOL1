@@ -26,11 +26,11 @@ import { es } from 'date-fns/locale';
 const StatCard = ({ title, value, icon: Icon }: { title: string; value: string | number; icon: React.ElementType }) => (
   <Card>
     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <h3 className="text-sm font-medium">{title}</h3>
+      <h3 className="text-sm font-medium text-slate-700">{title}</h3>
       <Icon className="h-4 w-4 text-muted-foreground" />
     </CardHeader>
     <CardContent>
-      <div className="text-2xl font-bold">{value}</div>
+      <div className="text-2xl font-bold text-slate-800">{value}</div>
     </CardContent>
   </Card>
 );
@@ -120,14 +120,14 @@ export default function PharmacovigilancePage() {
   const getPatientName = (patientId?: string) => patients.find(p => p.id === patientId)?.name || 'N/A';
 
   if (loading) {
-    return <div>Cargando datos de farmacovigilancia...</div>;
+    return <div className="flex items-center justify-center h-full"><p className="text-muted-foreground">Cargando datos de farmacovigilancia...</p></div>;
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+    <>
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight font-headline">Farmacovigilancia</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-800 font-headline">Farmacovigilancia</h1>
           <p className="text-sm text-muted-foreground">Monitorización y gestión de eventos adversos y calidad.</p>
         </div>
         <Button asChild>
@@ -135,14 +135,14 @@ export default function PharmacovigilancePage() {
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-6">
         <StatCard title="Casos Abiertos" value={globalStats.openCases} icon={HeartPulse} />
         <StatCard title="Tiempo Prom. Cierre" value={`${globalStats.averageClosingDays} días`} icon={Clock} />
         <StatCard title="Reportes este Mes" value={globalStats.reportsThisMonth} icon={CalendarPlus} />
         <StatCard title="Total Resueltos" value={globalStats.resolvedCount} icon={CheckCircle} />
       </div>
 
-      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 mb-6">
         <Card>
           <CardHeader>
             <CardTitle>Distribución por Estado</CardTitle>
@@ -260,6 +260,6 @@ export default function PharmacovigilancePage() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </>
   );
 }

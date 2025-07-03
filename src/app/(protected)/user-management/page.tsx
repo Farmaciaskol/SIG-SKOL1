@@ -58,10 +58,10 @@ export default function UserManagementPage() {
   );
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+    <>
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
         <div>
-            <h1 className="text-3xl font-bold tracking-tight font-headline">Gestión de Usuarios</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-800 font-headline">Gestión de Usuarios</h1>
             <p className="text-sm text-muted-foreground">Añade, edita y gestiona los roles y permisos de los usuarios del sistema.</p>
         </div>
         <div className="flex items-center space-x-2">
@@ -74,7 +74,7 @@ export default function UserManagementPage() {
         <CardContent className="pt-6">
           {loading ? (
              <div className="flex items-center justify-center h-64">
-                <p>Cargando usuarios...</p>
+                <p className="text-muted-foreground">Cargando usuarios...</p>
             </div>
           ) : (
             <>
@@ -139,6 +139,6 @@ export default function UserManagementPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </>
   );
 }

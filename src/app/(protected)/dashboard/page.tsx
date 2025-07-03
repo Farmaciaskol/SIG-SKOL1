@@ -49,8 +49,8 @@ const KpiCard = ({ title, value, icon: Icon, href }: KpiCardProps) => (
           <Icon className="h-6 w-6 text-sky-600 dark:text-sky-400" />
         </div>
         <div>
-          <p className="text-sm text-slate-600 dark:text-slate-400">{title}</p>
-          <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{value}</p>
+          <p className="text-sm font-medium text-slate-700">{title}</p>
+          <p className="text-2xl font-bold text-slate-800">{value}</p>
         </div>
       </CardContent>
     </Card>
@@ -133,17 +133,17 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-slate-500">Cargando dashboard...</p>
+        <p className="text-muted-foreground">Cargando dashboard...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between space-y-2 md:space-y-0">
+    <>
+      <div className="flex flex-col md:flex-row md:items-center justify-between space-y-2 md:space-y-0 mb-6">
         <div>
             <h1 className="text-3xl font-bold text-slate-800 tracking-tight font-headline">Dashboard</h1>
-            <p className="text-sm text-slate-500">{formattedDate}</p>
+            <p className="text-sm text-muted-foreground">{formattedDate}</p>
         </div>
         <div className="flex items-center space-x-2">
             <Button variant="outline" asChild className="bg-card hover:bg-muted">
@@ -155,7 +155,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-6">
         {kpis.map(kpi => (
           <KpiCard key={kpi.title} {...kpi} />
         ))}
@@ -164,7 +164,7 @@ export default function DashboardPage() {
       <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center gap-3 border-b pb-4">
-            <CalendarDays className="h-5 w-5 text-slate-500" />
+            <CalendarDays className="h-5 w-5 text-muted-foreground" />
             <CardTitle className="text-lg font-semibold text-slate-800">Próximas Dispensaciones Mensuales</CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
@@ -177,7 +177,7 @@ export default function DashboardPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center gap-3 border-b pb-4">
-            <Clock className="h-5 w-5 text-slate-500" />
+            <Clock className="h-5 w-5 text-muted-foreground" />
             <CardTitle className="text-lg font-semibold text-slate-800">Recetas con Retraso</CardTitle>
           </CardHeader>
           <CardContent className="pt-4 space-y-3">
@@ -203,6 +203,6 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </>
   );
 }

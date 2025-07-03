@@ -59,7 +59,7 @@ const DoctorCard = ({ doctor }: { doctor: DoctorWithStats }) => {
     <Dialog>
       <Card className="flex flex-col">
         <CardHeader>
-          <CardTitle className="font-bold">{doctor.name}</CardTitle>
+          <CardTitle className="text-lg font-bold text-slate-800">{doctor.name}</CardTitle>
           <p className="text-sm font-medium text-primary">{doctor.specialty}</p>
         </CardHeader>
         <CardContent className="flex-grow space-y-6">
@@ -69,13 +69,13 @@ const DoctorCard = ({ doctor }: { doctor: DoctorWithStats }) => {
               {doctor.phone && (
                 <div className="flex items-center gap-3 text-sm">
                   <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span>{doctor.phone}</span>
+                  <span className="text-slate-700">{doctor.phone}</span>
                 </div>
               )}
               {doctor.email && (
                 <div className="flex items-center gap-3 text-sm">
                   <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span>{doctor.email}</span>
+                  <span className="text-slate-700">{doctor.email}</span>
                 </div>
               )}
             </div>
@@ -83,11 +83,11 @@ const DoctorCard = ({ doctor }: { doctor: DoctorWithStats }) => {
           <div className="border-t pt-4">
             <div className="grid grid-cols-2 gap-4 text-center">
               <div>
-                <p className="text-2xl font-bold">{doctor.patientsAssociated}</p>
+                <p className="text-2xl font-bold text-slate-800">{doctor.patientsAssociated}</p>
                 <p className="text-xs text-muted-foreground">Pacientes Asociados</p>
               </div>
               <div>
-                <p className="text-2xl font-bold">{doctor.activeRecipes}</p>
+                <p className="text-2xl font-bold text-slate-800">{doctor.activeRecipes}</p>
                 <p className="text-xs text-muted-foreground">Recetas Activas</p>
               </div>
             </div>
@@ -98,8 +98,8 @@ const DoctorCard = ({ doctor }: { doctor: DoctorWithStats }) => {
             </h3>
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
-                <p>Emisión Correcta</p>
-                <p className="font-semibold">{formatPercentage(doctor.correctEmissionRate)}</p>
+                <p className="text-slate-700">Emisión Correcta</p>
+                <p className="font-semibold text-slate-800">{formatPercentage(doctor.correctEmissionRate)}</p>
               </div>
               <Progress
                 value={isNaN(doctor.correctEmissionRate) ? 0 : doctor.correctEmissionRate}
@@ -109,8 +109,8 @@ const DoctorCard = ({ doctor }: { doctor: DoctorWithStats }) => {
             </div>
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
-                <p>Cumplimiento Crónicos</p>
-                <p className="font-semibold">{formatPercentage(doctor.chronicComplianceRate)}</p>
+                <p className="text-slate-700">Cumplimiento Crónicos</p>
+                <p className="font-semibold text-slate-800">{formatPercentage(doctor.chronicComplianceRate)}</p>
               </div>
               <Progress
                 value={isNaN(doctor.chronicComplianceRate) ? 0 : doctor.chronicComplianceRate}
@@ -304,64 +304,62 @@ export default function DoctorsPage() {
   }, [doctorStats, searchTerm]);
   
   if (loading) {
-    return <div className="p-8">Cargando médicos...</div>;
+    return <div className="flex items-center justify-center h-full"><p className="text-muted-foreground">Cargando médicos...</p></div>;
   }
 
   return (
     <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-      <div className="space-y-6">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight font-headline">Gestión de Médicos</h1>
-            <p className="text-sm text-muted-foreground">
-              Panel de control para gestionar la relación con los prescriptores.
-            </p>
-          </div>
-          <DialogTrigger asChild>
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" /> Nuevo Médico
-            </Button>
-          </DialogTrigger>
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-800 font-headline">Gestión de Médicos</h1>
+          <p className="text-sm text-muted-foreground">
+            Panel de control para gestionar la relación con los prescriptores.
+          </p>
         </div>
-
-        <Card>
-            <CardContent className="p-4">
-                <div className="relative">
-                    <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                    type="search"
-                    placeholder="Buscar por nombre, especialidad, N° colegiatura o RUT..."
-                    className="pl-8 w-full"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-            </CardContent>
-        </Card>
-        
-        {filteredDoctors.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredDoctors.map((doctor) => (
-                    <DoctorCard key={doctor.id} doctor={doctor} />
-                ))}
-            </div>
-        ) : (
-            <Card className="text-center py-16 mt-8 shadow-none border-dashed">
-                <div className="flex flex-col items-center justify-center">
-                <Users className="h-16 w-16 text-muted-foreground mb-4" />
-                <h2 className="text-xl font-semibold">No se encontraron médicos</h2>
-                <p className="text-muted-foreground mt-2 max-w-sm">
-                    Intenta ajustar tu búsqueda o crea un nuevo médico para empezar.
-                </p>
-                <DialogTrigger asChild>
-                  <Button className="mt-6">
-                      <PlusCircle className="mr-2 h-4 w-4" /> Crear Primer Médico
-                  </Button>
-                </DialogTrigger>
-                </div>
-            </Card>
-        )}
+        <DialogTrigger asChild>
+          <Button>
+            <PlusCircle className="mr-2 h-4 w-4" /> Nuevo Médico
+          </Button>
+        </DialogTrigger>
       </div>
+
+      <Card className="mb-6">
+          <CardContent className="p-4">
+              <div className="relative">
+                  <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                  type="search"
+                  placeholder="Buscar por nombre, especialidad, N° colegiatura o RUT..."
+                  className="pl-8 w-full"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+              </div>
+          </CardContent>
+      </Card>
+      
+      {filteredDoctors.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredDoctors.map((doctor) => (
+                  <DoctorCard key={doctor.id} doctor={doctor} />
+              ))}
+          </div>
+      ) : (
+          <Card className="text-center py-16 mt-8 shadow-none border-dashed">
+              <div className="flex flex-col items-center justify-center">
+              <Users className="h-16 w-16 text-muted-foreground mb-4" />
+              <h2 className="text-xl font-semibold">No se encontraron médicos</h2>
+              <p className="text-muted-foreground mt-2 max-w-sm">
+                  Intenta ajustar tu búsqueda o crea un nuevo médico para empezar.
+              </p>
+              <DialogTrigger asChild>
+                <Button className="mt-6">
+                    <PlusCircle className="mr-2 h-4 w-4" /> Crear Primer Médico
+                </Button>
+              </DialogTrigger>
+              </div>
+          </Card>
+      )}
 
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>

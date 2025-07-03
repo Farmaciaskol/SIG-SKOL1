@@ -71,7 +71,7 @@ export default function PatientsPage() {
             <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
                     <div>
-                        <CardTitle className="hover:underline">
+                        <CardTitle className="text-lg font-bold text-slate-800 hover:underline">
                             <Link href={`/patients/${patient.id}`}>
                                 {patient.name}
                             </Link>
@@ -94,7 +94,7 @@ export default function PatientsPage() {
                 </div>
             </CardContent>
             <CardFooter className="flex justify-between items-center bg-muted/50 py-3 px-4 mt-2">
-                <Button size="sm" asChild>
+                <Button asChild>
                     <Link href={`/recipes/new?patientId=${patient.id}`}>
                         <ButtonIcon className="mr-2 h-4 w-4" />
                         {buttonText}
@@ -114,10 +114,10 @@ export default function PatientsPage() {
 };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+    <>
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight font-headline">Gestión de Pacientes</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-800 font-headline">Gestión de Pacientes</h1>
           <p className="text-sm text-muted-foreground">
             Una visión 360° para una atención farmacéutica proactiva.
           </p>
@@ -127,7 +127,7 @@ export default function PatientsPage() {
         </Button>
       </div>
 
-      <Card>
+      <Card className="mb-6">
         <CardContent className="p-4 sm:p-6 space-y-4">
             <div className="relative">
                 <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
@@ -140,7 +140,7 @@ export default function PatientsPage() {
                 />
             </div>
             <div className="flex items-center gap-4">
-                <span className="text-sm font-medium">Filtros de Prevención:</span>
+                <span className="text-sm font-medium text-slate-700">Filtros de Prevención:</span>
                 <div className="flex items-center gap-2">
                     <Button 
                         variant={activeFilter === 'all' ? 'default' : 'link'}
@@ -173,7 +173,7 @@ export default function PatientsPage() {
       
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <p>Cargando pacientes...</p>
+          <p className="text-muted-foreground">Cargando pacientes...</p>
         </div>
       ) : filteredPatients.length === 0 ? (
         <Card className="text-center py-16 mt-8 shadow-none border-dashed">
@@ -195,6 +195,6 @@ export default function PatientsPage() {
             ))}
         </div>
       )}
-    </div>
+    </>
   );
 }

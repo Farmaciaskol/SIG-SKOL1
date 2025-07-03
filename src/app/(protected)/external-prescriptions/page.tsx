@@ -65,7 +65,7 @@ const PharmacyCard = ({ pharmacy }: { pharmacy: PharmacyWithStats }) => {
     <Card className="flex flex-col">
       <CardHeader>
         <div className="flex justify-between items-start">
-            <CardTitle>{pharmacy.name}</CardTitle>
+            <CardTitle className="text-lg font-bold text-slate-800">{pharmacy.name}</CardTitle>
             <div className="flex items-center gap-1">
                 <Button variant="ghost" size="icon" className="h-8 w-8">
                 <Pencil className="h-4 w-4" />
@@ -80,19 +80,19 @@ const PharmacyCard = ({ pharmacy }: { pharmacy: PharmacyWithStats }) => {
             {pharmacy.contactPerson && (
                 <div className="flex items-center gap-3">
                     <User className="h-4 w-4 text-muted-foreground" />
-                    <span>{pharmacy.contactPerson}</span>
+                    <span className="text-slate-700">{pharmacy.contactPerson}</span>
                 </div>
             )}
             {pharmacy.phone && (
                 <div className="flex items-center gap-3">
                     <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span>{pharmacy.phone}</span>
+                    <span className="text-slate-700">{pharmacy.phone}</span>
                 </div>
             )}
             {pharmacy.email && (
                 <div className="flex items-center gap-3">
                     <Mail className="h-4 w-4 text-muted-foreground" />
-                    <span>{pharmacy.email}</span>
+                    <span className="text-slate-700">{pharmacy.email}</span>
                 </div>
             )}
         </div>
@@ -107,11 +107,11 @@ const PharmacyCard = ({ pharmacy }: { pharmacy: PharmacyWithStats }) => {
                 <p className="text-xs text-muted-foreground">Saldo Pendiente</p>
             </div>
              <div>
-                <p className="text-2xl font-bold">{pharmacy.activeRecipes}</p>
+                <p className="text-2xl font-bold text-slate-800">{pharmacy.activeRecipes}</p>
                 <p className="text-xs text-muted-foreground">Recetas Activas</p>
             </div>
              <div>
-                <p className="text-2xl font-bold">{pharmacy.reports}</p>
+                <p className="text-2xl font-bold text-slate-800">{pharmacy.reports}</p>
                 <p className="text-xs text-muted-foreground">Reportes FV</p>
             </div>
         </div>
@@ -123,8 +123,8 @@ const PharmacyCard = ({ pharmacy }: { pharmacy: PharmacyWithStats }) => {
             {pharmacy.standardCompliance !== undefined && (
                 <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
-                    <p>Cumplimiento Prep. Estándar</p>
-                    <p className="font-semibold">{formatPercentage(pharmacy.standardCompliance)}</p>
+                    <p className="text-slate-700">Cumplimiento Prep. Estándar</p>
+                    <p className="font-semibold text-slate-800">{formatPercentage(pharmacy.standardCompliance)}</p>
                 </div>
                 <Progress
                     value={pharmacy.standardCompliance}
@@ -135,8 +135,8 @@ const PharmacyCard = ({ pharmacy }: { pharmacy: PharmacyWithStats }) => {
             {pharmacy.skolCompliance !== undefined && (
                 <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
-                    <p>Cumplimiento Insumo Skol</p>
-                    <p className="font-semibold">{formatPercentage(pharmacy.skolCompliance)}</p>
+                    <p className="text-slate-700">Cumplimiento Insumo Skol</p>
+                    <p className="font-semibold text-slate-800">{formatPercentage(pharmacy.skolCompliance)}</p>
                 </div>
                 <Progress
                     value={pharmacy.skolCompliance}
@@ -174,11 +174,11 @@ type PharmacyFormValues = z.infer<typeof pharmacyFormSchema>;
 const StatCard = ({ title, value, icon: Icon }: { title: string; value: string | number; icon: React.ElementType }) => (
     <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <h3 className="text-sm font-medium">{title}</h3>
+            <h3 className="text-sm font-medium text-slate-700">{title}</h3>
             <Icon className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-            <div className="text-2xl font-bold">{value}</div>
+            <div className="text-2xl font-bold text-slate-800">{value}</div>
         </CardContent>
     </Card>
 );
@@ -288,15 +288,15 @@ export default function ExternalPrescriptionsPage() {
 
 
   if (loading) {
-    return <div>Cargando recetarios...</div>;
+    return <div className="flex items-center justify-center h-full"><p className="text-muted-foreground">Cargando recetarios...</p></div>;
   }
 
   return (
     <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-      <div className="space-y-6">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+      <>
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight font-headline">Gestión de Recetarios Externos</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-800 font-headline">Gestión de Recetarios Externos</h1>
             <p className="text-sm text-muted-foreground">
               Panel de control para gestionar la relación con los socios.
             </p>
@@ -308,13 +308,13 @@ export default function ExternalPrescriptionsPage() {
           </DialogTrigger>
         </div>
         
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-6">
             <StatCard title="Saldo Pendiente Total" value={globalStats.totalBalance} icon={Banknote} />
             <StatCard title="Total de Recetarios" value={globalStats.totalPharmacies} icon={Building2} />
             <StatCard title="Recetario con Mayor Saldo" value={globalStats.highestBalancePharmacyName} icon={Warehouse} />
         </div>
 
-        <Card>
+        <Card className="mb-6">
             <CardContent className="p-4">
                 <div className="relative">
                     <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
@@ -351,7 +351,7 @@ export default function ExternalPrescriptionsPage() {
                 </div>
             </Card>
         )}
-      </div>
+      </>
 
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>

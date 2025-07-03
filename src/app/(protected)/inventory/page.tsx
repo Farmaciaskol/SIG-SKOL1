@@ -402,11 +402,11 @@ export default function InventoryPage() {
             }
             setIsFormOpen(open);
         }}>
-            <div className="space-y-6">
-                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <>
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight font-headline text-slate-800">Gestión de Inventario</h1>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-muted-foreground">
                             Control logístico y trazabilidad de los insumos de la farmacia.
                         </p>
                     </div>
@@ -415,14 +415,14 @@ export default function InventoryPage() {
                     </Button>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-6">
                     <StatCard title="Valor Total del Inventario" value={globalStats.totalValue} icon={DollarSign} />
                     <StatCard title="Ítems con Stock Bajo" value={globalStats.lowStockCount} icon={Package} />
                     <StatCard title="Ítems Agotados" value={globalStats.outOfStockCount} icon={PackageX} />
                     <StatCard title="Ítems Próximos a Vencer" value={globalStats.expiringSoonCount} icon={AlertTriangle} />
                 </div>
 
-                <Card>
+                <Card className="mb-6">
                     <CardContent className="p-4 flex flex-col sm:flex-row gap-4">
                         <div className="relative flex-1">
                             <Search className="absolute left-2.5 top-3 h-4 w-4 text-slate-500" />
@@ -468,11 +468,11 @@ export default function InventoryPage() {
                         </div>
                     </Card>
                 )}
-            </div>
+            </>
             <DialogContent className="sm:max-w-2xl">
                  <DialogHeader>
                     <DialogTitle className="text-2xl font-semibold">{editingItem ? 'Editar' : 'Definir'} Producto</DialogTitle>
-                    <DialogDescription className="text-slate-500">
+                    <DialogDescription className="text-muted-foreground">
                         {editingItem ? 'Actualice los detalles del producto.' : 'Complete el formulario para definir un nuevo producto en el inventario.'}
                     </DialogDescription>
                  </DialogHeader>

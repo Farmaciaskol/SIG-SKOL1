@@ -327,33 +327,34 @@ export default function DispatchManagementPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+    <>
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-800 font-headline">Gestión de Despachos</h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted-foreground">
             Control logístico del envío de insumos Skol a recetarios externos.
           </p>
         </div>
       </div>
       <Tabs defaultValue="prepare">
-        <TabsList className="grid w-full grid-cols-3 md:w-auto md:inline-flex">
+        <TabsList className="grid w-full grid-cols-3 md:w-auto md:inline-flex mb-6">
           <TabsTrigger value="prepare">Por Preparar ({Object.keys(itemsToDispatchGroupedByPharmacy).length})</TabsTrigger>
           <TabsTrigger value="active">Despachos Activos ({activeDispatches.length})</TabsTrigger>
           <TabsTrigger value="history">Historial ({historicalDispatches.length})</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="prepare" className="mt-4">
+        <TabsContent value="prepare">
             {Object.keys(itemsToDispatchGroupedByPharmacy).length > 0 ? (
-                 <Accordion type="multiple" defaultValue={Object.keys(itemsToDispatchGroupedByPharmacy)}>
+                 <Accordion type="multiple" defaultValue={Object.keys(itemsToDispatchGroupedByPharmacy)} className="w-full space-y-4">
                     {Object.entries(itemsToDispatchGroupedByPharmacy).map(([pharmacyId, items]) => {
                         const allItemsValidated = items.every(item => validationState[`${item.recipe.id}-${item.inventoryItem.id}`]?.isValidated === 'valid');
                         return (
-                            <AccordionItem value={pharmacyId} key={pharmacyId}>
-                                <AccordionTrigger className="text-xl font-semibold text-slate-700 hover:no-underline">
+                            <AccordionItem value={pharmacyId} key={pharmacyId} className="border-b-0">
+                                <Card>
+                                <AccordionTrigger className="text-xl font-semibold text-slate-700 hover:no-underline p-6">
                                     {getPharmacyName(pharmacyId)} ({items.length} ítems)
                                 </AccordionTrigger>
-                                <AccordionContent className="p-2 space-y-4">
+                                <AccordionContent className="p-6 pt-0 space-y-4">
                                 {items.map((item) => {
                                     const itemId = `${item.recipe.id}-${item.inventoryItem.id}`;
                                     const validationStatus = validationState[itemId]?.isValidated || 'pending';
@@ -414,16 +415,17 @@ export default function DispatchManagementPage() {
                                     </Button>
                                 </div>
                                 </AccordionContent>
+                                </Card>
                             </AccordionItem>
                         )
                     })}
                 </Accordion>
             ) : (
-                <Card className="text-center py-16 mt-4 shadow-none border-dashed">
+                <Card className="text-center py-16 shadow-none border-dashed">
                     <div className="flex flex-col items-center justify-center">
                         <PackageCheck className="h-16 w-16 text-slate-400 mb-4" />
                         <h2 className="text-xl font-semibold text-slate-700">Todo al día</h2>
-                        <p className="text-slate-500 mt-2 max-w-sm">
+                        <p className="text-muted-foreground mt-2 max-w-sm">
                             No hay insumos pendientes de preparación para ser despachados.
                         </p>
                     </div>
@@ -431,7 +433,7 @@ export default function DispatchManagementPage() {
             )}
         </TabsContent>
 
-        <TabsContent value="active" className="mt-4">
+        <TabsContent value="active">
              {activeDispatches.length > 0 ? (
                  <div className="space-y-4">
                     {activeDispatches.map(note => (
@@ -471,7 +473,7 @@ export default function DispatchManagementPage() {
                     <div className="flex flex-col items-center justify-center">
                         <Package className="h-16 w-16 text-slate-400 mb-4" />
                         <h2 className="text-xl font-semibold text-slate-700">Sin Despachos Activos</h2>
-                        <p className="text-slate-500 mt-2 max-w-sm">
+                        <p className="text-muted-foreground mt-2 max-w-sm">
                             Cuando se genere una nota de despacho, aparecerá aquí para su seguimiento.
                         </p>
                     </div>
@@ -479,7 +481,7 @@ export default function DispatchManagementPage() {
              )}
         </TabsContent>
 
-        <TabsContent value="history" className="mt-4">
+        <TabsContent value="history">
              {historicalDispatches.length > 0 ? (
                  <div className="space-y-4">
                     {historicalDispatches.map(note => (
@@ -504,7 +506,7 @@ export default function DispatchManagementPage() {
                     <div className="flex flex-col items-center justify-center">
                         <History className="h-16 w-16 text-slate-400 mb-4" />
                         <h2 className="text-xl font-semibold text-slate-700">Sin Historial de Despachos</h2>
-                        <p className="text-slate-500 mt-2 max-w-sm">
+                        <p className="text-muted-foreground mt-2 max-w-sm">
                             Los despachos completados o cancelados aparecerán en esta sección.
                         </p>
                     </div>
@@ -512,6 +514,6 @@ export default function DispatchManagementPage() {
              )}
         </TabsContent>
       </Tabs>
-    </div>
+    </>
   );
 }
