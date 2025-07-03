@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { getPatient, getRecipes, getDoctors, getControlledSubstanceLogForPatient, getPharmacovigilanceReportsForPatient, Patient, Recipe, Doctor, ControlledSubstanceLogEntry, PharmacovigilanceReport, PharmacovigilanceReportStatus } from '@/lib/data';
+import { getPatient, getRecipes, getDoctors, getControlledSubstanceLogForPatient, getPharmacovigilanceReportsForPatient, Patient, Recipe, Doctor, ControlledSubstanceLogEntry, PharmacovigilanceReport, PharmacovigilanceReportStatus, updatePatient } from '@/lib/data';
 import { analyzePatientHistory, AnalyzePatientHistoryOutput } from '@/ai/flows/analyze-patient-history';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,8 @@ import { format, parseISO, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DispensationDialog } from '@/components/app/dispensation-dialog';
 import { PatientFormDialog } from '@/components/app/patient-form-dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const StatCard = ({ title, value, icon: Icon }: { title: string; value: string | number; icon: React.ElementType }) => (
   <Card>
@@ -50,20 +52,26 @@ export default function PatientDetailPage() {
   const [patient, setPatient] = useState<Patient | null>(null);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [allDoctors, setAllDoctors] = useState<Doctor[]>([]);
   const [controlledLogs, setControlledLogs] = useState<ControlledSubstanceLogEntry[]>([]);
   const [pharmaReports, setPharmaReports] = useState<PharmacovigilanceReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalyzePatientHistoryOutput | null>(null);
+  
+  // Dialogs State
   const [isDispensationDialogOpen, setIsDispensationDialogOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAssociateDoctorModalOpen, setIsAssociateDoctorModalOpen] = useState(false);
+  const [doctorsToAssociate, setDoctorsToAssociate] = useState<string[]>([]);
+  const [isSavingAssociation, setIsSavingAssociation] = useState(false);
 
 
   const fetchData = useCallback(async () => {
     if (!id) return;
     setLoading(true);
     try {
-      const [patientData, allRecipes, allDoctors, controlledLogsData, pharmaReportsData] = await Promise.all([
+      const [patientData, allRecipes, allDoctorsData, controlledLogsData, pharmaReportsData] = await Promise.all([
         getPatient(id),
         getRecipes(),
         getDoctors(),
@@ -71,6 +79,8 @@ export default function PatientDetailPage() {
         getPharmacovigilanceReportsForPatient(id),
       ]);
       
+      setAllDoctors(allDoctorsData);
+
       if (patientData) {
         setPatient(patientData);
         setControlledLogs(controlledLogsData);
@@ -79,7 +89,7 @@ export default function PatientDetailPage() {
         setRecipes(patientRecipes);
         
         const patientDoctorIds = [...new Set(patientRecipes.map(r => r.doctorId).concat(patientData.associatedDoctorIds || []))];
-        const associatedDoctors = allDoctors.filter(d => patientDoctorIds.includes(d.id));
+        const associatedDoctors = allDoctorsData.filter(d => patientDoctorIds.includes(d.id));
         setDoctors(associatedDoctors);
 
       } else {
@@ -138,6 +148,26 @@ export default function PatientDetailPage() {
         lastDispensationDate: lastDispensation?.dispensationDate && isValid(parseISO(lastDispensation.dispensationDate)) ? format(parseISO(lastDispensation.dispensationDate), 'dd-MM-yyyy') : 'N/A'
     };
   }, [patient, recipes]);
+
+  const handleOpenAssociateModal = () => {
+    setDoctorsToAssociate(patient?.associatedDoctorIds || []);
+    setIsAssociateDoctorModalOpen(true);
+  };
+  
+  const handleSaveAssociations = async () => {
+    if (!patient) return;
+    setIsSavingAssociation(true);
+    try {
+      await updatePatient(patient.id, { associatedDoctorIds: doctorsToAssociate });
+      toast({ title: 'Médicos Actualizados', description: 'Se han guardado las asociaciones de médicos.' });
+      setIsAssociateDoctorModalOpen(false);
+      await fetchData(); // Refresh data
+    } catch (error) {
+      toast({ title: 'Error', description: 'No se pudieron guardar las asociaciones.', variant: 'destructive' });
+    } finally {
+      setIsSavingAssociation(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -341,8 +371,11 @@ export default function PatientDetailPage() {
 
               {/* Doctors */}
               <Card>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Médicos Tratantes</CardTitle>
+                  <Button variant="outline" size="sm" onClick={handleOpenAssociateModal}>
+                    <PlusCircle className="mr-2 h-4 w-4"/>Asociar Médico
+                  </Button>
                 </CardHeader>
                 <CardContent>
                   {doctors.length > 0 ? (
@@ -360,8 +393,8 @@ export default function PatientDetailPage() {
                   ) : (
                     <div className="text-center p-4 border-2 border-dashed rounded-lg">
                         <p className="text-sm text-muted-foreground mb-4">No hay médicos asociados.</p>
-                        <Button asChild variant="outline">
-                            <Link href="/doctors"><PlusCircle className="mr-2 h-4 w-4"/>Asociar Médico</Link>
+                        <Button onClick={handleOpenAssociateModal}>
+                            <PlusCircle className="mr-2 h-4 w-4"/>Asociar Primer Médico
                         </Button>
                     </div>
                   )}
@@ -387,6 +420,45 @@ export default function PatientDetailPage() {
         onOpenChange={setIsEditModalOpen}
         onSuccess={fetchData}
       />
+
+      <Dialog open={isAssociateDoctorModalOpen} onOpenChange={setIsAssociateDoctorModalOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Asociar Médicos a {patient.name}</DialogTitle>
+                <DialogDescription>
+                    Seleccione los médicos que tratan a este paciente. Los cambios se guardarán al cerrar esta ventana.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2 py-4 max-h-80 overflow-y-auto">
+                {allDoctors.map(doctor => (
+                    <div key={doctor.id} className="flex items-center space-x-3 rounded-md p-2 hover:bg-muted/50">
+                        <Checkbox
+                            id={`doc-${doctor.id}`}
+                            checked={doctorsToAssociate.includes(doctor.id)}
+                            onCheckedChange={(checked) => {
+                                setDoctorsToAssociate(prev => 
+                                    checked
+                                        ? [...prev, doctor.id]
+                                        : prev.filter(id => id !== doctor.id)
+                                );
+                            }}
+                        />
+                        <label htmlFor={`doc-${doctor.id}`} className="w-full">
+                            <p className="font-medium">{doctor.name}</p>
+                            <p className="text-sm text-muted-foreground">{doctor.specialty}</p>
+                        </label>
+                    </div>
+                ))}
+            </div>
+            <DialogFooter>
+                <Button variant="ghost" onClick={() => setIsAssociateDoctorModalOpen(false)}>Cancelar</Button>
+                <Button onClick={handleSaveAssociations} disabled={isSavingAssociation}>
+                    {isSavingAssociation && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                    Guardar Cambios
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
