@@ -4,7 +4,7 @@
 import {
   getRecipesReadyForPickup,
   getMessagesForPatient,
-  sendMessageFromPatient as sendMessageDb,
+  sendMessageFromPatient,
   getRecipes
 } from './data';
 import { simplifyMedicationInfo } from '@/ai/flows/simplify-medication-info';
@@ -32,7 +32,7 @@ export async function getMedicationInfo(medicationName: string) {
 }
 
 export async function submitPatientMessage(patientId: string, content: string) {
-    return await sendMessageDb(patientId, content);
+    return await sendMessageFromPatient(patientId, content);
 }
 
 export async function submitNewPrescription(patientId: string, imageDataUri: string): Promise<string> {

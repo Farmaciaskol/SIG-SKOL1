@@ -686,3 +686,23 @@ export const updateAppSettings = async (updates: Partial<AppSettings>): Promise<
     const settingsRef = doc(db, 'appSettings', 'global');
     await updateDoc(settingsRef, updates);
 };
+
+export const sendMessageFromPatient = async (patientId: string, content: string): Promise<PatientMessage> => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    
+    const messageRef = doc(collection(db, 'patientMessages'));
+    const newMessage: Omit<PatientMessage, 'id'> = {
+        patientId,
+        content,
+        sender: 'patient',
+        createdAt: new Date().toISOString(),
+        read: false
+    };
+
+    await setDoc(messageRef, newMessage);
+
+    return {
+        id: messageRef.id,
+        ...newMessage
+    }
+};
