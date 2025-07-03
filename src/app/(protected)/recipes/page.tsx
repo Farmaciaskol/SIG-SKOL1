@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -100,20 +100,6 @@ import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-
-
-const RecipeStatusBadge = ({ status }: { status: RecipeStatus }) => {
-  const config = statusConfig[status] || { text: status, badge: 'bg-gray-100', icon: FileX };
-  return (
-    <Badge
-      variant="outline"
-      className={cn('font-semibold text-xs gap-1.5 whitespace-nowrap', config.badge)}
-    >
-      <config.icon className="h-3.5 w-3.5" />
-      {config.text}
-    </Badge>
-  );
-};
 
 export default function RecipesPage() {
   const { toast } = useToast();
@@ -684,47 +670,67 @@ export default function RecipesPage() {
                             <TableHead>Paciente</TableHead>
                             <TableHead>Preparado</TableHead>
                             <TableHead>Fecha Creación</TableHead>
-                            <TableHead>Estado</TableHead>
+                            <TableHead>Estado / Logística</TableHead>
                             <TableHead className="text-right">Acciones</TableHead>
                         </TableRow>
                         </TableHeader>
                         <TableBody>
                         {filteredRecipes.map((recipe) => (
                             <TableRow key={recipe.id} className={cn("hover:bg-muted/50", selectedRecipes.includes(recipe.id) && "bg-muted/50")}>
-                            <TableCell className="p-4"><Checkbox onCheckedChange={() => toggleSelectRecipe(recipe.id)} checked={selectedRecipes.includes(recipe.id)}/></TableCell>
-                            <TableCell className="font-mono text-primary">
+                              <TableCell className="p-4"><Checkbox onCheckedChange={() => toggleSelectRecipe(recipe.id)} checked={selectedRecipes.includes(recipe.id)}/></TableCell>
+                              <TableCell className="font-mono text-primary">
+                                  <Link href={`/recipes/${recipe.id}`} className="hover:underline">
+                                      {recipe.id}
+                                  </Link>
+                              </TableCell>
+                              <TableCell className="font-medium">{getPatientName(recipe.patientId)}</TableCell>
+                              <TableCell>
+                                  {recipe.items.length > 0 ? (
+                                      <div className="flex flex-col">
+                                      <span className="text-sm font-medium text-slate-800">
+                                          {recipe.items[0].principalActiveIngredient}{' '}
+                                          {recipe.items[0].concentrationValue}
+                                          {recipe.items[0].concentrationUnit}
+                                      </span>
+                                      <span className="text-xs text-slate-500 truncate" style={{maxWidth: '25ch'}}>
+                                          {recipe.items[0].usageInstructions}
+                                      </span>
+                                      {recipe.items.length > 1 && <span className="text-xs font-bold text-slate-500 mt-1">+ {recipe.items.length - 1} más</span>}
+                                      </div>
+                                  ) : (
+                                      'N/A'
+                                  )}
+                              </TableCell>
+                              <TableCell>{format(new Date(recipe.createdAt), "d 'de' MMMM, yyyy", { locale: es })}</TableCell>
+                              <TableCell>
                                 <div className="flex items-center gap-2">
-                                    <Link href={`/recipes/${recipe.id}`} className="hover:underline">
-                                        {recipe.id}
-                                    </Link>
-                                    {recipe.items.some(item => item.requiresFractionation) && (
-                                        <TooltipProvider><Tooltip><TooltipTrigger>
-                                            <Split className="h-4 w-4 text-orange-500" />
-                                        </TooltipTrigger><TooltipContent><p>Requiere Fraccionamiento</p></TooltipContent></Tooltip></TooltipProvider>
-                                    )}
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <span>
+                                          {React.createElement((statusConfig[recipe.status] || { icon: FileX }).icon, { className: 'h-5 w-5' })}
+                                        </span>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>{(statusConfig[recipe.status] || { text: recipe.status }).text}</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                  {recipe.items.some(item => item.requiresFractionation) && (
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <span><Split className="h-5 w-5 text-orange-500" /></span>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>Requiere Fraccionamiento</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  )}
                                 </div>
-                            </TableCell>
-                            <TableCell className="font-medium">{getPatientName(recipe.patientId)}</TableCell>
-                            <TableCell>
-                                {recipe.items.length > 0 ? (
-                                    <div className="flex flex-col">
-                                    <span className="text-sm font-medium text-slate-800">
-                                        {recipe.items[0].principalActiveIngredient}{' '}
-                                        {recipe.items[0].concentrationValue}
-                                        {recipe.items[0].concentrationUnit}
-                                    </span>
-                                    <span className="text-xs text-slate-500 truncate" style={{maxWidth: '25ch'}}>
-                                        {recipe.items[0].usageInstructions}
-                                    </span>
-                                    {recipe.items.length > 1 && <span className="text-xs font-bold text-slate-500 mt-1">+ {recipe.items.length - 1} más</span>}
-                                    </div>
-                                ) : (
-                                    'N/A'
-                                )}
-                            </TableCell>
-                            <TableCell>{format(new Date(recipe.createdAt), "d 'de' MMMM, yyyy", { locale: es })}</TableCell>
-                            <TableCell><RecipeStatusBadge status={recipe.status} /></TableCell>
-                            <TableCell className="text-right"><RecipeActions recipe={recipe} /></TableCell>
+                              </TableCell>
+                              <TableCell className="text-right"><RecipeActions recipe={recipe} /></TableCell>
                             </TableRow>
                         ))}
                         </TableBody>
@@ -740,13 +746,33 @@ export default function RecipesPage() {
                     <div className="flex items-center gap-2">
                         <Checkbox onCheckedChange={() => toggleSelectRecipe(recipe.id)} checked={selectedRecipes.includes(recipe.id)}/>
                         <Link href={`/recipes/${recipe.id}`} className="text-lg font-bold text-primary hover:underline">{recipe.id}</Link>
-                         {recipe.items.some(item => item.requiresFractionation) && (
-                            <TooltipProvider><Tooltip><TooltipTrigger>
-                                <Split className="h-4 w-4 text-orange-500" />
-                            </TooltipTrigger><TooltipContent><p>Requiere Fraccionamiento</p></TooltipContent></Tooltip></TooltipProvider>
-                        )}
                     </div>
-                    <RecipeStatusBadge status={recipe.status} />
+                    <div className="flex items-center gap-2">
+                      {recipe.items.some(item => item.requiresFractionation) && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span><Split className="h-5 w-5 text-orange-500" /></span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Requiere Fraccionamiento</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span>
+                              {React.createElement((statusConfig[recipe.status] || { icon: FileX }).icon, { className: 'h-5 w-5' })}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{(statusConfig[recipe.status] || { text: recipe.status }).text}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
                   </CardHeader>
                   <CardContent className="space-y-2 pb-4">
                     <p className="font-bold text-lg text-slate-800">{getPatientName(recipe.patientId)}</p>
@@ -783,7 +809,7 @@ export default function RecipesPage() {
         <DialogContent className="sm:max-w-2xl"><DialogHeader><DialogTitle className="text-xl font-semibold">Detalle Receta: {recipeToView?.id}</DialogTitle><DialogDescription>Información completa de la receta y su historial.</DialogDescription></DialogHeader>
             <div className="max-h-[70vh] overflow-y-auto p-1 pr-4"><div className="space-y-6">
                 <div className="space-y-1"><h3 className="text-sm font-semibold text-slate-700">Paciente:</h3><p className="text-slate-500">{getPatientName(recipeToView?.patientId || '')}</p></div>
-                <div className="space-y-1"><h3 className="text-sm font-semibold text-slate-700">Estado Actual:</h3>{recipeToView && <RecipeStatusBadge status={recipeToView.status} />}</div>
+                <div className="space-y-1"><h3 className="text-sm font-semibold text-slate-700">Estado Actual:</h3>{recipeToView && <Badge>{statusConfig[recipeToView.status]?.text || recipeToView.status}</Badge>}</div>
                 <div className="space-y-2"><h3 className="text-sm font-semibold text-slate-700">Items:</h3>{recipeToView?.items.map((item, index) => ( <div key={index} className="text-sm p-3 border rounded-md bg-muted/50"><p className="font-medium text-slate-800">{item.principalActiveIngredient} {item.concentrationValue}{item.concentrationUnit}</p><p className="text-slate-500">{item.usageInstructions}</p></div>))}</div>
                 <div className="space-y-2"><h3 className="text-sm font-semibold text-slate-700">Historial de Auditoría:</h3><Table><TableHeader><TableRow><TableHead>Fecha</TableHead><TableHead>Estado</TableHead><TableHead>Notas</TableHead></TableRow></TableHeader><TableBody>{recipeToView?.auditTrail?.slice().reverse().map((entry, index) => (<TableRow key={index}><TableCell>{format(parseISO(entry.date), 'dd-MM-yy HH:mm')}</TableCell><TableCell>{statusConfig[entry.status]?.text || entry.status}</TableCell><TableCell>{entry.notes}</TableCell></TableRow>))}</TableBody></Table></div>
             </div></div><DialogFooter><Button variant="outline" onClick={() => setRecipeToView(null)}>Cerrar</Button></DialogFooter>

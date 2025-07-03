@@ -9,6 +9,7 @@ import {
   getExternalPharmacies,
   getDispatchNotes,
   processDispatch,
+  getRecipe,
   Recipe,
   Patient,
   InventoryItem,
@@ -18,9 +19,10 @@ import {
   DispatchNote,
   DispatchItem,
   DispatchStatus,
+  type AuditTrailEntry,
 } from '@/lib/data';
 import { db } from '@/lib/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, writeBatch } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -253,15 +255,54 @@ export default function DispatchManagementPage() {
   const handleMarkAsReceived = async (noteId: string) => {
     if (!db) return;
     setUpdatingNoteId(noteId);
+
+    const note = dispatchNotes.find(n => n.id === noteId);
+    if (!note) {
+      toast({ title: 'Error', description: 'Nota de despacho no encontrada.', variant: 'destructive' });
+      setUpdatingNoteId(null);
+      return;
+    }
+
     try {
+        const batch = writeBatch(db);
+
+        // 1. Update the dispatch note status
         const noteRef = doc(db, 'dispatchNotes', noteId);
-        await updateDoc(noteRef, {
+        batch.update(noteRef, {
             status: DispatchStatus.Received,
             completedAt: new Date().toISOString(),
         });
+
+        // 2. Find unique recipes and update their status to "In Preparation"
+        const uniqueRecipeIds = [...new Set(note.items.map(item => item.recipeId))];
+
+        for (const recipeId of uniqueRecipeIds) {
+            const recipeDocRef = doc(db, "recipes", recipeId);
+            const recipeData = await getRecipe(recipeId); // Fetch current recipe data to get audit trail
+
+            if (recipeData) {
+                const newAuditEntry: AuditTrailEntry = {
+                    status: RecipeStatus.Preparation,
+                    date: new Date().toISOString(),
+                    userId: 'system-dispatch',
+                    notes: `Insumos recibidos en recetario. Despacho ID: ${note.id}. Iniciando preparación.`
+                };
+
+                const updatedAuditTrail = [...(recipeData.auditTrail || []), newAuditEntry];
+
+                batch.update(recipeDocRef, {
+                    status: RecipeStatus.Preparation,
+                    auditTrail: updatedAuditTrail,
+                    updatedAt: new Date().toISOString(),
+                });
+            }
+        }
+
+        await batch.commit();
+
         toast({
             title: 'Despacho Recibido',
-            description: `La nota de despacho ${noteId} ha sido marcada como recibida.`,
+            description: `Se actualizó la nota de despacho y las recetas asociadas pasaron a "En Preparación".`,
         });
         fetchData();
     } catch (error) {
