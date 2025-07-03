@@ -3,10 +3,11 @@
 import { db, storage } from './firebase';
 import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc, deleteDoc, writeBatch, query, where } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
-import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, ControlledLogEntryType, ProactivePatientStatus, PatientActionNeeded, MonthlyDispensationBox, MonthlyDispensationBoxStatus, DispensationItem, DispensationItemStatus } from './types';
+import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, ControlledLogEntryType, ProactivePatientStatus, PatientActionNeeded, MonthlyDispensationBox, MonthlyDispensationBoxStatus, DispensationItem, DispensationItemStatus, PatientAuthToken, PatientMessage } from './types';
 import type { Recipe, Doctor, InventoryItem, User, Role, ExternalPharmacy, Patient, PharmacovigilanceReport, AppData, AuditTrailEntry, DispatchNote, DispatchItem, ControlledSubstanceLogEntry, LotDetail } from './types';
 import { getMockData } from './mock-data';
-import { MAX_REPREPARATIONS, statusConfig } from './constants';
+import { MAX_REPREPARATIONS } from './constants';
+import { randomUUID } from 'crypto';
 
 export * from './types';
 
@@ -77,7 +78,13 @@ async function fetchCollection<T extends { id: string }>(collectionName: keyof A
 
 
 // Specific fetch functions for each data type
-export const getRecipes = async (): Promise<Recipe[]> => fetchCollection<Recipe>('recipes');
+export const getRecipes = async (patientId?: string): Promise<Recipe[]> => {
+    if (patientId && db) {
+        const q = query(collection(db, "recipes"), where("patientId", "==", patientId));
+        return fetchCollection<Recipe>('recipes', q);
+    }
+    return fetchCollection<Recipe>('recipes');
+};
 export const getPatients = async (): Promise<Patient[]> => fetchCollection<Patient>('patients');
 export const getDoctors = async (): Promise<Doctor[]> => fetchCollection<Doctor>('doctors');
 export const getExternalPharmacies = async (): Promise<ExternalPharmacy[]> => fetchCollection<ExternalPharmacy>('externalPharmacies');
@@ -88,6 +95,18 @@ export const getPharmacovigilanceReports = async (): Promise<PharmacovigilanceRe
 export const getDispatchNotes = async (): Promise<DispatchNote[]> => fetchCollection<DispatchNote>('dispatchNotes');
 export const getControlledSubstanceLog = async (): Promise<ControlledSubstanceLogEntry[]> => fetchCollection<ControlledSubstanceLogEntry>('controlledSubstanceLog');
 export const getMonthlyDispensations = async (): Promise<MonthlyDispensationBox[]> => fetchCollection<MonthlyDispensationBox>('monthlyDispensations');
+export const getMessagesForPatient = async (patientId: string): Promise<PatientMessage[]> => {
+    if (!db) return [];
+    const q = query(collection(db, 'patientMessages'), where('patientId', '==', patientId));
+    const messages = await fetchCollection<PatientMessage>('patientMessages', q);
+    return messages.sort((a,b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+};
+export const getRecipesReadyForPickup = async (patientId: string): Promise<Recipe[]> => {
+    if (!db) return [];
+    const q = query(collection(db, 'recipes'), where('patientId', '==', patientId), where('status', '==', RecipeStatus.ReadyForPickup));
+    return fetchCollection<Recipe>('recipes', q);
+}
+
 
 // Filtered fetch functions
 export const getControlledSubstanceLogForPatient = async (patientId: string): Promise<ControlledSubstanceLogEntry[]> => {
@@ -614,3 +633,105 @@ export const updateMonthlyDispensationBox = async (boxId: string, updates: Parti
   const dataToUpdate = { ...updates, updatedAt: new Date().toISOString() };
   await updateDoc(boxRef, dataToUpdate as any);
 };
+
+// PATIENT PORTAL FUNCTIONS
+
+export async function findPatientByRut(rut: string): Promise<Patient | null> {
+  if (!db) return null;
+  const q = query(collection(db, "patients"), where("rut", "==", rut));
+  const snapshot = await getDocs(q);
+  if (snapshot.empty) {
+    return null;
+  }
+  const patientDoc = snapshot.docs[0];
+  const data = deepConvertTimestamps(patientDoc.data());
+  return { id: patientDoc.id, ...data } as Patient;
+}
+
+export async function createPatientAuthToken(patientId: string): Promise<PatientAuthToken> {
+    if (!db) throw new Error("Firestore is not initialized.");
+    const token = randomUUID();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes expiry
+
+    const authToken: Omit<PatientAuthToken, 'id'> = {
+        patientId,
+        token,
+        expiresAt: expiresAt.toISOString(),
+        used: false,
+    };
+    
+    const docRef = await addDoc(collection(db, 'patientAuthTokens'), authToken);
+
+    return { id: docRef.id, ...authToken };
+}
+
+export async function validatePatientAuthToken(token: string): Promise<{ patient: Patient | null; token: string | null; error?: string }> {
+    if (!db) return { patient: null, token: null, error: "Database not initialized" };
+    const q = query(collection(db, "patientAuthTokens"), where("token", "==", token));
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+        return { patient: null, token: null, error: "Token not found" };
+    }
+
+    const tokenDoc = snapshot.docs[0];
+    const tokenData = tokenDoc.data() as PatientAuthToken;
+
+    if (tokenData.used) {
+        return { patient: null, token: null, error: "Token has already been used" };
+    }
+    
+    if (new Date(tokenData.expiresAt) < new Date()) {
+        return { patient: null, token: null, error: "Token has expired" };
+    }
+    
+    const patient = await getPatient(tokenData.patientId);
+    if (!patient) {
+         return { patient: null, token: null, error: "Associated patient not found" };
+    }
+
+    // Mark token as used
+    await updateDoc(doc(db, "patientAuthTokens", tokenDoc.id), { used: true });
+
+    return { patient, token: tokenData.token };
+}
+
+export async function sendMessageFromPatient(patientId: string, content: string): Promise<PatientMessage> {
+    if (!db) throw new Error("Firestore not initialized");
+    const message: Omit<PatientMessage, 'id'> = {
+        patientId,
+        content,
+        sender: 'patient',
+        createdAt: new Date().toISOString(),
+        read: false,
+    };
+    const docRef = await addDoc(collection(db, 'patientMessages'), message);
+    return { id: docRef.id, ...message };
+}
+
+export async function createRecipeFromPortal(patientId: string, imageDataUri: string): Promise<Recipe> {
+    if (!db || !storage) throw new Error("Firestore/Storage not initialized");
+
+    const recipeRef = doc(collection(db, "recipes"));
+    const storageRef = ref(storage, `portal-uploads/${patientId}/${recipeRef.id}`);
+    
+    const uploadResult = await uploadString(storageRef, imageDataUri, 'data_url');
+    const imageUrl = await getDownloadURL(uploadResult.ref);
+
+    const newRecipe: Omit<Recipe, 'id'> = {
+        patientId: patientId,
+        doctorId: '', // To be filled by pharmacist
+        items: [], // To be filled by pharmacist
+        status: RecipeStatus.PendingReviewPortal,
+        paymentStatus: 'Pendiente',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        prescriptionDate: new Date().toISOString(), // Default to today, pharmacist can change
+        dueDate: new Date(new Date().setMonth(new Date().getMonth() + 6)).toISOString(), // Default expiry
+        prescriptionImageUrl: imageUrl,
+    };
+
+    await setDoc(recipeRef, newRecipe);
+
+    return { id: recipeRef.id, ...newRecipe };
+}

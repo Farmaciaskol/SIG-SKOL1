@@ -1,6 +1,5 @@
 
 
-
 export enum RecipeStatus {
   PendingReviewPortal = 'Pendiente Revisión - Portal',
   PendingValidation = 'Pendiente Validación',
@@ -290,6 +289,23 @@ export interface PharmacovigilanceReport {
   updatedAt: string; // ISO String
 }
 
+export interface PatientAuthToken {
+    id: string;
+    patientId: string;
+    token: string;
+    expiresAt: string; // ISO String
+    used: boolean;
+}
+
+export interface PatientMessage {
+    id: string;
+    patientId: string;
+    content: string;
+    sender: 'patient' | 'pharmacist';
+    createdAt: string; // ISO String
+    read: boolean;
+}
+
 export interface AppData {
   recipes: Recipe[];
   patients: Patient[];
@@ -302,4 +318,6 @@ export interface AppData {
   pharmacovigilanceReports: PharmacovigilanceReport[];
   controlledSubstanceLog: ControlledSubstanceLogEntry[];
   monthlyDispensations: MonthlyDispensationBox[];
+  patientAuthTokens: PatientAuthToken[];
+  patientMessages: PatientMessage[];
 }

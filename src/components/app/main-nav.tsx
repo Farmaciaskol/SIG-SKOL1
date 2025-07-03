@@ -90,7 +90,7 @@ const menuGroups = [
 ];
 
 const bottomMenuItems = [
-    { href: '/patient-portal', label: 'Portal de Pacientes', icon: UserSquare },
+    { href: '/patient-portal/login', label: 'Portal de Pacientes', icon: UserSquare },
 ];
 
 
