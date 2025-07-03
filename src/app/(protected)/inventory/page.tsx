@@ -218,7 +218,7 @@ const StatCard = ({ title, value, icon: Icon }: { title: string; value: string |
 );
 
 const ProductCard = ({ item, onEdit, onManageLots }: { item: InventoryItemWithStats; onEdit: (item: InventoryItem) => void; onManageLots: (item: InventoryItemWithStats) => void; }) => {
-    const statusStyles: Record<InventoryItemWithStats['status'], { badge: string, border: string }> = {
+    const statusStyles: Record<InventoryItemWithStats['status'], { badge: string; border: string }> = {
       'OK': { badge: 'bg-green-100 text-green-800', border: 'border-transparent' },
       'Stock Bajo': { badge: 'bg-yellow-100 text-yellow-800 border-yellow-300', border: 'border-yellow-400' },
       'Agotado': { badge: 'bg-red-100 text-red-800 border-red-300', border: 'border-red-500' },
@@ -625,9 +625,8 @@ export default function InventoryPage() {
                             <PlusCircle className="mr-2 h-4 w-4" /> Definir Primer Producto
                         </Button>
                     </div>
-                )}
+                </Card>
+            )}
         </>
     );
 }
-
-    
