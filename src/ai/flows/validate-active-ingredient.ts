@@ -56,6 +56,6 @@ const validateActiveIngredientFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
-    return output!;
+    return output || 'Error: No se pudo obtener una respuesta del modelo de IA.';
   }
 );

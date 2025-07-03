@@ -88,6 +88,9 @@ const extractRecipeDataFromImageFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
-    return output!;
+    if (!output) {
+      throw new Error("AI model failed to extract any data from the image.");
+    }
+    return output;
   }
 );

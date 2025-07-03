@@ -116,6 +116,9 @@ const analyzePatientProactiveAlertsFlow = ai.defineFlow(
   },
   async input => {
     const { output } = await prompt(input);
-    return output!;
+    if (!output) {
+      throw new Error("AI model failed to produce a valid proactive analysis.");
+    }
+    return output;
   }
 );
