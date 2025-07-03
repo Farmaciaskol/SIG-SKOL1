@@ -1,10 +1,7 @@
 
 [
   {
-    "origin": [
-      "https://*.cluster-etsqrqvqyvd4erxx7qq32imrjk.cloudworkstations.dev",
-      "http://localhost:9002"
-    ],
+    "origin": ["*"],
     "method": ["GET", "HEAD", "PUT", "POST", "DELETE", "OPTIONS"],
     "responseHeader": [
       "Content-Type",
