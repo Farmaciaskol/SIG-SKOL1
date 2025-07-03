@@ -1,7 +1,7 @@
 
 'use server';
 
-import { db, storage } from './firebase';
+import { db, storage, auth } from './firebase';
 import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc, deleteDoc, writeBatch, query, where, limit } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, ControlledLogEntryType, ProactivePatientStatus, PatientActionNeeded, MonthlyDispensationBoxStatus, DispensationItemStatus, PharmacovigilanceReportStatus, type Recipe, type Doctor, type InventoryItem, type User, type Role, type ExternalPharmacy, type Patient, type PharmacovigilanceReport, type AppData, type AuditTrailEntry, type DispatchNote, type DispatchItem, type ControlledSubstanceLogEntry, type LotDetail, type AppSettings, type MonthlyDispensationBox, type PatientMessage } from './types';
@@ -208,6 +208,11 @@ export const updateRecipe = async (id: string, updates: Partial<Recipe>): Promis
 
 export const saveRecipe = async (data: any, imageUri: string | null, recipeId?: string): Promise<string> => {
     if (!db) throw new Error("Firestore is not initialized.");
+    
+    const user = auth?.currentUser;
+    if (!user) {
+        throw new Error("Usuario no autenticado. No se puede guardar la receta.");
+    }
 
     let patientId = data.patientId;
     if (data.patientSelectionType === 'new' && data.newPatientName && data.newPatientRut) {
@@ -233,7 +238,13 @@ export const saveRecipe = async (data: any, imageUri: string | null, recipeId?: 
             imageUrl = await getDownloadURL(uploadResult.ref);
         } catch (storageError: any) {
             console.error("Firebase Storage upload failed in saveRecipe:", storageError);
-            throw new Error(`Error al subir imagen. Verifique las reglas de Storage. Código: ${storageError.code || 'UNKNOWN'}`);
+            let userMessage = `Error al subir imagen. Verifique las reglas de Storage o la configuración de su bucket. Código: ${storageError.code || 'UNKNOWN'}`;
+            if (storageError.code === 'storage/unauthorized') {
+                userMessage = "Error de autorización: No tiene permiso para subir archivos. Verifique que está autenticado y que las reglas de Storage lo permiten.";
+            } else if (storageError.code === 'storage/object-not-found' || storageError.code === 'storage/bucket-not-found') {
+                 userMessage = "El bucket de almacenamiento no parece estar configurado correctamente en su proyecto de Firebase.";
+            }
+            throw new Error(userMessage);
         }
     } else if (imageUri) {
         imageUrl = imageUri;
@@ -413,6 +424,11 @@ export const logDirectSaleDispensation = async (
   }
 ): Promise<void> => {
     if (!db || !storage) throw new Error("Firestore or Storage is not initialized.");
+
+    const user = auth?.currentUser;
+    if (!user) {
+        throw new Error("Usuario no autenticado. No se puede registrar la dispensación.");
+    }
     
     const { patientId, doctorId, inventoryItemId, lotNumber, quantity, prescriptionFolio, prescriptionType, controlledRecipeFormat, prescriptionImageUrl: imageUri } = data;
 
@@ -453,7 +469,13 @@ export const logDirectSaleDispensation = async (
         finalImageUrl = await getDownloadURL(uploadResult.ref);
       } catch (storageError: any) {
         console.error("Firebase Storage upload failed in logDirectSaleDispensation:", storageError);
-        throw new Error(`Error al subir imagen de receta controlada. Verifique las reglas de Storage. Código: ${storageError.code || 'UNKNOWN'}`);
+        let userMessage = `Error al subir imagen. Verifique las reglas de Storage. Código: ${storageError.code || 'UNKNOWN'}`;
+        if (storageError.code === 'storage/unauthorized') {
+            userMessage = "Error de autorización: No tiene permiso para subir archivos. Verifique que está autenticado y que las reglas de Storage lo permiten.";
+        } else if (storageError.code === 'storage/object-not-found' || storageError.code === 'storage/bucket-not-found') {
+             userMessage = "El bucket de almacenamiento no parece estar configurado correctamente en su proyecto de Firebase.";
+        }
+        throw new Error(userMessage);
       }
     } else if (imageUri) {
       finalImageUrl = imageUri;
@@ -684,4 +706,3 @@ export const updateAppSettings = async (updates: Partial<AppSettings>): Promise<
     const settingsRef = doc(db, 'appSettings', 'global');
     await updateDoc(settingsRef, updates);
 };
-

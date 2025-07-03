@@ -9,7 +9,7 @@ import {
 import type { PatientMessage, Recipe } from './types';
 import { RecipeStatus } from './types';
 import { simplifyMedicationInfo } from '@/ai/flows/simplify-medication-info';
-import { db, storage } from './firebase';
+import { db, storage, auth } from './firebase';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { doc, collection, setDoc } from 'firebase/firestore';
 import { addMonths } from 'date-fns';
@@ -55,6 +55,12 @@ export async function sendMessageFromPatient(patientId: string, content: string)
 export async function submitNewPrescription(patientId: string, imageDataUri: string): Promise<string> {
     if (!db || !storage) throw new Error("Firestore or Storage is not initialized.");
     
+    // Patient portal uses anonymous auth, so a user object should always exist.
+    const user = auth?.currentUser;
+    if (!user) {
+        throw new Error("No se pudo obtener la sesión de autenticación. Intente recargar la página.");
+    }
+    
     const recipeRef = doc(collection(db, 'recipes'));
     const recipeId = recipeRef.id;
 
@@ -66,7 +72,13 @@ export async function submitNewPrescription(patientId: string, imageDataUri: str
         imageUrl = await getDownloadURL(uploadResult.ref);
     } catch (storageError: any) {
         console.error("Firebase Storage upload failed in submitNewPrescription:", storageError);
-        throw new Error(`Error al subir imagen desde el portal. Verifique las reglas de Storage. Código: ${storageError.code || 'UNKNOWN'}`);
+        let userMessage = `Error al subir imagen. Verifique las reglas de Storage. Código: ${storageError.code || 'UNKNOWN'}`;
+        if (storageError.code === 'storage/unauthorized') {
+            userMessage = "Error de autorización: No tiene permiso para subir archivos. Verifique que está autenticado y que las reglas de Storage lo permiten.";
+        } else if (storageError.code === 'storage/object-not-found' || storageError.code === 'storage/bucket-not-found') {
+             userMessage = "El bucket de almacenamiento no parece estar configurado correctamente en su proyecto de Firebase.";
+        }
+        throw new Error(userMessage);
     }
 
     const firstAuditEntry: AuditTrailEntry = {
