@@ -1,0 +1,217 @@
+
+'use client';
+
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import {
+  getMonthlyDispensationBox,
+  updateMonthlyDispensationBox,
+  getPatient,
+  getRecipes,
+  getInventory,
+  MonthlyDispensationBox,
+  Patient,
+  DispensationItem,
+  DispensationItemStatus,
+} from '@/lib/data';
+import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { ChevronLeft, Loader2, User, Calendar, CheckCircle, AlertTriangle, XCircle, Printer, Box, Save, Package } from 'lucide-react';
+import { format, parse } from 'date-fns';
+import { es } from 'date-fns/locale';
+
+const itemStatusConfig: Record<DispensationItemStatus, { text: string; icon: React.ElementType; color: string }> = {
+  [DispensationItemStatus.OkToInclude]: { text: 'OK para Incluir', icon: CheckCircle, color: 'text-green-500' },
+  [DispensationItemStatus.RequiresAttention]: { text: 'Requiere Atención', icon: AlertTriangle, color: 'text-orange-500' },
+  [DispensationItemStatus.DoNotInclude]: { text: 'No Incluir', icon: XCircle, color: 'text-red-500' },
+  [DispensationItemStatus.ManuallyAdded]: { text: 'Añadido Manualmente', icon: CheckCircle, color: 'text-blue-500' },
+};
+
+export default function DispensationDetailPage() {
+  const params = useParams();
+  const router = useRouter();
+  const { toast } = useToast();
+  const id = params.id as string;
+
+  const [box, setBox] = useState<MonthlyDispensationBox | null>(null);
+  const [patient, setPatient] = useState<Patient | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    if (!id) return;
+    setLoading(true);
+    try {
+      const boxData = await getMonthlyDispensationBox(id);
+      if (boxData) {
+        setBox(boxData);
+        const patientData = await getPatient(boxData.patientId);
+        setPatient(patientData);
+      } else {
+        toast({ title: 'Error', description: 'Caja de dispensación no encontrada.', variant: 'destructive' });
+        router.push('/monthly-dispensing');
+      }
+    } catch (error) {
+      console.error('Failed to fetch data:', error);
+      toast({ title: 'Error de Carga', description: 'No se pudieron cargar los datos de la caja.', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  }, [id, toast, router]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const handleItemChange = <T extends keyof DispensationItem>(itemId: string, field: T, value: DispensationItem[T]) => {
+    setBox(prevBox => {
+      if (!prevBox) return null;
+      return {
+        ...prevBox,
+        items: prevBox.items.map(item =>
+          item.id === itemId ? { ...item, [field]: value } : item
+        ),
+      };
+    });
+  };
+  
+  const handleSaveChanges = async () => {
+      if (!box) return;
+      setIsSaving(true);
+      try {
+          await updateMonthlyDispensationBox(box.id, { items: box.items });
+          toast({ title: 'Cambios Guardados', description: 'La caja de dispensación ha sido actualizada.' });
+          fetchData();
+      } catch (error) {
+           console.error('Failed to save changes:', error);
+           toast({ title: 'Error', description: 'No se pudieron guardar los cambios.', variant: 'destructive' });
+      } finally {
+          setIsSaving(false);
+      }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="ml-2">Cargando mesa de trabajo...</p>
+      </div>
+    );
+  }
+  
+  if (!box || !patient) {
+      return null;
+  }
+  
+  const formattedPeriod = format(parse(box.period, 'yyyy-MM', new Date()), 'MMMM yyyy', { locale: es });
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Button variant="outline" size="icon" className="h-10 w-10" asChild>
+          <Link href="/monthly-dispensing"><ChevronLeft className="h-5 w-5"/></Link>
+        </Button>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight font-headline">Mesa de Trabajo de Dispensación</h1>
+          <p className="text-sm text-muted-foreground">Paciente: <span className="font-semibold text-primary">{patient.name}</span> | Período: <span className="font-semibold text-primary">{formattedPeriod}</span></p>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+              <Card>
+                  <CardHeader>
+                      <CardTitle>Contenido de la Caja de Dispensación</CardTitle>
+                      <CardDescription>Revise y confirme los ítems a incluir. El sistema ha realizado una validación inicial.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                      <div className="border rounded-lg overflow-hidden">
+                          <Table>
+                              <TableHeader>
+                                  <TableRow>
+                                      <TableHead className="w-1/3">Medicamento</TableHead>
+                                      <TableHead>Validación del Sistema</TableHead>
+                                      <TableHead className="w-[150px]">Acción Farmacéutico</TableHead>
+                                      <TableHead className="w-1/4">Notas</TableHead>
+                                  </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                  {box.items.map(item => (
+                                      <TableRow key={item.id}>
+                                          <TableCell>
+                                              <p className="font-semibold text-slate-800">{item.name}</p>
+                                              <p className="text-xs text-muted-foreground">{item.details}</p>
+                                          </TableCell>
+                                          <TableCell>
+                                            <div className="flex items-center gap-2">
+                                                {React.createElement(itemStatusConfig[item.status].icon, { className: `h-4 w-4 ${itemStatusConfig[item.status].color}` })}
+                                                <p className="text-sm">{item.reason}</p>
+                                            </div>
+                                          </TableCell>
+                                          <TableCell>
+                                              <Select 
+                                                value={item.status} 
+                                                onValueChange={(value) => handleItemChange(item.id, 'status', value as DispensationItemStatus)}
+                                              >
+                                                  <SelectTrigger><SelectValue /></SelectTrigger>
+                                                  <SelectContent>
+                                                      {Object.values(DispensationItemStatus).map(s => (
+                                                        <SelectItem key={s} value={s}>{itemStatusConfig[s].text}</SelectItem>
+                                                      ))}
+                                                  </SelectContent>
+                                              </Select>
+                                          </TableCell>
+                                          <TableCell>
+                                              <Textarea
+                                                placeholder="Anotaciones..." 
+                                                className="text-xs"
+                                                value={item.pharmacistNotes || ''}
+                                                onChange={(e) => handleItemChange(item.id, 'pharmacistNotes', e.target.value)}
+                                              />
+                                          </TableCell>
+                                      </TableRow>
+                                  ))}
+                              </TableBody>
+                          </Table>
+                      </div>
+                  </CardContent>
+              </Card>
+          </div>
+          <div className="lg:col-span-1 space-y-6">
+              <Card>
+                  <CardHeader>
+                      <CardTitle>Resumen y Acciones</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                     <p>Estado Actual: <Badge className="text-base">{box.status}</Badge></p>
+                     <Separator />
+                     <p className="text-sm font-semibold">Ítems a Incluir: {box.items.filter(i => i.status === 'OK para Incluir' || i.status === 'Añadido Manualmente').length}</p>
+                     <p className="text-sm font-semibold text-orange-600">Ítems con Alertas: {box.items.filter(i => i.status === 'Requiere Atención').length}</p>
+                  </CardContent>
+                  <CardFooter className="flex flex-col gap-2">
+                     <Button className="w-full" onClick={handleSaveChanges} disabled={isSaving}>
+                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
+                        Guardar Cambios
+                     </Button>
+                     <Button className="w-full" variant="outline" disabled={true}>
+                        <Package className="mr-2 h-4 w-4"/>
+                        Marcar como Lista para Retiro
+                     </Button>
+                     <Button className="w-full" variant="outline" disabled={true}>
+                        <Printer className="mr-2 h-4 w-4"/>
+                        Imprimir Etiqueta de Caja
+                     </Button>
+                  </CardFooter>
+              </Card>
+          </div>
+      </div>
+    </div>
+  );
+}

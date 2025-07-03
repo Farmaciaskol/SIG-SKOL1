@@ -3,10 +3,10 @@
 import { db, storage } from './firebase';
 import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc, deleteDoc, writeBatch, query, where } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
-import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, ControlledLogEntryType, ProactivePatientStatus, PatientActionNeeded } from './types';
+import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, ControlledLogEntryType, ProactivePatientStatus, PatientActionNeeded, MonthlyDispensationBox, MonthlyDispensationBoxStatus, DispensationItem, DispensationItemStatus } from './types';
 import type { Recipe, Doctor, InventoryItem, User, Role, ExternalPharmacy, Patient, PharmacovigilanceReport, AppData, AuditTrailEntry, DispatchNote, DispatchItem, ControlledSubstanceLogEntry, LotDetail } from './types';
 import { getMockData } from './mock-data';
-import { statusConfig } from './constants';
+import { MAX_REPREPARATIONS, statusConfig } from './constants';
 
 export * from './types';
 
@@ -87,6 +87,7 @@ export const getRoles = async (): Promise<Role[]> => fetchCollection<Role>('role
 export const getPharmacovigilanceReports = async (): Promise<PharmacovigilanceReport[]> => fetchCollection<PharmacovigilanceReport>('pharmacovigilanceReports');
 export const getDispatchNotes = async (): Promise<DispatchNote[]> => fetchCollection<DispatchNote>('dispatchNotes');
 export const getControlledSubstanceLog = async (): Promise<ControlledSubstanceLogEntry[]> => fetchCollection<ControlledSubstanceLogEntry>('controlledSubstanceLog');
+export const getMonthlyDispensations = async (): Promise<MonthlyDispensationBox[]> => fetchCollection<MonthlyDispensationBox>('monthlyDispensations');
 
 // Filtered fetch functions
 export const getControlledSubstanceLogForPatient = async (patientId: string): Promise<ControlledSubstanceLogEntry[]> => {
@@ -143,6 +144,7 @@ export const getPatient = async (id: string): Promise<Patient | null> => getDocu
 export const getDoctor = async (id: string): Promise<Doctor | null> => getDocument<Doctor>('doctors', id);
 export const getExternalPharmacy = async (id: string): Promise<ExternalPharmacy | null> => getDocument<ExternalPharmacy>('externalPharmacies', id);
 export const getPharmacovigilanceReport = async (id: string): Promise<PharmacovigilanceReport | null> => getDocument<PharmacovigilanceReport>('pharmacovigilanceReports', id);
+export const getMonthlyDispensationBox = async (id: string): Promise<MonthlyDispensationBox | null> => getDocument<MonthlyDispensationBox>('monthlyDispensations', id);
 
 
 export const deleteRecipe = async (id: string): Promise<void> => {
@@ -461,13 +463,14 @@ export const updatePatient = async (id: string, updates: Partial<Patient>): Prom
     await updateDoc(doc(db, 'patients', id), updates as any);
 };
 
-export const addPatient = async (patient: Omit<Patient, 'id' | 'proactiveStatus' | 'proactiveMessage' | 'actionNeeded'>): Promise<string> => {
+export const addPatient = async (patient: Omit<Patient, 'id' | 'proactiveStatus' | 'proactiveMessage' | 'actionNeeded' | 'commercialMedications'>): Promise<string> => {
     if (!db) throw new Error("Firestore is not initialized.");
     const patientData = {
         ...patient,
         proactiveStatus: ProactivePatientStatus.OK,
         proactiveMessage: 'No requiere acción.',
         actionNeeded: PatientActionNeeded.NONE,
+        commercialMedications: []
     };
     const docRef = await addDoc(collection(db, 'patients'), patientData as any);
     return docRef.id;
@@ -513,5 +516,102 @@ export const registerPaymentForPharmacy = async (recipeIds: string[]): Promise<v
     });
 
     await batch.commit();
+};
+
+export const createMonthlyDispensationBox = async (patientId: string, period: string): Promise<string> => {
+    if (!db) throw new Error("Firestore is not initialized.");
+
+    const patient = await getPatient(patientId);
+    if (!patient || !patient.isChronic) {
+        throw new Error("Patient not found or is not a chronic patient.");
+    }
+
+    const allRecipes = await getRecipes();
+    const allInventory = await getInventory();
+    const patientRecipes = allRecipes.filter(r => r.patientId === patientId);
+
+    const dispensationItems: DispensationItem[] = [];
+
+    // Process Magistral Recipes
+    for (const recipe of patientRecipes) {
+        const isActiveChronicMagistral = ![RecipeStatus.Dispensed, RecipeStatus.Cancelled, RecipeStatus.Rejected].includes(recipe.status);
+
+        if(isActiveChronicMagistral) {
+            const dispensationsCount = recipe.auditTrail?.filter(t => t.status === RecipeStatus.Dispensed).length || 0;
+            const isExpired = new Date(recipe.dueDate) < new Date();
+
+            let status: DispensationItemStatus;
+            let reason: string;
+
+            if (isExpired) {
+                status = DispensationItemStatus.DoNotInclude;
+                reason = "Receta vencida.";
+            } else if (dispensationsCount >= MAX_REPREPARATIONS) {
+                status = DispensationItemStatus.RequiresAttention;
+                reason = `Límite de ${MAX_REPREPARATIONS} preparaciones alcanzado. Requiere nueva receta.`;
+            } else {
+                status = DispensationItemStatus.OkToInclude;
+                reason = `Receta vigente. Preparación ${dispensationsCount + 1} de ${MAX_REPREPARATIONS}.`;
+            }
+
+            dispensationItems.push({
+                id: recipe.id,
+                type: 'magistral',
+                name: recipe.items[0]?.principalActiveIngredient || 'Preparado Magistral',
+                details: `${recipe.items[0]?.concentrationValue || ''}${recipe.items[0]?.concentrationUnit || ''}`,
+                status,
+                reason,
+            });
+        }
+    }
+
+    // Process Commercial Medications
+    if (patient.commercialMedications) {
+        for (const medName of patient.commercialMedications) {
+            const inventoryItem = allInventory.find(i => i.name.toLowerCase().includes(medName.toLowerCase()));
+            
+            let status: DispensationItemStatus;
+            let reason: string;
+            
+            if (!inventoryItem) {
+                status = DispensationItemStatus.DoNotInclude;
+                reason = `Medicamento "${medName}" no encontrado en inventario.`;
+            } else if (inventoryItem.quantity <= 0) {
+                status = DispensationItemStatus.RequiresAttention;
+                reason = "Stock insuficiente (0 unidades).";
+            } else {
+                 status = DispensationItemStatus.OkToInclude;
+                 reason = `Stock disponible: ${inventoryItem.quantity} unidades.`;
+            }
+
+            dispensationItems.push({
+                id: inventoryItem?.id || medName,
+                type: 'commercial',
+                name: medName,
+                details: inventoryItem?.unit || 'Unidad',
+                status,
+                reason,
+            });
+        }
+    }
+
+    const newBox: Omit<MonthlyDispensationBox, 'id'> = {
+        patientId,
+        period,
+        status: MonthlyDispensationBoxStatus.InPreparation,
+        items: dispensationItems,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+    };
+
+    const docRef = await addDoc(collection(db, 'monthlyDispensations'), newBox);
+    return docRef.id;
+};
+
+export const updateMonthlyDispensationBox = async (boxId: string, updates: Partial<MonthlyDispensationBox>): Promise<void> => {
+  if (!db) throw new Error("Firestore is not initialized.");
+  const boxRef = doc(db, 'monthlyDispensations', boxId);
+  const dataToUpdate = { ...updates, updatedAt: new Date().toISOString() };
+  await updateDoc(boxRef, dataToUpdate as any);
 };
     

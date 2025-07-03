@@ -1,8 +1,9 @@
 
 
 import { addMonths, subDays } from 'date-fns';
-import type { AppData, Patient, Doctor, Recipe, InventoryItem, User, Role, ExternalPharmacy, PharmacovigilanceReport, ControlledSubstanceLogEntry, DispatchNote } from './types';
-import { RecipeStatus, ProactivePatientStatus, PatientActionNeeded, SkolSuppliedItemsDispatchStatus, DispatchStatus, PharmacovigilanceReportStatus, ControlledLogEntryType } from './types';
+import type { AppData, Patient, Doctor, Recipe, InventoryItem, User, Role, ExternalPharmacy, PharmacovigilanceReport, ControlledSubstanceLogEntry, DispatchNote, MonthlyDispensationBox } from './types';
+import { RecipeStatus, ProactivePatientStatus, PatientActionNeeded, SkolSuppliedItemsDispatchStatus, DispatchStatus, PharmacovigilanceReportStatus, ControlledLogEntryType, MonthlyDispensationBoxStatus, DispensationItemStatus } from './types';
+import { MAX_REPREPARATIONS } from './constants';
 
 // --- ROLES & USERS ---
 const roles: Role[] = [
@@ -42,6 +43,9 @@ const inventory: InventoryItem[] = [
     { id: 'inv-002', name: 'Fenobarbital 100mg (Caja 30 comps)', unit: 'caja', lowStockThreshold: 5, quantity: 10, costPrice: 15000, isControlled: true, controlledType: 'Psicotrópico', lots: [{ lotNumber: 'FB202312', quantity: 10, expiryDate: addMonths(new Date(), 6).toISOString() }], itemsPerBaseUnit: 30, activePrincipleContentValue: 100, activePrincipleContentUnit: 'mg' },
     { id: 'inv-003', name: 'Clonazepam 2mg (Caja 30 comps)', unit: 'caja', lowStockThreshold: 10, quantity: 19, costPrice: 8000, isControlled: true, controlledType: 'Psicotrópico', lots: [{ lotNumber: 'CZ202402', quantity: 19, expiryDate: addMonths(new Date(), 24).toISOString() }], itemsPerBaseUnit: 30, activePrincipleContentValue: 2, activePrincipleContentUnit: 'mg' },
     { id: 'inv-004', name: 'Crema Base Hidratante', unit: 'kg', lowStockThreshold: 2, quantity: 5, costPrice: 20000, lots: [{ lotNumber: 'CB202403', quantity: 5, expiryDate: addMonths(new Date(), 18).toISOString() }] },
+    { id: 'inv-005', name: 'Aspirina 100mg (Caja 30 comps)', unit: 'caja', lowStockThreshold: 10, quantity: 50, costPrice: 2000, lots: [{ lotNumber: 'AS202405', quantity: 50, expiryDate: addMonths(new Date(), 12).toISOString() }] },
+    { id: 'inv-006', name: 'Losartan 50mg (Caja 30 comps)', unit: 'caja', lowStockThreshold: 10, quantity: 30, costPrice: 4000, lots: [{ lotNumber: 'LS202406', quantity: 30, expiryDate: addMonths(new Date(), 18).toISOString() }] },
+    { id: 'inv-007', name: 'Metformina 850mg (Caja 30 comps)', unit: 'caja', lowStockThreshold: 10, quantity: 5, costPrice: 3500, lots: [{ lotNumber: 'MT202407', quantity: 5, expiryDate: addMonths(new Date(), 24).toISOString() }] },
 ];
 
 // --- RECIPES ---
@@ -69,7 +73,7 @@ const recipes: Recipe[] = [
     { id: 'rec-pickup-01', patientId: 'pat-03', doctorId: 'doc-01', status: RecipeStatus.ReadyForPickup, paymentStatus: 'Pagado', items: [{ principalActiveIngredient: 'Hidroquinona', pharmaceuticalForm: 'crema', concentrationValue: '4', concentrationUnit: '% p/p', dosageValue: '1', dosageUnit: 'aplicación(es)', frequency: '24', treatmentDurationValue: '60', treatmentDurationUnit: 'días', totalQuantityValue: '50', totalQuantityUnit: 'gramo(s)', usageInstructions: 'Aplicar por la noche, usar protector solar durante el día.' }], createdAt: subDays(today, 8).toISOString(), updatedAt: subDays(today, 1).toISOString(), prescriptionDate: subDays(today, 9).toISOString(), dueDate: addMonths(subDays(today, 9), 6).toISOString(), externalPharmacyId: 'ext-ph-01', supplySource: 'Stock del Recetario Externo', preparationCost: 22000 },
     
     // 8. Dispensada
-    { id: 'rec-dispensed-01', patientId: 'pat-01', doctorId: 'doc-01', status: RecipeStatus.Dispensed, paymentStatus: 'Pagado', items: [{ principalActiveIngredient: 'Minoxidil', pharmaceuticalForm: 'solución', concentrationValue: '5', concentrationUnit: '% p/v', dosageValue: '1', dosageUnit: 'mL', frequency: '12', treatmentDurationValue: '90', treatmentDurationUnit: 'días', totalQuantityValue: '90', totalQuantityUnit: 'mL', usageInstructions: 'Aplicar 1 mL en el cuero cabelludo cada 12 horas.' }], createdAt: subDays(today, 45).toISOString(), updatedAt: subDays(today, 35).toISOString(), prescriptionDate: subDays(today, 46).toISOString(), dueDate: addMonths(subDays(today, 46), 6).toISOString(), externalPharmacyId: 'ext-ph-01', supplySource: 'Stock del Recetario Externo', preparationCost: 18000, dispensationDate: subDays(today, 35).toISOString() },
+    { id: 'rec-dispensed-01', patientId: 'pat-01', doctorId: 'doc-01', status: RecipeStatus.Dispensed, paymentStatus: 'Pagado', items: [{ principalActiveIngredient: 'Minoxidil', pharmaceuticalForm: 'solución', concentrationValue: '5', concentrationUnit: '% p/v', dosageValue: '1', dosageUnit: 'mL', frequency: '12', treatmentDurationValue: '90', treatmentDurationUnit: 'días', totalQuantityValue: '90', totalQuantityUnit: 'mL', usageInstructions: 'Aplicar 1 mL en el cuero cabelludo cada 12 horas.' }], createdAt: subDays(today, 45).toISOString(), updatedAt: subDays(today, 35).toISOString(), prescriptionDate: subDays(today, 46).toISOString(), dueDate: addMonths(subDays(today, 46), 6).toISOString(), externalPharmacyId: 'ext-ph-01', supplySource: 'Stock del Recetario Externo', preparationCost: 18000, dispensationDate: subDays(today, 35).toISOString(), auditTrail: [{status: RecipeStatus.Dispensed, date: subDays(today, 35).toISOString(), userId: 'user-01'}]},
     
     // 9. Rechazada
     { id: 'rec-rejected-01', patientId: 'pat-04', doctorId: 'doc-01', status: RecipeStatus.Rejected, paymentStatus: 'N/A', items: [{ principalActiveIngredient: 'Tretinoína', pharmaceuticalForm: 'crema', concentrationValue: '0.05', concentrationUnit: '% p/p', dosageValue: '1', dosageUnit: 'aplicación(es)', frequency: '24', treatmentDurationValue: '30', treatmentDurationUnit: 'días', totalQuantityValue: '30', totalQuantityUnit: 'gramo(s)', usageInstructions: 'Aplicar en el rostro.' }], rejectionReason: 'Receta ilegible, no se puede confirmar la dosis.', createdAt: subDays(today, 4).toISOString(), updatedAt: subDays(today, 3).toISOString(), prescriptionDate: subDays(today, 5).toISOString(), dueDate: addMonths(subDays(today, 5), 6).toISOString(), externalPharmacyId: 'ext-ph-01', supplySource: 'Stock del Recetario Externo', preparationCost: 0 },
@@ -136,6 +140,69 @@ const controlledSubstanceLog: ControlledSubstanceLogEntry[] = [
 ];
 const dispatchNotes: DispatchNote[] = [];
 
+const monthlyDispensations: MonthlyDispensationBox[] = [
+  {
+    id: 'disp-box-01',
+    patientId: 'pat-01',
+    period: '2024-07',
+    status: MonthlyDispensationBoxStatus.InPreparation,
+    createdAt: subDays(today, 5).toISOString(),
+    updatedAt: subDays(today, 2).toISOString(),
+    items: [
+      {
+        id: 'rec-dispensed-01',
+        type: 'magistral',
+        name: 'Receta Magistral',
+        details: 'Minoxidil 5%',
+        status: DispensationItemStatus.OkToInclude,
+        reason: 'Receta vigente y con ciclos disponibles.',
+      },
+      {
+        id: 'inv-005',
+        type: 'commercial',
+        name: 'Medicamento Comercial',
+        details: 'Aspirina 100mg',
+        status: DispensationItemStatus.OkToInclude,
+        reason: 'Stock suficiente.',
+      }
+    ]
+  },
+  {
+    id: 'disp-box-02',
+    patientId: 'pat-02',
+    period: '2024-07',
+    status: MonthlyDispensationBoxStatus.InPreparation,
+    createdAt: subDays(today, 3).toISOString(),
+    updatedAt: subDays(today, 1).toISOString(),
+    items: [
+      {
+        id: 'rec-validated-01',
+        type: 'magistral',
+        name: 'Receta Magistral',
+        details: 'Fenobarbital',
+        status: DispensationItemStatus.RequiresAttention,
+        reason: 'La receta original ha vencido. Se requiere nueva prescripción.',
+      },
+      {
+        id: 'inv-006',
+        type: 'commercial',
+        name: 'Medicamento Comercial',
+        details: 'Losartan 50mg',
+        status: DispensationItemStatus.OkToInclude,
+        reason: 'Stock suficiente.',
+      },
+      {
+        id: 'inv-007',
+        type: 'commercial',
+        name: 'Medicamento Comercial',
+        details: 'Metformina 850mg',
+        status: DispensationItemStatus.RequiresAttention,
+        reason: 'Stock insuficiente en inventario.',
+      }
+    ]
+  }
+];
+
 export function getMockData(): AppData {
     return {
         recipes,
@@ -148,5 +215,6 @@ export function getMockData(): AppData {
         dispatchNotes,
         pharmacovigilanceReports,
         controlledSubstanceLog,
+        monthlyDispensations,
     };
 }

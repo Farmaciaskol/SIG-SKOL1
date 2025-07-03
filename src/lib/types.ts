@@ -1,5 +1,6 @@
 
 
+
 export enum RecipeStatus {
   PendingReviewPortal = 'Pendiente Revisión - Portal',
   PendingValidation = 'Pendiente Validación',
@@ -50,6 +51,42 @@ export enum ControlledLogEntryType {
   MagistralDispensation = 'Dispensación Magistral',
   DirectSale = 'Venta Directa',
 }
+
+export enum MonthlyDispensationBoxStatus {
+  InPreparation = 'En Preparación',
+  ReadyForPickup = 'Lista para Retiro',
+  Dispensed = 'Dispensada',
+  Cancelled = 'Anulada',
+}
+
+export enum DispensationItemStatus {
+  OkToInclude = 'OK para Incluir',
+  RequiresAttention = 'Requiere Atención',
+  DoNotInclude = 'No Incluir',
+  ManuallyAdded = 'Añadido Manualmente',
+}
+
+export interface DispensationItem {
+  id: string; // recipeId or inventoryItemId
+  type: 'magistral' | 'commercial';
+  name: string;
+  details: string; // e.g., 'Minoxidil 5%' or 'Losartan 50mg'
+  status: DispensationItemStatus;
+  reason: string; // Reason for the status, e.g., 'Stock Insufficient'
+  pharmacistNotes?: string;
+}
+
+export interface MonthlyDispensationBox {
+  id: string;
+  patientId: string;
+  period: string; // YYYY-MM format
+  status: MonthlyDispensationBoxStatus;
+  items: DispensationItem[];
+  createdAt: string; // ISO
+  updatedAt: string; // ISO
+  dispensedAt?: string; // ISO
+}
+
 
 export interface ControlledSubstanceLogEntry {
   id: string;
@@ -264,4 +301,5 @@ export interface AppData {
   dispatchNotes: DispatchNote[];
   pharmacovigilanceReports: PharmacovigilanceReport[];
   controlledSubstanceLog: ControlledSubstanceLogEntry[];
+  monthlyDispensations: MonthlyDispensationBox[];
 }
