@@ -649,7 +649,7 @@ export async function findPatientByRut(rut: string): Promise<Patient | null> {
 
 export async function createPatientAuthToken(patientId: string): Promise<PatientAuthToken> {
     if (!db) throw new Error("Firestore is not initialized.");
-    const token = crypto.randomUUID();
+    const token = Math.random().toString(36).substring(2) + Date.now().toString(36);
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes expiry
 
     const authToken: Omit<PatientAuthToken, 'id'> = {
