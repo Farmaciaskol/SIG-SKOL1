@@ -1,5 +1,6 @@
 
 
+
 'use client';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
@@ -151,11 +152,18 @@ export default function DispatchManagementPage() {
         const inventoryItem = inventory.find(i => i.id === recipeItem.sourceInventoryItemId);
 
         if (inventoryItem) {
-             if (inventoryItem.lots && inventoryItem.lots.length > 0 && inventoryItem.itemsPerBaseUnit && recipeItem.totalQuantityValue) {
-                 const quantityToDispatch = Math.ceil(Number(recipeItem.totalQuantityValue) / inventoryItem.itemsPerBaseUnit);
-                 items.push({ recipe, patient, inventoryItem, recipeItem, quantityToDispatch });
+             if (inventoryItem.itemsPerBaseUnit && inventoryItem.doseValue) {
+                const recipeTotalPA = Number(recipeItem.concentrationValue) * Number(recipeItem.totalQuantityValue);
+                const inventoryTotalPAperUnit = inventoryItem.doseValue * inventoryItem.itemsPerBaseUnit;
+
+                if (isNaN(recipeTotalPA) || inventoryTotalPAperUnit <= 0) {
+                    items.push({ recipe, patient, inventoryItem, recipeItem, error: 'Valores inválidos en receta o insumo para calcular fraccionamiento.' });
+                } else {
+                    const quantityToDispatch = Math.ceil(recipeTotalPA / inventoryTotalPAperUnit);
+                    items.push({ recipe, patient, inventoryItem, recipeItem, quantityToDispatch });
+                }
             } else {
-                 items.push({ recipe, patient, inventoryItem, recipeItem, error: 'El insumo no tiene lotes con stock o no está configurado para fraccionamiento.' });
+                 items.push({ recipe, patient, inventoryItem, recipeItem, error: 'Insumo no configurado para fraccionamiento (P.A. o Unidades/Envase).' });
             }
         } else {
             items.push({ recipe, patient, inventoryItem: undefined, recipeItem, error: 'Insumo base no encontrado en el inventario. Verifique la configuración de la receta.' });

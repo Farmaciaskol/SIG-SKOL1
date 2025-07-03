@@ -227,25 +227,46 @@ export interface LotDetail {
 
 export interface InventoryItem {
   id: string;
-  name: string;
-  unit: string;
-  quantity: number;
-  lowStockThreshold: number;
-  costPrice: number;
-  salePrice: number;
-  sku?: string;
+  name: string; // Nombre comercial
+  activePrinciple: string;
+  sku?: string; // Código Nacional / ISP
+  manufacturer?: string;
   barcode?: string;
+  
+  pharmaceuticalForm: string;
+  doseValue: number;
+  doseUnit: string;
+  administrationRoute?: string;
+  packagePresentation?: string;
+  
+  saleCondition: string;
+  isBioequivalent?: boolean;
+  
   isControlled?: boolean;
   controlledType?: 'Psicotrópico' | 'Estupefaciente';
   requiresRefrigeration?: boolean;
-  activePrincipleContentValue?: number;
-  activePrincipleContentUnit?: string;
-  itemsPerBaseUnit?: number;
-  lots?: LotDetail[];
-  mainProvider?: string;
+  atcCode?: string;
+
+  // For fraccionamiento
+  itemsPerBaseUnit: number;
+
+  // Logistics
+  unit: string; // Unidad de compra (caja, frasco)
+  quantity: number;
+  lowStockThreshold: number;
   maxStock?: number;
+  mainProvider?: string;
   location?: string;
+  costPrice: number;
+  salePrice: number;
+  lots?: LotDetail[];
+  
+  // Aditional
+  mainIndications?: string;
+  attachments?: { name: string; url: string }[];
+  internalNotes?: string;
 }
+
 
 export interface User {
   id: string;
