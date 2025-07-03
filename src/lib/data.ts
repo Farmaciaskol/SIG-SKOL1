@@ -143,26 +143,46 @@ async function getDocument<T>(collectionName: string, id: string): Promise<T | n
     }
     try {
         const docRef = doc(db, collectionName, id);
-        const docSnap = await getDoc(docRef);
+        let docSnap = await getDoc(docRef);
+
+        // If document doesn't exist, try to seed the collection once.
+        if (!docSnap.exists() && USE_MOCK_DATA_ON_EMPTY_FIRESTORE && !seededCollections.has(collectionName)) {
+            console.warn(`Document '${id}' in collection '${collectionName}' not found. Attempting to seed collection...`);
+            const mockData = getMockData()[collectionName as keyof AppData];
+            
+            // Logic for collections stored as arrays in mock-data
+            if (mockData && Array.isArray(mockData)) {
+                const collRef = collection(db, collectionName);
+                const querySnapshot = await getDocs(query(collRef).limit(1));
+                if (querySnapshot.empty) {
+                    const batch = writeBatch(db);
+                    mockData.forEach((item: any) => {
+                        const newDocRef = doc(db, collectionName, item.id);
+                        batch.set(newDocRef, item);
+                    });
+                    await batch.commit();
+                    console.log(`Successfully seeded ${mockData.length} documents into '${collectionName}'.`);
+                    // After seeding, try fetching the document again
+                    docSnap = await getDoc(docRef);
+                }
+            } 
+            // Logic for "collections" that are single documents (like appSettings)
+            else if (mockData && !Array.isArray(mockData) && id === (mockData as any).id) {
+                await setDoc(docRef, mockData);
+                console.log(`Successfully seeded single document '${collectionName}/${id}'.`);
+                // After seeding, try fetching the document again
+                docSnap = await getDoc(docRef);
+            }
+            
+            seededCollections.add(collectionName); // Mark as checked to prevent re-seeding
+        }
+
 
         if (docSnap.exists()) {
             const data = docSnap.data();
             const convertedData = deepConvertTimestamps(data);
             return { id: docSnap.id, ...convertedData } as T;
         } else {
-            if (collectionName === 'appSettings' && id === 'global' && USE_MOCK_DATA_ON_EMPTY_FIRESTORE && !seededCollections.has(collectionName)) {
-                 console.warn(`Firestore document 'appSettings/global' not found. Seeding with mock data...`);
-                const mockData = getMockData().appSettings;
-                if (mockData) {
-                    await setDoc(docRef, mockData);
-                    console.log(`Successfully seeded document 'appSettings/global'.`);
-                    seededCollections.add(collectionName);
-                    const newSnap = await getDoc(docRef);
-                    const data = newSnap.data();
-                    const convertedData = deepConvertTimestamps(data);
-                    return { id: newSnap.id, ...convertedData } as T;
-                }
-            }
             console.log(`Document with id ${id} not found in ${collectionName} collection.`);
             return null;
         }
@@ -706,3 +726,4 @@ export const sendMessageFromPatient = async (patientId: string, content: string)
         ...newMessage
     }
 };
+
