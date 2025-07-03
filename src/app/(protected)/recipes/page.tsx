@@ -705,18 +705,10 @@ export default function RecipesPage() {
                               <TableCell>{format(new Date(recipe.createdAt), "d 'de' MMMM, yyyy", { locale: es })}</TableCell>
                               <TableCell>
                                 <div className="flex items-center gap-2">
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <span>
-                                          {React.createElement((statusConfig[recipe.status] || { icon: FileX }).icon, { className: 'h-5 w-5' })}
-                                        </span>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <p>{(statusConfig[recipe.status] || { text: recipe.status }).text}</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
+                                  <Badge variant="outline" className={cn("font-normal", statusConfig[recipe.status]?.badge)}>
+                                    {React.createElement(statusConfig[recipe.status]?.icon || FileX, { className: 'h-3 w-3 mr-1.5' })}
+                                    {statusConfig[recipe.status]?.text || recipe.status}
+                                  </Badge>
                                   {recipe.items.some(item => item.requiresFractionation) && (
                                     <TooltipProvider>
                                       <Tooltip>
@@ -761,18 +753,9 @@ export default function RecipesPage() {
                           </Tooltip>
                         </TooltipProvider>
                       )}
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span>
-                              {React.createElement((statusConfig[recipe.status] || { icon: FileX }).icon, { className: 'h-5 w-5' })}
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{(statusConfig[recipe.status] || { text: recipe.status }).text}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                      <Badge variant="outline" className={cn("font-normal text-xs", statusConfig[recipe.status]?.badge)}>
+                        {statusConfig[recipe.status]?.text || recipe.status}
+                      </Badge>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-2 pb-4">

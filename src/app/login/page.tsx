@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Lock, Mail } from 'lucide-react';
+import { Lock, Mail, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,27 +39,39 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
-      <div className="hidden bg-primary lg:flex flex-col items-center justify-center p-12 text-center text-primary-foreground">
-        <Image
-          src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20BLANCO.png?alt=media&token=d39d318e-4e52-4215-8941-1a1b4cae7948"
-          alt="Skol Pharmacy Logo"
-          width={120}
-          height={120}
-          className="mb-8"
-          priority
-        />
+    <div className="w-full min-h-screen lg:grid lg:grid-cols-2 xl:grid-cols-5">
+      <div className="bg-primary text-primary-foreground flex flex-col justify-center p-8 lg:p-12 text-center xl:col-span-2">
+        <div className="lg:hidden mb-6">
+            <Image
+            src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20BLANCO.png?alt=media&token=d39d318e-4e52-4215-8941-1a1b4cae7948"
+            alt="Skol Pharmacy Logo"
+            width={80}
+            height={80}
+            className="mx-auto"
+            priority
+            />
+        </div>
+        <div className="hidden lg:block mb-8">
+            <Image
+            src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20BLANCO.png?alt=media&token=d39d318e-4e52-4215-8941-1a1b4cae7948"
+            alt="Skol Pharmacy Logo"
+            width={120}
+            height={120}
+            className="mx-auto"
+            priority
+            />
+        </div>
         <div className="mx-auto max-w-md">
-          <h2 className="text-4xl font-bold font-headline mb-4">
+          <h2 className="text-3xl lg:text-4xl font-bold font-headline mb-4">
             Sistema Integral de Gestión Skol
           </h2>
-          <p className="text-base font-body text-primary-foreground/80">
+          <p className="text-sm lg:text-base font-body text-primary-foreground/80">
             Optimizando el ciclo de vida de las recetas magistrales con precisión y eficiencia.
           </p>
         </div>
       </div>
-      <div className="flex items-center justify-center py-12 min-h-screen bg-background">
-        <Card className="mx-auto w-full max-w-sm shadow-xl border-0">
+      <div className="flex grow items-center justify-center p-6 bg-background xl:col-span-3">
+        <Card className="mx-auto w-full max-w-sm shadow-none border-0 sm:shadow-xl sm:border">
           <CardHeader className="text-center space-y-2">
             <CardTitle className="text-2xl font-bold font-headline">Acceso de Administrador</CardTitle>
             <CardDescription>Bienvenido de vuelta. Ingrese sus credenciales.</CardDescription>
@@ -98,6 +110,7 @@ export default function LoginPage() {
                     </div>
                 </div>
                 <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={loading}>
+                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {loading ? 'Ingresando...' : 'Ingresar al Sistema'}
                 </Button>
             </form>

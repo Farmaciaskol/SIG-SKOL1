@@ -11,7 +11,35 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { PatientSchema, RecipeSchema, ProactivePatientStatusEnum, PatientActionNeededEnum } from './schemas';
+import { ProactivePatientStatus, PatientActionNeeded, RecipeStatus } from '@/lib/types';
+
+// Define Zod schemas based on the types needed for the flow
+const ProactivePatientStatusEnum = z.nativeEnum(ProactivePatientStatus);
+const PatientActionNeededEnum = z.nativeEnum(PatientActionNeeded);
+
+const PatientSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  isChronic: z.boolean(),
+});
+
+const RecipeItemSchema = z.object({
+  principalActiveIngredient: z.string(),
+});
+
+const AuditTrailEntrySchema = z.object({
+  date: z.string(),
+  status: z.nativeEnum(RecipeStatus),
+});
+
+const RecipeSchema = z.object({
+  id: z.string(),
+  status: z.nativeEnum(RecipeStatus),
+  dueDate: z.string(),
+  items: z.array(RecipeItemSchema),
+  auditTrail: z.array(AuditTrailEntrySchema).optional(),
+});
+
 
 export const ProactiveAnalysisInputSchema = z.object({
     patient: PatientSchema,
