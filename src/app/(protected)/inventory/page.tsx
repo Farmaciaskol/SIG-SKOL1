@@ -247,7 +247,7 @@ const ProductCard = ({ item, onEdit }: { item: InventoryItemWithStats; onEdit: (
                 <div className="text-sm">
                     <p className="text-slate-500">Próximo Vencimiento:</p>
                     <p className="font-medium text-slate-700">
-                        {item.nextExpiryDate ? format(parseISO(item.nextExpiryDate), 'dd-MMMM-yyyy', {locale: es}) : 'N/A'}
+                        {item.nextExpiryDate && !isNaN(parseISO(item.nextExpiryDate).getTime()) ? format(parseISO(item.nextExpiryDate), 'dd-MMMM-yyyy', {locale: es}) : 'N/A'}
                     </p>
                 </div>
             </CardContent>
@@ -320,13 +320,23 @@ export default function InventoryPage() {
             
             const lots = item.lots || [];
             const sortedLots = [...lots]
-                .filter(lot => lot.quantity > 0)
-                .sort((a, b) => new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime());
+                .filter(lot => {
+                    if (lot.quantity <= 0 || !lot.expiryDate) return false;
+                    // Check if expiryDate is a valid date string
+                    return !isNaN(parseISO(lot.expiryDate).getTime());
+                })
+                .sort((a, b) => parseISO(a.expiryDate).getTime() - parseISO(b.expiryDate).getTime());
             
             const nextExpiryDate = sortedLots.length > 0 ? sortedLots[0].expiryDate : undefined;
             
-            const isExpired = nextExpiryDate ? isBefore(parseISO(nextExpiryDate), now) : false;
-            const isExpiringSoon = nextExpiryDate ? differenceInDays(parseISO(nextExpiryDate), now) <= EXPIRY_THRESHOLD_DAYS && !isExpired : false;
+            let isExpired = false;
+            let isExpiringSoon = false;
+
+            if (nextExpiryDate) {
+                const expiryDateObj = parseISO(nextExpiryDate);
+                isExpired = isBefore(expiryDateObj, now);
+                isExpiringSoon = differenceInDays(expiryDateObj, now) <= EXPIRY_THRESHOLD_DAYS && !isExpired;
+            }
 
             let status: InventoryItemWithStats['status'] = 'OK';
             if (isExpired) status = 'Vencido';
