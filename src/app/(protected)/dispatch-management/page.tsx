@@ -40,13 +40,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { CheckCircle, XCircle, Package, History, PackageCheck, Loader2, Truck, AlertTriangle, Check, ShieldCheck, FileWarning } from 'lucide-react';
+import { CheckCircle, XCircle, Package, History, PackageCheck, Loader2, Truck, AlertTriangle, Check, ShieldCheck, FileWarning, Snowflake } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 type ItemForDispatch = {
   recipe: Recipe;
@@ -421,7 +422,21 @@ export default function DispatchManagementPage() {
                                     )}>
                                         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
                                             <div className="md:col-span-2 space-y-1">
-                                                <p className="text-lg font-bold text-slate-800">{item.inventoryItem.name}</p>
+                                                <p className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                                    {item.inventoryItem.name}
+                                                    {item.inventoryItem.requiresRefrigeration && (
+                                                        <TooltipProvider>
+                                                            <Tooltip>
+                                                                <TooltipTrigger>
+                                                                    <Snowflake className="h-5 w-5 text-blue-500" />
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    <p>¡Atención! Insumo requiere cadena de frío.</p>
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
+                                                    )}
+                                                </p>
                                                 <p className="text-sm text-slate-600">Receta: <span className="font-mono text-primary">{item.recipe.id}</span> ({item.recipeItem.principalActiveIngredient})</p>
                                                 <p className="text-sm text-slate-500">Paciente: {item.patient?.name || 'Desconocido'}</p>
                                                 <p className="text-base font-bold mt-1 text-slate-700">Despachar: {item.quantityToDispatch} {item.inventoryItem.unit}</p>

@@ -121,6 +121,7 @@ export interface RecipeItem {
   totalQuantityUnit: string;
   usageInstructions: string;
   requiresFractionation?: boolean;
+  isRefrigerated?: boolean;
 }
 
 export interface AuditTrailEntry {
@@ -234,6 +235,7 @@ export interface InventoryItem {
   costPrice?: number;
   isControlled?: boolean;
   controlledType?: 'Psicotrópico' | 'Estupefaciente';
+  requiresRefrigeration?: boolean;
   // For fractionation
   activePrincipleContentValue?: number;
   activePrincipleContentUnit?: string;

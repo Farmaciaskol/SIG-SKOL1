@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { getInventory, addInventoryItem, updateInventoryItem, addLotToInventoryItem, InventoryItem, LotDetail } from '@/lib/data';
-import { PlusCircle, Search, Edit, History, PackagePlus, Trash2, MoreVertical, DollarSign, Package, PackageX, AlertTriangle, Star, Box, ChevronDown, Loader2, Calendar as CalendarIcon } from 'lucide-react';
+import { PlusCircle, Search, Edit, History, PackagePlus, Trash2, MoreVertical, DollarSign, Package, PackageX, AlertTriangle, Star, Box, ChevronDown, Loader2, Calendar as CalendarIcon, Snowflake } from 'lucide-react';
 import { format, differenceInDays, isBefore, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
@@ -73,6 +73,7 @@ const inventoryFormSchema = z.object({
   costPrice: z.number().optional(),
   isControlled: z.boolean().default(false),
   controlledType: z.string().optional(),
+  requiresRefrigeration: z.boolean().default(false),
   activePrincipleContentValue: z.number().optional(),
   activePrincipleContentUnit: z.string().optional(),
   itemsPerBaseUnit: z.number().optional(),
@@ -98,6 +99,7 @@ const InventoryItemForm = ({ item, onFinished }: { item?: InventoryItem; onFinis
             costPrice: item?.costPrice || 0,
             isControlled: item?.isControlled || false,
             controlledType: item?.controlledType || '',
+            requiresRefrigeration: item?.requiresRefrigeration || false,
             activePrincipleContentValue: item?.activePrincipleContentValue || 0,
             activePrincipleContentUnit: item?.activePrincipleContentUnit || '',
             itemsPerBaseUnit: item?.itemsPerBaseUnit || 0,
@@ -155,9 +157,14 @@ const InventoryItemForm = ({ item, onFinished }: { item?: InventoryItem; onFinis
                     <FormItem><FormLabel>Precio Costo</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl><FormMessage /></FormItem>
                 )}/>
                 
-                <FormField control={form.control} name="isControlled" render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-x-2 pt-2"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel className="!mt-0">Es Controlado</FormLabel></FormItem>
-                )}/>
+                <div className="flex items-center space-x-6">
+                    <FormField control={form.control} name="isControlled" render={({ field }) => (
+                        <FormItem className="flex flex-row items-center space-x-2 pt-2"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel className="!mt-0">Es Controlado</FormLabel></FormItem>
+                    )}/>
+                    <FormField control={form.control} name="requiresRefrigeration" render={({ field }) => (
+                        <FormItem className="flex flex-row items-center space-x-2 pt-2"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel className="!mt-0">Requiere Refrigeración</FormLabel></FormItem>
+                    )}/>
+                </div>
 
                 {isControlled && (
                     <FormField control={form.control} name="controlledType" render={({ field }) => (
@@ -233,7 +240,10 @@ const ProductCard = ({ item, onEdit, onManageLots }: { item: InventoryItemWithSt
             <CardHeader className="pb-4">
                  <div className="flex justify-between items-start">
                     <h3 className="text-lg font-bold text-slate-800">{item.name}</h3>
-                    {item.isControlled && <Star className="h-5 w-5 text-amber-500" />}
+                    <div className="flex items-center gap-2">
+                        {item.requiresRefrigeration && <Snowflake className="h-5 w-5 text-blue-500" title="Requiere Cadena de Frío" />}
+                        {item.isControlled && <Star className="h-5 w-5 text-amber-500" title="Sustancia Controlada" />}
+                    </div>
                  </div>
                  <p className="text-xs text-slate-500">SKU: {item.sku || 'N/A'}</p>
             </CardHeader>

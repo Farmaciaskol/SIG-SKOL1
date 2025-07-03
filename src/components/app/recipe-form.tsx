@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Upload, PlusCircle, X, Image as ImageIcon, Loader2, Wand2, Bot, Calendar as CalendarIcon, Trash2 } from 'lucide-react';
+import { Upload, PlusCircle, X, Image as ImageIcon, Loader2, Wand2, Bot, Calendar as CalendarIcon, Trash2, Snowflake } from 'lucide-react';
 import { getPatients, getDoctors, getRecipe, getExternalPharmacies, Patient, Doctor, ExternalPharmacy, saveRecipe, RecipeStatus, getAppSettings, AppSettings } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { extractRecipeDataFromImage } from '@/ai/flows/extract-recipe-data-from-image';
@@ -52,6 +52,7 @@ const recipeItemSchema = z.object({
   totalQuantityUnit: z.string().min(1, "La unidad de la Cantidad Total es requerida."),
   usageInstructions: z.string().min(1, "Las Instrucciones de Uso son requeridas."),
   requiresFractionation: z.boolean().optional(),
+  isRefrigerated: z.boolean().default(false).optional(),
 });
 
 const recipeFormSchema = z.object({
@@ -123,6 +124,7 @@ const defaultItem = {
   totalQuantityUnit: '',
   usageInstructions: '',
   requiresFractionation: false,
+  isRefrigerated: false,
 };
 
 export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
@@ -800,6 +802,21 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                                 )}
                             />
                         )}
+                        
+                        <FormField
+                            control={form.control}
+                            name={`items.${index}.isRefrigerated`}
+                            render={({ field }) => (
+                            <FormItem className="flex flex-row items-center space-x-2 pt-2">
+                                <FormControl>
+                                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                </FormControl>
+                                <FormLabel className="!mt-0 font-normal text-sm text-slate-700">
+                                    El preparado final requiere refrigeración
+                                </FormLabel>
+                            </FormItem>
+                            )}
+                        />
 
                         <div className="flex justify-start">
                             <Button type="button" variant="outline" size="sm" onClick={() => handleSimplifyInstructions(index)} disabled={isSimplifying === index}>
