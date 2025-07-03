@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -14,7 +15,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, User, Mail, Phone, MapPin, AlertTriangle, Pencil, Clock, Wand2, FlaskConical, FileText, CheckCircle2, BriefcaseMedical, DollarSign, Calendar, Lock, ShieldAlert, Eye, PlusCircle, Search } from 'lucide-react';
+import { Loader2, User, Mail, Phone, MapPin, AlertTriangle, Pencil, Clock, Wand2, FlaskConical, FileText, CheckCircle2, BriefcaseMedical, DollarSign, Calendar, Lock, ShieldAlert, Eye, PlusCircle, Search, X } from 'lucide-react';
 import { format, parseISO, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { PatientFormDialog } from '@/components/app/patient-form-dialog';
@@ -66,6 +67,12 @@ export default function PatientDetailPage() {
   const [doctorsToAssociate, setDoctorsToAssociate] = useState<string[]>([]);
   const [isSavingAssociation, setIsSavingAssociation] = useState(false);
   const [doctorSearchTerm, setDoctorSearchTerm] = useState('');
+  
+  // Commercial Meds Dialog State
+  const [isCommercialMedsModalOpen, setIsCommercialMedsModalOpen] = useState(false);
+  const [isSavingMeds, setIsSavingMeds] = useState(false);
+  const [currentMeds, setCurrentMeds] = useState<string[]>([]);
+  const [newMed, setNewMed] = useState('');
 
 
   const fetchData = useCallback(async () => {
@@ -170,6 +177,39 @@ export default function PatientDetailPage() {
       setIsSavingAssociation(false);
     }
   };
+  
+  const handleOpenCommercialMedsModal = () => {
+    setCurrentMeds(patient?.commercialMedications || []);
+    setNewMed('');
+    setIsCommercialMedsModalOpen(true);
+  };
+
+  const handleAddMed = () => {
+    if (newMed.trim() && !currentMeds.some(m => m.toLowerCase() === newMed.trim().toLowerCase())) {
+        setCurrentMeds([...currentMeds, newMed.trim()]);
+        setNewMed('');
+    }
+  };
+
+  const handleRemoveMed = (medToRemove: string) => {
+    setCurrentMeds(currentMeds.filter(med => med !== medToRemove));
+  };
+
+  const handleSaveCommercialMeds = async () => {
+    if (!patient) return;
+    setIsSavingMeds(true);
+    try {
+      await updatePatient(patient.id, { commercialMedications: currentMeds });
+      toast({ title: 'Medicamentos Actualizados', description: 'La lista de medicamentos comerciales ha sido guardada.' });
+      setIsCommercialMedsModalOpen(false);
+      await fetchData(); // To get the updated patient data
+    } catch (error) {
+      toast({ title: 'Error', description: 'No se pudieron guardar los medicamentos.', variant: 'destructive' });
+    } finally {
+      setIsSavingMeds(false);
+    }
+  };
+
 
   if (loading) {
     return (
@@ -265,11 +305,14 @@ export default function PatientDetailPage() {
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Tratamiento con Medicamentos Comerciales</CardTitle>
+                  <Button variant="outline" size="sm" onClick={handleOpenCommercialMedsModal}>
+                    <Pencil className="mr-2 h-4 w-4" /> Editar
+                  </Button>
                 </CardHeader>
                 <CardContent>
                   {patient.commercialMedications && patient.commercialMedications.length > 0 ? (
-                      <ul className="space-y-1 text-sm text-muted-foreground">
-                          {patient.commercialMedications.map((med, index) => <li key={index}>- {med}</li>)}
+                      <ul className="space-y-1 text-sm text-muted-foreground list-disc pl-5">
+                          {patient.commercialMedications.map((med, index) => <li key={index}>{med}</li>)}
                       </ul>
                   ) : (
                       <p className="text-sm text-muted-foreground">No hay medicamentos comerciales activos registrados.</p>
@@ -283,6 +326,13 @@ export default function PatientDetailPage() {
                       <AccordionItem value="history" className="border-b-0">
                           <AccordionTrigger className="text-xl font-semibold p-6 hover:no-underline"><FileText className="mr-3 h-5 w-5 text-primary"/>Historial de Recetas Magistrales</AccordionTrigger>
                           <AccordionContent className="px-6 pb-6">
+                              <div className="flex justify-end mb-4">
+                                <Button asChild>
+                                  <Link href={`/recipes/new?patientId=${patient.id}`}>
+                                    <PlusCircle className="mr-2 h-4 w-4" /> Nueva Receta Magistral
+                                  </Link>
+                                </Button>
+                              </div>
                               {recipes.length > 0 ? (
                                   <div className="space-y-4">
                                       {recipes.map(recipe => (
@@ -461,6 +511,50 @@ export default function PatientDetailPage() {
                     {isSavingAssociation && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
                     Guardar Cambios
                 </Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      <Dialog open={isCommercialMedsModalOpen} onOpenChange={setIsCommercialMedsModalOpen}>
+        <DialogContent>
+            <DialogHeader>
+            <DialogTitle>Editar Medicamentos Comerciales</DialogTitle>
+            <DialogDescription>
+                Añada o elimine los medicamentos comerciales que el paciente está tomando.
+            </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+                <div className="flex items-center gap-2">
+                    <Input 
+                    value={newMed}
+                    onChange={(e) => setNewMed(e.target.value)}
+                    placeholder="Ej: Losartan 50mg"
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddMed();
+                        }
+                    }}
+                    />
+                    <Button onClick={handleAddMed} type="button">Añadir</Button>
+                </div>
+                <div className="space-y-2 max-h-60 overflow-y-auto p-2 border rounded-md">
+                    {currentMeds.length > 0 ? currentMeds.map((med, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded-md">
+                        <span className="text-sm">{med}</span>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveMed(med)}>
+                        <X className="h-4 w-4" />
+                        </Button>
+                    </div>
+                    )) : <p className="text-sm text-center text-muted-foreground p-4">No hay medicamentos añadidos.</p>}
+                </div>
+            </div>
+            <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsCommercialMedsModalOpen(false)}>Cancelar</Button>
+            <Button onClick={handleSaveCommercialMeds} disabled={isSavingMeds}>
+                {isSavingMeds && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Guardar Cambios
+            </Button>
             </DialogFooter>
         </DialogContent>
       </Dialog>
