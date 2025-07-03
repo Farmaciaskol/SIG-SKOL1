@@ -13,11 +13,15 @@ import {
   Box,
   Wand2,
   AlertCircle,
+  FileText,
+  FilePlus2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getRecipes, getPatients, getInventory, getUsers, Recipe, Patient, InventoryItem, User, RecipeStatus, ProactivePatientStatus } from '@/lib/data';
-import { differenceInDays } from 'date-fns';
+import { getRecipes, getPatients, getInventory, Recipe, Patient, InventoryItem, RecipeStatus, ProactivePatientStatus } from '@/lib/data';
+import { differenceInDays, format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { statusConfig } from '@/lib/constants';
 
 type KpiCardProps = {
   title: string;
@@ -66,7 +70,7 @@ const ProactiveAlertsCard = ({ patients }: { patients: Patient[] }) => {
       bgColor: 'bg-yellow-50',
       borderColor: 'border-yellow-400',
     },
-    [ProactivePatientStatus.OK]: { // Default, won't be used but good for completeness
+    [ProactivePatientStatus.OK]: {
       icon: CheckCircle2,
       color: 'text-green-600',
       bgColor: 'bg-green-50',
@@ -75,7 +79,7 @@ const ProactiveAlertsCard = ({ patients }: { patients: Patient[] }) => {
   };
 
   return (
-    <Card>
+    <Card className="lg:col-span-1">
       <CardHeader className="flex flex-row items-center gap-3 border-b pb-4">
         <Wand2 className="h-5 w-5 text-muted-foreground" />
         <CardTitle className="text-lg font-semibold text-slate-800">Alertas Proactivas (IA)</CardTitle>
@@ -127,13 +131,106 @@ const ProactiveAlertsCard = ({ patients }: { patients: Patient[] }) => {
   );
 };
 
+const DelayedRecipesCard = ({ recipes, patients }: { recipes: Recipe[], patients: Patient[] }) => {
+    const delayedRecipes = useMemo(() => {
+        if (!recipes) return [];
+        const DELAY_THRESHOLD_DAYS = 3; 
+        
+        return recipes
+        .filter(recipe => 
+            (recipe.status === RecipeStatus.PendingValidation || recipe.status === RecipeStatus.Validated || recipe.status === RecipeStatus.Preparation) &&
+            differenceInDays(new Date(), new Date(recipe.updatedAt)) > DELAY_THRESHOLD_DAYS
+        )
+        .map(recipe => ({
+            ...recipe,
+            daysDelayed: differenceInDays(new Date(), new Date(recipe.updatedAt)),
+            patientName: patients.find(p => p.id === recipe.patientId)?.name ?? 'N/A'
+        }));
+    }, [recipes, patients]);
+
+    return (
+        <Card className="lg:col-span-1">
+          <CardHeader className="flex flex-row items-center gap-3 border-b pb-4">
+            <Clock className="h-5 w-5 text-muted-foreground" />
+            <CardTitle className="text-lg font-semibold text-slate-800">Recetas con Retraso</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4 space-y-3">
+            {delayedRecipes.length > 0 ? (
+              delayedRecipes.map(recipe => (
+                <div key={recipe.id} className="flex items-center p-3 rounded-lg bg-orange-50 border-l-4 border-orange-400">
+                  <div className="flex-grow">
+                    <p className="font-semibold text-primary"><Link href={`/recipes/${recipe.id}`} className="hover:underline">Receta: {recipe.id}</Link></p>
+                    <p className="text-sm text-slate-700">Paciente: {recipe.patientName}</p>
+                    <p className="text-sm text-slate-500">En estado "{recipe.status}" por {recipe.daysDelayed} días.</p>
+                  </div>
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href={`/recipes/${recipe.id}`}>Revisar</Link>
+                  </Button>
+                </div>
+              ))
+            ) : (
+                <div className="flex flex-col items-center text-center text-muted-foreground h-full justify-center py-6">
+                    <CheckCircle2 className="h-10 w-10 text-green-500 mb-2" />
+                    <p className="font-medium text-slate-700">¡Excelente!</p>
+                    <p className="text-sm">No hay recetas con retraso.</p>
+                </div>
+            )}
+          </CardContent>
+        </Card>
+    );
+};
+
+const RecentRecipesCard = ({ recipes, patients }: { recipes: Recipe[], patients: Patient[] }) => {
+    const recentRecipes = recipes.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
+    const getPatientName = (patientId: string) => patients.find(p => p.id === patientId)?.name || 'N/A';
+
+    return (
+        <Card className="lg:col-span-1">
+            <CardHeader className="flex flex-row items-center gap-3 border-b pb-4">
+                <FilePlus2 className="h-5 w-5 text-muted-foreground" />
+                <CardTitle className="text-lg font-semibold text-slate-800">Actividad Reciente</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4 space-y-4">
+                {recentRecipes.length > 0 ? (
+                    recentRecipes.map(recipe => {
+                        const Icon = statusConfig[recipe.status]?.icon || FileText;
+                        return (
+                            <div key={recipe.id} className="flex items-start gap-4">
+                                <div className="p-2 rounded-full bg-muted">
+                                    <Icon className="h-4 w-4 text-muted-foreground"/>
+                                </div>
+                                <div className="flex-grow">
+                                    <p className="text-sm font-medium text-primary">
+                                        <Link href={`/recipes/${recipe.id}`} className="hover:underline">
+                                            Nueva Receta: {recipe.id}
+                                        </Link>
+                                    </p>
+                                    <p className="text-sm text-slate-700">Paciente: {getPatientName(recipe.patientId)}</p>
+                                    <p className="text-xs text-slate-500">{format(new Date(recipe.createdAt), "d MMMM, yyyy 'a las' HH:mm", {locale: es})}</p>
+                                </div>
+                            </div>
+                        )
+                    })
+                ) : (
+                    <div className="flex flex-col items-center text-center text-muted-foreground h-full justify-center py-6">
+                         <CheckCircle2 className="h-10 w-10 text-green-500 mb-2" />
+                        <p className="font-medium text-slate-700">Sin actividad reciente</p>
+                        <p className="text-sm">
+                            Las nuevas recetas aparecerán aquí.
+                        </p>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+};
+
 
 export default function DashboardPage() {
   const [data, setData] = useState<{
     recipes: Recipe[];
     patients: Patient[];
     inventory: InventoryItem[];
-    users: User[];
   } | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -141,17 +238,15 @@ export default function DashboardPage() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [recipesData, patientsData, inventoryData, usersData] = await Promise.all([
+        const [recipesData, patientsData, inventoryData] = await Promise.all([
           getRecipes(),
           getPatients(),
           getInventory(),
-          getUsers(),
         ]);
         setData({
           recipes: recipesData,
           patients: patientsData,
           inventory: inventoryData,
-          users: usersData,
         });
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
@@ -180,25 +275,9 @@ export default function DashboardPage() {
     return [
       { title: 'Recetas del Portal Pendientes', value: data.recipes.filter(r => r.status === RecipeStatus.PendingReviewPortal).length, icon: Inbox, href: '/recipes?status=Pendiente+Revisión+-+Portal' },
       { title: 'En Preparación', value: data.recipes.filter(r => r.status === RecipeStatus.Preparation).length, icon: FlaskConical, href: '/recipes?status=En+Preparación' },
-      { title: 'Ítems con Stock Bajo', value: data.inventory.filter(i => i.stock < i.lowStockThreshold).length, icon: Box, href: '/inventory' },
-      { title: 'Usuarios del Sistema', value: data.users.length, icon: Users, href: '/user-management' },
+      { title: 'Ítems con Stock Bajo', value: data.inventory.filter(i => i.quantity < i.lowStockThreshold).length, icon: Box, href: '/inventory' },
+      { title: 'Pacientes Crónicos', value: data.patients.filter(p => p.isChronic).length, icon: Users, href: '/patients' },
     ];
-  }, [data]);
-  
-  const delayedRecipes = useMemo(() => {
-    if (!data) return [];
-    const DELAY_THRESHOLD_DAYS = 3; 
-    
-    return data.recipes
-      .filter(recipe => 
-        (recipe.status === RecipeStatus.PendingValidation || recipe.status === RecipeStatus.Validated || recipe.status === RecipeStatus.Preparation) &&
-        differenceInDays(new Date(), new Date(recipe.updatedAt)) > DELAY_THRESHOLD_DAYS
-      )
-      .map(recipe => ({
-        ...recipe,
-        daysDelayed: differenceInDays(new Date(), new Date(recipe.updatedAt)),
-        patientName: data.patients.find(p => p.id === recipe.patientId)?.name ?? 'N/A'
-      }));
   }, [data]);
 
   if (loading || !data) {
@@ -232,38 +311,13 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <ProactiveAlertsCard patients={data.patients} />
-
-        <Card>
-          <CardHeader className="flex flex-row items-center gap-3 border-b pb-4">
-            <Clock className="h-5 w-5 text-muted-foreground" />
-            <CardTitle className="text-lg font-semibold text-slate-800">Recetas con Retraso</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-4 space-y-3">
-            {delayedRecipes.length > 0 ? (
-              delayedRecipes.map(recipe => (
-                <div key={recipe.id} className="flex items-center p-3 rounded-lg bg-orange-50 border-l-4 border-orange-400">
-                  <div className="flex-grow">
-                    <p className="font-semibold text-primary"><Link href={`/recipes/${recipe.id}`} className="hover:underline">Receta: {recipe.id}</Link></p>
-                    <p className="text-sm text-slate-700">Paciente: {recipe.patientName}</p>
-                    <p className="text-sm text-slate-500">En estado "{recipe.status}" por {recipe.daysDelayed} días.</p>
-                  </div>
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link href={`/recipes/${recipe.id}`}>Revisar</Link>
-                  </Button>
-                </div>
-              ))
-            ) : (
-                <div className="flex flex-col items-center text-center text-muted-foreground h-full justify-center py-6">
-                    <CheckCircle2 className="h-10 w-10 text-green-500 mb-2" />
-                    <p className="font-medium text-slate-700">¡Excelente!</p>
-                    <p className="text-sm">No hay recetas con retraso.</p>
-                </div>
-            )}
-          </CardContent>
-        </Card>
+        <DelayedRecipesCard recipes={data.recipes} patients={data.patients} />
+        <RecentRecipesCard recipes={data.recipes} patients={data.patients} />
       </div>
     </>
   );
 }
+
+    
