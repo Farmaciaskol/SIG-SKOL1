@@ -1,7 +1,6 @@
 
-
 import { db, storage } from './firebase';
-import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc, deleteDoc, writeBatch, query, where } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc, deleteDoc, writeBatch, query, where, limit } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, ControlledLogEntryType, ProactivePatientStatus, PatientActionNeeded, MonthlyDispensationBox, MonthlyDispensationBoxStatus, DispensationItemStatus, PatientMessage, PharmacovigilanceReportStatus } from './types';
 import type { Recipe, Doctor, InventoryItem, User, Role, ExternalPharmacy, Patient, PharmacovigilanceReport, AppData, AuditTrailEntry, DispatchNote, DispatchItem, ControlledSubstanceLogEntry, LotDetail, AppSettings } from './types';
@@ -153,7 +152,7 @@ async function getDocument<T>(collectionName: string, id: string): Promise<T | n
             // Logic for collections stored as arrays in mock-data
             if (mockData && Array.isArray(mockData)) {
                 const collRef = collection(db, collectionName);
-                const querySnapshot = await getDocs(query(collRef).limit(1));
+                const querySnapshot = await getDocs(query(collRef, limit(1)));
                 if (querySnapshot.empty) {
                     const batch = writeBatch(db);
                     mockData.forEach((item: any) => {
@@ -167,7 +166,7 @@ async function getDocument<T>(collectionName: string, id: string): Promise<T | n
                 }
             } 
             // Logic for "collections" that are single documents (like appSettings)
-            else if (mockData && !Array.isArray(mockData) && id === (mockData as any).id) {
+            else if (mockData && !Array.isArray(mockData) && (mockData as any).id === id) {
                 await setDoc(docRef, mockData);
                 console.log(`Successfully seeded single document '${collectionName}/${id}'.`);
                 // After seeding, try fetching the document again
@@ -726,4 +725,3 @@ export const sendMessageFromPatient = async (patientId: string, content: string)
         ...newMessage
     }
 };
-
