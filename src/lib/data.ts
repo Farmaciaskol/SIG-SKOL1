@@ -240,7 +240,7 @@ export const saveRecipe = async (data: any, imageUri: string | null, recipeId?: 
         dispatchAddress: data.dispatchAddress,
         items: data.items,
         prescriptionDate: data.prescriptionDate,
-        dueDate: data.expiryDate,
+        dueDate: data.dueDate,
         updatedAt: new Date().toISOString(),
         externalPharmacyId: data.externalPharmacyId,
         supplySource: data.supplySource,

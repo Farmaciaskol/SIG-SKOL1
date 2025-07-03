@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Input } from '@/components/ui/input';
 import { getInventory, addInventoryItem, updateInventoryItem, InventoryItem, LotDetail } from '@/lib/data';
 import { PlusCircle, Search, Edit, History, PackagePlus, Trash2, MoreVertical, DollarSign, Package, PackageX, AlertTriangle, Star, Box, ChevronDown, Loader2 } from 'lucide-react';
-import { format, differenceInDays, isBefore } from 'date-fns';
+import { format, differenceInDays, isBefore, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
   Dialog,
@@ -109,7 +109,7 @@ const InventoryItemForm = ({ item, onFinished }: { item?: InventoryItem; onFinis
 
     const onSubmit = async (data: InventoryFormValues) => {
         try {
-            if (isEditMode) {
+            if (isEditMode && item) {
                 // Update logic here
                 await updateInventoryItem(item.id, data);
                  toast({ title: "Producto Actualizado", description: "El producto ha sido actualizado correctamente." });
@@ -174,7 +174,7 @@ const InventoryItemForm = ({ item, onFinished }: { item?: InventoryItem; onFinis
                 )}
                 
                 <Card className="bg-muted/50">
-                    <CardHeader><CardTitle className="text-base">Para Fraccionamiento (Opcional)</CardTitle></CardHeader>
+                    <CardHeader><CardTitle className="text-xl font-semibold">Para Fraccionamiento (Opcional)</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
                         <FormDescription>Rellene esta sección si este producto es un insumo que se enviará a recetarios para ser fraccionado.</FormDescription>
                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -207,11 +207,11 @@ const InventoryItemForm = ({ item, onFinished }: { item?: InventoryItem; onFinis
 const StatCard = ({ title, value, icon: Icon }: { title: string; value: string | number; icon: React.ElementType }) => (
     <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <h3 className="text-sm font-medium">{title}</h3>
-            <Icon className="h-4 w-4 text-muted-foreground" />
+            <h3 className="text-sm font-medium text-slate-700">{title}</h3>
+            <Icon className="h-4 w-4 text-slate-500" />
         </CardHeader>
         <CardContent>
-            <div className="text-2xl font-bold">{value}</div>
+            <div className="text-2xl font-bold text-slate-800">{value}</div>
         </CardContent>
     </Card>
 );
@@ -219,35 +219,35 @@ const StatCard = ({ title, value, icon: Icon }: { title: string; value: string |
 const ProductCard = ({ item, onEdit }: { item: InventoryItemWithStats; onEdit: (item: InventoryItem) => void }) => {
     const statusStyles: Record<typeof item.status, { badge: string, border: string }> = {
       'OK': { badge: 'bg-green-100 text-green-800', border: 'border-transparent' },
-      'Stock Bajo': { badge: 'bg-yellow-100 text-yellow-800', border: 'border-yellow-400' },
-      'Agotado': { badge: 'bg-red-100 text-red-800', border: 'border-red-500' },
-      'Próximo a Vencer': { badge: 'bg-orange-100 text-orange-800', border: 'border-orange-400' },
-      'Vencido': { badge: 'bg-red-100 text-red-800 font-bold', border: 'border-red-500' },
+      'Stock Bajo': { badge: 'bg-yellow-100 text-yellow-800 border-yellow-300', border: 'border-yellow-400' },
+      'Agotado': { badge: 'bg-red-100 text-red-800 border-red-300', border: 'border-red-500' },
+      'Próximo a Vencer': { badge: 'bg-orange-100 text-orange-800 border-orange-300', border: 'border-orange-400' },
+      'Vencido': { badge: 'bg-red-200 text-red-900 font-bold border-red-400', border: 'border-red-500' },
     };
     
     const { badge, border } = statusStyles[item.status] || statusStyles['OK'];
 
     return (
-        <Card className={cn("flex flex-col transition-all hover:shadow-lg", border)}>
+        <Card className={cn("flex flex-col transition-all hover:shadow-lg border-2", border)}>
             <CardHeader className="pb-4">
                  <div className="flex justify-between items-start">
-                    <CardTitle>{item.name}</CardTitle>
+                    <h3 className="text-lg font-bold text-slate-800">{item.name}</h3>
                     {item.isControlled && <Star className="h-5 w-5 text-amber-500" />}
                  </div>
-                 <p className="text-xs text-muted-foreground">SKU: {item.sku || 'N/A'}</p>
+                 <p className="text-xs text-slate-500">SKU: {item.sku || 'N/A'}</p>
             </CardHeader>
             <CardContent className="flex-grow space-y-4">
                 <div className="flex justify-between items-baseline">
                     <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-bold">{item.quantity}</span>
-                        <span className="text-muted-foreground">{item.unit}</span>
+                        <span className="text-3xl font-bold text-slate-800">{item.quantity}</span>
+                        <span className="text-slate-500">{item.unit}</span>
                     </div>
-                    <Badge className={badge}>{item.status}</Badge>
+                    <Badge className={cn("font-semibold", badge)}>{item.status}</Badge>
                 </div>
                 <div className="text-sm">
-                    <p className="text-muted-foreground">Próximo Vencimiento:</p>
-                    <p className="font-medium text-foreground">
-                        {item.nextExpiryDate ? format(new Date(item.nextExpiryDate), 'dd-MMMM-yyyy', {locale: es}) : 'N/A'}
+                    <p className="text-slate-500">Próximo Vencimiento:</p>
+                    <p className="font-medium text-slate-700">
+                        {item.nextExpiryDate ? format(parseISO(item.nextExpiryDate), 'dd-MMMM-yyyy', {locale: es}) : 'N/A'}
                     </p>
                 </div>
             </CardContent>
@@ -325,8 +325,8 @@ export default function InventoryPage() {
             
             const nextExpiryDate = sortedLots.length > 0 ? sortedLots[0].expiryDate : undefined;
             
-            const isExpired = nextExpiryDate ? isBefore(new Date(nextExpiryDate), now) : false;
-            const isExpiringSoon = nextExpiryDate ? differenceInDays(new Date(nextExpiryDate), now) <= EXPIRY_THRESHOLD_DAYS && !isExpired : false;
+            const isExpired = nextExpiryDate ? isBefore(parseISO(nextExpiryDate), now) : false;
+            const isExpiringSoon = nextExpiryDate ? differenceInDays(parseISO(nextExpiryDate), now) <= EXPIRY_THRESHOLD_DAYS && !isExpired : false;
 
             let status: InventoryItemWithStats['status'] = 'OK';
             if (isExpired) status = 'Vencido';
@@ -387,16 +387,26 @@ export default function InventoryPage() {
     }
 
     if (loading) {
-      return <div>Cargando inventario...</div>;
+      return (
+         <div className="flex items-center justify-center h-full">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="ml-2">Cargando inventario...</p>
+        </div>
+      );
     }
 
     return (
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <Dialog open={isFormOpen} onOpenChange={(open) => {
+            if (!open) {
+                setEditingItem(undefined);
+            }
+            setIsFormOpen(open);
+        }}>
             <div className="space-y-6">
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight font-headline">Gestión de Inventario</h1>
-                        <p className="text-sm text-muted-foreground">
+                        <h1 className="text-3xl font-bold tracking-tight font-headline text-slate-800">Gestión de Inventario</h1>
+                        <p className="text-sm text-slate-500">
                             Control logístico y trazabilidad de los insumos de la farmacia.
                         </p>
                     </div>
@@ -415,7 +425,7 @@ export default function InventoryPage() {
                 <Card>
                     <CardContent className="p-4 flex flex-col sm:flex-row gap-4">
                         <div className="relative flex-1">
-                            <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
+                            <Search className="absolute left-2.5 top-3 h-4 w-4 text-slate-500" />
                             <Input
                                 placeholder="Buscar por nombre o SKU..."
                                 className="pl-8"
@@ -447,9 +457,9 @@ export default function InventoryPage() {
                 ) : (
                     <Card className="text-center py-16 mt-8 shadow-none border-dashed">
                         <div className="flex flex-col items-center justify-center">
-                            <Package className="h-16 w-16 text-muted-foreground mb-4" />
-                            <h2 className="text-xl font-semibold">No se encontraron productos</h2>
-                            <p className="text-muted-foreground mt-2 max-w-sm">
+                            <Package className="h-16 w-16 text-slate-400 mb-4" />
+                            <h2 className="text-xl font-semibold text-slate-700">No se encontraron productos</h2>
+                            <p className="text-slate-500 mt-2 max-w-sm">
                                 Intenta ajustar tu búsqueda o define un nuevo producto para empezar.
                             </p>
                             <Button className="mt-6" onClick={handleAddNew}>
@@ -459,10 +469,10 @@ export default function InventoryPage() {
                     </Card>
                 )}
             </div>
-            <DialogContent className="sm:max-w-xl">
+            <DialogContent className="sm:max-w-2xl">
                  <DialogHeader>
-                    <DialogTitle>{editingItem ? 'Editar' : 'Definir'} Producto</DialogTitle>
-                    <DialogDescription>
+                    <DialogTitle className="text-2xl font-semibold">{editingItem ? 'Editar' : 'Definir'} Producto</DialogTitle>
+                    <DialogDescription className="text-slate-500">
                         {editingItem ? 'Actualice los detalles del producto.' : 'Complete el formulario para definir un nuevo producto en el inventario.'}
                     </DialogDescription>
                  </DialogHeader>

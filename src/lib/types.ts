@@ -5,6 +5,7 @@ export enum RecipeStatus {
   PendingValidation = 'Pendiente Validación',
   Validated = 'Validada',
   Rejected = 'Rechazada',
+  Preparation = 'En Preparación',
   SentToExternal = 'Enviada a Recetario',
   ReceivedAtSkol = 'Recepcionado en Skol',
   ReadyForPickup = 'Lista para Retiro',
@@ -102,9 +103,10 @@ export interface Recipe {
   status: RecipeStatus;
   paymentStatus: 'Pagado' | 'Pendiente' | 'N/A';
   rejectionReason?: string;
-  dueDate: string;
-  createdAt: string;
-  updatedAt: string;
+  dueDate: string; // ISO String
+  createdAt: string; // ISO String
+  updatedAt: string; // ISO String
+  prescriptionDate: string; // ISO String
   externalPharmacyId?: string;
   supplySource?: 'Stock del Recetario Externo' | 'Insumos de Skol';
   preparationCost?: number;
@@ -115,10 +117,10 @@ export interface Recipe {
   prescriptionImageUrl?: string;
   skolSuppliedItemsDispatchStatus?: SkolSuppliedItemsDispatchStatus;
   auditTrail?: AuditTrailEntry[];
-  dispensationDate?: string;
+  dispensationDate?: string; // ISO String
   internalPreparationLot?: string;
-  compoundingDate?: string;
-  preparationExpiryDate?: string;
+  compoundingDate?: string; // ISO String
+  preparationExpiryDate?: string; // ISO String
 }
 
 export interface AdverseReaction {
@@ -179,7 +181,7 @@ export interface ExternalPharmacy {
 export interface LotDetail {
     lotNumber: string;
     quantity: number;
-    expiryDate: string;
+    expiryDate: string; // ISO String
 }
 
 export interface InventoryItem {
@@ -226,8 +228,8 @@ export interface DispatchNote {
     id: string;
     externalPharmacyId: string;
     status: DispatchStatus;
-    createdAt: string;
-    completedAt?: string;
+    createdAt: string; // ISO String
+    completedAt?: string; // ISO String
     items: DispatchItem[];
     dispatcherName?: string;
     receivedByName?: string;
@@ -236,7 +238,7 @@ export interface DispatchNote {
 
 export interface PharmacovigilanceReport {
   id: string;
-  reportedAt: string;
+  reportedAt: string; // ISO String
   reporterName: string;
   recipeId?: string;
   patientId?: string;
@@ -247,7 +249,7 @@ export interface PharmacovigilanceReport {
   actionsTaken?: string;
   pharmacyResponse?: string;
   resolutionDetails?: string;
-  updatedAt: string;
+  updatedAt: string; // ISO String
 }
 
 export interface AppData {

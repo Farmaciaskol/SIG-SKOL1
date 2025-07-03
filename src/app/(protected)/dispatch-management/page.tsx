@@ -21,7 +21,7 @@ import {
   DispatchStatus
 } from '@/lib/data';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Accordion,
@@ -39,7 +39,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { CheckCircle, XCircle, Package, History, PackageCheck, Loader2, Truck, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 type ItemForDispatch = {
@@ -47,6 +47,7 @@ type ItemForDispatch = {
   patient: Patient;
   inventoryItem: InventoryItem;
   recipeItem: any; // RecipeItem type
+  quantityToDispatch: number;
 };
 
 type GroupedItems = {
@@ -112,9 +113,8 @@ export default function DispatchManagementPage() {
     
     const recipesToProcess = recipes.filter(r => 
         r.supplySource === 'Insumos de Skol' &&
-        (r.skolSuppliedItemsDispatchStatus === SkolSuppliedItemsDispatchStatus.Pending || r.skolSuppliedItemsDispatchStatus === SkolSuppliedItemsDispatchStatus.PartiallyDispatched) &&
-        r.status !== RecipeStatus.Cancelled &&
-        r.status !== RecipeStatus.Rejected
+        r.status === RecipeStatus.Validated &&
+        (r.skolSuppliedItemsDispatchStatus === SkolSuppliedItemsDispatchStatus.Pending || r.skolSuppliedItemsDispatchStatus === SkolSuppliedItemsDispatchStatus.PartiallyDispatched)
     );
     
     for (const recipe of recipesToProcess) {
@@ -126,11 +126,12 @@ export default function DispatchManagementPage() {
 
         // Simple lookup, can be improved with SKU matching in the future
         const inventoryItem = inventory.find(i => 
-          i.name.toLowerCase().includes(recipeItem.principalActiveIngredient.toLowerCase())
+          i.name.toLowerCase().includes(recipeItem.principalActiveIngredient.toLowerCase()) && i.itemsPerBaseUnit
         );
 
-        if (inventoryItem && inventoryItem.lots && inventoryItem.lots.length > 0) {
-          items.push({ recipe, patient, inventoryItem, recipeItem });
+        if (inventoryItem && inventoryItem.lots && inventoryItem.lots.length > 0 && inventoryItem.itemsPerBaseUnit) {
+          const quantityToDispatch = Math.ceil(Number(recipeItem.totalQuantityValue) / inventoryItem.itemsPerBaseUnit);
+          items.push({ recipe, patient, inventoryItem, recipeItem, quantityToDispatch });
         }
       }
     }
@@ -206,14 +207,12 @@ export default function DispatchManagementPage() {
             if (!state || state.isValidated !== 'valid' || !state.lotNumber) {
                 throw new Error(`Item ${item.inventoryItem.name} no está validado.`);
             }
-            // Logic to calculate quantity of base product needed would go here.
-            // For now, assuming 1 base unit per recipe item.
             dispatchItems.push({
                 recipeId: item.recipe.id,
                 inventoryItemId: item.inventoryItem.id,
                 recipeItemName: item.recipeItem.principalActiveIngredient,
                 lotNumber: state.lotNumber,
-                quantity: 1, // Placeholder
+                quantity: item.quantityToDispatch,
             });
         }
         
@@ -289,25 +288,28 @@ export default function DispatchManagementPage() {
                                     const itemId = `${item.recipe.id}-${item.inventoryItem.id}`;
                                     const validationStatus = validationState[itemId]?.isValidated || 'pending';
                                     
+                                    const sortedLots = item.inventoryItem.lots?.sort((a, b) => new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime());
+
                                     return (
                                     <Card key={itemId} className={`p-4 ${validationStatus === 'valid' ? 'bg-green-50' : validationStatus === 'invalid' ? 'bg-red-50' : ''}`}>
                                         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
                                             <div className="md:col-span-2 space-y-1">
                                                 <p className="font-semibold">{item.inventoryItem.name}</p>
                                                 <p className="text-sm">Receta: <span className="font-mono text-primary">{item.recipe.id}</span> ({item.recipeItem.principalActiveIngredient})</p>
-                                                <p className="text-xs text-muted-foreground">Paciente: {item.patient.name}</p>
+                                                <p className="text-sm text-muted-foreground">Paciente: {item.patient.name}</p>
+                                                <p className="text-sm font-bold mt-1">Despachar: {item.quantityToDispatch} {item.inventoryItem.unit}</p>
                                             </div>
                                             <div className="md:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
                                                <div className="space-y-1">
-                                                    <p className="text-xs font-medium text-muted-foreground">Lote</p>
+                                                    <p className="text-xs font-medium text-muted-foreground">Lote (FEFO)</p>
                                                     <Select onValueChange={(lot) => handleLotChange(itemId, lot)} disabled={validationStatus === 'valid'}>
                                                         <SelectTrigger>
                                                             <SelectValue placeholder="Seleccionar lote..." />
                                                         </SelectTrigger>
                                                         <SelectContent>
-                                                            {item.inventoryItem.lots?.map(lot => (
+                                                            {sortedLots?.map(lot => (
                                                                 <SelectItem key={lot.lotNumber} value={lot.lotNumber}>
-                                                                    {lot.lotNumber} (Disp: {lot.quantity}, Vto: {lot.expiryDate})
+                                                                    {lot.lotNumber} (Disp: {lot.quantity}, Vto: {format(parseISO(lot.expiryDate), 'dd-MM-yy')})
                                                                 </SelectItem>
                                                             ))}
                                                         </SelectContent>
@@ -361,7 +363,7 @@ export default function DispatchManagementPage() {
                     {activeDispatches.map(note => (
                          <Card key={note.id}>
                             <CardHeader>
-                                <CardTitle className="flex justify-between items-center">
+                                <CardTitle className="flex justify-between items-center flex-wrap gap-2">
                                     <span>Nota de Despacho: {note.id}</span>
                                     <Badge variant="secondary">{getPharmacyName(note.externalPharmacyId)}</Badge>
                                 </CardTitle>

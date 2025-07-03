@@ -31,7 +31,7 @@ import Image from 'next/image';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { addMonths } from 'date-fns';
 import { PHARMACEUTICAL_FORMS, CONCENTRATION_UNITS, DOSAGE_UNITS, TREATMENT_DURATION_UNITS, QUANTITY_TO_PREPARE_UNITS, PHARMACEUTICAL_FORM_DEFAULTS } from '@/lib/constants';
 
@@ -53,8 +53,8 @@ const recipeItemSchema = z.object({
 });
 
 const recipeFormSchema = z.object({
-  prescriptionDate: z.string({ required_error: "La fecha de prescripción es requerida." }),
-  expiryDate: z.string().optional(),
+  prescriptionDate: z.date({ required_error: "La fecha de prescripción es requerida." }),
+  dueDate: z.date().optional(),
   patientId: z.string().optional(),
   newPatientName: z.string().optional(),
   newPatientRut: z.string().optional(),
@@ -66,7 +66,7 @@ const recipeFormSchema = z.object({
   newDoctorSpecialty: z.string().optional(),
   externalPharmacyId: z.string().min(1, 'Debe seleccionar un recetario externo.'),
   supplySource: z.string().min(1, 'Debe seleccionar un origen de insumos.'),
-  preparationCost: z.string().min(1, 'El costo de preparación es requerido.'),
+  preparationCost: z.coerce.number().min(0, 'El costo de preparación debe ser un número positivo.'),
   isControlled: z.boolean().default(false).optional(),
   controlledRecipeType: z.string().optional(),
   controlledRecipeFolio: z.string().optional(),
@@ -139,6 +139,8 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
     defaultValues: {
       items: [defaultItem],
       isControlled: false,
+      prescriptionDate: new Date(),
+      dueDate: addMonths(new Date(), 6),
     },
   });
 
@@ -150,9 +152,9 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
   const loadFormData = useCallback(async (recipeData: any) => {
     form.reset({
       ...recipeData,
-      prescriptionDate: recipeData.prescriptionDate ? format(new Date(recipeData.prescriptionDate), 'yyyy-MM-dd') : '',
-      expiryDate: recipeData.dueDate ? format(new Date(recipeData.dueDate), 'yyyy-MM-dd') : '',
-      preparationCost: recipeData.preparationCost?.toString(),
+      prescriptionDate: recipeData.prescriptionDate ? parseISO(recipeData.prescriptionDate) : new Date(),
+      dueDate: recipeData.dueDate ? parseISO(recipeData.dueDate) : addMonths(new Date(), 6),
+      preparationCost: recipeData.preparationCost,
       patientId: recipeData.patientId,
       doctorId: recipeData.doctorId,
       isControlled: recipeData.isControlled || false,
@@ -188,8 +190,8 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                         ...recipeData,
                         status: RecipeStatus.PendingValidation,
                         paymentStatus: 'Pendiente',
-                        prescriptionDate: format(today, 'yyyy-MM-dd'),
-                        expiryDate: format(expiry, 'yyyy-MM-dd'),
+                        prescriptionDate: today,
+                        dueDate: expiry,
                     };
                     delete (newRecipeData as any).id;
                     delete (newRecipeData as any).createdAt;
@@ -205,12 +207,6 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                  toast({ title: 'Error', description: 'No se encontró la receta.', variant: 'destructive' });
                  router.push('/recipes');
             }
-        } else {
-            // Set default dates for new recipes
-            const today = new Date();
-            const expiry = addMonths(today, 6);
-            form.setValue('prescriptionDate', format(today, 'yyyy-MM-dd'));
-            form.setValue('expiryDate', format(expiry, 'yyyy-MM-dd'));
         }
       } catch (error) {
         console.error("Failed to fetch data:", error);
@@ -248,7 +244,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
       if (result.doctorRut) form.setValue('newDoctorRut', result.doctorLicense);
       if (result.doctorLicense) form.setValue('newDoctorLicense', result.doctorLicense);
       if (result.doctorSpecialty) form.setValue('newDoctorSpecialty', result.doctorSpecialty);
-      if (result.prescriptionDate) form.setValue('prescriptionDate', result.prescriptionDate);
+      if (result.prescriptionDate) form.setValue('prescriptionDate', parseISO(result.prescriptionDate));
       
       if (result.items && result.items.length > 0) {
         // AI might not return all fields, so we merge with defaults
@@ -315,7 +311,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
         <div className="lg:col-span-1 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Imagen de la Receta</CardTitle>
+              <CardTitle className="text-xl font-semibold">Imagen de la Receta</CardTitle>
             </CardHeader>
             <CardContent>
               <div 
@@ -327,9 +323,9 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                   <Image src={previewImage} alt="Vista previa de receta" width={200} height={150} className="rounded-md object-contain max-h-40"/>
                 ) : (
                   <>
-                    <ImageIcon className="h-10 w-10 text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground mb-1">Arrastra o haz clic</p>
-                    <p className="text-xs text-muted-foreground">Sube la imagen de la receta</p>
+                    <ImageIcon className="h-10 w-10 text-slate-400 mb-2" />
+                    <p className="text-sm text-slate-500 mb-1">Arrastra o haz clic</p>
+                    <p className="text-xs text-slate-500">Sube la imagen de la receta</p>
                   </>
                 )}
               </div>
@@ -346,7 +342,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
             <CardContent className="p-6 space-y-8">
               {/* --- INFORMACIÓN GENERAL --- */}
               <div>
-                <h2 className="text-2xl font-semibold mb-4">Información General</h2>
+                <h2 className="text-2xl font-semibold mb-4 text-slate-700">Información General</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <FormItem>
                     <FormLabel>ID Receta</FormLabel>
@@ -363,14 +359,14 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                         <Popover>
                           <PopoverTrigger asChild>
                             <FormControl>
-                              <Button variant="outline" className={cn("w-full justify-between text-left font-normal", !field.value && "text-muted-foreground")}>
-                                {field.value ? format(new Date(field.value), 'dd-MM-yyyy') : <span>dd-mm-aaaa</span>}
+                              <Button variant="outline" className={cn("w-full justify-between text-left font-normal", !field.value && "text-slate-500")}>
+                                {field.value ? format(field.value, 'dd-MM-yyyy') : <span>dd-mm-aaaa</span>}
                                 <CalendarIcon className="h-4 w-4 opacity-50" />
                               </Button>
                             </FormControl>
                           </PopoverTrigger>
                           <PopoverContent className="w-auto p-0">
-                            <Calendar mode="single" selected={field.value ? new Date(field.value) : undefined} onSelect={(d) => field.onChange(d ? format(d, 'yyyy-MM-dd') : '')} initialFocus />
+                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
                           </PopoverContent>
                         </Popover>
                          <FormMessage />
@@ -379,24 +375,24 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                   />
                   <FormField
                     control={form.control}
-                    name="expiryDate"
+                    name="dueDate"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Fecha Vencimiento</FormLabel>
                          <Popover>
                           <PopoverTrigger asChild>
                             <FormControl>
-                              <Button variant="outline" className={cn("w-full justify-between text-left font-normal", !field.value && "text-muted-foreground")}>
-                                {field.value ? format(new Date(field.value), 'dd-MM-yyyy') : <span>dd-mm-aaaa</span>}
+                              <Button variant="outline" className={cn("w-full justify-between text-left font-normal", !field.value && "text-slate-500")}>
+                                {field.value ? format(field.value, 'dd-MM-yyyy') : <span>dd-mm-aaaa</span>}
                                 <CalendarIcon className="h-4 w-4 opacity-50" />
                               </Button>
                             </FormControl>
                           </PopoverTrigger>
                           <PopoverContent className="w-auto p-0">
-                            <Calendar mode="single" selected={field.value ? new Date(field.value) : undefined} onSelect={(d) => field.onChange(d ? format(d, 'yyyy-MM-dd') : '')} />
+                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} />
                           </PopoverContent>
                         </Popover>
-                        <FormDescription>(Por defecto 6 meses, editable.)</FormDescription>
+                        <FormDescription className="text-xs text-slate-500">(Por defecto 6 meses, editable.)</FormDescription>
                       </FormItem>
                     )}
                   />
@@ -407,7 +403,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
 
               {/* --- PACIENTE --- */}
               <div>
-                 <h2 className="text-2xl font-semibold mb-4">Paciente</h2>
+                 <h2 className="text-2xl font-semibold mb-4 text-slate-700">Paciente</h2>
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                     <div className="md:col-span-2">
                         <FormField
@@ -434,7 +430,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                     <FormField control={form.control} name="newPatientName" render={({ field }) => (<FormItem><FormLabel>Nombre Paciente (Nuevo/IA) *</FormLabel><FormControl><Input placeholder="Nombre Apellido" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="newPatientRut" render={({ field }) => (<FormItem><FormLabel>RUT Paciente (Nuevo/IA) *</FormLabel><FormControl><Input placeholder="12.345.678-9" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
                     <div className="md:col-span-2">
-                         <FormField control={form.control} name="dispatchAddress" render={({ field }) => (<FormItem><FormLabel>Dirección de Despacho</FormLabel><FormControl><Input placeholder="Ej: Calle Falsa 123, Comuna" {...field} value={field.value ?? ''} /></FormControl><FormDescription>(Opcional. Por defecto, se retira en farmacia.)</FormDescription><FormMessage /></FormItem>)} />
+                         <FormField control={form.control} name="dispatchAddress" render={({ field }) => (<FormItem><FormLabel>Dirección de Despacho</FormLabel><FormControl><Input placeholder="Ej: Calle Falsa 123, Comuna" {...field} value={field.value ?? ''} /></FormControl><FormDescription className="text-xs text-slate-500">(Opcional. Por defecto, se retira en farmacia.)</FormDescription><FormMessage /></FormItem>)} />
                     </div>
                  </div>
               </div>
@@ -443,7 +439,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
 
               {/* --- MÉDICO --- */}
                <div>
-                 <h2 className="text-2xl font-semibold mb-4">Médico</h2>
+                 <h2 className="text-2xl font-semibold mb-4 text-slate-700">Médico</h2>
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                      <div className="md:col-span-2">
                         <FormField
@@ -478,7 +474,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
 
           <Card>
             <CardContent className="p-6">
-                <h2 className="text-2xl font-semibold mb-6">Recetario e Insumos</h2>
+                <h2 className="text-2xl font-semibold mb-6 text-slate-700">Recetario e Insumos</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                     control={form.control}
@@ -529,9 +525,9 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                         <FormItem>
                             <FormLabel>Costo Preparación (CLP) *</FormLabel>
                             <FormControl>
-                            <Input placeholder="Ej: 15000" {...field} value={field.value ?? ''} />
+                            <Input type="number" placeholder="Ej: 15000" {...field} />
                             </FormControl>
-                            <FormDescription>Costo que Skol pagará al recetario.</FormDescription>
+                            <FormDescription className="text-xs text-slate-500">Costo que Skol pagará al recetario.</FormDescription>
                             <FormMessage />
                         </FormItem>
                         )}
@@ -544,7 +540,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
           <Card>
             <CardContent className="p-6">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-semibold">Preparado Magistral</h2>
+                    <h2 className="text-2xl font-semibold text-slate-700">Preparado Magistral</h2>
                     <Button type="button" variant="link" onClick={() => append(defaultItem)} className="text-primary hover:text-primary/80">
                         <PlusCircle className="mr-2 h-4 w-4" /> Añadir
                     </Button>
@@ -554,7 +550,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                     {fields.map((item, index) => (
                     <div key={item.id} className="p-4 border rounded-lg space-y-4 relative bg-muted/30">
                         <div className="flex justify-between items-start">
-                            <h3 className="font-semibold text-primary">Ítem #{index + 1}</h3>
+                            <h3 className="font-semibold text-sky-600">Ítem #{index + 1}</h3>
                              {fields.length > 1 && (
                                 <Button type="button" variant="ghost" size="icon" className="text-red-500 hover:text-red-600 h-7 w-7" onClick={() => remove(index)}>
                                     <Trash2 className="h-4 w-4" />
@@ -685,7 +681,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                                     <FormControl>
                                         <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                                     </FormControl>
-                                    <FormLabel className="!mt-0 font-normal">
+                                    <FormLabel className="!mt-0 font-normal text-sm text-slate-700">
                                         Insumo provisto por Skol (para fraccionamiento)
                                     </FormLabel>
                                 </FormItem>
@@ -718,7 +714,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
           <Card>
             <CardContent className="p-6">
                 <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-semibold">Medicamento Controlado</h2>
+                <h2 className="text-2xl font-semibold text-slate-700">Medicamento Controlado</h2>
                 <FormField
                     control={form.control}
                     name="isControlled"
@@ -785,7 +781,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                             <FormLabel>Adjuntar Imagen Receta Controlada (Opcional)</FormLabel>
                             <div className="flex items-center gap-2">
                                 <Button type="button" variant="outline">Seleccionar archivo</Button>
-                                <span className="text-xs text-muted-foreground">Sin archivos seleccionados</span>
+                                <span className="text-xs text-slate-500">Sin archivos seleccionados</span>
                             </div>
                         </FormItem>
                     </div>
