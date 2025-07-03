@@ -41,7 +41,7 @@ const RecipeSchema = z.object({
 });
 
 
-export const ProactiveAnalysisInputSchema = z.object({
+const ProactiveAnalysisInputSchema = z.object({
     patient: PatientSchema,
     recipes: z.array(RecipeSchema),
     currentDate: z.string().describe("The current date in ISO format, to be used as a reference for all date comparisons."),
@@ -49,7 +49,7 @@ export const ProactiveAnalysisInputSchema = z.object({
 });
 export type ProactiveAnalysisInput = z.infer<typeof ProactiveAnalysisInputSchema>;
 
-export const ProactiveAnalysisOutputSchema = z.object({
+const ProactiveAnalysisOutputSchema = z.object({
   proactiveStatus: ProactivePatientStatusEnum.describe("The overall status of the patient."),
   actionNeeded: PatientActionNeededEnum.describe("The specific action required from the pharmacist."),
   proactiveMessage: z.string().describe("A concise, human-readable message in Spanish explaining the patient's status and the reason for it. This message will be shown directly to the pharmacist."),
