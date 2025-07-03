@@ -1,10 +1,11 @@
-
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { getRecipes, getPatients, updateRecipe, Recipe, Patient, RecipeStatus, AuditTrailEntry } from '@/lib/data';
+import { getRecipes, getPatients, updateRecipe } from '@/lib/data';
+import type { Recipe, Patient, AuditTrailEntry } from '@/lib/types';
+import { RecipeStatus } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
 import { Button } from '@/components/ui/button';

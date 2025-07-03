@@ -95,7 +95,23 @@ import {
   Inbox,
   Snowflake,
 } from 'lucide-react';
-import { getRecipes, getPatients, getDoctors, getExternalPharmacies, deleteRecipe, updateRecipe, logControlledMagistralDispensation, Recipe, Patient, Doctor, ExternalPharmacy, RecipeStatus, AuditTrailEntry } from '@/lib/data';
+import {
+  getRecipes,
+  getPatients,
+  getDoctors,
+  getExternalPharmacies,
+  deleteRecipe,
+  updateRecipe,
+  logControlledMagistralDispensation,
+} from '@/lib/data';
+import type {
+  Recipe,
+  Patient,
+  Doctor,
+  ExternalPharmacy,
+  AuditTrailEntry,
+} from '@/lib/types';
+import { RecipeStatus } from '@/lib/types';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DateRange } from "react-day-picker";
