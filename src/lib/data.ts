@@ -231,11 +231,8 @@ export const saveRecipe = async (data: any, imageFile: File | null, userId: stri
     const effectiveRecipeId = recipeId || doc(collection(db, 'recipes')).id;
 
     if (imageFile && storage) {
-        const storageRef = ref(storage, `prescriptions/${effectiveRecipeId}`);
+        const storageRef = ref(storage, `prescriptions/${userId}/${effectiveRecipeId}`);
         try {
-            if (!auth.currentUser) {
-                throw new Error("Authentication is required to upload files.");
-            }
             const uploadResult = await uploadBytes(storageRef, imageFile);
             imageUrl = await getDownloadURL(uploadResult.ref);
         } catch (storageError: any) {
@@ -463,11 +460,8 @@ export const logDirectSaleDispensation = async (
     
     let finalImageUrl: string | undefined;
     if (controlledRecipeFormat === 'physical' && prescriptionImageFile) {
-      const storageRef = ref(storage, `controlled-prescriptions/${patientId}-${Date.now()}`);
+      const storageRef = ref(storage, `controlled-prescriptions/${user.uid}/${patientId}-${Date.now()}`);
       try {
-        if (!user) {
-          throw new Error("Authentication is required to upload files.");
-        }
         const uploadResult = await uploadBytes(storageRef, prescriptionImageFile);
         finalImageUrl = await getDownloadURL(uploadResult.ref);
       } catch (storageError: any) {

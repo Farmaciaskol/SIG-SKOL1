@@ -67,12 +67,14 @@ const ActionCard = ({ title, value, icon: Icon, onClick }: { title: string; valu
 const PrescriptionUploadCard = ({ patientId, onUploadSuccess }: { patientId: string; onUploadSuccess: () => void }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreviewImage(reader.result as string);
@@ -82,22 +84,25 @@ const PrescriptionUploadCard = ({ patientId, onUploadSuccess }: { patientId: str
   };
 
   const handleUpload = async () => {
-    if (!previewImage) {
+    if (!imageFile) {
       toast({ title: "Error", description: "Por favor, selecciona una imagen.", variant: "destructive" });
       return;
     }
     setIsUploading(true);
     try {
-      await submitNewPrescription(patientId, previewImage);
+      await submitNewPrescription(patientId, imageFile);
       toast({
         title: "Receta Enviada",
         description: "Hemos recibido tu receta y la procesaremos pronto.",
       });
       setPreviewImage(null);
+      setImageFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
       onUploadSuccess();
     } catch (error) {
-      toast({ title: "Error al Subir", description: "No se pudo enviar la receta.", variant: "destructive" });
+        console.error("Upload failed:", error);
+        const errorMessage = error instanceof Error ? error.message : "No se pudo enviar la receta. Intente de nuevo.";
+        toast({ title: "Error al Subir", description: errorMessage, variant: "destructive" });
     } finally {
       setIsUploading(false);
     }
@@ -118,7 +123,7 @@ const PrescriptionUploadCard = ({ patientId, onUploadSuccess }: { patientId: str
           {previewImage ? (
             <>
               <Image src={previewImage} alt="Vista previa" width={150} height={100} className="rounded-md object-contain max-h-24" />
-              <Button variant="ghost" size="icon" className="absolute top-1 right-1 bg-background/50 rounded-full h-7 w-7" onClick={(e) => { e.stopPropagation(); setPreviewImage(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}>
+              <Button variant="ghost" size="icon" className="absolute top-1 right-1 bg-background/50 rounded-full h-7 w-7" onClick={(e) => { e.stopPropagation(); setPreviewImage(null); setImageFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}>
                 <X className="h-4 w-4" />
               </Button>
             </>
@@ -129,7 +134,7 @@ const PrescriptionUploadCard = ({ patientId, onUploadSuccess }: { patientId: str
             </div>
           )}
         </div>
-        <Button onClick={handleUpload} disabled={isUploading || !previewImage} className="w-full md:w-auto">
+        <Button onClick={handleUpload} disabled={isUploading || !imageFile} className="w-full md:w-auto">
           {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
           {isUploading ? 'Enviando...' : 'Enviar Receta'}
         </Button>

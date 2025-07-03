@@ -52,10 +52,9 @@ export async function sendMessageFromPatient(patientId: string, content: string)
     return newMessage;
 };
 
-export async function submitNewPrescription(patientId: string, imageDataUri: string): Promise<string> {
+export async function submitNewPrescription(patientId: string, imageFile: File): Promise<string> {
     if (!db || !storage || !auth) throw new Error("Firestore, Storage or Auth is not initialized.");
     
-    // Patient portal uses anonymous auth, so a user object should always exist.
     const user = auth.currentUser;
     if (!user) {
         throw new Error("No se pudo obtener la sesión de autenticación. Intente recargar la página.");
@@ -64,14 +63,11 @@ export async function submitNewPrescription(patientId: string, imageDataUri: str
     const recipeRef = doc(collection(db, 'recipes'));
     const recipeId = recipeRef.id;
 
-    const storageRef = ref(storage, `portal-prescriptions/${recipeId}`);
+    const storageRef = ref(storage, `portal-prescriptions/${user.uid}/${recipeId}`);
     
     let imageUrl: string;
     try {
-        const response = await fetch(imageDataUri);
-        const blob = await response.blob();
-        
-        const uploadResult = await uploadBytes(storageRef, blob);
+        const uploadResult = await uploadBytes(storageRef, imageFile);
         imageUrl = await getDownloadURL(uploadResult.ref);
     } catch (storageError: any) {
         console.error("Firebase Storage upload failed in submitNewPrescription:", storageError);
