@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -134,7 +134,7 @@ const InventoryItemForm = ({ item, onFinished }: { item?: InventoryItem; onFinis
         },
     });
     
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
 
     const onSubmit = async (data: InventoryFormValues) => {
         setIsSubmitting(true);
@@ -425,14 +425,14 @@ type LotFormValues = z.infer<typeof lotFormSchema>;
 
 function LotManagementDialog({ item, isOpen, onOpenChange, onSuccess }: { item: InventoryItem | null; isOpen: boolean; onOpenChange: (open: boolean) => void; onSuccess: () => void; }) {
   const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   
   const form = useForm<LotFormValues>({
     resolver: zodResolver(lotFormSchema),
     defaultValues: { lotNumber: '', quantity: 1, expiryDate: undefined },
   });
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!isOpen) {
       form.reset({ lotNumber: '', quantity: 1, expiryDate: undefined });
       setIsSubmitting(false);
@@ -539,19 +539,19 @@ function LotManagementDialog({ item, isOpen, onOpenChange, onSuccess }: { item: 
 
 export function InventoryClient({ initialInventory }: { initialInventory: InventoryItem[] }) {
     const router = useRouter();
-    const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [activeFilter, setActiveFilter] = useState<FilterStatus>('all');
+    const [inventory, setInventory] = React.useState<InventoryItem[]>(initialInventory);
+    const [searchTerm, setSearchTerm] = React.useState('');
+    const [activeFilter, setActiveFilter] = React.useState<FilterStatus>('all');
     const { toast } = useToast();
 
     // Form Dialog State
-    const [isFormOpen, setIsFormOpen] = useState(false);
-    const [editingItem, setEditingItem] = useState<InventoryItem | undefined>(undefined);
+    const [isFormOpen, setIsFormOpen] = React.useState(false);
+    const [editingItem, setEditingItem] = React.useState<InventoryItem | undefined>(undefined);
     
     // Lot Management Dialog State
-    const [managingLotsFor, setManagingLotsFor] = useState<InventoryItemWithStats | null>(null);
+    const [managingLotsFor, setManagingLotsFor] = React.useState<InventoryItemWithStats | null>(null);
 
-    const inventoryWithStats = useMemo<InventoryItemWithStats[]>(() => {
+    const inventoryWithStats = React.useMemo<InventoryItemWithStats[]>(() => {
         return inventory.map(item => {
             const now = new Date();
             
@@ -590,7 +590,7 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
         });
     }, [inventory]);
 
-    const filteredInventory = useMemo(() => {
+    const filteredInventory = React.useMemo(() => {
         return inventoryWithStats.filter(item => {
             const matchesFilter = activeFilter === 'all' || item.status === activeFilter;
             
@@ -602,7 +602,7 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
         })
     }, [inventoryWithStats, activeFilter, searchTerm]);
 
-    const globalStats = useMemo(() => {
+    const globalStats = React.useMemo(() => {
         const totalValue = inventory.reduce((sum, item) => sum + (item.quantity * (item.costPrice || 0)), 0);
         const lowStockCount = inventoryWithStats.filter(item => item.status === 'Stock Bajo').length;
         const outOfStockCount = inventoryWithStats.filter(item => item.status === 'Agotado').length;
