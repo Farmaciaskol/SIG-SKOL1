@@ -433,7 +433,7 @@ export default function ExternalPrescriptionsPage() {
                     render={({ field }) => (
                     <FormItem>
                         <FormLabel>Modelo de Pago por Defecto *</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                             <SelectTrigger>
                             <SelectValue placeholder="Seleccione un modelo..." />

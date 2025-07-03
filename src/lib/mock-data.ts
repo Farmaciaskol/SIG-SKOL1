@@ -33,8 +33,8 @@ const patients: Patient[] = [
 
 // --- RECETARIOS ---
 const externalPharmacies: ExternalPharmacy[] = [
-    { id: 'ext-ph-01', name: 'Farmacias Magistrales Central', contactPerson: 'Sofía Lara', email: 'contacto@magistralcentral.cl', phone: '+56212345678' },
-    { id: 'ext-ph-02', name: 'Recetario Alameda', contactPerson: 'Roberto Gómez', email: 'rgomez@recetarioalameda.cl', phone: '+56287654321' },
+    { id: 'ext-ph-01', name: 'Farmacias Magistrales Central', contactPerson: 'Sofía Lara', email: 'contacto@magistralcentral.cl', phone: '+56212345678', defaultPaymentModel: 'Por Receta' },
+    { id: 'ext-ph-02', name: 'Recetario Alameda', contactPerson: 'Roberto Gómez', email: 'rgomez@recetarioalameda.cl', phone: '+56287654321', defaultPaymentModel: 'Factura Mensual' },
 ];
 
 // --- INVENTORY ---
