@@ -37,7 +37,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full lg:grid lg:grid-cols-2">
+    <div className="min-h-screen w-full bg-sky-800 lg:bg-transparent lg:grid lg:grid-cols-2">
       {/* Left Branding Panel */}
       <div className="hidden bg-sky-800 lg:flex flex-col items-center justify-center p-12 text-center">
         <div className="space-y-4 max-w-md">
@@ -59,8 +59,16 @@ export default function LoginPage() {
       </div>
       
       {/* Right Form Panel */}
-      <div className="flex items-center justify-center py-12 px-4 bg-background">
+      <div className="flex items-center justify-center py-12 px-4 lg:bg-background">
         <div className="w-full max-w-sm space-y-8">
+            <Image
+                src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
+                alt="Skol Pharmacy Logo"
+                width={120}
+                height={40}
+                className="mx-auto [filter:brightness(0)_invert(1)] lg:hidden"
+                priority
+            />
             <div className="w-full bg-card rounded-xl shadow-xl p-8 space-y-6">
                 <div className="text-left">
                   <h1 className="text-2xl font-bold font-headline text-foreground">
@@ -112,9 +120,9 @@ export default function LoginPage() {
                   </Button>
                 </form>
             </div>
-            <p className="px-8 text-center text-sm text-muted-foreground">
+            <p className="px-8 text-center text-sm text-white/80 lg:text-muted-foreground">
               ¿Es usted un paciente?{' '}
-              <Link href="/patient-portal/login" className="font-medium text-primary hover:underline">
+              <Link href="/patient-portal/login" className="font-semibold text-white hover:underline lg:font-medium lg:text-primary">
                 Ingrese al Portal de Pacientes
               </Link>
             </p>
