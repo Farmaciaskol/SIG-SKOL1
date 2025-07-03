@@ -100,6 +100,18 @@ export const getPharmacovigilanceReportsForPatient = async (patientId: string): 
     return fetchCollection<PharmacovigilanceReport>('pharmacovigilanceReports', q);
 }
 
+export const getRecipesForExternalPharmacy = async (pharmacyId: string): Promise<Recipe[]> => {
+    if (!db) return [];
+    const q = query(collection(db, "recipes"), where("externalPharmacyId", "==", pharmacyId));
+    return fetchCollection<Recipe>('recipes', q);
+}
+
+export const getDispatchNotesForExternalPharmacy = async (pharmacyId: string): Promise<DispatchNote[]> => {
+    if (!db) return [];
+    const q = query(collection(db, "dispatchNotes"), where("externalPharmacyId", "==", pharmacyId));
+    return fetchCollection<DispatchNote>('dispatchNotes', q);
+}
+
 
 // Single document fetch functions
 async function getDocument<T>(collectionName: string, id: string): Promise<T | null> {
@@ -128,6 +140,7 @@ async function getDocument<T>(collectionName: string, id: string): Promise<T | n
 export const getRecipe = async (id: string): Promise<Recipe | null> => getDocument<Recipe>('recipes', id);
 export const getPatient = async (id: string): Promise<Patient | null> => getDocument<Patient>('patients', id);
 export const getDoctor = async (id: string): Promise<Doctor | null> => getDocument<Doctor>('doctors', id);
+export const getExternalPharmacy = async (id: string): Promise<ExternalPharmacy | null> => getDocument<ExternalPharmacy>('externalPharmacies', id);
 
 
 export const deleteRecipe = async (id: string): Promise<void> => {
