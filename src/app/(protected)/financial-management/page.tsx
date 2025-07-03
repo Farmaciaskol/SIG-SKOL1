@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
@@ -18,7 +17,6 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-  CardFooter,
 } from '@/components/ui/card';
 import {
   Accordion,
@@ -47,7 +45,8 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Banknote, FileText, CheckCircle2, Loader2, CircleDollarSign } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Banknote, FileText, CheckCircle2, Loader2, CircleDollarSign, HandCoins, Receipt } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Link from 'next/link';
@@ -138,15 +137,14 @@ export default function FinancialManagementPage() {
   const globalStats = useMemo(() => {
     const totalPending = financialDataByPharmacy.reduce((acc, p) => acc + p.pendingBalance, 0);
     const totalPaid = financialDataByPharmacy.reduce((acc, p) => acc + p.paidAmount, 0);
-    const totalRecipesWithCost = recipes.filter(r => r.preparationCost && r.preparationCost > 0).length;
 
     return {
-      totalPending: `$${totalPending.toLocaleString('es-CL')}`,
-      totalPaid: `$${totalPaid.toLocaleString('es-CL')}`,
-      totalRecipesWithCost,
+      totalPorPagar: `$${totalPending.toLocaleString('es-CL')}`,
+      totalPorCobrar: "$0", // Placeholder for Accounts Receivable
+      totalPagado: `$${totalPaid.toLocaleString('es-CL')}`,
       pharmaciesWithDebt: financialDataByPharmacy.filter(p => p.pendingBalance > 0).length,
     };
-  }, [financialDataByPharmacy, recipes]);
+  }, [financialDataByPharmacy]);
   
   const handleConfirmPayment = async () => {
     if (!pharmacyToPay) return;
@@ -187,97 +185,102 @@ export default function FinancialManagementPage() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-slate-800 font-headline">Gestión Financiera</h1>
             <p className="text-sm text-muted-foreground">
-              Control de costos y pagos a recetarios.
+              Control de cuentas por pagar (a recetarios) y por cobrar.
             </p>
           </div>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          <StatCard title="Saldo Pendiente Total" value={globalStats.totalPending} icon={Banknote} />
-          <StatCard title="Total Pagado (Histórico)" value={globalStats.totalPaid} icon={CheckCircle2} />
-          <StatCard title="Recetarios con Saldo" value={globalStats.pharmaciesWithDebt} icon={FileText} />
-          <StatCard title="Total Recetas con Costo" value={globalStats.totalRecipesWithCost} icon={FileText} />
+          <StatCard title="Total por Pagar" value={globalStats.totalPorPagar} icon={HandCoins} />
+          <StatCard title="Total por Cobrar" value={globalStats.totalPorCobrar} icon={Receipt} />
+          <StatCard title="Total Pagado a Recetarios" value={globalStats.totalPagado} icon={CheckCircle2} />
+          <StatCard title="Recetarios con Deuda" value={globalStats.pharmaciesWithDebt} icon={FileText} />
         </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Detalle de Saldos por Recetario</CardTitle>
-            <CardDescription>
-              Revisa las recetas pendientes de pago para cada socio.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {financialDataByPharmacy.length > 0 ? (
-              <Accordion type="single" collapsible className="w-full space-y-4">
-                {financialDataByPharmacy.map(data => (
-                  <AccordionItem value={data.pharmacyId} key={data.pharmacyId} className="border rounded-lg overflow-hidden">
-                      <AccordionTrigger className="text-lg font-semibold text-slate-700 hover:no-underline px-6 py-4 bg-muted/50 data-[state=open]:border-b">
-                          <div className="flex justify-between items-center w-full pr-4">
-                              <span>{data.pharmacyName}</span>
-                              <Badge variant={data.pendingBalance > 0 ? "destructive" : "default"}>
-                                  Saldo: ${data.pendingBalance.toLocaleString('es-CL')}
-                              </Badge>
-                          </div>
-                      </AccordionTrigger>
-                      <AccordionContent className="p-6 pt-4 space-y-4">
-                          {data.pendingRecipes.length > 0 ? (
-                              <>
-                                  <Table>
-                                      <TableHeader>
-                                          <TableRow>
-                                          <TableHead>ID Receta</TableHead>
-                                          <TableHead>Fecha</TableHead>
-                                          <TableHead>Estado Receta</TableHead>
-                                          <TableHead className="text-right">Costo Prep.</TableHead>
-                                          <TableHead className="text-right">Costo Despacho</TableHead>
-                                          </TableRow>
-                                      </TableHeader>
-                                      <TableBody>
-                                          {data.pendingRecipes.map(recipe => (
-                                          <TableRow key={recipe.id}>
-                                              <TableCell className="font-mono">
-                                                  <Link href={`/recipes/${recipe.id}`} className="text-primary hover:underline">{recipe.id}</Link>
-                                              </TableCell>
-                                              <TableCell>{format(new Date(recipe.createdAt), "d MMM, yyyy", { locale: es })}</TableCell>
-                                              <TableCell><Badge variant="secondary">{recipe.status}</Badge></TableCell>
-                                              <TableCell className="text-right">${(recipe.preparationCost || 0).toLocaleString('es-CL')}</TableCell>
-                                              <TableCell className="text-right">${(recipe.transportCost || 0).toLocaleString('es-CL')}</TableCell>
-                                          </TableRow>
-                                          ))}
-                                      </TableBody>
-                                      <UiTableFooter>
-                                        <TableRow>
-                                            <TableCell colSpan={3} className="font-bold text-right text-slate-700">TOTALES</TableCell>
-                                            <TableCell className="font-bold text-right text-slate-700">${data.totalPreparationCost.toLocaleString('es-CL')}</TableCell>
-                                            <TableCell className="font-bold text-right text-slate-700">${data.totalTransportCost.toLocaleString('es-CL')}</TableCell>
-                                        </TableRow>
-                                      </UiTableFooter>
-                                  </Table>
-                                  <div className="flex justify-end pt-4">
-                                      <Button onClick={() => setPharmacyToPay(data)} disabled={data.pendingRecipes.length === 0 || isPaying}>
-                                          <CircleDollarSign className="mr-2 h-4 w-4" />
-                                          Registrar Pago
-                                      </Button>
-                                  </div>
-                              </>
-                          ) : (
-                              <p className="text-center text-muted-foreground py-4">Este recetario no tiene saldos pendientes.</p>
-                          )}
-                      </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            ) : (
-              <div className="text-center py-16 border-2 border-dashed rounded-lg">
-                  <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-slate-700">¡Todo al día!</h3>
-                  <p className="text-muted-foreground mt-2">
-                      No hay saldos pendientes de pago con ningún recetario.
-                  </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        
+        <Tabs defaultValue="cuentas-por-pagar" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 md:w-auto md:inline-flex">
+                <TabsTrigger value="cuentas-por-pagar">Cuentas por Pagar</TabsTrigger>
+                <TabsTrigger value="cuentas-por-cobrar">Cuentas por Cobrar</TabsTrigger>
+            </TabsList>
+            <TabsContent value="cuentas-por-pagar" className="mt-4">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Pagos Pendientes a Recetarios</CardTitle>
+                        <CardDescription>
+                            Detalle de los montos adeudados a cada recetario socio por preparaciones y despachos.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {financialDataByPharmacy.filter(p => p.pendingBalance > 0).length > 0 ? (
+                        <Accordion type="single" collapsible className="w-full space-y-4">
+                            {financialDataByPharmacy.filter(p => p.pendingBalance > 0).map(data => (
+                            <AccordionItem value={data.pharmacyId} key={data.pharmacyId} className="border rounded-lg overflow-hidden">
+                                <AccordionTrigger className="text-lg font-semibold text-slate-700 hover:no-underline px-6 py-4 bg-muted/50 data-[state=open]:border-b">
+                                    <div className="flex justify-between items-center w-full pr-4">
+                                        <span>{data.pharmacyName}</span>
+                                        <Badge variant={data.pendingBalance > 0 ? "destructive" : "default"}>
+                                            Saldo: ${data.pendingBalance.toLocaleString('es-CL')}
+                                        </Badge>
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="p-6 pt-4 space-y-4">
+                                    <Table>
+                                        <TableHeader><TableRow><TableHead>ID Receta</TableHead><TableHead>Fecha</TableHead><TableHead>Estado Receta</TableHead><TableHead className="text-right">Costo Prep.</TableHead><TableHead className="text-right">Costo Despacho</TableHead></TableRow></TableHeader>
+                                        <TableBody>
+                                            {data.pendingRecipes.map(recipe => (
+                                            <TableRow key={recipe.id}>
+                                                <TableCell className="font-mono"><Link href={`/recipes/${recipe.id}`} className="text-primary hover:underline">{recipe.id}</Link></TableCell>
+                                                <TableCell>{format(new Date(recipe.createdAt), "d MMM, yyyy", { locale: es })}</TableCell>
+                                                <TableCell><Badge variant="secondary">{recipe.status}</Badge></TableCell>
+                                                <TableCell className="text-right">${(recipe.preparationCost || 0).toLocaleString('es-CL')}</TableCell>
+                                                <TableCell className="text-right">${(recipe.transportCost || 0).toLocaleString('es-CL')}</TableCell>
+                                            </TableRow>
+                                            ))}
+                                        </TableBody>
+                                        <UiTableFooter><TableRow><TableCell colSpan={3} className="font-bold text-right text-slate-700">TOTALES</TableCell><TableCell className="font-bold text-right text-slate-700">${data.totalPreparationCost.toLocaleString('es-CL')}</TableCell><TableCell className="font-bold text-right text-slate-700">${data.totalTransportCost.toLocaleString('es-CL')}</TableCell></TableRow></UiTableFooter>
+                                    </Table>
+                                    <div className="flex justify-end pt-4">
+                                        <Button onClick={() => setPharmacyToPay(data)} disabled={data.pendingRecipes.length === 0 || isPaying}>
+                                            <CircleDollarSign className="mr-2 h-4 w-4" />
+                                            Registrar Pago
+                                        </Button>
+                                    </div>
+                                </AccordionContent>
+                            </AccordionItem>
+                            ))}
+                        </Accordion>
+                        ) : (
+                        <div className="text-center py-16 border-2 border-dashed rounded-lg">
+                            <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-4" />
+                            <h3 className="text-xl font-semibold text-slate-700">¡Todo al día!</h3>
+                            <p className="text-muted-foreground mt-2">
+                                No hay saldos pendientes de pago con ningún recetario.
+                            </p>
+                        </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </TabsContent>
+            <TabsContent value="cuentas-por-cobrar" className="mt-4">
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Cuentas por Cobrar a Pacientes/Entidades</CardTitle>
+                        <CardDescription>
+                            Este módulo gestionará las deudas de pacientes o entidades hacia la farmacia.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-center py-16 border-2 border-dashed rounded-lg">
+                            <Banknote className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+                            <h3 className="text-xl font-semibold text-slate-700">Módulo en Desarrollo</h3>
+                            <p className="text-muted-foreground mt-2 max-w-md mx-auto">
+                                La funcionalidad para gestionar las cuentas por cobrar estará disponible en una futura actualización.
+                            </p>
+                        </div>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+        </Tabs>
       </div>
 
       <AlertDialog open={!!pharmacyToPay} onOpenChange={(open) => !open && setPharmacyToPay(null)}>
