@@ -3,7 +3,7 @@ import { db, storage } from './firebase';
 import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc, deleteDoc, writeBatch, query, where } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, ControlledLogEntryType, ProactivePatientStatus, PatientActionNeeded, MonthlyDispensationBox, MonthlyDispensationBoxStatus, DispensationItemStatus, PatientMessage, PharmacovigilanceReportStatus } from './types';
-import type { Recipe, Doctor, InventoryItem, User, Role, ExternalPharmacy, Patient, PharmacovigilanceReport, AppData, AuditTrailEntry, DispatchNote, DispatchItem, ControlledSubstanceLogEntry, LotDetail } from './types';
+import type { Recipe, Doctor, InventoryItem, User, Role, ExternalPharmacy, Patient, PharmacovigilanceReport, AppData, AuditTrailEntry, DispatchNote, DispatchItem, ControlledSubstanceLogEntry, LotDetail, AppSettings } from './types';
 import { getMockData } from './mock-data';
 import { MAX_REPREPARATIONS } from './constants';
 import { addMonths } from 'date-fns';
@@ -105,6 +105,7 @@ export const getRecipesReadyForPickup = async (patientId: string): Promise<Recip
     const q = query(collection(db, 'recipes'), where('patientId', '==', patientId), where('status', '==', RecipeStatus.ReadyForPickup));
     return fetchCollection<Recipe>('recipes', q);
 }
+export const getAppSettings = async (): Promise<AppSettings | null> => getDocument<AppSettings>('appSettings', 'global');
 
 
 // Filtered fetch functions
@@ -148,6 +149,19 @@ async function getDocument<T>(collectionName: string, id: string): Promise<T | n
             const convertedData = deepConvertTimestamps(data);
             return { id: docSnap.id, ...convertedData } as T;
         } else {
+            if (collectionName === 'appSettings' && id === 'global' && USE_MOCK_DATA_ON_EMPTY_FIRESTORE && !seededCollections.has(collectionName)) {
+                 console.warn(`Firestore document 'appSettings/global' not found. Seeding with mock data...`);
+                const mockData = getMockData().appSettings;
+                if (mockData) {
+                    await setDoc(docRef, mockData);
+                    console.log(`Successfully seeded document 'appSettings/global'.`);
+                    seededCollections.add(collectionName);
+                    const newSnap = await getDoc(docRef);
+                    const data = newSnap.data();
+                    const convertedData = deepConvertTimestamps(data);
+                    return { id: newSnap.id, ...convertedData } as T;
+                }
+            }
             console.log(`Document with id ${id} not found in ${collectionName} collection.`);
             return null;
         }
@@ -460,7 +474,7 @@ export const logDirectSaleDispensation = async (
     const patient = patientSnap.data() as Patient;
     
     let finalImageUrl: string | undefined;
-    if (controlledRecipeFormat === 'physical' && imageUri) {
+    if (controlledRecipeFormat === 'physical' && imageUri && imageUri.startsWith('data:')) {
       const storageRef = ref(storage, `controlled-prescriptions/${patientId}-${Date.now()}`);
       try {
         const uploadResult = await uploadString(storageRef, imageUri, 'data_url');
@@ -469,6 +483,8 @@ export const logDirectSaleDispensation = async (
         console.error("Firebase Storage upload failed in logDirectSaleDispensation:", storageError);
         throw new Error(`Error al subir imagen de receta controlada. Verifique las reglas de Storage. Código: ${storageError.code || 'UNKNOWN'}`);
       }
+    } else if (imageUri) {
+      finalImageUrl = imageUri;
     }
 
     const newLogEntry: Omit<ControlledSubstanceLogEntry, 'id'> = {
@@ -662,16 +678,8 @@ export const updateMonthlyDispensationBox = async (boxId: string, updates: Parti
   await updateDoc(boxRef, dataToUpdate as any);
 };
 
-export const sendMessageFromPatient = async (patientId: string, content: string): Promise<PatientMessage> => {
+export const updateAppSettings = async (updates: Partial<AppSettings>): Promise<void> => {
     if (!db) throw new Error("Firestore is not initialized.");
-    const newMessage: Omit<PatientMessage, 'id'> = {
-        patientId,
-        content,
-        sender: 'patient',
-        createdAt: new Date().toISOString(),
-        read: false,
-    };
-    const docRef = await addDoc(collection(db, 'patientMessages'), newMessage);
-    const messageData = { id: docRef.id, ...newMessage };
-    return deepConvertTimestamps(messageData);
+    const settingsRef = doc(db, 'appSettings', 'global');
+    await updateDoc(settingsRef, updates);
 };

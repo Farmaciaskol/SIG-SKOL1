@@ -178,7 +178,7 @@ export default function FinancialManagementPage() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-slate-800 font-headline">Gestión Financiera</h1>
             <p className="text-sm text-muted-foreground">
-              Control de costos y pagos a recetarios externos.
+              Control de costos y pagos a recetarios.
             </p>
           </div>
         </div>
