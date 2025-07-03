@@ -270,10 +270,7 @@ export const saveRecipe = async (data: any, imageUri: string | null, recipeId?: 
     };
     
     if (data.supplySource === 'Insumos de Skol') {
-        const hasFractionationItems = data.items.some((item: any) => item.requiresFractionation);
-        if (hasFractionationItems) {
-             recipeDataForUpdate.skolSuppliedItemsDispatchStatus = SkolSuppliedItemsDispatchStatus.Pending;
-        }
+        recipeDataForUpdate.skolSuppliedItemsDispatchStatus = SkolSuppliedItemsDispatchStatus.Pending;
     }
 
 

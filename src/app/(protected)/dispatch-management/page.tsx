@@ -134,7 +134,7 @@ export default function DispatchManagementPage() {
         : [recipe];
 
       for (const recipeItem of itemsToProcess) {
-        if (!recipeItem || !recipeItem.requiresFractionation) continue;
+        if (!recipeItem?.principalActiveIngredient) continue;
 
         const isAlreadyInActiveDispatch = dispatchNotes.some(dn => 
             dn.status === DispatchStatus.Active &&
