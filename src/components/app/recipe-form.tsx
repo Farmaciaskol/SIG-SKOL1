@@ -1,19 +1,24 @@
 
 'use client';
 
-import React from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useForm, useFieldArray, useWatch } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { extractRecipeDataFromImage } from '@/ai/flows/extract-recipe-data-from-image';
+import { simplifyInstructions } from '@/ai/flows/simplify-instructions';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
 import {
   Select,
   SelectContent,
@@ -22,20 +27,46 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Upload, PlusCircle, X, Image as ImageIcon, Loader2, Wand2, Bot, Calendar as CalendarIcon, Trash2, Snowflake } from 'lucide-react';
-import { getPatients, getDoctors, getRecipe, getExternalPharmacies, saveRecipe, getAppSettings, getInventory } from '@/lib/data';
-import { type Patient, type Doctor, type ExternalPharmacy, RecipeStatus, type AppSettings, type InventoryItem } from '@/lib/types';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { simplifyInstructions } from '@/ai/flows/simplify-instructions';
-import { extractRecipeDataFromImage } from '@/ai/flows/extract-recipe-data-from-image';
-import Image from 'next/image';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Checkbox } from '@/components/ui/checkbox';
-import { cn } from '@/lib/utils';
-import { format, parseISO } from 'date-fns';
-import { addMonths } from 'date-fns';
 import { PHARMACEUTICAL_FORM_DEFAULTS } from '@/lib/constants';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import {
+  getAppSettings,
+  getDoctors,
+  getExternalPharmacies,
+  getInventory,
+  getPatient,
+  getPatients,
+  getRecipe,
+  saveRecipe,
+  type AppSettings,
+  type Doctor,
+  type ExternalPharmacy,
+  type InventoryItem,
+  type Patient,
+  RecipeStatus,
+} from '@/lib/data';
+import { cn } from '@/lib/utils';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { addMonths, format, parseISO } from 'date-fns';
+import {
+  Bot,
+  Calendar as CalendarIcon,
+  Image as ImageIcon,
+  Loader2,
+  PlusCircle,
+  Snowflake,
+  Trash2,
+  Upload,
+  Wand2,
+} from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import React from 'react';
+import { useFieldArray, useForm, useWatch } from 'react-hook-form';
+import { z } from 'zod';
 
 // Zod schema for form validation
 const recipeItemSchema = z.object({
@@ -169,16 +200,13 @@ const RecipeItemCard = ({ index, remove, form, appSettings, inventory, isSimplif
     }, [principalActiveIngredientValue, inventory]);
 
     return (
-        <div className="p-4 border rounded-lg space-y-4 relative bg-muted/30">
-            <div className="flex justify-between items-start">
-                <h3 className="font-semibold text-primary">Ítem #{index + 1}</h3>
-                {totalFields > 1 && (
-                    <Button type="button" variant="ghost" size="icon" className="text-red-500 hover:text-red-600 h-7 w-7" onClick={() => remove(index)}>
-                        <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Eliminar Ítem</span>
-                    </Button>
-                )}
-            </div>
+        <div className="p-4 border rounded-lg space-y-4 relative bg-card">
+            {totalFields > 1 && (
+                <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-red-500 hover:text-red-600 h-7 w-7" onClick={() => remove(index)}>
+                    <Trash2 className="h-4 w-4" />
+                    <span className="sr-only">Eliminar Ítem</span>
+                </Button>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <FormField control={control} name={`items.${index}.principalActiveIngredient`} render={({ field }) => (
