@@ -37,7 +37,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-sky-800 lg:bg-background lg:grid lg:grid-cols-2">
+    <div className="min-h-screen w-full bg-background lg:grid lg:grid-cols-2">
       {/* Left Branding Panel */}
       <div className="hidden lg:flex flex-col items-center justify-center p-12 text-center bg-sky-800">
         <div className="space-y-4 max-w-md">
@@ -120,9 +120,9 @@ export default function LoginPage() {
                   </Button>
                 </form>
             </div>
-            <p className="px-8 text-center text-sm text-white/80 lg:text-muted-foreground">
+            <p className="px-8 text-center text-sm text-muted-foreground">
               ¿Es usted un paciente?{' '}
-              <Link href="/patient-portal/login" className="font-semibold text-white hover:underline lg:font-medium lg:text-primary">
+              <Link href="/patient-portal/login" className="font-semibold text-primary hover:underline lg:font-medium">
                 Ingrese al Portal de Pacientes
               </Link>
             </p>
