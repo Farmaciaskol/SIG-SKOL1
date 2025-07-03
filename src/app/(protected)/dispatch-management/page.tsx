@@ -261,8 +261,8 @@ export default function DispatchManagementPage() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight font-headline">Gestión de Despachos</h2>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold tracking-tight font-headline">Gestión de Despachos</h1>
+          <p className="text-sm text-muted-foreground">
             Control logístico del envío de insumos Skol a recetarios externos.
           </p>
         </div>
@@ -281,7 +281,7 @@ export default function DispatchManagementPage() {
                         const allItemsValidated = items.every(item => validationState[`${item.recipe.id}-${item.inventoryItem.id}`]?.isValidated === 'valid');
                         return (
                             <AccordionItem value={pharmacyId} key={pharmacyId}>
-                                <AccordionTrigger className="text-lg font-semibold">
+                                <AccordionTrigger className="text-xl font-semibold">
                                     {getPharmacyName(pharmacyId)} ({items.length} ítems)
                                 </AccordionTrigger>
                                 <AccordionContent className="p-2 space-y-4">
@@ -293,9 +293,9 @@ export default function DispatchManagementPage() {
                                     <Card key={itemId} className={`p-4 ${validationStatus === 'valid' ? 'bg-green-50' : validationStatus === 'invalid' ? 'bg-red-50' : ''}`}>
                                         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
                                             <div className="md:col-span-2 space-y-1">
-                                                <p className="font-bold">{item.inventoryItem.name}</p>
+                                                <p className="font-semibold">{item.inventoryItem.name}</p>
                                                 <p className="text-sm">Receta: <span className="font-mono text-primary">{item.recipe.id}</span> ({item.recipeItem.principalActiveIngredient})</p>
-                                                <p className="text-sm text-muted-foreground">Paciente: {item.patient.name}</p>
+                                                <p className="text-xs text-muted-foreground">Paciente: {item.patient.name}</p>
                                             </div>
                                             <div className="md:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
                                                <div className="space-y-1">
@@ -346,7 +346,7 @@ export default function DispatchManagementPage() {
                 <Card className="text-center py-16 mt-4 shadow-none border-dashed">
                     <div className="flex flex-col items-center justify-center">
                         <PackageCheck className="h-16 w-16 text-muted-foreground mb-4" />
-                        <h3 className="text-xl font-semibold">Todo al día</h3>
+                        <h2 className="text-xl font-semibold">Todo al día</h2>
                         <p className="text-muted-foreground mt-2 max-w-sm">
                             No hay insumos pendientes de preparación para ser despachados.
                         </p>
@@ -389,7 +389,7 @@ export default function DispatchManagementPage() {
                 <Card className="text-center py-16 shadow-none border-dashed">
                     <div className="flex flex-col items-center justify-center">
                         <Package className="h-16 w-16 text-muted-foreground mb-4" />
-                        <h3 className="text-xl font-semibold">Sin Despachos Activos</h3>
+                        <h2 className="text-xl font-semibold">Sin Despachos Activos</h2>
                         <p className="text-muted-foreground mt-2 max-w-sm">
                             Cuando se genere una nota de despacho, aparecerá aquí para su seguimiento.
                         </p>
@@ -410,7 +410,7 @@ export default function DispatchManagementPage() {
                                 </CardTitle>
                                  <p className="text-sm text-muted-foreground">
                                     Enviado: {format(new Date(note.createdAt), 'dd MMM yyyy')}, {note.completedAt ? `Completado: ${format(new Date(note.completedAt), 'dd MMM yyyy')}`: ''}
-                                </p>
+                                 </p>
                             </CardHeader>
                              <CardContent>
                                 <p className="text-sm text-muted-foreground">{note.items.length} items despachados a {getPharmacyName(note.externalPharmacyId)}.</p>
@@ -422,7 +422,7 @@ export default function DispatchManagementPage() {
                 <Card className="text-center py-16 shadow-none border-dashed">
                     <div className="flex flex-col items-center justify-center">
                         <History className="h-16 w-16 text-muted-foreground mb-4" />
-                        <h3 className="text-xl font-semibold">Sin Historial de Despachos</h3>
+                        <h2 className="text-xl font-semibold">Sin Historial de Despachos</h2>
                         <p className="text-muted-foreground mt-2 max-w-sm">
                             Los despachos completados o cancelados aparecerán en esta sección.
                         </p>

@@ -71,13 +71,13 @@ export default function PatientsPage() {
             <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
                     <div>
-                        <CardTitle className="text-lg hover:underline">
+                        <CardTitle className="hover:underline">
                             <Link href={`/patients/${patient.id}`}>
                                 {patient.name}
                             </Link>
                         </CardTitle>
-                        <div className="flex items-center text-sm text-muted-foreground mt-1">
-                            <User className="mr-2 h-3.5 w-3.5" />
+                        <div className="flex items-center text-xs text-muted-foreground mt-1">
+                            <User className="mr-2 h-3 w-3" />
                             <span>{patient.rut}</span>
                         </div>
                     </div>
@@ -117,8 +117,8 @@ export default function PatientsPage() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight font-headline">Gestión de Pacientes</h2>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold tracking-tight font-headline">Gestión de Pacientes</h1>
+          <p className="text-sm text-muted-foreground">
             Una visión 360° para una atención farmacéutica proactiva.
           </p>
         </div>
@@ -151,7 +151,7 @@ export default function PatientsPage() {
                         Todos
                     </Button>
                     <Button 
-                        variant={activeFilter === 'URGENT' ? 'default' : 'link'}
+                        variant={activeFilter === 'URGENT' ? 'destructive' : 'link'}
                         size="sm"
                         onClick={() => setActiveFilter(ProactivePatientStatus.URGENT)}
                         className="px-3"
@@ -159,7 +159,7 @@ export default function PatientsPage() {
                         Urgente
                     </Button>
                     <Button 
-                        variant={activeFilter === 'ATTENTION' ? 'default' : 'link'}
+                        variant={activeFilter === 'ATTENTION' ? 'secondary' : 'link'}
                         size="sm"
                         onClick={() => setActiveFilter(ProactivePatientStatus.ATTENTION)}
                         className="px-3"
@@ -179,7 +179,7 @@ export default function PatientsPage() {
         <Card className="text-center py-16 mt-8 shadow-none border-dashed">
             <div className="flex flex-col items-center justify-center">
               <User className="h-16 w-16 text-muted-foreground mb-4" />
-              <h3 className="text-xl font-semibold">No se encontraron pacientes</h3>
+              <h2 className="text-xl font-semibold">No se encontraron pacientes</h2>
               <p className="text-muted-foreground mt-2 max-w-sm">
               Intenta ajustar tu búsqueda o filtros, o crea un nuevo paciente para empezar.
               </p>

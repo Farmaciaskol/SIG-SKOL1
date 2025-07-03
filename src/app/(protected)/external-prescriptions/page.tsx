@@ -65,7 +65,7 @@ const PharmacyCard = ({ pharmacy }: { pharmacy: PharmacyWithStats }) => {
     <Card className="flex flex-col">
       <CardHeader>
         <div className="flex justify-between items-start">
-            <CardTitle className="text-xl font-bold">{pharmacy.name}</CardTitle>
+            <CardTitle>{pharmacy.name}</CardTitle>
             <div className="flex items-center gap-1">
                 <Button variant="ghost" size="icon" className="h-8 w-8">
                 <Pencil className="h-4 w-4" />
@@ -76,22 +76,22 @@ const PharmacyCard = ({ pharmacy }: { pharmacy: PharmacyWithStats }) => {
             </div>
         </div>
         
-        <div className="mt-4 space-y-2 text-sm text-muted-foreground">
+        <div className="mt-4 space-y-2 text-sm">
             {pharmacy.contactPerson && (
                 <div className="flex items-center gap-3">
-                    <User className="h-4 w-4" />
+                    <User className="h-4 w-4 text-muted-foreground" />
                     <span>{pharmacy.contactPerson}</span>
                 </div>
             )}
             {pharmacy.phone && (
                 <div className="flex items-center gap-3">
-                    <Phone className="h-4 w-4" />
+                    <Phone className="h-4 w-4 text-muted-foreground" />
                     <span>{pharmacy.phone}</span>
                 </div>
             )}
             {pharmacy.email && (
                 <div className="flex items-center gap-3">
-                    <Mail className="h-4 w-4" />
+                    <Mail className="h-4 w-4 text-muted-foreground" />
                     <span>{pharmacy.email}</span>
                 </div>
             )}
@@ -174,7 +174,7 @@ type PharmacyFormValues = z.infer<typeof pharmacyFormSchema>;
 const StatCard = ({ title, value, icon: Icon }: { title: string; value: string | number; icon: React.ElementType }) => (
     <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{title}</CardTitle>
+            <h3 className="text-sm font-medium">{title}</h3>
             <Icon className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
@@ -296,8 +296,8 @@ export default function ExternalPrescriptionsPage() {
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight font-headline">Gestión de Recetarios Externos</h2>
-            <p className="text-muted-foreground">
+            <h1 className="text-3xl font-bold tracking-tight font-headline">Gestión de Recetarios Externos</h1>
+            <p className="text-sm text-muted-foreground">
               Panel de control para gestionar la relación con los socios.
             </p>
           </div>
@@ -339,7 +339,7 @@ export default function ExternalPrescriptionsPage() {
             <Card className="text-center py-16 mt-8 shadow-none border-dashed">
                 <div className="flex flex-col items-center justify-center">
                     <Warehouse className="h-16 w-16 text-muted-foreground mb-4" />
-                    <h3 className="text-xl font-semibold">No se encontraron recetarios</h3>
+                    <h2 className="text-xl font-semibold">No se encontraron recetarios</h2>
                     <p className="text-muted-foreground mt-2 max-w-sm">
                         Intenta ajustar tu búsqueda o crea un nuevo recetario para empezar.
                     </p>

@@ -54,7 +54,7 @@ const KpiCard = ({ title, value, icon: Icon, href }: KpiCardProps) => (
           <Icon className="h-6 w-6 text-sky-600" />
         </div>
         <div>
-          <p className="text-sm text-muted-foreground">{title}</p>
+          <p className="text-sm text-foreground">{title}</p>
           <p className="text-2xl font-bold">{value}</p>
         </div>
       </CardContent>
@@ -144,17 +144,17 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6 bg-background">
+    <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between space-y-2 md:space-y-0">
         <div>
-            <h2 className="text-3xl font-bold tracking-tight font-headline">Dashboard</h2>
-            <p className="text-muted-foreground">{formattedDate}</p>
+            <h1 className="text-3xl font-bold tracking-tight font-headline">Dashboard</h1>
+            <p className="text-sm text-muted-foreground">{formattedDate}</p>
         </div>
         <div className="flex items-center space-x-2">
             <Button variant="outline" asChild className="bg-card hover:bg-muted">
               <Link href="/patients"><Users className="mr-2 h-4 w-4" /> Ver Pacientes</Link>
             </Button>
-            <Button asChild className="bg-sky-600 hover:bg-sky-700 text-white">
+            <Button asChild>
               <Link href="/recipes/new"><PlusCircle className="mr-2 h-4 w-4" /> Nueva Receta</Link>
             </Button>
         </div>
@@ -170,10 +170,10 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center gap-3 border-b pb-4">
             <CalendarDays className="h-5 w-5 text-muted-foreground" />
-            <CardTitle className="text-lg font-headline">Próximas Dispensaciones Mensuales</CardTitle>
+            <CardTitle>Próximas Dispensaciones Mensuales</CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
-            <div className="flex items-center text-sm text-muted-foreground">
+            <div className="flex items-center text-sm text-foreground">
                 <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
                 No hay dispensaciones crónicas que requieran acción en los próximos 30 días.
             </div>
@@ -183,7 +183,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center gap-3 border-b pb-4">
             <Clock className="h-5 w-5 text-muted-foreground" />
-            <CardTitle className="text-lg font-headline">Recetas con Retraso</CardTitle>
+            <CardTitle>Recetas con Retraso</CardTitle>
           </CardHeader>
           <CardContent className="pt-4 space-y-3">
             {delayedRecipes.length > 0 ? (
@@ -191,7 +191,7 @@ export default function DashboardPage() {
                 <div key={recipe.id} className="flex items-center p-3 rounded-lg bg-orange-50 border-l-4 border-orange-400">
                   <div className="flex-grow">
                     <p className="font-semibold text-primary"><Link href={`/recipes/${recipe.id}`} className="hover:underline">Receta: {recipe.id}</Link></p>
-                    <p className="text-sm text-muted-foreground">Paciente: {recipe.patientName}</p>
+                    <p className="text-sm text-foreground">Paciente: {recipe.patientName}</p>
                     <p className="text-sm text-muted-foreground">En estado "{recipe.status}" por {recipe.daysDelayed} días.</p>
                   </div>
                   <Button variant="ghost" size="sm" asChild>
@@ -200,7 +200,7 @@ export default function DashboardPage() {
                 </div>
               ))
             ) : (
-                <div className="flex items-center text-sm text-muted-foreground">
+                <div className="flex items-center text-sm text-foreground">
                     <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
                     ¡Excelente! No hay recetas con retraso.
                 </div>

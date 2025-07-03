@@ -20,10 +20,10 @@ export default function NewRecipePage() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
+          <h1 className="text-3xl font-bold tracking-tight font-headline">
             {copyFromId ? 'Copiar Receta' : 'Crear Nueva Receta'}
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             {copyFromId ? 'Ajusta los detalles y guarda la nueva copia de la receta.' : 'Rellena los detalles para registrar una nueva receta magistral.'}
           </p>
         </div>
@@ -33,5 +33,3 @@ export default function NewRecipePage() {
     </div>
   );
 }
-
-    

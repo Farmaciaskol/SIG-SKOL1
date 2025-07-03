@@ -20,8 +20,8 @@ export default function EditRecipePage() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">Editar Receta #{id}</h1>
-          <p className="text-muted-foreground">Modifica los detalles de la receta magistral.</p>
+          <h1 className="text-3xl font-bold tracking-tight font-headline">Editar Receta #{id}</h1>
+          <p className="text-sm text-muted-foreground">Modifica los detalles de la receta magistral.</p>
         </div>
       </div>
       
@@ -29,5 +29,3 @@ export default function EditRecipePage() {
     </div>
   );
 }
-
-    

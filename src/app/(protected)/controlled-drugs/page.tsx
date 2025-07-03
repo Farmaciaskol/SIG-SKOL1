@@ -76,8 +76,8 @@ export default function ControlledDrugsPage() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight font-headline">Libro de Control de Sustancias</h2>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold tracking-tight font-headline">Libro de Control de Sustancias</h1>
+          <p className="text-sm text-muted-foreground">
             Registro auditable y seguro de dispensaciones de psicotrópicos y estupefacientes.
           </p>
         </div>
@@ -172,10 +172,10 @@ export default function ControlledDrugsPage() {
                     <Card key={entry.id}>
                         <CardHeader>
                             <div className="flex justify-between items-start">
-                                <CardTitle className="text-base font-mono">{entry.internalFolio}</CardTitle>
+                                <CardTitle className="font-mono">{entry.internalFolio}</CardTitle>
                                 <Badge variant={entry.controlledType === 'Estupefaciente' ? 'destructive' : 'secondary'}>{entry.controlledType}</Badge>
                             </div>
-                            <p className="text-sm text-muted-foreground">{format(new Date(entry.dispensationDate), 'dd MMM, yyyy', {locale: es})}</p>
+                            <p className="text-xs text-muted-foreground">{format(new Date(entry.dispensationDate), 'dd MMMM, yyyy', {locale: es})}</p>
                         </CardHeader>
                         <CardContent className="space-y-2 text-sm">
                             <p><span className="font-semibold">Medicamento:</span> {entry.medicationName}</p>

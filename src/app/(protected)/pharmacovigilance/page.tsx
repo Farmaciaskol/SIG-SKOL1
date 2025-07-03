@@ -26,7 +26,7 @@ import { es } from 'date-fns/locale';
 const StatCard = ({ title, value, icon: Icon }: { title: string; value: string | number; icon: React.ElementType }) => (
   <Card>
     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium">{title}</CardTitle>
+      <h3 className="text-sm font-medium">{title}</h3>
       <Icon className="h-4 w-4 text-muted-foreground" />
     </CardHeader>
     <CardContent>
@@ -127,8 +127,8 @@ export default function PharmacovigilancePage() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight font-headline">Farmacovigilancia</h2>
-          <p className="text-muted-foreground">Monitorización y gestión de eventos adversos y calidad.</p>
+          <h1 className="text-3xl font-bold tracking-tight font-headline">Farmacovigilancia</h1>
+          <p className="text-sm text-muted-foreground">Monitorización y gestión de eventos adversos y calidad.</p>
         </div>
         <Button asChild>
           <Link href="/pharmacovigilance/new"><PlusCircle className="mr-2 h-4 w-4" /> Nuevo Reporte</Link>
@@ -237,10 +237,10 @@ export default function PharmacovigilancePage() {
                   <Card key={report.id}>
                     <CardHeader>
                       <div className="flex justify-between items-start">
-                        <CardTitle className="text-base font-mono text-primary">{report.id}</CardTitle>
+                        <CardTitle className="font-mono text-primary">{report.id}</CardTitle>
                         <Badge className={statusStyles[report.status].badge}>{report.status}</Badge>
                       </div>
-                       <p className="text-sm text-muted-foreground">
+                       <p className="text-xs text-muted-foreground">
                         {format(new Date(report.reportedAt), 'dd MMMM, yyyy', { locale: es })}
                       </p>
                     </CardHeader>

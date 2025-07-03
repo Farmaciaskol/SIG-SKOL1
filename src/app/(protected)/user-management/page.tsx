@@ -61,8 +61,8 @@ export default function UserManagementPage() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
-            <h2 className="text-3xl font-bold tracking-tight font-headline">Gestión de Usuarios</h2>
-            <p className="text-muted-foreground">Añade, edita y gestiona los roles y permisos de los usuarios del sistema.</p>
+            <h1 className="text-3xl font-bold tracking-tight font-headline">Gestión de Usuarios</h1>
+            <p className="text-sm text-muted-foreground">Añade, edita y gestiona los roles y permisos de los usuarios del sistema.</p>
         </div>
         <div className="flex items-center space-x-2">
           <Button>
@@ -119,7 +119,7 @@ export default function UserManagementPage() {
                                             <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                                         </Avatar>
                                         <div>
-                                            <CardTitle className="text-base">{user.name}</CardTitle>
+                                            <CardTitle>{user.name}</CardTitle>
                                             <p className="text-sm text-muted-foreground">{user.email}</p>
                                         </div>
                                     </div>

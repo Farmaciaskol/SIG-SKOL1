@@ -8,7 +8,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -245,7 +245,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
       if (result.patientName) form.setValue('newPatientName', result.patientName);
       if (result.patientRut) form.setValue('newPatientRut', result.patientRut);
       if (result.doctorName) form.setValue('newDoctorName', result.doctorName);
-      if (result.doctorRut) form.setValue('newDoctorRut', result.doctorRut);
+      if (result.doctorRut) form.setValue('newDoctorRut', result.doctorLicense);
       if (result.doctorLicense) form.setValue('newDoctorLicense', result.doctorLicense);
       if (result.doctorSpecialty) form.setValue('newDoctorSpecialty', result.doctorSpecialty);
       if (result.prescriptionDate) form.setValue('prescriptionDate', result.prescriptionDate);
@@ -314,7 +314,10 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
       <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1 space-y-6">
           <Card>
-            <CardContent className="p-6">
+            <CardHeader>
+              <CardTitle className="text-base">Imagen de la Receta</CardTitle>
+            </CardHeader>
+            <CardContent>
               <div 
                 className="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary"
                 onClick={() => fileInputRef.current?.click()}
@@ -343,7 +346,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
             <CardContent className="p-6 space-y-8">
               {/* --- INFORMACIÓN GENERAL --- */}
               <div>
-                <h2 className="text-xl font-semibold mb-4 text-foreground">Información General</h2>
+                <h2 className="text-2xl font-semibold mb-4">Información General</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <FormItem>
                     <FormLabel>ID Receta</FormLabel>
@@ -393,7 +396,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                             <Calendar mode="single" selected={field.value ? new Date(field.value) : undefined} onSelect={(d) => field.onChange(d ? format(d, 'yyyy-MM-dd') : '')} />
                           </PopoverContent>
                         </Popover>
-                        <FormDescription className="text-xs">(Por defecto 6 meses, editable.)</FormDescription>
+                        <FormDescription>(Por defecto 6 meses, editable.)</FormDescription>
                       </FormItem>
                     )}
                   />
@@ -404,7 +407,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
 
               {/* --- PACIENTE --- */}
               <div>
-                 <h2 className="text-xl font-semibold mb-4 text-foreground">Paciente</h2>
+                 <h2 className="text-2xl font-semibold mb-4">Paciente</h2>
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                     <div className="md:col-span-2">
                         <FormField
@@ -431,7 +434,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                     <FormField control={form.control} name="newPatientName" render={({ field }) => (<FormItem><FormLabel>Nombre Paciente (Nuevo/IA) *</FormLabel><FormControl><Input placeholder="Nombre Apellido" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="newPatientRut" render={({ field }) => (<FormItem><FormLabel>RUT Paciente (Nuevo/IA) *</FormLabel><FormControl><Input placeholder="12.345.678-9" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
                     <div className="md:col-span-2">
-                         <FormField control={form.control} name="dispatchAddress" render={({ field }) => (<FormItem><FormLabel>Dirección de Despacho</FormLabel><FormControl><Input placeholder="Ej: Calle Falsa 123, Comuna" {...field} value={field.value ?? ''} /></FormControl><FormDescription className="text-xs">(Opcional. Por defecto, se retira en farmacia.)</FormDescription><FormMessage /></FormItem>)} />
+                         <FormField control={form.control} name="dispatchAddress" render={({ field }) => (<FormItem><FormLabel>Dirección de Despacho</FormLabel><FormControl><Input placeholder="Ej: Calle Falsa 123, Comuna" {...field} value={field.value ?? ''} /></FormControl><FormDescription>(Opcional. Por defecto, se retira en farmacia.)</FormDescription><FormMessage /></FormItem>)} />
                     </div>
                  </div>
               </div>
@@ -440,7 +443,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
 
               {/* --- MÉDICO --- */}
                <div>
-                 <h2 className="text-xl font-semibold mb-4 text-foreground">Médico</h2>
+                 <h2 className="text-2xl font-semibold mb-4">Médico</h2>
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                      <div className="md:col-span-2">
                         <FormField
@@ -475,7 +478,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
 
           <Card>
             <CardContent className="p-6">
-                <h2 className="text-xl font-semibold mb-6 text-foreground">Recetario e Insumos</h2>
+                <h2 className="text-2xl font-semibold mb-6">Recetario e Insumos</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                     control={form.control}
@@ -528,7 +531,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                             <FormControl>
                             <Input placeholder="Ej: 15000" {...field} value={field.value ?? ''} />
                             </FormControl>
-                            <FormDescription className="text-xs">Costo que Skol pagará al recetario.</FormDescription>
+                            <FormDescription>Costo que Skol pagará al recetario.</FormDescription>
                             <FormMessage />
                         </FormItem>
                         )}
@@ -541,7 +544,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
           <Card>
             <CardContent className="p-6">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-semibold text-foreground">Preparado Magistral</h2>
+                    <h2 className="text-2xl font-semibold">Preparado Magistral</h2>
                     <Button type="button" variant="link" onClick={() => append(defaultItem)} className="text-primary hover:text-primary/80">
                         <PlusCircle className="mr-2 h-4 w-4" /> Añadir
                     </Button>
@@ -551,7 +554,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                     {fields.map((item, index) => (
                     <div key={item.id} className="p-4 border rounded-lg space-y-4 relative bg-muted/30">
                         <div className="flex justify-between items-start">
-                            <h3 className="font-semibold text-md text-primary">Ítem #{index + 1}</h3>
+                            <h3 className="font-semibold text-primary">Ítem #{index + 1}</h3>
                              {fields.length > 1 && (
                                 <Button type="button" variant="ghost" size="icon" className="text-red-500 hover:text-red-600 h-7 w-7" onClick={() => remove(index)}>
                                     <Trash2 className="h-4 w-4" />
@@ -682,7 +685,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                                     <FormControl>
                                         <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                                     </FormControl>
-                                    <FormLabel className="!mt-0 font-normal text-sm">
+                                    <FormLabel className="!mt-0 font-normal">
                                         Insumo provisto por Skol (para fraccionamiento)
                                     </FormLabel>
                                 </FormItem>
@@ -715,7 +718,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
           <Card>
             <CardContent className="p-6">
                 <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold text-foreground">Medicamento Controlado</h2>
+                <h2 className="text-2xl font-semibold">Medicamento Controlado</h2>
                 <FormField
                     control={form.control}
                     name="isControlled"
@@ -727,7 +730,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                             onCheckedChange={field.onChange}
                         />
                         </FormControl>
-                        <FormLabel className="font-normal text-sm">Es Controlado</FormLabel>
+                        <FormLabel className="font-normal">Es Controlado</FormLabel>
                     </FormItem>
                     )}
                 />
@@ -782,7 +785,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                             <FormLabel>Adjuntar Imagen Receta Controlada (Opcional)</FormLabel>
                             <div className="flex items-center gap-2">
                                 <Button type="button" variant="outline">Seleccionar archivo</Button>
-                                <span className="text-sm text-muted-foreground">Sin archivos seleccionados</span>
+                                <span className="text-xs text-muted-foreground">Sin archivos seleccionados</span>
                             </div>
                         </FormItem>
                     </div>

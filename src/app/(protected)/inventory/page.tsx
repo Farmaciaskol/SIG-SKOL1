@@ -207,7 +207,7 @@ const InventoryItemForm = ({ item, onFinished }: { item?: InventoryItem; onFinis
 const StatCard = ({ title, value, icon: Icon }: { title: string; value: string | number; icon: React.ElementType }) => (
     <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{title}</CardTitle>
+            <h3 className="text-sm font-medium">{title}</h3>
             <Icon className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
@@ -231,10 +231,10 @@ const ProductCard = ({ item, onEdit }: { item: InventoryItemWithStats; onEdit: (
         <Card className={cn("flex flex-col transition-all hover:shadow-lg", border)}>
             <CardHeader className="pb-4">
                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg font-semibold">{item.name}</CardTitle>
+                    <CardTitle>{item.name}</CardTitle>
                     {item.isControlled && <Star className="h-5 w-5 text-amber-500" />}
                  </div>
-                 <p className="text-sm text-muted-foreground">SKU: {item.sku || 'N/A'}</p>
+                 <p className="text-xs text-muted-foreground">SKU: {item.sku || 'N/A'}</p>
             </CardHeader>
             <CardContent className="flex-grow space-y-4">
                 <div className="flex justify-between items-baseline">
@@ -244,8 +244,8 @@ const ProductCard = ({ item, onEdit }: { item: InventoryItemWithStats; onEdit: (
                     </div>
                     <Badge className={badge}>{item.status}</Badge>
                 </div>
-                <div className="text-sm text-muted-foreground">
-                    <p>Próximo Vencimiento:</p>
+                <div className="text-sm">
+                    <p className="text-muted-foreground">Próximo Vencimiento:</p>
                     <p className="font-medium text-foreground">
                         {item.nextExpiryDate ? format(new Date(item.nextExpiryDate), 'dd-MMMM-yyyy', {locale: es}) : 'N/A'}
                     </p>
@@ -395,8 +395,8 @@ export default function InventoryPage() {
             <div className="space-y-6">
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                     <div>
-                        <h2 className="text-3xl font-bold tracking-tight font-headline">Gestión de Inventario</h2>
-                        <p className="text-muted-foreground">
+                        <h1 className="text-3xl font-bold tracking-tight font-headline">Gestión de Inventario</h1>
+                        <p className="text-sm text-muted-foreground">
                             Control logístico y trazabilidad de los insumos de la farmacia.
                         </p>
                     </div>
@@ -448,7 +448,7 @@ export default function InventoryPage() {
                     <Card className="text-center py-16 mt-8 shadow-none border-dashed">
                         <div className="flex flex-col items-center justify-center">
                             <Package className="h-16 w-16 text-muted-foreground mb-4" />
-                            <h3 className="text-xl font-semibold">No se encontraron productos</h3>
+                            <h2 className="text-xl font-semibold">No se encontraron productos</h2>
                             <p className="text-muted-foreground mt-2 max-w-sm">
                                 Intenta ajustar tu búsqueda o define un nuevo producto para empezar.
                             </p>

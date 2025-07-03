@@ -59,12 +59,12 @@ const DoctorCard = ({ doctor }: { doctor: DoctorWithStats }) => {
     <Dialog>
       <Card className="flex flex-col">
         <CardHeader>
-          <CardTitle className="text-xl font-bold">{doctor.name}</CardTitle>
-          <p className="text-primary">{doctor.specialty}</p>
+          <CardTitle className="font-bold">{doctor.name}</CardTitle>
+          <p className="text-sm font-medium text-primary">{doctor.specialty}</p>
         </CardHeader>
         <CardContent className="flex-grow space-y-6">
           <div>
-            <p className="text-sm text-muted-foreground">Reg: {doctor.license || 'N/A'} | RUT: {doctor.rut || 'N/A'}</p>
+            <p className="text-xs text-muted-foreground">Reg: {doctor.license || 'N/A'} | RUT: {doctor.rut || 'N/A'}</p>
             <div className="mt-4 space-y-2">
               {doctor.phone && (
                 <div className="flex items-center gap-3 text-sm">
@@ -312,8 +312,8 @@ export default function DoctorsPage() {
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight font-headline">Gestión de Médicos</h2>
-            <p className="text-muted-foreground">
+            <h1 className="text-3xl font-bold tracking-tight font-headline">Gestión de Médicos</h1>
+            <p className="text-sm text-muted-foreground">
               Panel de control para gestionar la relación con los prescriptores.
             </p>
           </div>
@@ -349,7 +349,7 @@ export default function DoctorsPage() {
             <Card className="text-center py-16 mt-8 shadow-none border-dashed">
                 <div className="flex flex-col items-center justify-center">
                 <Users className="h-16 w-16 text-muted-foreground mb-4" />
-                <h3 className="text-xl font-semibold">No se encontraron médicos</h3>
+                <h2 className="text-xl font-semibold">No se encontraron médicos</h2>
                 <p className="text-muted-foreground mt-2 max-w-sm">
                     Intenta ajustar tu búsqueda o crea un nuevo médico para empezar.
                 </p>
