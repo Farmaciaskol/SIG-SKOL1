@@ -4,3 +4,5 @@ config();
 import '@/ai/flows/extract-recipe-data-from-image.ts';
 import '@/ai/flows/analyze-patient-history.ts';
 import '@/ai/flows/simplify-instructions.ts';
+import '@/ai/tools/vademecum.ts';
+import '@/ai/flows/validate-active-ingredient.ts';
