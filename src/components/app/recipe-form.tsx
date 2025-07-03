@@ -5,7 +5,7 @@ import { extractRecipeDataFromImage } from '@/ai/flows/extract-recipe-data-from-
 import { simplifyInstructions } from '@/ai/flows/simplify-instructions';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -213,7 +213,7 @@ const RecipeItemCard = ({
   }, [principalActiveIngredientValue, inventory]);
 
   return (
-    <div className="p-4 border rounded-lg space-y-4 relative bg-card">
+    <Card className="p-4 relative">
       {totalFields > 1 && (
         <Button type="button" variant="ghost" size="icon"
           className="absolute top-2 right-2 text-red-500 hover:text-red-600 h-7 w-7"
@@ -320,7 +320,7 @@ const RecipeItemCard = ({
           </FormItem>
         )} />
       </div>
-      <div className="space-y-4">
+      <div className="space-y-4 pt-4">
         <FormField control={control} name={`items.${index}.requiresFractionation`} render={({ field }) => (
           <FormItem className="flex flex-row items-center space-x-2 pt-2">
             <FormControl>
@@ -364,13 +364,13 @@ const RecipeItemCard = ({
         )}
       </div>
 
-      <div className="flex justify-start">
+      <div className="flex justify-start pt-4">
         <Button type="button" variant="outline" size="sm" onClick={() => handleSimplifyInstructions(index)} disabled={isSimplifying === index}>
           {isSimplifying === index ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
           {isSimplifying === index ? 'Simplificando...' : 'Simplificar (IA)'}
         </Button>
       </div>
-    </div>
+    </Card>
   );
 };
 
@@ -627,27 +627,27 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex h-full gap-8">
-        {/* Left Column */}
+      <form onSubmit={form.handleSubmit(onSubmit)} className="flex h-full w-full gap-6">
+        {/* Left Column (Image) */}
         <div className="w-1/3 lg:w-2/5 xl:w-1/3 flex-shrink-0">
-          <Card className="sticky top-0">
+          <Card className="flex flex-col h-full">
             <CardHeader>
               <CardTitle className="text-xl font-semibold">Imagen de la Receta</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="flex-grow flex flex-col items-center justify-center p-2">
               <div
-                className="flex items-center justify-center border-2 border-dashed rounded-lg min-h-[400px] overflow-hidden bg-muted/50"
+                className="w-full flex-grow flex items-center justify-center border-2 border-dashed rounded-lg overflow-hidden bg-muted/50"
               >
                 <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*,application/pdf" className="hidden" />
                 {previewImage ? (
-                   <Image 
+                  <Image 
                       src={previewImage} 
                       alt="Vista previa de receta" 
                       width={400} 
                       height={500} 
                       className={cn(
-                          "h-auto w-full max-h-full object-contain transition-transform duration-300 ease-in-out",
-                          isZoomed ? "scale-150 cursor-zoom-out" : "cursor-zoom-in"
+                          "h-auto w-full max-h-full object-contain transition-transform duration-300 ease-in-out cursor-pointer",
+                          isZoomed ? "scale-150" : ""
                       )}
                       onClick={(e) => {
                           e.stopPropagation();
@@ -661,22 +661,21 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
                   </div>
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                  <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
-                      Cambiar Imagen
-                  </Button>
-                  <Button type="button" onClick={handleExtractWithAI} disabled={!previewImage || isAiExtracting}>
-                      {isAiExtracting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
-                      {isAiExtracting ? 'Extrayendo...' : 'Extraer con IA'}
-                  </Button>
-              </div>
-              <p className="text-xs text-muted-foreground text-center">Rellena el formulario automáticamente a partir de la imagen.</p>
             </CardContent>
+            <CardFooter className="flex-shrink-0 grid grid-cols-2 gap-2 pt-4">
+                <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                    Cambiar Imagen
+                </Button>
+                <Button type="button" onClick={handleExtractWithAI} disabled={!previewImage || isAiExtracting}>
+                    {isAiExtracting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
+                    {isAiExtracting ? 'Extrayendo...' : 'Extraer con IA'}
+                </Button>
+            </CardFooter>
           </Card>
         </div>
 
-        {/* Right Column */}
-        <div className="flex-1 space-y-6 overflow-y-auto pr-4 pb-8">
+        {/* Right Column (Form Fields) */}
+        <div className="flex-1 space-y-6 overflow-y-auto pr-4 pb-16">
           <Card>
             <CardContent className="p-6">
               <h2 className="text-xl font-semibold mb-4 text-slate-700">Información General</h2>
