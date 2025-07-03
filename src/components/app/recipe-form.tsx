@@ -218,6 +218,39 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
     fetchData();
   }, [recipeId, copyFromId, toast, router, form, loadFormData]);
 
+  const watchedItems = form.watch('items');
+
+  useEffect(() => {
+    const calculateTotals = () => {
+      watchedItems.forEach((item, index) => {
+        const { dosageValue, frequency, treatmentDurationValue, treatmentDurationUnit } = item;
+        
+        const dose = parseFloat(dosageValue);
+        const freq = parseInt(frequency, 10);
+        const duration = parseInt(treatmentDurationValue, 10);
+
+        if (!isNaN(dose) && !isNaN(freq) && freq > 0 && !isNaN(duration)) {
+          let durationInDays = duration;
+          if (treatmentDurationUnit === 'semanas') {
+            durationInDays = duration * 7;
+          } else if (treatmentDurationUnit === 'meses') {
+            durationInDays = duration * 30; // Approximation
+          }
+          
+          const administrationsPerDay = 24 / freq;
+          const totalQuantity = Math.ceil(administrationsPerDay * durationInDays);
+
+          const currentTotalVal = form.getValues(`items.${index}.totalQuantityValue`);
+          if (String(totalQuantity) !== currentTotalVal) {
+            form.setValue(`items.${index}.totalQuantityValue`, String(totalQuantity), { shouldValidate: true });
+          }
+        }
+      });
+    };
+    calculateTotals();
+  }, [watchedItems, form]);
+
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -581,7 +614,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                                                 form.setValue(`items.${index}.totalQuantityUnit`, defaults.totalQuantityUnit, { shouldValidate: true });
                                             }
                                         }}
-                                        defaultValue={field.value}>
+                                        value={field.value}>
                                         <FormControl><SelectTrigger><SelectValue placeholder="Seleccione..." /></SelectTrigger></FormControl>
                                         <SelectContent>
                                             {PHARMACEUTICAL_FORMS.map(unit => <SelectItem key={unit} value={unit.toLowerCase()}>{unit}</SelectItem>)}
