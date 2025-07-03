@@ -1,4 +1,5 @@
 
+
 import { db, storage } from './firebase';
 import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc, deleteDoc, writeBatch, query, where } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
@@ -141,6 +142,7 @@ export const getRecipe = async (id: string): Promise<Recipe | null> => getDocume
 export const getPatient = async (id: string): Promise<Patient | null> => getDocument<Patient>('patients', id);
 export const getDoctor = async (id: string): Promise<Doctor | null> => getDocument<Doctor>('doctors', id);
 export const getExternalPharmacy = async (id: string): Promise<ExternalPharmacy | null> => getDocument<ExternalPharmacy>('externalPharmacies', id);
+export const getPharmacovigilanceReport = async (id: string): Promise<PharmacovigilanceReport | null> => getDocument<PharmacovigilanceReport>('pharmacovigilanceReports', id);
 
 
 export const deleteRecipe = async (id: string): Promise<void> => {
@@ -464,4 +466,12 @@ export const deletePatient = async (id: string): Promise<void> => {
     await deleteDoc(doc(db, 'patients', id));
 };
 
+
+export const updatePharmacovigilanceReport = async (id: string, updates: Partial<PharmacovigilanceReport>): Promise<void> => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    const reportRef = doc(db, 'pharmacovigilanceReports', id);
+    const dataToUpdate = { ...updates, updatedAt: new Date().toISOString() };
+    await updateDoc(reportRef, dataToUpdate);
+};
     
+
