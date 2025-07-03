@@ -299,7 +299,7 @@ export const logControlledMagistralDispensation = async (recipe: Recipe, patient
     if (recipe.items.length === 0) throw new Error("Recipe has no items to log.");
 
     const logCol = collection(db, 'controlledSubstanceLog');
-    const logSnapshot = await getDocs(logCol);
+    const logSnapshot = await getDocs(query(logCol, where("entryType", "==", ControlledLogEntryType.MagistralDispensation)));
     const newFolioNumber = logSnapshot.size + 1;
     const internalFolio = `CSL-MG-${new Date().getFullYear()}-${String(newFolioNumber).padStart(4, '0')}`;
     
@@ -324,5 +324,80 @@ export const logControlledMagistralDispensation = async (recipe: Recipe, patient
         };
         batch.set(doc(logCol), newLogEntry);
     }
+    await batch.commit();
+};
+
+export const logDirectSaleDispensation = async (
+  data: {
+    patientId: string;
+    doctorId: string;
+    inventoryItemId: string;
+    lotNumber: string;
+    quantity: number;
+    prescriptionFolio: string;
+    prescriptionType: 'Receta Cheque' | 'Receta Retenida';
+    controlledRecipeFormat: 'electronic' | 'physical';
+    prescriptionImageUrl?: string;
+  }
+): Promise<void> => {
+    if (!db || !storage) throw new Error("Firestore or Storage is not initialized.");
+    
+    const { patientId, doctorId, inventoryItemId, lotNumber, quantity, prescriptionFolio, prescriptionType, controlledRecipeFormat, prescriptionImageUrl: imageUri } = data;
+
+    const inventoryRef = doc(db, 'inventory', inventoryItemId);
+    const logCol = collection(db, 'controlledSubstanceLog');
+    const batch = writeBatch(db);
+
+    const inventorySnap = await getDoc(inventoryRef);
+    if (!inventorySnap.exists()) throw new Error(`Inventory item ${inventoryItemId} not found.`);
+    const inventoryData = inventorySnap.data() as InventoryItem;
+
+    if (!inventoryData.isControlled) throw new Error("This item is not a controlled substance.");
+
+    const lotIndex = inventoryData.lots?.findIndex(l => l.lotNumber === lotNumber);
+    if (lotIndex === undefined || lotIndex === -1 || !inventoryData.lots) throw new Error(`Lot ${lotNumber} not found for item ${inventoryItemId}.`);
+
+    const lot = inventoryData.lots[lotIndex];
+    if (lot.quantity < quantity) throw new Error(`Not enough stock for lot ${lotNumber}. Required: ${quantity}, Available: ${lot.quantity}`);
+    
+    const newLots = [...inventoryData.lots];
+    newLots[lotIndex] = { ...lot, quantity: lot.quantity - quantity };
+    const newTotalQuantity = inventoryData.quantity - quantity;
+    batch.update(inventoryRef, { lots: newLots, quantity: newTotalQuantity });
+
+    const logSnapshot = await getDocs(query(logCol, where("entryType", "==", ControlledLogEntryType.DirectSale)));
+    const newFolioNumber = logSnapshot.size + 1;
+    const internalFolio = `CSL-DV-${new Date().getFullYear()}-${String(newFolioNumber).padStart(4, '0')}`;
+
+    const patientSnap = await getDoc(doc(db, 'patients', patientId));
+    if (!patientSnap.exists()) throw new Error("Patient not found");
+    const patient = patientSnap.data() as Patient;
+    
+    let finalImageUrl: string | undefined;
+    if (controlledRecipeFormat === 'physical' && imageUri) {
+      const storageRef = ref(storage, `controlled-prescriptions/${patientId}-${Date.now()}`);
+      const uploadResult = await uploadString(storageRef, imageUri, 'data_url');
+      finalImageUrl = await getDownloadURL(uploadResult.ref);
+    }
+
+    const newLogEntry: Omit<ControlledSubstanceLogEntry, 'id'> = {
+        entryType: ControlledLogEntryType.DirectSale,
+        dispensationDate: new Date().toISOString(),
+        internalFolio,
+        patientId,
+        doctorId,
+        medicationName: inventoryData.name,
+        inventoryItemId,
+        quantityDispensed: quantity,
+        quantityUnit: inventoryData.unit,
+        controlledType: inventoryData.controlledType!,
+        prescriptionFolio,
+        prescriptionType,
+        retrievedBy_Name: patient.name,
+        retrievedBy_RUT: patient.rut,
+        prescriptionImageUrl: finalImageUrl,
+    };
+    batch.set(doc(logCol), newLogEntry);
+    
     await batch.commit();
 };
