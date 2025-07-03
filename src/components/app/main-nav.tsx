@@ -222,7 +222,7 @@ export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElemen
           </SidebarFooter>
         </Sidebar>
         <main className="flex-1 w-full overflow-y-auto">
-          <header className="md:hidden flex h-14 items-center gap-4 border-b bg-background px-6 sticky top-0 z-10">
+          <header className="md:hidden flex h-14 items-center gap-4 bg-background px-6 sticky top-0 z-10">
             <SidebarTrigger />
             <div className="flex-1" />
           </header>
