@@ -105,6 +105,7 @@ import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Separator } from '@/components/ui/separator';
 
 const StatCard = ({ title, value, icon: Icon, onClick, active = false }: { title: string; value: string | number; icon: React.ElementType, onClick: () => void, active?: boolean }) => (
   <Card className={cn("hover:shadow-md transition-shadow cursor-pointer", active && "ring-2 ring-primary")} onClick={onClick}>
@@ -142,7 +143,12 @@ export default function RecipesPage() {
   const [controlledFolio, setControlledFolio] = useState('');
   const [internalLot, setInternalLot] = useState('');
   const [preparationExpiry, setPreparationExpiry] = useState<Date>();
-  const [isPreparationRefrigerated, setIsPreparationRefrigerated] = useState(false);
+  const [receptionChecklist, setReceptionChecklist] = useState({
+    etiqueta: false,
+    vencimiento: false,
+    aspecto: false,
+    cadenaFrio: false,
+  });
 
   // Filtering state
   const [searchTerm, setSearchTerm] = useState('');
@@ -252,20 +258,36 @@ export default function RecipesPage() {
     setReason('');
   }
   
+  const handleReceptionChecklistChange = (key: keyof typeof receptionChecklist, value: boolean) => {
+    setReceptionChecklist(prev => ({ ...prev, [key]: value }));
+  };
+
+  const isReceptionChecklistComplete = useMemo(() => {
+    if (!recipeToReceive) return false;
+    const requiresColdChain = recipeToReceive.items.some(i => i.isRefrigerated);
+    if (requiresColdChain) {
+        return receptionChecklist.etiqueta && receptionChecklist.vencimiento && receptionChecklist.aspecto && receptionChecklist.cadenaFrio;
+    }
+    return receptionChecklist.etiqueta && receptionChecklist.vencimiento && receptionChecklist.aspecto;
+  }, [receptionChecklist, recipeToReceive]);
+  
   const handleConfirmReceive = async () => {
-    if (!recipeToReceive || !internalLot || !preparationExpiry) return;
+    if (!recipeToReceive || !internalLot || !preparationExpiry || !isReceptionChecklistComplete) return;
     setIsSubmitting(true);
     try {
-      const updatedItems = recipeToReceive.items.map(item => ({
-        ...item,
-        isRefrigerated: isPreparationRefrigerated,
-      }));
-
+       const notesParts = [
+          `Preparado recepcionado.`,
+          `Lote Interno: ${internalLot}.`,
+          `Vencimiento: ${format(preparationExpiry, 'dd-MM-yyyy')}.`
+       ];
+       if (recipeToReceive.items.some(i => i.isRefrigerated)) {
+          notesParts.push('Cadena de frío verificada.');
+       }
        const newAuditEntry: AuditTrailEntry = {
         status: RecipeStatus.ReceivedAtSkol,
         date: new Date().toISOString(),
         userId: 'system-user',
-        notes: `Preparado recepcionado. Lote Interno: ${internalLot}. Vencimiento: ${format(preparationExpiry, 'dd-MM-yyyy')}.${isPreparationRefrigerated ? ' Requiere refrigeración.' : ''}`
+        notes: notesParts.join(' ')
       };
       const updates: Partial<Recipe> = { 
         status: RecipeStatus.ReceivedAtSkol, 
@@ -273,7 +295,6 @@ export default function RecipesPage() {
         internalPreparationLot: internalLot,
         compoundingDate: new Date().toISOString(),
         preparationExpiryDate: preparationExpiry.toISOString(),
-        items: updatedItems,
       };
        await updateRecipe(recipeToReceive.id, updates);
        toast({ title: 'Preparado Recepcionado', description: `La receta ${recipeToReceive.id} ha sido actualizada.` });
@@ -287,9 +308,6 @@ export default function RecipesPage() {
        );
 
        setRecipeToReceive(null);
-       setInternalLot('');
-       setPreparationExpiry(undefined);
-       setIsPreparationRefrigerated(false);
     } catch (error) {
        toast({ title: 'Error', description: 'No se pudo recepcionar el preparado.', variant: 'destructive' });
     } finally {
@@ -985,7 +1003,97 @@ export default function RecipesPage() {
       <Dialog open={!!recipeToReject} onOpenChange={(open) => {if (!open) {setRecipeToReject(null); setReason('');}}}><DialogContent><DialogHeader><DialogTitle className="text-xl font-semibold">Rechazar Receta: {recipeToReject?.id}</DialogTitle><DialogDescription>Por favor, ingrese el motivo del rechazo. Este quedará registrado en el historial de la receta.</DialogDescription></DialogHeader><div className="grid gap-4 py-4"><Label htmlFor="reason-textarea" className="text-sm font-medium text-slate-700">Motivo del Rechazo *</Label><Textarea id="reason-textarea" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ej: Dosis inconsistente con la indicación."/></div><DialogFooter><Button variant="ghost" onClick={() => {setRecipeToReject(null); setReason('');}}>Cancelar</Button><Button variant="destructive" onClick={handleConfirmReject} disabled={!reason.trim() || isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Confirmar Rechazo</Button></DialogFooter></DialogContent></Dialog>
       <Dialog open={!!recipeToCancel} onOpenChange={(open) => {if (!open) {setRecipeToCancel(null); setReason('');}}}><DialogContent><DialogHeader><DialogTitle className="text-xl font-semibold">Anular Receta: {recipeToCancel?.id}</DialogTitle><DialogDescription>Por favor, ingrese el motivo de la anulación. Esta acción es irreversible.</DialogDescription></DialogHeader><div className="grid gap-4 py-4"><Label htmlFor="reason-textarea" className="text-sm font-medium text-slate-700">Motivo de la Anulación *</Label><Textarea id="reason-textarea" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ej: Solicitado por el paciente."/></div><DialogFooter><Button variant="ghost" onClick={() => {setRecipeToCancel(null); setReason('');}}>Cancelar</Button><Button variant="destructive" onClick={handleConfirmCancel} disabled={!reason.trim() || isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Confirmar Anulación</Button></DialogFooter></DialogContent></Dialog>
       <Dialog open={!!recipeToReprepare} onOpenChange={(open) => { if (!open) { setRecipeToReprepare(null); setControlledFolio(''); } }}><DialogContent><DialogHeader><DialogTitle className="text-xl font-semibold">Re-preparar Receta: {recipeToReprepare?.id}</DialogTitle></DialogHeader>{recipeToReprepare?.isControlled ? (<div className="space-y-4"><DialogDescription>Esta es una receta controlada. Para re-preparar, debe ingresar el folio de la nueva receta física/electrónica.</DialogDescription><div className="grid gap-2 py-2"><Label htmlFor="controlled-folio" className="mb-1 text-sm font-medium text-slate-700">Nuevo Folio de Receta Controlada *</Label><Input id="controlled-folio" value={controlledFolio} onChange={(e) => setControlledFolio(e.target.value)} placeholder="Ej: A12345678"/></div></div>) : (<DialogDescription>¿Está seguro que desea iniciar un nuevo ciclo para esta receta? La receta volverá al estado 'Pendiente Validación'.</DialogDescription>)}<DialogFooter><Button variant="ghost" onClick={() => setRecipeToReprepare(null)}>Cancelar</Button><Button onClick={handleConfirmReprepare} disabled={isSubmitting || (recipeToReprepare?.isControlled && !controlledFolio.trim())}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Confirmar Re-preparación</Button></DialogFooter></DialogContent></Dialog>
-      <Dialog open={!!recipeToReceive} onOpenChange={(open) => {if (!open) {setRecipeToReceive(null); setIsPreparationRefrigerated(false);}}}><DialogContent><DialogHeader><DialogTitle className="text-xl font-semibold">Recepcionar Preparado: {recipeToReceive?.id}</DialogTitle><DialogDescription>Ingrese la información del preparado recibido desde el recetario externo.</DialogDescription></DialogHeader><div className="grid gap-4 py-4"><div className="space-y-2"><Label htmlFor="internal-lot" className="text-sm font-medium text-slate-700">Lote Interno Skol *</Label><Input id="internal-lot" value={internalLot} onChange={(e) => setInternalLot(e.target.value)} placeholder="Lote asignado por Skol"/></div><div className="space-y-2"><Label className="text-sm font-medium text-slate-700">Fecha de Vencimiento del Preparado *</Label><Popover><PopoverTrigger asChild><Button variant="outline" className={cn("w-full justify-start text-left font-normal", !preparationExpiry && "text-muted-foreground")}><CalendarIcon className="mr-2 h-4 w-4" />{preparationExpiry ? format(preparationExpiry, "PPP", { locale: es }) : <span>Seleccionar fecha</span>}</Button></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={preparationExpiry} onSelect={setPreparationExpiry} initialFocus/></PopoverContent></Popover></div><div className="flex items-center space-x-2 pt-2"><Checkbox id="is-refrigerated" checked={isPreparationRefrigerated} onCheckedChange={(checked) => setIsPreparationRefrigerated(!!checked)} /><Label htmlFor="is-refrigerated" className="text-sm font-medium text-slate-700">Este preparado requiere cadena de frío</Label></div></div><DialogFooter><Button variant="ghost" onClick={() => setRecipeToReceive(null)}>Cancelar</Button><Button onClick={handleConfirmReceive} disabled={!internalLot || !preparationExpiry || isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Recepcionar</Button></DialogFooter></DialogContent></Dialog>
+      <Dialog open={!!recipeToReceive} onOpenChange={(open) => {if (!open) { setRecipeToReceive(null); setInternalLot(''); setPreparationExpiry(undefined); setReceptionChecklist({ etiqueta: false, vencimiento: false, aspecto: false, cadenaFrio: false }); }}}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold">Recepcionar Preparado: {recipeToReceive?.id}</DialogTitle>
+            <DialogDescription>Ingrese la información y complete el checklist de calidad para el preparado recibido desde el recetario externo.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-6 py-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="internal-lot" className="text-sm font-medium text-slate-700">Lote Interno Skol *</Label>
+                    <Input id="internal-lot" value={internalLot} onChange={(e) => setInternalLot(e.target.value)} placeholder="Lote asignado por Skol"/>
+                </div>
+                <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700">Fecha de Vencimiento del Preparado *</Label>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !preparationExpiry && "text-muted-foreground")}>
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {preparationExpiry ? format(preparationExpiry, "PPP", { locale: es }) : <span>Seleccionar fecha</span>}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                            <Calendar mode="single" selected={preparationExpiry} onSelect={setPreparationExpiry} initialFocus/>
+                        </PopoverContent>
+                    </Popover>
+                </div>
+            </div>
+
+            <Separator />
+
+            <div className="space-y-4 rounded-lg">
+                <h4 className="font-semibold text-slate-800">Checklist de Recepción de Calidad *</h4>
+                <div className="space-y-4">
+                    <div className="flex items-start space-x-3">
+                        <Checkbox id="chk-etiqueta" checked={receptionChecklist.etiqueta} onCheckedChange={(checked) => handleReceptionChecklistChange('etiqueta', !!checked)} />
+                        <div className="grid gap-1.5 leading-none">
+                            <label htmlFor="chk-etiqueta" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                Etiqueta Correcta
+                            </label>
+                            <p className="text-sm text-muted-foreground">
+                                El nombre del paciente y principio activo coinciden.
+                            </p>
+                        </div>
+                    </div>
+                     <div className="flex items-start space-x-3">
+                        <Checkbox id="chk-vencimiento" checked={receptionChecklist.vencimiento} onCheckedChange={(checked) => handleReceptionChecklistChange('vencimiento', !!checked)} />
+                        <div className="grid gap-1.5 leading-none">
+                            <label htmlFor="chk-vencimiento" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                Vencimiento y Lote Asignados
+                            </label>
+                            <p className="text-sm text-muted-foreground">
+                                Se ha ingresado el lote interno y vencimiento del preparado.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex items-start space-x-3">
+                        <Checkbox id="chk-aspecto" checked={receptionChecklist.aspecto} onCheckedChange={(checked) => handleReceptionChecklistChange('aspecto', !!checked)} />
+                        <div className="grid gap-1.5 leading-none">
+                            <label htmlFor="chk-aspecto" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                Aspecto y Envase Adecuados
+                            </label>
+                            <p className="text-sm text-muted-foreground">
+                                El preparado tiene la apariencia, color y envase esperados.
+                            </p>
+                        </div>
+                    </div>
+                    {recipeToReceive?.items.some(i => i.isRefrigerated) && (
+                         <div className="flex items-start space-x-3 p-3 rounded-md bg-sky-50 border border-sky-200">
+                            <Checkbox id="chk-frio" checked={receptionChecklist.cadenaFrio} onCheckedChange={(checked) => handleReceptionChecklistChange('cadenaFrio', !!checked)} />
+                            <div className="grid gap-1.5 leading-none">
+                                <label htmlFor="chk-frio" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-sky-800">
+                                    Cadena de Frío Verificada
+                                </label>
+                                <p className="text-sm text-sky-700">
+                                    El preparado se recibió y mantuvo en condiciones de refrigeración.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+        <DialogFooter>
+            <Button variant="ghost" onClick={() => setRecipeToReceive(null)}>Cancelar</Button>
+            <Button onClick={handleConfirmReceive} disabled={!internalLot || !preparationExpiry || !isReceptionChecklistComplete || isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Recepcionar
+            </Button>
+        </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <Dialog open={!!recipeToPrint} onOpenChange={(open) => !open && setRecipeToPrint(null)}><DialogContent><DialogHeader><DialogTitle className="text-xl font-semibold">Imprimir Etiqueta: {recipeToPrint?.id}</DialogTitle><DialogDescription>Vista previa de la etiqueta para el paciente.</DialogDescription></DialogHeader><div className="my-6 p-4 border rounded-lg bg-muted/50 space-y-2 font-mono text-sm"><p><span className="font-semibold">SKOL Pharmacy</span></p><p>Paciente: {getPatientName(recipeToPrint?.patientId || '')}</p><p>Receta: {recipeToPrint?.id}</p><p>Producto: {recipeToPrint?.items[0]?.principalActiveIngredient} {recipeToPrint?.items[0]?.concentrationValue}{recipeToPrint?.items[0]?.concentrationUnit}</p><p className="pt-2">Instrucciones: {recipeToPrint?.items[0]?.usageInstructions}</p><p className="pt-2">Vencimiento: {recipeToPrint?.preparationExpiryDate ? format(parseISO(recipeToPrint.preparationExpiryDate), 'dd-MM-yyyy') : 'N/A'}</p><p>Lote: {recipeToPrint?.internalPreparationLot || 'N/A'}</p></div><DialogFooter><Button variant="outline" onClick={() => setRecipeToPrint(null)}>Cerrar</Button><Button onClick={() => toast({title: 'Imprimiendo...', description: 'La funcionalidad de impresión real no está implementada.'})}><Printer className="mr-2 h-4 w-4"/>Imprimir</Button></DialogFooter></DialogContent></Dialog>
       <AlertDialog open={isDeleteBatchAlertOpen} onOpenChange={setIsDeleteBatchAlertOpen}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Eliminar {selectedRecipes.length} recetas?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Las recetas seleccionadas serán eliminadas permanentemente.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleBatchDelete} disabled={isSubmitting} className="bg-destructive hover:bg-destructive/90">{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Eliminar</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
 
