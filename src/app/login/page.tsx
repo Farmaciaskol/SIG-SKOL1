@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -11,7 +12,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Lock, Mail, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -39,44 +39,47 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="w-full min-h-screen lg:grid lg:grid-cols-2 xl:grid-cols-5">
-      <div className="bg-primary text-primary-foreground flex flex-col justify-center p-8 lg:p-12 text-center xl:col-span-2">
-        <div className="lg:hidden mb-6">
-            <Image
-            src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20BLANCO.png?alt=media&token=d39d318e-4e52-4215-8941-1a1b4cae7948"
-            alt="Skol Pharmacy Logo"
-            width={80}
-            height={80}
-            className="mx-auto"
-            priority
-            />
-        </div>
-        <div className="hidden lg:block mb-8">
-            <Image
+    <div className="w-full min-h-screen lg:grid lg:grid-cols-5">
+      {/* Decorative Sidebar - ONLY for large screens */}
+      <div className="hidden bg-primary lg:flex flex-col items-center justify-center p-10 text-center text-primary-foreground xl:col-span-2">
+          <Image
             src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20BLANCO.png?alt=media&token=d39d318e-4e52-4215-8941-1a1b4cae7948"
             alt="Skol Pharmacy Logo"
             width={120}
             height={120}
-            className="mx-auto"
+            className="mx-auto mb-8"
             priority
-            />
-        </div>
-        <div className="mx-auto max-w-md">
-          <h2 className="text-3xl lg:text-4xl font-bold font-headline mb-4">
-            Sistema Integral de Gestión Skol
-          </h2>
-          <p className="text-sm lg:text-base font-body text-primary-foreground/80">
-            Optimizando el ciclo de vida de las recetas magistrales con precisión y eficiencia.
-          </p>
-        </div>
+          />
+           <div className="mx-auto max-w-md">
+            <h2 className="text-3xl lg:text-4xl font-bold font-headline mb-4">
+              Sistema Integral de Gestión Skol
+            </h2>
+            <p className="text-sm lg:text-base font-body text-primary-foreground/80">
+              Optimizando el ciclo de vida de las recetas magistrales con precisión y eficiencia.
+            </p>
+          </div>
       </div>
-      <div className="flex grow items-center justify-center p-6 bg-background xl:col-span-3">
-        <Card className="mx-auto w-full max-w-sm shadow-none border-0 sm:shadow-xl sm:border">
-          <CardHeader className="text-center space-y-2">
-            <CardTitle className="text-2xl font-bold font-headline">Acceso de Administrador</CardTitle>
-            <CardDescription>Bienvenido de vuelta. Ingrese sus credenciales.</CardDescription>
-          </CardHeader>
-          <CardContent>
+      
+      {/* Login Form Area - For ALL screens */}
+      <div className="flex items-center justify-center p-6 bg-background xl:col-span-3">
+        <div className="w-full max-w-sm mx-auto">
+            {/* Logo for mobile view */}
+            <Image
+                src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
+                alt="Skol Pharmacy Logo"
+                width={120}
+                height={40}
+                className="mx-auto mb-6 lg:hidden"
+                priority
+            />
+
+            <h1 className="text-2xl font-bold text-center font-headline">
+                Acceso de Administrador
+            </h1>
+            <p className="text-center text-sm text-muted-foreground mt-2 mb-8">
+                Bienvenido. Ingrese sus credenciales.
+            </p>
+        
             <form onSubmit={handleLogin} className="grid gap-4">
                 <div className="grid gap-2">
                     <Label htmlFor="email">Email</Label>
@@ -109,19 +112,18 @@ export default function LoginPage() {
                         />
                     </div>
                 </div>
-                <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={loading}>
+                <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground mt-4" disabled={loading}>
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {loading ? 'Ingresando...' : 'Ingresar al Sistema'}
                 </Button>
             </form>
-            <div className="mt-6 text-center text-sm">
+            <div className="mt-8 text-center text-sm">
                 ¿Es usted un paciente?{' '}
                 <Link href="/patient-portal/login" className="underline text-accent hover:text-accent/90">
                     Ingrese al Portal de Pacientes
                 </Link>
             </div>
-          </CardContent>
-        </Card>
+        </div>
       </div>
     </div>
   );
