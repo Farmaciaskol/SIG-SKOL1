@@ -16,7 +16,6 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, User, Mail, Phone, MapPin, AlertTriangle, Pencil, Clock, Wand2, FlaskConical, FileText, CheckCircle2, BriefcaseMedical, DollarSign, Calendar, Lock, ShieldAlert, Eye, PlusCircle, Search } from 'lucide-react';
 import { format, parseISO, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { DispensationDialog } from '@/components/app/dispensation-dialog';
 import { PatientFormDialog } from '@/components/app/patient-form-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -61,7 +60,6 @@ export default function PatientDetailPage() {
   const [analysisResult, setAnalysisResult] = useState<AnalyzePatientHistoryOutput | null>(null);
   
   // Dialogs State
-  const [isDispensationDialogOpen, setIsDispensationDialogOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAssociateDoctorModalOpen, setIsAssociateDoctorModalOpen] = useState(false);
   const [doctorsToAssociate, setDoctorsToAssociate] = useState<string[]>([]);
@@ -266,7 +264,6 @@ export default function PatientDetailPage() {
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Tratamiento con Medicamentos Comerciales</CardTitle>
-                  <Button variant="outline" size="sm" onClick={() => setIsDispensationDialogOpen(true)}><PlusCircle className="mr-2 h-4 w-4" />Dispensar Med. Controlado</Button>
                 </CardHeader>
                 <CardContent>
                   {patient.commercialMedications && patient.commercialMedications.length > 0 ? (
@@ -407,16 +404,6 @@ export default function PatientDetailPage() {
         </div>
       </div>
       
-      {patient && (
-        <DispensationDialog 
-          isOpen={isDispensationDialogOpen}
-          onOpenChange={setIsDispensationDialogOpen}
-          patient={patient}
-          doctors={doctors}
-          onDispensationSuccess={fetchData}
-        />
-      )}
-
       <PatientFormDialog
         patient={patient}
         isOpen={isEditModalOpen}

@@ -20,6 +20,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
+import { DirectSaleDialog } from '@/components/app/direct-sale-dialog';
 
 export default function ControlledDrugsPage() {
   const [logEntries, setLogEntries] = useState<ControlledSubstanceLogEntry[]>([]);
@@ -27,33 +28,35 @@ export default function ControlledDrugsPage() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isDirectSaleDialogOpen, setIsDirectSaleDialogOpen] = useState(false);
   const { toast } = useToast();
 
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [logData, patientsData, doctorsData] = await Promise.all([
+        getControlledSubstanceLog(),
+        getPatients(),
+        getDoctors(),
+      ]);
+      setLogEntries(logData);
+      setPatients(patientsData);
+      setDoctors(doctorsData);
+    } catch (error) {
+      console.error("Failed to fetch data:", error);
+      toast({
+        title: "Error de Carga",
+        description: "No se pudieron cargar los datos del libro de control.",
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [logData, patientsData, doctorsData] = await Promise.all([
-          getControlledSubstanceLog(),
-          getPatients(),
-          getDoctors(),
-        ]);
-        setLogEntries(logData);
-        setPatients(patientsData);
-        setDoctors(doctorsData);
-      } catch (error) {
-        console.error("Failed to fetch data:", error);
-        toast({
-          title: "Error de Carga",
-          description: "No se pudieron cargar los datos del libro de control.",
-          variant: 'destructive',
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
-  }, [toast]);
+  }, []);
   
   const getPatientName = (patientId: string) => patients.find(p => p.id === patientId)?.name || 'N/A';
   const getDoctorName = (doctorId: string) => doctors.find(d => d.id === doctorId)?.name || 'N/A';
@@ -81,7 +84,7 @@ export default function ControlledDrugsPage() {
             Registro auditable y seguro de dispensaciones de psicotrópicos y estupefacientes.
           </p>
         </div>
-        <Button>
+        <Button onClick={() => setIsDirectSaleDialogOpen(true)}>
           <PlusCircle className="mr-2 h-4 w-4" /> Registrar Venta Directa
         </Button>
       </div>
@@ -191,6 +194,12 @@ export default function ControlledDrugsPage() {
             </div>
         </>
       )}
+
+      <DirectSaleDialog
+        isOpen={isDirectSaleDialogOpen}
+        onOpenChange={setIsDirectSaleDialogOpen}
+        onSuccess={fetchData}
+      />
     </>
   );
 }
