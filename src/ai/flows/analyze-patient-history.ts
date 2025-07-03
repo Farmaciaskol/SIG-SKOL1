@@ -41,7 +41,7 @@ const prompt = ai.definePrompt({
   - Commercial Medications: {{#each commercialMedications}}- {{{this}}}\n{{/each}}
   - Known Allergies: {{#each allergies}}- {{{this}}}\n{{/each}}
 
-  Based on this information, provide a brief, professional analysis in a single paragraph. Focus on the most critical potential drug-drug interactions, drug-allergy interactions, or any other significant therapeutic concerns. The summary should be direct and easy to read. Do not add greetings or closings.
+  Based on this information, provide a brief, professional analysis in a single paragraph. Focus on the most critical potential drug-drug interactions, drug-allergy interactions, or any other significant therapeutic concerns. The summary should be direct and easy to read. Do not add greetings or closings. If no significant interactions or risks are found, state that clearly.
   `,
 });
 
