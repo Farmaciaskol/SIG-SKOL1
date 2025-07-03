@@ -3,7 +3,7 @@ import { db, storage } from './firebase';
 import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc, deleteDoc, writeBatch, query, where } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, ControlledLogEntryType, ProactivePatientStatus, PatientActionNeeded } from './types';
-import type { Recipe, Doctor, InventoryItem, User, Role, ExternalPharmacy, Patient, PharmacovigilanceReport, AppData, AuditTrailEntry, DispatchNote, DispatchItem, ControlledSubstanceLogEntry } from './types';
+import type { Recipe, Doctor, InventoryItem, User, Role, ExternalPharmacy, Patient, PharmacovigilanceReport, AppData, AuditTrailEntry, DispatchNote, DispatchItem, ControlledSubstanceLogEntry, LotDetail } from './types';
 import { getMockData } from './mock-data';
 import { statusConfig } from './constants';
 
@@ -246,6 +246,32 @@ export const updateInventoryItem = async (id: string, updates: Partial<Inventory
     await updateDoc(doc(db, 'inventory', id), updates as any);
 };
 
+export const addLotToInventoryItem = async (itemId: string, newLot: LotDetail): Promise<void> => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    
+    const itemRef = doc(db, 'inventory', itemId);
+    const itemSnap = await getDoc(itemRef);
+
+    if (!itemSnap.exists()) {
+        throw new Error(`Inventory item with ID ${itemId} not found.`);
+    }
+
+    const itemData = itemSnap.data() as InventoryItem;
+    
+    const existingLot = itemData.lots?.find(l => l.lotNumber.toLowerCase() === newLot.lotNumber.toLowerCase());
+    if (existingLot) {
+        throw new Error(`El lote con el número ${newLot.lotNumber} ya existe para este producto.`);
+    }
+
+    const updatedLots = [...(itemData.lots || []), newLot];
+    const newTotalQuantity = updatedLots.reduce((sum, lot) => sum + lot.quantity, 0);
+
+    await updateDoc(itemRef, {
+        lots: updatedLots,
+        quantity: newTotalQuantity
+    });
+};
+
 export const processDispatch = async (pharmacyId: string, dispatchItems: DispatchItem[]): Promise<string> => {
     if (!db) throw new Error("Firestore is not initialized.");
 
@@ -424,3 +450,5 @@ export const deletePatient = async (id: string): Promise<void> => {
     // TODO: Add logic to check for dependencies if needed (e.g., recipes)
     await deleteDoc(doc(db, 'patients', id));
 };
+
+    

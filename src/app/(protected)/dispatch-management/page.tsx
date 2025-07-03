@@ -202,22 +202,22 @@ export default function DispatchManagementPage() {
     const itemId = `${item.recipe.id}-${item.inventoryItem.id}`;
     const state = validationState[itemId];
     if (!state?.barcodeInput || !state?.lotNumber) {
-        toast({ title: "Información Faltante", description: "Seleccione un lote y escanee el código de barras.", variant: "destructive" });
+        toast({ title: "Información Faltante", description: "Seleccione un lote y escanee el código de barras del lote.", variant: "destructive" });
         return;
     }
 
-    if (state.barcodeInput === item.inventoryItem.barcode) {
+    if (state.barcodeInput === state.lotNumber) {
         setValidationState(prev => ({
             ...prev,
             [itemId]: { ...prev[itemId], isValidated: 'valid' }
         }));
-        toast({ title: "Validación Correcta", description: `${item.inventoryItem.name} ha sido validado.`});
+        toast({ title: "Validación Correcta", description: `${item.inventoryItem.name} (Lote: ${state.lotNumber}) ha sido validado.`});
     } else {
          setValidationState(prev => ({
             ...prev,
             [itemId]: { ...prev[itemId], isValidated: 'invalid' }
         }));
-        toast({ title: "Error de Validación", description: `El código de barras no coincide para ${item.inventoryItem.name}.`, variant: "destructive" });
+        toast({ title: "Error de Validación", description: `El Lote Escaneado no coincide con el Lote seleccionado para ${item.inventoryItem.name}.`, variant: "destructive" });
     }
   };
 
@@ -434,7 +434,7 @@ export default function DispatchManagementPage() {
                                                             <SelectValue placeholder="Seleccionar lote..." />
                                                         </SelectTrigger>
                                                         <SelectContent>
-                                                            {sortedLots?.map(lot => (
+                                                            {sortedLots?.filter(l => l.quantity > 0).map(lot => (
                                                                 <SelectItem key={lot.lotNumber} value={lot.lotNumber}>
                                                                     {lot.lotNumber} (Disp: {lot.quantity}, Vto: {format(parseISO(lot.expiryDate), 'dd-MM-yy')})
                                                                 </SelectItem>
@@ -443,9 +443,9 @@ export default function DispatchManagementPage() {
                                                     </Select>
                                                 </div>
                                                 <div className="space-y-1">
-                                                     <p className="text-xs font-medium text-slate-500">Escanear Producto</p>
+                                                     <p className="text-xs font-medium text-slate-500">Escanear N° de Lote *</p>
                                                     <Input 
-                                                        placeholder="Código de barras..." 
+                                                        placeholder="Escanear o tipear lote..." 
                                                         onChange={(e) => handleBarcodeInputChange(itemId, e.target.value)} 
                                                         disabled={validationStatus === 'valid'}
                                                         value={validationState[itemId]?.barcodeInput || ''}
@@ -574,3 +574,5 @@ export default function DispatchManagementPage() {
     </>
   );
 }
+
+    
