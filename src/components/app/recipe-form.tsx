@@ -647,9 +647,9 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
       </Dialog>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+          <div className="lg:flex lg:gap-8 lg:items-start">
             {/* Left Sticky Column */}
-            <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-24">
+            <div className="lg:w-1/3 lg:sticky lg:top-8">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-xl font-semibold">Imagen de la Receta</CardTitle>
@@ -695,7 +695,7 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
             </div>
 
             {/* Right Column */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="flex-1 space-y-6">
               <Card>
                 <CardContent className="p-6">
                   <h2 className="text-xl font-semibold mb-4 text-slate-700">Información General</h2>
