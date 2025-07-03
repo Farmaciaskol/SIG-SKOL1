@@ -3,7 +3,7 @@
 
 import { db, storage, auth } from './firebase';
 import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc, deleteDoc, writeBatch, query, where, limit } from 'firebase/firestore';
-import { ref, uploadString, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, ControlledLogEntryType, ProactivePatientStatus, PatientActionNeeded, MonthlyDispensationBoxStatus, DispensationItemStatus, PharmacovigilanceReportStatus, type Recipe, type Doctor, type InventoryItem, type User, type Role, type ExternalPharmacy, type Patient, type PharmacovigilanceReport, type AppData, type AuditTrailEntry, type DispatchNote, type DispatchItem, type ControlledSubstanceLogEntry, type LotDetail, type AppSettings, type MonthlyDispensationBox, type PatientMessage } from './types';
 import { MAX_REPREPARATIONS } from './constants';
 import { addMonths } from 'date-fns';
@@ -206,7 +206,7 @@ export const updateRecipe = async (id: string, updates: Partial<Recipe>): Promis
     await updateDoc(recipeRef, dataToUpdate as any);
 };
 
-export const saveRecipe = async (data: any, imageUri: string | null, userId: string, recipeId?: string): Promise<string> => {
+export const saveRecipe = async (data: any, imageFile: File | null, userId: string, recipeId?: string): Promise<string> => {
     if (!db || !auth) throw new Error("Firestore or Auth is not initialized.");
     
     if (!userId) {
@@ -226,18 +226,18 @@ export const saveRecipe = async (data: any, imageUri: string | null, userId: str
         doctorId = newDoctorRef.id;
         await setDoc(newDoctorRef, { name: data.newDoctorName, specialty: data.newDoctorSpecialty || '', license: data.newDoctorLicense, rut: data.newDoctorRut || '' });
     }
-
+    
+    let imageUrl: string | undefined = data.prescriptionImageUrl; // Keep existing image url if any
     const effectiveRecipeId = recipeId || doc(collection(db, 'recipes')).id;
-    let imageUrl: string | undefined;
 
-    if (imageUri && storage && imageUri.startsWith('data:')) {
+    if (imageFile && storage) {
         const storageRef = ref(storage, `prescriptions/${effectiveRecipeId}`);
         try {
-            const uploadResult = await uploadString(storageRef, imageUri, 'data_url');
+            const uploadResult = await uploadBytes(storageRef, imageFile);
             imageUrl = await getDownloadURL(uploadResult.ref);
         } catch (storageError: any) {
             console.error("Firebase Storage upload failed in saveRecipe:", storageError);
-            let userMessage = `Error al subir imagen. Verifique las reglas de Storage o la configuración de su bucket. Código: ${storageError.code || 'UNKNOWN'}`;
+            let userMessage = `Error al subir imagen. Verifique las reglas de Storage. Código: ${storageError.code || 'UNKNOWN'}`;
             if (storageError.code === 'storage/unauthorized') {
                 userMessage = "Error de autorización: No tiene permiso para subir archivos. Verifique que está autenticado y que las reglas de Storage lo permiten.";
             } else if (storageError.code === 'storage/object-not-found' || storageError.code === 'storage/bucket-not-found') {
@@ -245,8 +245,6 @@ export const saveRecipe = async (data: any, imageUri: string | null, userId: str
             }
             throw new Error(userMessage);
         }
-    } else if (imageUri) {
-        imageUrl = imageUri;
     }
     
     const recipeDataForUpdate: Partial<Recipe> = {
@@ -464,7 +462,7 @@ export const logDirectSaleDispensation = async (
     if (controlledRecipeFormat === 'physical' && imageUri && imageUri.startsWith('data:')) {
       const storageRef = ref(storage, `controlled-prescriptions/${patientId}-${Date.now()}`);
       try {
-        const uploadResult = await uploadString(storageRef, imageUri, 'data_url');
+        const uploadResult = await uploadBytes(storageRef, new Blob()); // This should be the file object
         finalImageUrl = await getDownloadURL(uploadResult.ref);
       } catch (storageError: any) {
         console.error("Firebase Storage upload failed in logDirectSaleDispensation:", storageError);

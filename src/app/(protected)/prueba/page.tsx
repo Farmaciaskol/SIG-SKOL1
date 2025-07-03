@@ -12,7 +12,7 @@ import { Loader2, Database, UploadCloud, Wand2 } from 'lucide-react';
 // Firebase Imports
 import { db, storage, auth } from '@/lib/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadString, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuthState } from 'react-firebase-hooks/auth';
 
 // Genkit Flow Import
@@ -30,7 +30,6 @@ export default function TestPage() {
   const [storageLoading, setStorageLoading] = useState(false);
   const [storageResult, setStorageResult] = useState('');
   const [fileToUpload, setFileToUpload] = useState<File | null>(null);
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   // State for Gemini Test
   const [geminiLoading, setGeminiLoading] = useState(false);
@@ -68,9 +67,6 @@ export default function TestPage() {
     const file = e.target.files?.[0];
     if (file) {
       setFileToUpload(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setPreviewImage(reader.result as string);
-      reader.readAsDataURL(file);
     }
   };
 
@@ -80,7 +76,7 @@ export default function TestPage() {
       return;
     }
 
-    if (!fileToUpload || !previewImage) {
+    if (!fileToUpload) {
       toast({ title: 'Atención', description: 'Por favor, seleccione un archivo para subir.', variant: 'default' });
       return;
     }
@@ -93,7 +89,7 @@ export default function TestPage() {
     }
     try {
       const storageRef = ref(storage, `test-uploads/${user.uid}/${Date.now()}-${fileToUpload.name}`);
-      const uploadResult = await uploadString(storageRef, previewImage, 'data_url');
+      const uploadResult = await uploadBytes(storageRef, fileToUpload);
       const downloadUrl = await getDownloadURL(uploadResult.ref);
       
       const successMsg = `Archivo subido exitosamente. URL: ${downloadUrl}`;
@@ -177,8 +173,8 @@ export default function TestPage() {
             <CardDescription>Sube un archivo a Firebase Storage.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Input type="file" accept="image/*" onChange={handleFileChange} />
-            <Button onClick={handleStorageTest} disabled={storageLoading || !fileToUpload}>
+            <Input type="file" accept="image/*" onChange={handleFileChange} disabled={!user}/>
+            <Button onClick={handleStorageTest} disabled={storageLoading || !fileToUpload || !user}>
               {storageLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
               Subir a Storage
             </Button>

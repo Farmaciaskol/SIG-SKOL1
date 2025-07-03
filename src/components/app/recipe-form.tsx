@@ -88,6 +88,7 @@ const recipeFormSchema = z.object({
   isControlled: z.boolean().default(false).optional(),
   controlledRecipeType: z.string().optional(),
   controlledRecipeFolio: z.string().optional(),
+  prescriptionImageUrl: z.string().optional(),
   items: z.array(recipeItemSchema).min(1, 'Debe haber al menos un ítem en la receta.'),
 }).refine(data => data.patientSelectionType === 'existing' ? !!data.patientId : !!data.newPatientName && !!data.newPatientRut, {
   message: 'Debe seleccionar un paciente existente o ingresar el nombre y RUT de uno nuevo.',
@@ -396,6 +397,7 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
   const [isAiExtracting, setIsAiExtracting] = React.useState(false);
   const [isSimplifying, setIsSimplifying] = React.useState<number | null>(null);
   const [previewImage, setPreviewImage] = React.useState<string | null>(null);
+  const [imageFile, setImageFile] = React.useState<File | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [isZoomed, setIsZoomed] = React.useState(false);
   const [isInventoryFormOpen, setIsInventoryFormOpen] = React.useState(false);
@@ -425,6 +427,7 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
       isControlled: false,
       controlledRecipeType: '',
       controlledRecipeFolio: '',
+      prescriptionImageUrl: '',
       items: [defaultItem],
     },
   });
@@ -457,6 +460,7 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
       isControlled: recipeData.isControlled ?? false,
       controlledRecipeType: recipeData.controlledRecipeType ?? '',
       controlledRecipeFolio: recipeData.controlledRecipeFolio ?? '',
+      prescriptionImageUrl: recipeData.prescriptionImageUrl ?? '',
       items: recipeData.items && recipeData.items.length > 0 ? recipeData.items : [defaultItem],
     };
     form.reset(valuesToSet);
@@ -566,11 +570,13 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreviewImage(reader.result as string);
       };
       reader.readAsDataURL(file);
+      form.setValue('prescriptionImageUrl', ''); // Clear existing URL
     }
   };
 
@@ -634,7 +640,7 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
     }
     try {
       const finalRecipeId = isEditMode && !copyFromId ? recipeId : undefined;
-      await saveRecipe(data, previewImage, user.uid, finalRecipeId);
+      await saveRecipe(data, imageFile, user.uid, finalRecipeId);
       toast({ title: isEditMode && !copyFromId ? 'Receta Actualizada' : 'Receta Creada', description: 'Los datos se han guardado correctamente.' });
       router.push('/recipes');
       router.refresh();
