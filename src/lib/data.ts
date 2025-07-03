@@ -486,4 +486,14 @@ export const updatePharmacovigilanceReport = async (id: string, updates: Partial
     const dataToUpdate = { ...updates, updatedAt: new Date().toISOString() };
     await updateDoc(reportRef, dataToUpdate);
 };
+
+export const updateExternalPharmacy = async (id: string, updates: Partial<ExternalPharmacy>): Promise<void> => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    await updateDoc(doc(db, 'externalPharmacies', id), updates as any);
+};
+
+export const deleteExternalPharmacy = async (id: string): Promise<void> => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    await deleteDoc(doc(db, 'externalPharmacies', id));
+};
     

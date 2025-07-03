@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { getExternalPharmacies, addExternalPharmacy, getRecipes, ExternalPharmacy, Recipe, RecipeStatus } from '@/lib/data';
+import { getExternalPharmacies, addExternalPharmacy, getRecipes, ExternalPharmacy, Recipe, RecipeStatus, updateExternalPharmacy, deleteExternalPharmacy } from '@/lib/data';
 import { PlusCircle, Search, Phone, Mail, Pencil, Trash2, Warehouse, Loader2, FileText, Banknote, Building2, User } from 'lucide-react';
 import Link from 'next/link';
 
@@ -22,6 +22,16 @@ import {
   DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import {
   Form,
   FormControl,
@@ -48,7 +58,7 @@ type PharmacyWithStats = ExternalPharmacy & {
   skolCompliance?: number;
 };
 
-const PharmacyCard = ({ pharmacy }: { pharmacy: PharmacyWithStats }) => {
+const PharmacyCard = ({ pharmacy, onEdit, onDelete }: { pharmacy: PharmacyWithStats, onEdit: (p: PharmacyWithStats) => void, onDelete: (p: PharmacyWithStats) => void }) => {
   const getProgressColor = (value?: number) => {
     if (value === undefined) return 'bg-gray-300';
     if (value >= 95) return 'bg-green-500';
@@ -67,11 +77,11 @@ const PharmacyCard = ({ pharmacy }: { pharmacy: PharmacyWithStats }) => {
         <div className="flex justify-between items-start">
             <CardTitle className="text-lg font-bold text-slate-800">{pharmacy.name}</CardTitle>
             <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                <Pencil className="h-4 w-4" />
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(pharmacy)}>
+                  <Pencil className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-red-100 hover:text-red-600">
-                <Trash2 className="h-4 w-4" />
+                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-red-100 hover:text-red-600" onClick={() => onDelete(pharmacy)}>
+                  <Trash2 className="h-4 w-4" />
                 </Button>
             </div>
         </div>
@@ -189,6 +199,8 @@ export default function ExternalPrescriptionsPage() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingPharmacy, setEditingPharmacy] = useState<ExternalPharmacy | null>(null);
+  const [pharmacyToDelete, setPharmacyToDelete] = useState<ExternalPharmacy | null>(null);
   const { toast } = useToast();
 
   const form = useForm<PharmacyFormValues>({
@@ -229,24 +241,56 @@ export default function ExternalPrescriptionsPage() {
     fetchData();
   }, [fetchData]);
 
+  const handleOpenForm = (pharmacy: ExternalPharmacy | null) => {
+    setEditingPharmacy(pharmacy);
+    if (pharmacy) {
+      form.reset(pharmacy);
+    } else {
+      form.reset({
+        name: '', contactPerson: '', email: '', phone: '', address: '',
+        paymentDetails: '', defaultPaymentModel: 'Por Receta',
+      });
+    }
+    setIsFormOpen(true);
+  };
+
   const onSubmit = async (data: PharmacyFormValues) => {
     try {
-      await addExternalPharmacy(data);
-      toast({
-        title: 'Recetario Añadido',
-        description: 'El nuevo recetario ha sido registrado correctamente.',
-      });
+      if (editingPharmacy) {
+        await updateExternalPharmacy(editingPharmacy.id, data);
+        toast({ title: 'Recetario Actualizado', description: 'Los datos del recetario han sido actualizados.' });
+      } else {
+        await addExternalPharmacy(data);
+        toast({ title: 'Recetario Añadido', description: 'El nuevo recetario ha sido registrado.' });
+      }
       form.reset();
       setIsFormOpen(false);
+      setEditingPharmacy(null);
       await fetchData();
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'No se pudo añadir el recetario.',
+        description: `No se pudo guardar el recetario. ${error instanceof Error ? error.message : ''}`,
         variant: 'destructive',
       });
     }
   };
+
+  const handleDeletePharmacy = async () => {
+    if (!pharmacyToDelete) return;
+    try {
+      await deleteExternalPharmacy(pharmacyToDelete.id);
+      toast({ title: 'Recetario Eliminado', description: `${pharmacyToDelete.name} ha sido eliminado.` });
+      setPharmacyToDelete(null);
+      await fetchData();
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: `No se pudo eliminar el recetario. ${error instanceof Error ? error.message : ''}`,
+        variant: 'destructive',
+      });
+    }
+  }
   
   const pharmacyStats = useMemo<PharmacyWithStats[]>(() => {
     return pharmacies.map(pharmacy => {
@@ -292,7 +336,10 @@ export default function ExternalPrescriptionsPage() {
   }
 
   return (
-    <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+    <Dialog open={isFormOpen} onOpenChange={(open) => {
+      if (!open) setEditingPharmacy(null);
+      setIsFormOpen(open);
+    }}>
       <>
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
           <div>
@@ -301,11 +348,9 @@ export default function ExternalPrescriptionsPage() {
               Panel de control para gestionar la relación con los socios.
             </p>
           </div>
-          <DialogTrigger asChild>
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" /> Nuevo Recetario
-            </Button>
-          </DialogTrigger>
+          <Button onClick={() => handleOpenForm(null)}>
+            <PlusCircle className="mr-2 h-4 w-4" /> Nuevo Recetario
+          </Button>
         </div>
         
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-6">
@@ -332,7 +377,12 @@ export default function ExternalPrescriptionsPage() {
         {filteredPharmacies.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredPharmacies.map((pharmacy) => (
-                    <PharmacyCard key={pharmacy.id} pharmacy={pharmacy} />
+                    <PharmacyCard 
+                        key={pharmacy.id} 
+                        pharmacy={pharmacy} 
+                        onEdit={() => handleOpenForm(pharmacy)} 
+                        onDelete={() => setPharmacyToDelete(pharmacy)}
+                    />
                 ))}
             </div>
         ) : (
@@ -343,11 +393,9 @@ export default function ExternalPrescriptionsPage() {
                     <p className="text-muted-foreground mt-2 max-w-sm">
                         Intenta ajustar tu búsqueda o crea un nuevo recetario para empezar.
                     </p>
-                    <DialogTrigger asChild>
-                    <Button className="mt-6">
+                    <Button className="mt-6" onClick={() => handleOpenForm(null)}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Crear Primer Recetario
                     </Button>
-                    </DialogTrigger>
                 </div>
             </Card>
         )}
@@ -355,9 +403,9 @@ export default function ExternalPrescriptionsPage() {
 
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-            <DialogTitle>Añadir Nuevo Recetario</DialogTitle>
+            <DialogTitle>{editingPharmacy ? 'Editar Recetario' : 'Añadir Nuevo Recetario'}</DialogTitle>
             <DialogDescription>
-                Complete el formulario para registrar un nuevo socio.
+                {editingPharmacy ? 'Actualice los datos del socio.' : 'Complete el formulario para registrar un nuevo socio.'}
             </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -408,12 +456,27 @@ export default function ExternalPrescriptionsPage() {
                     <Button type="button" variant="ghost" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
                     <Button type="submit" disabled={form.formState.isSubmitting}>
                         {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Guardar Recetario
+                        {editingPharmacy ? 'Guardar Cambios' : 'Guardar Recetario'}
                     </Button>
                 </DialogFooter>
             </form>
         </Form>
       </DialogContent>
+
+       <AlertDialog open={!!pharmacyToDelete} onOpenChange={(open) => !open && setPharmacyToDelete(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Esta acción no se puede deshacer. Se eliminará permanentemente al recetario <span className="font-bold">{pharmacyToDelete?.name}</span> del sistema.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setPharmacyToDelete(null)}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeletePharmacy} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
