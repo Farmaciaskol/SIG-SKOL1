@@ -3,16 +3,9 @@
 
 import { 
   getPatients,
-  getRecipes, 
   updatePatient, 
-  findPatientByRut,
-  getRecipesReadyForPickup,
-  getMessagesForPatient,
-  createRecipeFromPortal as createRecipeDb,
-  sendMessageFromPatient as sendMessageDb,
 } from './data';
 import { analyzePatientForProactiveAlerts } from '@/ai/flows/analyze-patient-proactive-alerts';
-import { simplifyMedicationInfo } from '@/ai/flows/simplify-medication-info';
 import { MAX_REPREPARATIONS } from './constants';
 
 /**
@@ -22,7 +15,7 @@ import { MAX_REPREPARATIONS } from './constants';
 export async function runProactiveAnalysisForAllPatients(): Promise<{ success: boolean; updatedCount: number; message: string }> {
   try {
     const allPatients = await getPatients();
-    const allRecipes = await getRecipes();
+    const allRecipes = await require('./data').getRecipes();
     const chronicPatients = allPatients.filter(p => p.isChronic);
 
     if (chronicPatients.length === 0) {
@@ -69,40 +62,4 @@ export async function runProactiveAnalysisForAllPatients(): Promise<{ success: b
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     return { success: false, updatedCount: 0, message: `Analysis failed: ${errorMessage}` };
   }
-}
-
-// --- PATIENT PORTAL ACTIONS ---
-
-export async function loginPatientByRut(rut: string) {
-  try {
-    const patient = await findPatientByRut(rut);
-    if (!patient) {
-      return { success: false, error: "RUT no encontrado o no registrado. Por favor, contacte a la farmacia." };
-    }
-    return { success: true, patient };
-  } catch (error) {
-    console.error("Error logging in patient by RUT:", error);
-    return { success: false, error: "Ocurrió un error en el servidor." };
-  }
-}
-
-export async function getDashboardData(patientId: string) {
-    const [readyForPickup, activeMagistralRecipes, messages] = await Promise.all([
-        getRecipesReadyForPickup(patientId),
-        getRecipes(patientId).then(recipes => recipes.filter(r => r.status !== 'Dispensada' && r.status !== 'Anulada' && r.status !== 'Rechazada')),
-        getMessagesForPatient(patientId)
-    ]);
-    return { readyForPickup, activeMagistralRecipes, messages };
-}
-
-export async function getMedicationInfo(medicationName: string) {
-    return await simplifyMedicationInfo(medicationName);
-}
-
-export async function submitPatientMessage(patientId: string, content: string) {
-    return await sendMessageDb(patientId, content);
-}
-
-export async function submitNewPrescription(patientId: string, imageDataUri: string) {
-    return await createRecipeDb(patientId, imageDataUri);
 }

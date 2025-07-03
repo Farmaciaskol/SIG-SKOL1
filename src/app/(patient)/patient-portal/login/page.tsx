@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { usePatientAuth } from '@/components/app/patient-auth-provider';
-import { loginPatientByRut } from '@/lib/actions';
+import { loginPatientByRut } from '@/lib/patient-actions';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

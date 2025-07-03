@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { usePatientAuth } from '@/components/app/patient-auth-provider';
-import { getDashboardData, getMedicationInfo, submitPatientMessage } from '@/lib/actions';
+import { getDashboardData, getMedicationInfo, submitPatientMessage, submitNewPrescription } from '@/lib/patient-actions';
 import { Patient, Recipe, PatientMessage, ProactivePatientStatus } from '@/lib/types';
 import { Loader2, AlertTriangle, CheckCircle, Clock, FileText, Bot, Send, MessageSquare, Copy, Upload, X, Image as ImageIcon, FileUp, CirclePlus } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -15,7 +15,6 @@ import { MAX_REPREPARATIONS } from '@/lib/constants';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { submitNewPrescription } from '@/lib/actions';
 import Image from 'next/image';
 import React from 'react';
 import { Input } from '@/components/ui/input';
