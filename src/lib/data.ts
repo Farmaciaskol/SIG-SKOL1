@@ -7,7 +7,6 @@ import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, Controll
 import type { Recipe, Doctor, InventoryItem, User, Role, ExternalPharmacy, Patient, PharmacovigilanceReport, AppData, AuditTrailEntry, DispatchNote, DispatchItem, ControlledSubstanceLogEntry, LotDetail } from './types';
 import { getMockData } from './mock-data';
 import { MAX_REPREPARATIONS } from './constants';
-import { randomUUID } from 'crypto';
 
 export * from './types';
 
@@ -650,7 +649,7 @@ export async function findPatientByRut(rut: string): Promise<Patient | null> {
 
 export async function createPatientAuthToken(patientId: string): Promise<PatientAuthToken> {
     if (!db) throw new Error("Firestore is not initialized.");
-    const token = randomUUID();
+    const token = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes expiry
 
     const authToken: Omit<PatientAuthToken, 'id'> = {
