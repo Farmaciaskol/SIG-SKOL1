@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
@@ -152,6 +153,10 @@ export default function RecipesPage() {
   // Batch actions state
   const [selectedRecipes, setSelectedRecipes] = useState<string[]>([]);
   const [isDeleteBatchAlertOpen, setIsDeleteBatchAlertOpen] = useState(false);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
 
   const fetchData = useCallback(async () => {
@@ -409,12 +414,26 @@ export default function RecipesPage() {
     })
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [recipes, searchTerm, statusFilter, doctorFilter, pharmacyFilter, dateRange, patients]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, doctorFilter, pharmacyFilter, searchTerm, dateRange]);
+
+  const totalPages = Math.ceil(filteredRecipes.length / ITEMS_PER_PAGE);
+
+  const paginatedRecipes = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredRecipes.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredRecipes, currentPage]);
   
+  const allOnPageSelected = paginatedRecipes.length > 0 && paginatedRecipes.every(r => selectedRecipes.includes(r.id));
+
   const toggleSelectAll = () => {
-    if (selectedRecipes.length === filteredRecipes.length) {
-      setSelectedRecipes([]);
+    const pageIds = paginatedRecipes.map(r => r.id);
+    if (allOnPageSelected) {
+      setSelectedRecipes(prev => prev.filter(id => !pageIds.includes(id)));
     } else {
-      setSelectedRecipes(filteredRecipes.map(r => r.id));
+      setSelectedRecipes(prev => [...new Set([...prev, ...pageIds])]);
     }
   }
 
@@ -739,7 +758,7 @@ export default function RecipesPage() {
                     <Table>
                         <TableHeader>
                         <TableRow>
-                            <TableHead className="p-4"><Checkbox onCheckedChange={toggleSelectAll} checked={selectedRecipes.length === filteredRecipes.length && filteredRecipes.length > 0} /></TableHead>
+                            <TableHead className="p-4"><Checkbox onCheckedChange={toggleSelectAll} checked={allOnPageSelected} /></TableHead>
                             <TableHead>ID Receta</TableHead>
                             <TableHead>Paciente</TableHead>
                             <TableHead>Preparado</TableHead>
@@ -749,7 +768,7 @@ export default function RecipesPage() {
                         </TableRow>
                         </TableHeader>
                         <TableBody>
-                        {filteredRecipes.map((recipe) => {
+                        {paginatedRecipes.map((recipe) => {
                             const StatusIcon = statusConfig[recipe.status]?.icon || FileX;
                             return (
                                 <TableRow key={recipe.id} className={cn("hover:bg-muted/50", selectedRecipes.includes(recipe.id) && "bg-muted/50")}>
@@ -817,11 +836,37 @@ export default function RecipesPage() {
                         </TableBody>
                     </Table>
                 </CardContent>
+                 <CardFooter className="flex items-center justify-between px-4 py-2 border-t">
+                    <div className="text-xs text-muted-foreground">
+                        {selectedRecipes.length} de {paginatedRecipes.length} fila(s) seleccionadas.
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                        >
+                            Anterior
+                        </Button>
+                        <span className="text-sm">
+                            Página {currentPage} de {totalPages}
+                        </span>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages}
+                        >
+                            Siguiente
+                        </Button>
+                    </div>
+                </CardFooter>
             </Card>
 
             {/* Mobile Card View */}
             <div className="grid grid-cols-1 gap-4 md:hidden">
-            {filteredRecipes.map((recipe) => (
+            {paginatedRecipes.map((recipe) => (
                 <Card key={recipe.id} className={cn(selectedRecipes.includes(recipe.id) && "ring-2 ring-primary")}>
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <div className="flex items-center gap-2">
@@ -884,6 +929,30 @@ export default function RecipesPage() {
                   <CardFooter className="p-3 bg-muted/50"><MobileRecipeActions recipe={recipe} /></CardFooter>
                 </Card>
             ))}
+            </div>
+             <div className="flex items-center justify-between pt-4 md:hidden">
+                <p className="text-sm text-muted-foreground">{filteredRecipes.length} resultados</p>
+                <div className="flex items-center space-x-2">
+                  <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                  >
+                      Anterior
+                  </Button>
+                  <span className="text-sm">
+                      {currentPage} / {totalPages}
+                  </span>
+                  <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                  >
+                      Siguiente
+                  </Button>
+                </div>
             </div>
         </>
       )}
