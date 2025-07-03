@@ -33,10 +33,10 @@ export default function PatientPortalLoginPage() {
         router.push('/patient-portal/dashboard');
       } else {
         toast({ title: "Error de Acceso", description: result.error, variant: 'destructive' });
+        setLoading(false);
       }
     } catch (error) {
       toast({ title: "Error", description: "Ocurrió un error inesperado.", variant: 'destructive' });
-    } finally {
       setLoading(false);
     }
   };

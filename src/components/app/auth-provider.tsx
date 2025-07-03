@@ -1,15 +1,18 @@
+
 'use client';
 
 import { auth } from '@/lib/firebase';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
+import { Loader2 } from 'lucide-react';
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   // `auth` is guaranteed to be defined here by the check in AuthProvider
   const [user, loading] = useAuthState(auth!);
   const router = useRouter();
   const pathname = usePathname();
+  const [isVerifying, setIsVerifying] = useState(true);
 
   useEffect(() => {
     if (loading) return;
@@ -18,26 +21,17 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
     if (!user && !isAuthPage) {
       router.push('/login');
-    }
-
-    if (user && isAuthPage) {
+    } else if (user && isAuthPage) {
       router.push('/dashboard');
+    } else {
+      setIsVerifying(false);
     }
   }, [user, loading, router, pathname]);
 
-  if (loading) {
+  if (isVerifying || loading) {
     return (
       <div className="flex items-center justify-center h-screen w-full">
-        <p>Cargando sesión...</p>
-      </div>
-    );
-  }
-
-  const isAuthPage = pathname === '/login';
-  if ((!user && !isAuthPage) || (user && isAuthPage)) {
-    return (
-      <div className="flex items-center justify-center h-screen w-full">
-        <p>Redirigiendo...</p>
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }

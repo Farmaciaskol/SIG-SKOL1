@@ -1,10 +1,4 @@
 
-
-
-
-
-
-
 import { db, storage } from './firebase';
 import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc, deleteDoc, writeBatch, query, where } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
@@ -232,14 +226,14 @@ export const saveRecipe = async (data: any, imageUri: string | null, recipeId?: 
     if (!db) throw new Error("Firestore is not initialized.");
 
     let patientId = data.patientId;
-    if (!patientId && data.newPatientName && data.newPatientRut) {
+    if (data.patientSelectionType === 'new' && data.newPatientName && data.newPatientRut) {
         const newPatientRef = doc(collection(db, 'patients'));
         patientId = newPatientRef.id;
         await setDoc(newPatientRef, { name: data.newPatientName, rut: data.newPatientRut, email: '', phone: '', isChronic: false, proactiveStatus: 'OK', proactiveMessage: 'No requiere acción.', actionNeeded: 'NONE' });
     }
 
     let doctorId = data.doctorId;
-    if (!doctorId && data.newDoctorName && data.newDoctorLicense) {
+    if (data.doctorSelectionType === 'new' && data.newDoctorName && data.newDoctorLicense) {
         const newDoctorRef = doc(collection(db, 'doctors'));
         doctorId = newDoctorRef.id;
         await setDoc(newDoctorRef, { name: data.newDoctorName, specialty: data.newDoctorSpecialty || '', license: data.newDoctorLicense, rut: data.newDoctorRut || '' });
@@ -366,7 +360,7 @@ export const processDispatch = async (pharmacyId: string, dispatchItems: Dispatc
         if (!recipeUpdates[item.recipeId]) {
             const recipeSnap = await getDoc(doc(db, 'recipes', item.recipeId));
             const recipeData = recipeSnap.data() as Recipe;
-            const itemsToProcess = Array.isArray(recipeData.items) ? recipeData.items : [recipeData];
+            const itemsToProcess = Array.isArray(recipeData.items) ? recipeData.items : [];
             const itemsToDispatch = itemsToProcess.filter(i => i.requiresFractionation).length;
             recipeUpdates[item.recipeId] = { itemsToDispatch, dispatchedItems: 0 };
         }
@@ -679,6 +673,31 @@ export const findPatientByRut = async (rut: string): Promise<Patient | null> => 
     const data = doc.data();
     const convertedData = deepConvertTimestamps(data);
     return { id: doc.id, ...convertedData } as Patient;
+};
+
+export const validatePatientToken = async (token: string): Promise<{ success: boolean, patient?: Patient, token?: string, error?: string }> => {
+    if (!db) return { success: false, error: 'Database not connected' };
+    const q = query(collection(db, "patientAccessTokens"), where("token", "==", token));
+    const querySnapshot = await getDocs(q);
+    
+    if (querySnapshot.empty) {
+        return { success: false, error: "Token inválido." };
+    }
+    
+    const tokenDoc = querySnapshot.docs[0];
+    const tokenData = tokenDoc.data();
+    
+    const expiryDate = (tokenData.expiresAt as Timestamp).toDate();
+    if (new Date() > expiryDate) {
+        return { success: false, error: "El token ha expirado." };
+    }
+
+    const patient = await getPatient(tokenData.patientId);
+    if (!patient) {
+        return { success: false, error: "Paciente no encontrado." };
+    }
+    
+    return { success: true, patient, token };
 };
 
 export const sendMessageFromPatient = async (patientId: string, content: string): Promise<PatientMessage> => {

@@ -128,11 +128,11 @@ export default function DispatchManagementPage() {
     for (const recipe of recipesToProcess) {
       const patient = patients.find(p => p.id === recipe.patientId);
 
-      const itemsToProcess: any[] = (Array.isArray(recipe.items) && recipe.items.length > 0)
-        ? recipe.items
-        : [recipe];
+      if (!Array.isArray(recipe.items) || recipe.items.length === 0) {
+        continue; // CRITICAL FIX: Skip recipes with no items to prevent crashes.
+      }
 
-      for (const recipeItem of itemsToProcess) {
+      for (const recipeItem of recipe.items) {
         if (!recipeItem?.principalActiveIngredient) continue;
 
         const isAlreadyInActiveDispatch = dispatchNotes.some(dn => 
@@ -574,5 +574,3 @@ export default function DispatchManagementPage() {
     </>
   );
 }
-
-    

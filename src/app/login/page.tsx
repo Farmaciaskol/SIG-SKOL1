@@ -26,6 +26,8 @@ export default function LoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       // On successful login, AuthProvider will redirect to '/'
+      // We push the route here to make the transition smoother
+      router.push('/dashboard');
     } catch (error: any) {
       console.error(error);
       toast({
@@ -33,7 +35,6 @@ export default function LoginPage() {
         description: 'Las credenciales son incorrectas. Por favor, inténtelo de nuevo.',
         variant: 'destructive',
       });
-    } finally {
       setLoading(false);
     }
   };
