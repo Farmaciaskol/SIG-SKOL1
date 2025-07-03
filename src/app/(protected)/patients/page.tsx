@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -65,7 +64,19 @@ export default function PatientsPage() {
 
   const PatientCard = ({ patient }: { patient: Patient }) => {
     const { text: buttonText, icon: ButtonIcon } = actionButtonConfig[patient.actionNeeded] || actionButtonConfig.NONE;
-  
+    
+    const buttonHref = useMemo(() => {
+      switch (patient.actionNeeded) {
+        case PatientActionNeeded.CREATE_NEW_RECIPE:
+          return `/recipes/new?patientId=${patient.id}`;
+        case PatientActionNeeded.REPREPARE_CYCLE:
+        case PatientActionNeeded.DISPENSE_COMMERCIAL:
+        case PatientActionNeeded.NONE:
+        default:
+          return `/patients/${patient.id}`;
+      }
+    }, [patient.actionNeeded, patient.id]);
+
     return (
         <Card className={cn("flex flex-col justify-between transition-shadow hover:shadow-md", statusStyles[patient.proactiveStatus])}>
             <CardHeader className="pb-3">
@@ -95,7 +106,7 @@ export default function PatientsPage() {
             </CardContent>
             <CardFooter className="flex justify-between items-center bg-muted/50 py-3 px-4 mt-2">
                 <Button asChild>
-                    <Link href={`/recipes/new?patientId=${patient.id}`}>
+                    <Link href={buttonHref}>
                         <ButtonIcon className="mr-2 h-4 w-4" />
                         {buttonText}
                     </Link>
