@@ -13,7 +13,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, User, Mail, Phone, MapPin, AlertTriangle, Pencil, Clock, Wand2, FlaskConical, FileText, CheckCircle2, BriefcaseMedical, DollarSign, Calendar, Lock, ShieldAlert, Eye } from 'lucide-react';
+import { Loader2, User, Mail, Phone, MapPin, AlertTriangle, Pencil, Clock, Wand2, FlaskConical, FileText, CheckCircle2, BriefcaseMedical, DollarSign, Calendar, Lock, ShieldAlert, Eye, PlusCircle } from 'lucide-react';
 import { format, parseISO, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -154,7 +154,8 @@ export default function PatientDetailPage() {
   
   const hasAlerts = (patient.allergies && patient.allergies.length > 0) || (patient.adverseReactions && patient.adverseReactions.length > 0);
 
-  return <div className="space-y-6">
+  return (
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start gap-4">
         <div className="flex items-center gap-4">
@@ -356,5 +357,6 @@ export default function PatientDetailPage() {
             </Card>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 }
