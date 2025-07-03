@@ -1,10 +1,11 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { getPatient, getRecipes, getDoctors, getControlledSubstanceLogForPatient, getPharmacovigilanceReportsForPatient, Patient, Recipe, Doctor, ControlledSubstanceLogEntry, PharmacovigilanceReport, PharmacovigilanceReportStatus, updatePatient } from '@/lib/data';
+import { getPatient, getRecipes, getDoctors, getControlledSubstanceLogForPatient, getPharmacovigilanceReportsForPatient, updatePatient } from '@/lib/data';
+import type { Patient, Recipe, Doctor, ControlledSubstanceLogEntry, PharmacovigilanceReport } from '@/lib/types';
+import { PharmacovigilanceReportStatus } from '@/lib/types';
 import { analyzePatientHistory, AnalyzePatientHistoryOutput } from '@/ai/flows/analyze-patient-history';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
