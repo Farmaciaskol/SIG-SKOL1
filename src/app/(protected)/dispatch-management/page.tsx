@@ -50,7 +50,7 @@ import Link from 'next/link';
 
 type ItemForDispatch = {
   recipe: Recipe;
-  patient: Patient;
+  patient?: Patient;
   inventoryItem?: InventoryItem;
   recipeItem: any; // RecipeItem type
   quantityToDispatch?: number;
@@ -127,7 +127,6 @@ export default function DispatchManagementPage() {
     
     for (const recipe of recipesToProcess) {
       const patient = patients.find(p => p.id === recipe.patientId);
-      if (!patient) continue;
 
       const itemsToProcess: any[] = (Array.isArray(recipe.items) && recipe.items.length > 0)
         ? recipe.items
@@ -424,7 +423,7 @@ export default function DispatchManagementPage() {
                                             <div className="md:col-span-2 space-y-1">
                                                 <p className="text-lg font-bold text-slate-800">{item.inventoryItem.name}</p>
                                                 <p className="text-sm text-slate-600">Receta: <span className="font-mono text-primary">{item.recipe.id}</span> ({item.recipeItem.principalActiveIngredient})</p>
-                                                <p className="text-sm text-slate-500">Paciente: {item.patient.name}</p>
+                                                <p className="text-sm text-slate-500">Paciente: {item.patient?.name || 'Desconocido'}</p>
                                                 <p className="text-base font-bold mt-1 text-slate-700">Despachar: {item.quantityToDispatch} {item.inventoryItem.unit}</p>
                                             </div>
                                             <div className="md:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
