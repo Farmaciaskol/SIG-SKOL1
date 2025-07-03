@@ -25,7 +25,7 @@ export default function LoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       router.push('/dashboard');
-    } catch (error: any) {
+    } catch (error: any)      {
       console.error(error);
       toast({
         title: 'Error de autenticación',
@@ -37,79 +37,88 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background px-4">
-      <div className="w-full max-w-sm space-y-8">
-        <div className="text-center">
+    <div className="min-h-screen w-full lg:grid lg:grid-cols-2">
+      {/* Left Branding Panel */}
+      <div className="hidden bg-sky-800 lg:flex flex-col items-center justify-center p-12 text-center">
+        <div className="space-y-4 max-w-md">
           <Image
             src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
             alt="Skol Pharmacy Logo"
-            width={100}
-            height={35}
-            className="mx-auto mb-4"
+            width={150}
+            height={50}
+            className="mx-auto [filter:brightness(0)_invert(1)]"
             priority
           />
-          <h1 className="text-2xl font-bold font-headline text-foreground">
-            Accede a tu cuenta
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <h1 className="text-4xl font-bold text-white font-headline mt-6">
             Sistema Integral de Gestión Skol
+          </h1>
+          <p className="text-white/90">
+            Optimizando el ciclo de vida de las recetas magistrales con precisión y eficiencia.
           </p>
         </div>
-        <form onSubmit={handleLogin} className="space-y-6">
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="email" className="sr-only">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="admin@skol.cl"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={loading}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="sr-only">Contraseña</Label>
-                <Link
-                    href="#"
-                    className="text-sm font-medium text-primary hover:underline"
-                >
-                    ¿Olvidaste tu contraseña?
-                </Link>
-              </div>
-              <div className="relative mt-2">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={loading}
-                  className="pl-10"
-                  placeholder="Contraseña"
-                />
-              </div>
-            </div>
-          </div>
+      </div>
+      
+      {/* Right Form Panel */}
+      <div className="flex items-center justify-center py-12 px-4 bg-background">
+        <div className="w-full max-w-sm space-y-8">
+            <div className="w-full bg-card rounded-xl shadow-xl p-8 space-y-6">
+                <div className="text-left">
+                  <h1 className="text-2xl font-bold font-headline text-foreground">
+                    Acceso de Administrador
+                  </h1>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Bienvenido de vuelta. Ingrese sus credenciales.
+                  </p>
+                </div>
+                <form onSubmit={handleLogin} className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="admin@skol.cl"
+                          required
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          disabled={loading}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Contraseña</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="password"
+                          type="password"
+                          required
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          disabled={loading}
+                          className="pl-10"
+                          placeholder="••••••••"
+                        />
+                      </div>
+                    </div>
+                  </div>
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
-          </Button>
-        </form>
-        <p className="mt-10 text-center text-sm text-muted-foreground">
-          ¿Eres un paciente?{' '}
-          <Link href="/patient-portal/login" className="font-medium text-primary hover:underline">
-            Accede al Portal de Pacientes
-          </Link>
-        </p>
+                  <Button type="submit" className="w-full bg-cyan-500 hover:bg-cyan-600 text-white" disabled={loading}>
+                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {loading ? 'Ingresando...' : 'Ingresar al Sistema'}
+                  </Button>
+                </form>
+            </div>
+            <p className="px-8 text-center text-sm text-muted-foreground">
+              ¿Es usted un paciente?{' '}
+              <Link href="/patient-portal/login" className="font-medium text-primary hover:underline">
+                Ingrese al Portal de Pacientes
+              </Link>
+            </p>
+        </div>
       </div>
     </div>
   );
