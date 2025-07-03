@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
@@ -7,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { getPatients, deletePatient, Patient, ProactivePatientStatus, PatientActionNeeded } from '@/lib/data';
-import { PlusCircle, Search, User, Heart, AlertTriangle, Pencil, Trash2, FileText, Repeat, Truck, CheckCircle2, Loader2 } from 'lucide-react';
+import { runProactiveAnalysisForAllPatients } from '@/lib/actions';
+import { PlusCircle, Search, User, Heart, AlertTriangle, Pencil, Trash2, FileText, Repeat, Truck, CheckCircle2, Loader2, Wand2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PatientFormDialog } from '@/components/app/patient-form-dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -24,7 +24,7 @@ import {
 
 const statusStyles: Record<ProactivePatientStatus, string> = {
   [ProactivePatientStatus.URGENT]: 'border-red-500 bg-red-50',
-  [ProactivePatientStatus.ATTENTION]: 'border-pink-500 bg-pink-50',
+  [ProactivePatientStatus.ATTENTION]: 'border-yellow-400 bg-yellow-50',
   [ProactivePatientStatus.OK]: 'border-border',
 };
 
@@ -40,6 +40,7 @@ type FilterStatus = 'all' | ProactivePatientStatus;
 export default function PatientsPage() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterStatus>('all');
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -63,6 +64,21 @@ export default function PatientsPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const handleRunAnalysis = async () => {
+    setIsAnalyzing(true);
+    toast({ title: "Análisis Proactivo Iniciado", description: "La IA está revisando a los pacientes crónicos. Los estados se actualizarán en breve." });
+    try {
+      await runProactiveAnalysisForAllPatients();
+      await fetchData();
+      toast({ title: "Análisis Completado", description: "Los estados de los pacientes han sido actualizados." });
+    } catch (error) {
+      console.error("Proactive analysis failed:", error);
+      toast({ title: "Error en el Análisis", description: "No se pudo completar el análisis de IA.", variant: "destructive" });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   const handleOpenForm = (patient: Patient | null) => {
     setSelectedPatient(patient);
@@ -183,9 +199,15 @@ export default function PatientsPage() {
             Una visión 360° para una atención farmacéutica proactiva.
           </p>
         </div>
-        <Button onClick={() => handleOpenForm(null)}>
-          <PlusCircle className="mr-2 h-4 w-4" /> Nuevo Paciente
-        </Button>
+        <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleRunAnalysis} disabled={loading || isAnalyzing}>
+              {isAnalyzing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+              Analizar Pacientes (IA)
+            </Button>
+            <Button onClick={() => handleOpenForm(null)}>
+              <PlusCircle className="mr-2 h-4 w-4" /> Nuevo Paciente
+            </Button>
+        </div>
       </div>
 
       <Card className="mb-6">
