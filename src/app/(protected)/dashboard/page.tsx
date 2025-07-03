@@ -14,7 +14,8 @@ import {
   Wand2,
   AlertCircle,
   FileText,
-  FilePlus2
+  FilePlus2,
+  DollarSign
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -272,11 +273,15 @@ export default function DashboardPage() {
   const kpis = useMemo(() => {
     if (!data) return [];
     
+    const pendingPayments = data.recipes
+        .filter(r => r.paymentStatus === 'Pendiente')
+        .reduce((sum, r) => sum + (r.preparationCost || 0) + (r.transportCost || 0), 0);
+
     return [
       { title: 'Recetas del Portal Pendientes', value: data.recipes.filter(r => r.status === RecipeStatus.PendingReviewPortal).length, icon: Inbox, href: '/recipes?status=Pendiente+Revisión+-+Portal' },
       { title: 'En Preparación', value: data.recipes.filter(r => r.status === RecipeStatus.Preparation).length, icon: FlaskConical, href: '/recipes?status=En+Preparación' },
       { title: 'Ítems con Stock Bajo', value: data.inventory.filter(i => i.quantity < i.lowStockThreshold).length, icon: Box, href: '/inventory' },
-      { title: 'Pacientes Crónicos', value: data.patients.filter(p => p.isChronic).length, icon: Users, href: '/patients' },
+      { title: 'Saldo Pendiente por Cobrar', value: `$${pendingPayments.toLocaleString('es-CL')}`, icon: DollarSign, href: '/financial-management' },
     ];
   }, [data]);
 
