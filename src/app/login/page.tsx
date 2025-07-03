@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -37,7 +38,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-background lg:grid lg:grid-cols-2">
+    <div className="min-h-screen w-full lg:grid lg:grid-cols-2">
       {/* Left Branding Panel */}
       <div className="hidden lg:flex flex-col items-center justify-center p-12 text-center bg-sky-800">
         <div className="space-y-4 max-w-md">
@@ -58,15 +59,15 @@ export default function LoginPage() {
         </div>
       </div>
       
-      {/* Right Form Panel */}
-      <div className="flex items-center justify-center py-12 px-4">
+      {/* Right Form Panel - Apply blue background on mobile, white on large screens */}
+      <div className="flex items-center justify-center py-12 px-4 bg-sky-800 lg:bg-background">
         <div className="w-full max-w-sm space-y-8">
             <Image
                 src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
                 alt="Skol Pharmacy Logo"
                 width={120}
                 height={40}
-                className="mx-auto lg:hidden"
+                className="mx-auto lg:hidden [filter:brightness(0)_invert(1)]"
                 priority
             />
             <div className="w-full bg-card rounded-xl shadow-xl p-8 space-y-6">
@@ -120,9 +121,9 @@ export default function LoginPage() {
                   </Button>
                 </form>
             </div>
-            <p className="px-8 text-center text-sm text-muted-foreground">
+            <p className="px-8 text-center text-sm text-white/90 lg:text-muted-foreground">
               ¿Es usted un paciente?{' '}
-              <Link href="/patient-portal/login" className="font-semibold text-primary hover:underline lg:font-medium">
+              <Link href="/patient-portal/login" className="font-semibold text-white hover:underline lg:font-medium lg:text-primary">
                 Ingrese al Portal de Pacientes
               </Link>
             </p>
