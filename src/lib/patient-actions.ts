@@ -2,7 +2,6 @@
 'use server';
 
 import {
-  findPatientByRut,
   getRecipesReadyForPickup,
   getMessagesForPatient,
   sendMessageFromPatient as sendMessageDb,
@@ -17,19 +16,6 @@ import { AuditTrailEntry, Recipe, RecipeStatus } from './types';
 
 
 // --- PATIENT PORTAL ACTIONS ---
-
-export async function loginPatientByRut(rut: string): Promise<{ success: boolean; patient?: any; error?: string }> {
-  try {
-    const patient = await findPatientByRut(rut);
-    if (!patient) {
-      return { success: false, error: "RUT no encontrado o no registrado. Por favor, contacte a la farmacia." };
-    }
-    return { success: true, patient };
-  } catch (error) {
-    console.error("Error logging in patient by RUT:", error);
-    return { success: false, error: "Ocurrió un error en el servidor." };
-  }
-}
 
 export async function getDashboardData(patientId: string) {
     const [readyForPickup, allPatientRecipes, messages] = await Promise.all([

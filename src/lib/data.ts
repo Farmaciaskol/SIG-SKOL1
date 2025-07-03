@@ -662,44 +662,6 @@ export const updateMonthlyDispensationBox = async (boxId: string, updates: Parti
   await updateDoc(boxRef, dataToUpdate as any);
 };
 
-export const findPatientByRut = async (rut: string): Promise<Patient | null> => {
-    if (!db) return null;
-    const q = query(collection(db, "patients"), where("rut", "==", rut));
-    const querySnapshot = await getDocs(q);
-    if (querySnapshot.empty) {
-        return null;
-    }
-    const doc = querySnapshot.docs[0];
-    const data = doc.data();
-    const convertedData = deepConvertTimestamps(data);
-    return { id: doc.id, ...convertedData } as Patient;
-};
-
-export const validatePatientToken = async (token: string): Promise<{ success: boolean, patient?: Patient, token?: string, error?: string }> => {
-    if (!db) return { success: false, error: 'Database not connected' };
-    const q = query(collection(db, "patientAccessTokens"), where("token", "==", token));
-    const querySnapshot = await getDocs(q);
-    
-    if (querySnapshot.empty) {
-        return { success: false, error: "Token inválido." };
-    }
-    
-    const tokenDoc = querySnapshot.docs[0];
-    const tokenData = tokenDoc.data();
-    
-    const expiryDate = (tokenData.expiresAt as Timestamp).toDate();
-    if (new Date() > expiryDate) {
-        return { success: false, error: "El token ha expirado." };
-    }
-
-    const patient = await getPatient(tokenData.patientId);
-    if (!patient) {
-        return { success: false, error: "Paciente no encontrado." };
-    }
-    
-    return { success: true, patient, token };
-};
-
 export const sendMessageFromPatient = async (patientId: string, content: string): Promise<PatientMessage> => {
     if (!db) throw new Error("Firestore is not initialized.");
     const newMessage: Omit<PatientMessage, 'id'> = {
