@@ -281,7 +281,7 @@ export default function DashboardPage() {
       { title: 'Recetas del Portal Pendientes', value: data.recipes.filter(r => r.status === RecipeStatus.PendingReviewPortal).length, icon: Inbox, href: '/recipes?status=Pendiente+Revisión+-+Portal' },
       { title: 'En Preparación', value: data.recipes.filter(r => r.status === RecipeStatus.Preparation).length, icon: FlaskConical, href: '/recipes?status=En+Preparación' },
       { title: 'Ítems con Stock Bajo', value: data.inventory.filter(i => i.quantity < i.lowStockThreshold).length, icon: Box, href: '/inventory' },
-      { title: 'Saldo Pendiente por Cobrar', value: `$${pendingPayments.toLocaleString('es-CL')}`, icon: DollarSign, href: '/financial-management' },
+      { title: 'Recetas por Pagar', value: `$${pendingPayments.toLocaleString('es-CL')}`, icon: DollarSign, href: '/financial-management' },
     ];
   }, [data]);
 
