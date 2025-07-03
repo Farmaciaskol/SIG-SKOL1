@@ -1,7 +1,4 @@
 
-'use client';
-
-import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Users,
@@ -20,11 +17,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getRecipes, getPatients, getInventory } from '@/lib/data';
-import { differenceInDays, format, parseISO } from 'date-fns';
+import { differenceInDays, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { statusConfig } from '@/lib/constants';
 import { RecipeStatus, ProactivePatientStatus } from '@/lib/types';
 import type { Recipe, Patient, InventoryItem } from '@/lib/types';
+import { useMemo } from 'react';
+
 
 type KpiCardProps = {
   title: string;
@@ -135,6 +134,7 @@ const ProactiveAlertsCard = ({ patients }: { patients: Patient[] }) => {
 };
 
 const DelayedRecipesCard = ({ recipes, patients }: { recipes: Recipe[], patients: Patient[] }) => {
+    'use client';
     const delayedRecipes = useMemo(() => {
         if (!recipes) return [];
         const DELAY_THRESHOLD_DAYS = 3; 
@@ -229,78 +229,39 @@ const RecentRecipesCard = ({ recipes, patients }: { recipes: Recipe[], patients:
 };
 
 
-export default function DashboardPage() {
-  const [data, setData] = useState<{
-    recipes: Recipe[];
-    patients: Patient[];
-    inventory: InventoryItem[];
-  } | null>(null);
-  const [loading, setLoading] = useState(true);
+export default async function DashboardPage() {
+  const [recipesData, patientsData, inventoryData] = await Promise.all([
+    getRecipes(),
+    getPatients(),
+    getInventory(),
+  ]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [recipesData, patientsData, inventoryData] = await Promise.all([
-          getRecipes(),
-          getPatients(),
-          getInventory(),
-        ]);
-        setData({
-          recipes: recipesData,
-          patients: patientsData,
-          inventory: inventoryData,
-        });
-      } catch (error) {
-        console.error("Failed to fetch dashboard data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const today = new Date();
+  const formattedDate = new Intl.DateTimeFormat('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(today);
+  const capitalizedDate = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
+  
+  const pendingPayments = recipesData
+      .filter(r => r.paymentStatus === 'Pendiente')
+      .reduce((sum, r) => sum + (r.preparationCost || 0) + (r.transportCost || 0), 0);
 
-    fetchData();
-  }, []);
-
-  const formattedDate = useMemo(() => {
-    const today = new Date();
-    const date = new Intl.DateTimeFormat('es-ES', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    }).format(today);
-    return date.charAt(0).toUpperCase() + date.slice(1);
-  }, []);
-
-  const kpis = useMemo(() => {
-    if (!data) return [];
-    
-    const pendingPayments = data.recipes
-        .filter(r => r.paymentStatus === 'Pendiente')
-        .reduce((sum, r) => sum + (r.preparationCost || 0) + (r.transportCost || 0), 0);
-
-    return [
-      { title: 'Bandeja de Entrada Portal', value: data.recipes.filter(r => r.status === RecipeStatus.PendingReviewPortal).length, icon: Inbox, href: '/portal-inbox' },
-      { title: 'En Preparación', value: data.recipes.filter(r => r.status === RecipeStatus.Preparation).length, icon: FlaskConical, href: '/recipes?status=En+Preparación' },
-      { title: 'Ítems con Stock Bajo', value: data.inventory.filter(i => i.quantity < i.lowStockThreshold).length, icon: Box, href: '/inventory' },
-      { title: 'Recetas por Pagar', value: `$${pendingPayments.toLocaleString('es-CL')}`, icon: DollarSign, href: '/financial-management' },
-    ];
-  }, [data]);
-
-  if (loading || !data) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <p className="text-muted-foreground">Cargando dashboard...</p>
-      </div>
-    );
-  }
+  const kpis = [
+    { title: 'Bandeja de Entrada Portal', value: recipesData.filter(r => r.status === RecipeStatus.PendingReviewPortal).length, icon: Inbox, href: '/portal-inbox' },
+    { title: 'En Preparación', value: recipesData.filter(r => r.status === RecipeStatus.Preparation).length, icon: FlaskConical, href: '/recipes?status=En+Preparación' },
+    { title: 'Ítems con Stock Bajo', value: inventoryData.filter(i => i.quantity < i.lowStockThreshold).length, icon: Box, href: '/inventory' },
+    { title: 'Recetas por Pagar', value: `$${pendingPayments.toLocaleString('es-CL')}`, icon: DollarSign, href: '/financial-management' },
+  ];
 
   return (
     <>
       <div className="flex flex-col md:flex-row md:items-center justify-between space-y-2 md:space-y-0 mb-6">
         <div>
             <h1 className="text-3xl font-bold text-slate-800 tracking-tight font-headline">Dashboard</h1>
-            <p className="text-sm text-muted-foreground">{formattedDate}</p>
+            <p className="text-sm text-muted-foreground">{capitalizedDate}</p>
         </div>
         <div className="flex items-center space-x-2">
             <Button variant="outline" asChild className="bg-card hover:bg-muted">
@@ -319,9 +280,9 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <ProactiveAlertsCard patients={data.patients} />
-        <DelayedRecipesCard recipes={data.recipes} patients={data.patients} />
-        <RecentRecipesCard recipes={data.recipes} patients={data.patients} />
+        <ProactiveAlertsCard patients={patientsData} />
+        <DelayedRecipesCard recipes={recipesData} patients={patientsData} />
+        <RecentRecipesCard recipes={recipesData} patients={patientsData} />
       </div>
     </>
   );

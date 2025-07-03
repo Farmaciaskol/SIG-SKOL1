@@ -1,7 +1,4 @@
 
-
-'use client';
-
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -135,14 +132,25 @@ const StatCard = ({ title, value, icon: Icon, onClick, active = false }: { title
   </Card>
 );
 
-export default function RecipesPage() {
+const RecipesClient = ({
+  initialRecipes,
+  initialPatients,
+  initialDoctors,
+  initialExternalPharmacies
+}: {
+  initialRecipes: Recipe[],
+  initialPatients: Patient[],
+  initialDoctors: Doctor[],
+  initialExternalPharmacies: ExternalPharmacy[]
+}) => {
+  'use client';
+
   const { toast } = useToast();
   const router = useRouter();
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [externalPharmacies, setExternalPharmacies] = useState<ExternalPharmacy[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [recipes, setRecipes] = useState<Recipe[]>(initialRecipes);
+  const [patients, setPatients] = useState<Patient[]>(initialPatients);
+  const [doctors, setDoctors] = useState<Doctor[]>(initialDoctors);
+  const [externalPharmacies, setExternalPharmacies] = useState<ExternalPharmacy[]>(initialExternalPharmacies);
   
   // Dialogs state
   const [recipeToView, setRecipeToView] = useState<Recipe | null>(null);
@@ -181,33 +189,7 @@ export default function RecipesPage() {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
-
-
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [recipesData, patientsData, doctorsData, pharmaciesData] = await Promise.all([
-        getRecipes(),
-        getPatients(),
-        getDoctors(),
-        getExternalPharmacies(),
-      ]);
-      setRecipes(recipesData);
-      setPatients(patientsData);
-      setDoctors(doctorsData);
-      setExternalPharmacies(pharmaciesData);
-    } catch (error) {
-      console.error("Failed to fetch recipes data:", error);
-      toast({ title: 'Error', description: 'No se pudieron cargar los datos de las recetas.', variant: 'destructive' });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
+  
   const getPatientName = (patientId: string) => patients.find((p) => p.id === patientId)?.name || 'N/A';
 
   const handleUpdateStatus = async (recipe: Recipe, newStatus: RecipeStatus, notes?: string) => {
@@ -656,9 +638,8 @@ export default function RecipesPage() {
     );
   }
 
-
   return (
-    <div className="space-y-6">
+    <>
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-800 tracking-tight font-headline">Gestión de Recetas</h1>
@@ -673,7 +654,7 @@ export default function RecipesPage() {
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mt-6">
         <StatCard 
           title="Bandeja de Entrada Portal" 
           value={stats.pendingPortal} 
@@ -704,7 +685,7 @@ export default function RecipesPage() {
         />
       </div>
 
-      <Card>
+      <Card className="mt-6">
         <CardContent className="p-4">
           <Collapsible
             open={advancedFiltersOpen}
@@ -777,12 +758,7 @@ export default function RecipesPage() {
       </Card>
 
 
-      {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="ml-2">Cargando recetas...</p>
-        </div>
-      ) : filteredRecipes.length === 0 ? (
+      {filteredRecipes.length === 0 ? (
         <Card className="w-full py-16 mt-8 shadow-none border-dashed">
             <div className="flex flex-col items-center justify-center text-center">
               <FileX className="h-16 w-16 text-muted-foreground mb-4" />
@@ -796,7 +772,7 @@ export default function RecipesPage() {
       ) : (
         <>
             {/* Desktop Table View */}
-            <Card className="hidden w-full md:block">
+            <Card className="hidden w-full md:block mt-6">
                 <CardContent className="p-0">
                     <Table>
                         <TableHeader>
@@ -909,7 +885,7 @@ export default function RecipesPage() {
             </Card>
 
             {/* Mobile Card View */}
-            <div className="grid grid-cols-1 gap-4 md:hidden">
+            <div className="grid grid-cols-1 gap-4 md:hidden mt-6">
             {paginatedRecipes.map((recipe) => (
                 <Card key={recipe.id} className={cn(selectedRecipes.includes(recipe.id) && "ring-2 ring-primary")}>
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -1125,6 +1101,24 @@ export default function RecipesPage() {
             </CardContent>
         </Card>
       )}
-    </div>
+    </>
+  );
+}
+
+export default async function RecipesPageServer() {
+  const [recipes, patients, doctors, externalPharmacies] = await Promise.all([
+    getRecipes(),
+    getPatients(),
+    getDoctors(),
+    getExternalPharmacies(),
+  ]);
+
+  return (
+    <RecipesClient
+      initialRecipes={recipes}
+      initialPatients={patients}
+      initialDoctors={doctors}
+      initialExternalPharmacies={externalPharmacies}
+    />
   );
 }
