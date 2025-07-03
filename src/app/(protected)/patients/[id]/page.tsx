@@ -7,10 +7,10 @@ import { getPatient, getRecipes, Patient, Recipe, RecipeStatus } from '@/lib/dat
 import { analyzePatientHistory } from '@/ai/flows/analyze-patient-history';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ChevronLeft, User, Mail, Phone, Heart, Bot, FileText, CheckCircle, Clock } from 'lucide-react';
+import { Loader2, ChevronLeft, User, Mail, Phone, Heart, Bot } from 'lucide-react';
 import Link from 'next/link';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
