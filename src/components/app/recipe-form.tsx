@@ -628,19 +628,19 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-          {/* Left Column */}
+          {/* Left Sticky Column */}
           <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-24">
             <Card>
               <CardHeader>
                 <CardTitle className="text-xl font-semibold">Imagen de la Receta</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary h-48"
+                <div className="flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary min-h-[400px]"
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*,application/pdf" className="hidden" />
                   {previewImage ? (
-                    <Image src={previewImage} alt="Vista previa de receta" width={200} height={150} className="rounded-md object-contain max-h-40" />
+                    <Image src={previewImage} alt="Vista previa de receta" width={300} height={400} className="rounded-md object-contain max-h-[350px]" />
                   ) : (
                     <>
                       <ImageIcon className="h-10 w-10 text-slate-400 mb-2" />
