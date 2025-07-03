@@ -34,7 +34,7 @@ import { RecipeStatus } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { addMonths, format, parseISO } from 'date-fns';
-import { Bot, Calendar as CalendarIcon, Image as ImageIcon, Loader2, PlusCircle, Trash2, Wand2 } from 'lucide-react';
+import { Bot, Calendar as CalendarIcon, Image as ImageIcon, Loader2, PlusCircle, Trash2, Wand2, ZoomIn, X as XIcon } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -43,6 +43,8 @@ import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { InventoryItemForm } from './inventory-item-form';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '@/lib/firebase';
 
 
 // Zod schema for form validation
@@ -384,6 +386,7 @@ const RecipeItemCard = ({
 export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const [user] = useAuthState(auth);
   const [patients, setPatients] = React.useState<Patient[]>([]);
   const [doctors, setDoctors] = React.useState<Doctor[]>([]);
   const [externalPharmacies, setExternalPharmacies] = React.useState<ExternalPharmacy[]>([]);
@@ -625,15 +628,19 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
   };
 
   const onSubmit = async (data: RecipeFormValues) => {
+    if (!user) {
+      toast({ title: 'Error de Autenticación', description: 'No se pudo verificar el usuario. Por favor, inicie sesión de nuevo.', variant: 'destructive' });
+      return;
+    }
     try {
       const finalRecipeId = isEditMode && !copyFromId ? recipeId : undefined;
-      await saveRecipe(data, previewImage, finalRecipeId);
+      await saveRecipe(data, previewImage, user.uid, finalRecipeId);
       toast({ title: isEditMode && !copyFromId ? 'Receta Actualizada' : 'Receta Creada', description: 'Los datos se han guardado correctamente.' });
       router.push('/recipes');
       router.refresh();
     } catch (error) {
       console.error('Failed to save recipe:', error);
-      toast({ title: 'Error al Guardar', description: 'No se pudo guardar la receta. Por favor, intente de nuevo.', variant: 'destructive' });
+      toast({ title: 'Error al Guardar', description: `No se pudo guardar la receta. ${error instanceof Error ? error.message : 'Por favor, intente de nuevo.'}`, variant: 'destructive' });
     }
   };
 
@@ -661,35 +668,34 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
           <InventoryItemForm onFinished={handleInventoryFormFinished} />
         </DialogContent>
       </Dialog>
-
+      
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
           className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start"
         >
           {/* Left Column (Image) */}
-          <div className="lg:col-span-1 lg:sticky top-8">
-              <Card>
+          <div className="lg:col-span-1 lg:sticky lg:top-8 space-y-4">
+              <Card className="flex flex-col h-[calc(100vh-8rem)]">
                 <CardHeader>
                   <CardTitle className="text-xl font-semibold">Imagen de la Receta</CardTitle>
                 </CardHeader>
                 <CardContent className="flex-grow flex flex-col items-center justify-center p-2">
-                  <div className="w-full h-96 flex items-center justify-center border-2 border-dashed rounded-lg overflow-hidden bg-muted/50">
+                  <div className="w-full h-full flex items-center justify-center border-2 border-dashed rounded-lg overflow-hidden bg-muted/50 relative">
                     <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*,application/pdf" className="hidden" />
                     {previewImage ? (
-                      <div className="relative w-full h-full">
+                      <>
                          <Image 
                             src={previewImage} 
                             alt="Vista previa de receta" 
-                            width={400}
-                            height={500}
+                            fill
                             className={cn(
-                              "absolute inset-0 h-full w-full object-contain transition-transform duration-300 ease-in-out cursor-pointer",
+                              "object-contain transition-transform duration-300 ease-in-out cursor-pointer",
                               isZoomed ? "scale-125" : "scale-100"
                             )}
                             onClick={() => setIsZoomed(!isZoomed)}
                           />
-                      </div>
+                      </>
                     ) : (
                       <div onClick={() => fileInputRef.current?.click()} className="text-center cursor-pointer p-4">
                         <ImageIcon className="h-10 w-10 text-slate-400 mb-2 mx-auto" />
@@ -708,6 +714,9 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
                     </Button>
                 </CardFooter>
               </Card>
+               <Button type="button" onClick={()=> setIsZoomed(true)} variant="outline" size="sm" className="w-full">
+                <ZoomIn className="mr-2 h-4 w-4" /> Ampliar
+              </Button>
           </div>
 
           {/* Right Column (Form Fields) */}
@@ -927,6 +936,18 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
           </div>
         </form>
       </Form>
+       <Dialog open={isZoomed} onOpenChange={setIsZoomed}>
+        <DialogContent className="max-w-4xl h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Vista Ampliada de la Receta</DialogTitle>
+          </DialogHeader>
+          <div className="relative w-full h-full">
+            {previewImage && (
+              <Image src={previewImage} alt="Receta ampliada" fill className="object-contain" />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

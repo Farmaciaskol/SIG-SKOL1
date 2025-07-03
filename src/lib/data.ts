@@ -206,11 +206,10 @@ export const updateRecipe = async (id: string, updates: Partial<Recipe>): Promis
     await updateDoc(recipeRef, dataToUpdate as any);
 };
 
-export const saveRecipe = async (data: any, imageUri: string | null, recipeId?: string): Promise<string> => {
-    if (!db) throw new Error("Firestore is not initialized.");
+export const saveRecipe = async (data: any, imageUri: string | null, userId: string, recipeId?: string): Promise<string> => {
+    if (!db || !auth) throw new Error("Firestore or Auth is not initialized.");
     
-    const user = auth?.currentUser;
-    if (!user) {
+    if (!userId) {
         throw new Error("Usuario no autenticado. No se puede guardar la receta.");
     }
 
@@ -271,7 +270,7 @@ export const saveRecipe = async (data: any, imageUri: string | null, recipeId?: 
             const newAuditTrailEntry: AuditTrailEntry = { 
                 status: RecipeStatus.PendingValidation, 
                 date: new Date().toISOString(), 
-                userId: 'system-user', 
+                userId: userId, 
                 notes: existingRecipe.status === RecipeStatus.Rejected 
                     ? 'Receta corregida y reenviada para validación.'
                     : 'Receta del portal revisada y enviada a validación.'
@@ -284,7 +283,7 @@ export const saveRecipe = async (data: any, imageUri: string | null, recipeId?: 
         return recipeId;
     } else { // Creating
         const recipeRef = doc(db, 'recipes', effectiveRecipeId);
-        const firstAuditEntry: AuditTrailEntry = { status: RecipeStatus.PendingValidation, date: new Date().toISOString(), userId: 'system-user', notes: 'Receta creada en el sistema.' };
+        const firstAuditEntry: AuditTrailEntry = { status: RecipeStatus.PendingValidation, date: new Date().toISOString(), userId: userId, notes: 'Receta creada en el sistema.' };
         const recipeDataForCreate: Omit<Recipe, 'id'> = { ...recipeDataForUpdate, status: RecipeStatus.PendingValidation, paymentStatus: 'Pendiente', createdAt: new Date().toISOString(), auditTrail: [firstAuditEntry] } as Omit<Recipe, 'id'>;
         await setDoc(recipeRef, recipeDataForCreate);
         return effectiveRecipeId;
@@ -423,9 +422,9 @@ export const logDirectSaleDispensation = async (
     prescriptionImageUrl?: string;
   }
 ): Promise<void> => {
-    if (!db || !storage) throw new Error("Firestore or Storage is not initialized.");
+    if (!db || !storage || !auth) throw new Error("Firestore, Storage or Auth is not initialized.");
 
-    const user = auth?.currentUser;
+    const user = auth.currentUser;
     if (!user) {
         throw new Error("Usuario no autenticado. No se puede registrar la dispensación.");
     }

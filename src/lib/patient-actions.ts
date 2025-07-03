@@ -53,10 +53,10 @@ export async function sendMessageFromPatient(patientId: string, content: string)
 };
 
 export async function submitNewPrescription(patientId: string, imageDataUri: string): Promise<string> {
-    if (!db || !storage) throw new Error("Firestore or Storage is not initialized.");
+    if (!db || !storage || !auth) throw new Error("Firestore, Storage or Auth is not initialized.");
     
     // Patient portal uses anonymous auth, so a user object should always exist.
-    const user = auth?.currentUser;
+    const user = auth.currentUser;
     if (!user) {
         throw new Error("No se pudo obtener la sesión de autenticación. Intente recargar la página.");
     }
@@ -84,7 +84,7 @@ export async function submitNewPrescription(patientId: string, imageDataUri: str
     const firstAuditEntry: AuditTrailEntry = {
         status: RecipeStatus.PendingReviewPortal,
         date: new Date().toISOString(),
-        userId: patientId,
+        userId: user.uid,
         notes: 'Receta subida por el paciente desde el portal.'
     };
     

@@ -7,6 +7,8 @@ import { getRecipes, getPatients, updateRecipe } from '@/lib/data';
 import type { Recipe, Patient, AuditTrailEntry } from '@/lib/types';
 import { RecipeStatus } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '@/lib/firebase';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -33,6 +35,7 @@ export default function PortalInboxPage() {
     const [rejectionReason, setRejectionReason] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { toast } = useToast();
+    const [user] = useAuthState(auth);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -58,6 +61,10 @@ export default function PortalInboxPage() {
     const getPatientName = (patientId: string) => patients.find(p => p.id === patientId)?.name || 'Desconocido';
 
     const handleRejectRecipe = async () => {
+        if (!user) {
+            toast({ title: 'Error de Autenticación', description: 'Debe iniciar sesión para realizar esta acción.', variant: 'destructive' });
+            return;
+        }
         if (!recipeToReject || !rejectionReason.trim()) {
             toast({ title: 'Error', description: 'Debe ingresar un motivo para el rechazo.', variant: 'destructive' });
             return;
@@ -67,7 +74,7 @@ export default function PortalInboxPage() {
             const newAuditEntry: AuditTrailEntry = {
                 status: RecipeStatus.Rejected,
                 date: new Date().toISOString(),
-                userId: 'system-user', // Replace with actual user ID
+                userId: user.uid,
                 notes: `Rechazado desde bandeja de entrada. Motivo: ${rejectionReason}`
             };
             const updates: Partial<Recipe> = { 

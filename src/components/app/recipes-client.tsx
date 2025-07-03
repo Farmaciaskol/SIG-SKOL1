@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
@@ -120,6 +121,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '@/lib/firebase';
 
 const StatCard = ({ title, value, icon: Icon, onClick, active = false }: { title: string; value: string | number; icon: React.ElementType, onClick: () => void, active?: boolean }) => (
   <Card className={cn("hover:shadow-md transition-shadow cursor-pointer", active && "ring-2 ring-primary")} onClick={onClick}>
@@ -147,6 +150,7 @@ export const RecipesClient = ({
 
   const { toast } = useToast();
   const router = useRouter();
+  const [user] = useAuthState(auth);
   const [recipes, setRecipes] = useState<Recipe[]>(initialRecipes);
   const [patients, setPatients] = useState<Patient[]>(initialPatients);
   const [doctors, setDoctors] = useState<Doctor[]>(initialDoctors);
@@ -193,6 +197,10 @@ export const RecipesClient = ({
   const getPatientName = (patientId: string) => patients.find((p) => p.id === patientId)?.name || 'N/A';
 
   const handleUpdateStatus = async (recipe: Recipe, newStatus: RecipeStatus, notes?: string) => {
+    if (!user) {
+        toast({ title: 'Error de Autenticación', description: 'Debe iniciar sesión para realizar esta acción.', variant: 'destructive' });
+        return;
+    }
     setIsSubmitting(true);
     try {
       // --- Connection to Controlled Drugs Module ---
@@ -209,7 +217,7 @@ export const RecipesClient = ({
       const newAuditEntry: AuditTrailEntry = {
         status: newStatus,
         date: new Date().toISOString(),
-        userId: 'system-user',
+        userId: user.uid,
         notes: notes || `Estado cambiado a ${statusConfig[newStatus].text}`
       };
       const updatedAuditTrail = [...(recipe.auditTrail || []), newAuditEntry];
@@ -270,6 +278,10 @@ export const RecipesClient = ({
   }, [receptionChecklist, recipeToReceive]);
   
   const handleConfirmReceive = async () => {
+    if (!user) {
+        toast({ title: 'Error de Autenticación', description: 'Debe iniciar sesión para realizar esta acción.', variant: 'destructive' });
+        return;
+    }
     if (!recipeToReceive || !internalLot || !preparationExpiry || !isReceptionChecklistComplete) return;
     setIsSubmitting(true);
     try {
@@ -284,7 +296,7 @@ export const RecipesClient = ({
        const newAuditEntry: AuditTrailEntry = {
         status: RecipeStatus.ReceivedAtSkol,
         date: new Date().toISOString(),
-        userId: 'system-user',
+        userId: user.uid,
         notes: notesParts.join(' ')
       };
       const updates: Partial<Recipe> = { 
@@ -350,6 +362,11 @@ export const RecipesClient = ({
   const handleConfirmReprepare = async () => {
     if (!recipeToReprepare) return;
     
+    if (!user) {
+        toast({ title: 'Error de Autenticación', description: 'Debe iniciar sesión para realizar esta acción.', variant: 'destructive' });
+        return;
+    }
+    
     setIsSubmitting(true);
     
     if (recipeToReprepare.isControlled && !controlledFolio.trim()) {
@@ -362,7 +379,7 @@ export const RecipesClient = ({
       const reprepareAuditEntry: AuditTrailEntry = {
         status: RecipeStatus.PendingValidation,
         date: new Date().toISOString(),
-        userId: 'system-user',
+        userId: user.uid,
         notes: `Nuevo ciclo de re-preparación iniciado.${recipeToReprepare.isControlled ? ` Nuevo folio: ${controlledFolio}.` : ''}`
       };
 
