@@ -116,7 +116,7 @@ export default function LoginPage() {
             </form>
             <div className="mt-6 text-center text-sm">
                 ¿Es usted un paciente?{' '}
-                <Link href="#" className="underline text-accent hover:text-accent/90">
+                <Link href="/patient-portal/login" className="underline text-accent hover:text-accent/90">
                     Ingrese al Portal de Pacientes
                 </Link>
             </div>

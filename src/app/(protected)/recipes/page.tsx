@@ -730,68 +730,71 @@ export default function RecipesPage() {
                         </TableRow>
                         </TableHeader>
                         <TableBody>
-                        {filteredRecipes.map((recipe) => (
-                            <TableRow key={recipe.id} className={cn("hover:bg-muted/50", selectedRecipes.includes(recipe.id) && "bg-muted/50")}>
-                              <TableCell className="p-4"><Checkbox onCheckedChange={() => toggleSelectRecipe(recipe.id)} checked={selectedRecipes.includes(recipe.id)}/></TableCell>
-                              <TableCell className="font-mono text-primary">
-                                  <Link href={`/recipes/${recipe.id}`} className="hover:underline">
-                                      {recipe.id}
-                                  </Link>
-                              </TableCell>
-                              <TableCell className="font-medium">{getPatientName(recipe.patientId)}</TableCell>
-                              <TableCell>
-                                  {recipe.items.length > 0 ? (
-                                      <div className="flex flex-col">
-                                      <span className="text-sm font-medium text-slate-800">
-                                          {recipe.items[0].principalActiveIngredient}{' '}
-                                          {recipe.items[0].concentrationValue}
-                                          {recipe.items[0].concentrationUnit}
-                                      </span>
-                                      <span className="text-xs text-slate-500 truncate" style={{maxWidth: '25ch'}}>
-                                          {recipe.items[0].usageInstructions}
-                                      </span>
-                                      {recipe.items.length > 1 && <span className="text-xs font-bold text-slate-500 mt-1">+ {recipe.items.length - 1} más</span>}
-                                      </div>
-                                  ) : (
-                                      'N/A'
-                                  )}
-                              </TableCell>
-                              <TableCell>{format(new Date(recipe.createdAt), "d 'de' MMMM, yyyy", { locale: es })}</TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="outline" className={cn("font-normal", statusConfig[recipe.status]?.badge)}>
-                                    {React.createElement(statusConfig[recipe.status]?.icon || FileX, { className: 'h-3 w-3 mr-1.5' })}
-                                    {statusConfig[recipe.status]?.text || recipe.status}
-                                  </Badge>
-                                  {recipe.status === RecipeStatus.PendingReviewPortal && (
-                                    <TooltipProvider>
+                        {filteredRecipes.map((recipe) => {
+                            const StatusIcon = statusConfig[recipe.status]?.icon || FileX;
+                            return (
+                                <TableRow key={recipe.id} className={cn("hover:bg-muted/50", selectedRecipes.includes(recipe.id) && "bg-muted/50")}>
+                                <TableCell className="p-4"><Checkbox onCheckedChange={() => toggleSelectRecipe(recipe.id)} checked={selectedRecipes.includes(recipe.id)}/></TableCell>
+                                <TableCell className="font-mono text-primary">
+                                    <Link href={`/recipes/${recipe.id}`} className="hover:underline">
+                                        {recipe.id}
+                                    </Link>
+                                </TableCell>
+                                <TableCell className="font-medium">{getPatientName(recipe.patientId)}</TableCell>
+                                <TableCell>
+                                    {recipe.items.length > 0 ? (
+                                        <div className="flex flex-col">
+                                        <span className="text-sm font-medium text-slate-800">
+                                            {recipe.items[0].principalActiveIngredient}{' '}
+                                            {recipe.items[0].concentrationValue}
+                                            {recipe.items[0].concentrationUnit}
+                                        </span>
+                                        <span className="text-xs text-slate-500 truncate" style={{maxWidth: '25ch'}}>
+                                            {recipe.items[0].usageInstructions}
+                                        </span>
+                                        {recipe.items.length > 1 && <span className="text-xs font-bold text-slate-500 mt-1">+ {recipe.items.length - 1} más</span>}
+                                        </div>
+                                    ) : (
+                                        'N/A'
+                                    )}
+                                </TableCell>
+                                <TableCell>{format(new Date(recipe.createdAt), "d 'de' MMMM, yyyy", { locale: es })}</TableCell>
+                                <TableCell>
+                                    <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className={cn("font-normal", statusConfig[recipe.status]?.badge)}>
+                                        <StatusIcon className="h-3 w-3 mr-1.5" />
+                                        {statusConfig[recipe.status]?.text || recipe.status}
+                                    </Badge>
+                                    {recipe.status === RecipeStatus.PendingReviewPortal && (
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <span><UserSquare className="h-5 w-5 text-purple-500" /></span>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>Receta subida desde el Portal de Pacientes</p>
+                                            </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    )}
+                                    {recipe.items.some(item => item.requiresFractionation) && (
+                                        <TooltipProvider>
                                         <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <span><UserSquare className="h-5 w-5 text-purple-500" /></span>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p>Receta subida desde el Portal de Pacientes</p>
-                                        </TooltipContent>
+                                            <TooltipTrigger asChild>
+                                            <span><Split className="h-5 w-5 text-orange-500" /></span>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                            <p>Requiere Fraccionamiento</p>
+                                            </TooltipContent>
                                         </Tooltip>
-                                    </TooltipProvider>
-                                  )}
-                                  {recipe.items.some(item => item.requiresFractionation) && (
-                                    <TooltipProvider>
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <span><Split className="h-5 w-5 text-orange-500" /></span>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                          <p>Requiere Fraccionamiento</p>
-                                        </TooltipContent>
-                                      </Tooltip>
-                                    </TooltipProvider>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-right"><RecipeActions recipe={recipe} /></TableCell>
-                            </TableRow>
-                        ))}
+                                        </TooltipProvider>
+                                    )}
+                                    </div>
+                                </TableCell>
+                                <TableCell className="text-right"><RecipeActions recipe={recipe} /></TableCell>
+                                </TableRow>
+                            )
+                        })}
                         </TableBody>
                     </Table>
                 </CardContent>
