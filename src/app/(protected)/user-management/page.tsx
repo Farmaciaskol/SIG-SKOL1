@@ -8,7 +8,8 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { User, Role, getUsers, getRoles, addUser, updateUser, deleteUser } from '@/lib/data';
+import { getUsers, getRoles, addUser, updateUser, deleteUser } from '@/lib/data';
+import type { User, Role } from '@/lib/types';
 import { PlusCircle, MoreHorizontal, Loader2, Pencil, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,

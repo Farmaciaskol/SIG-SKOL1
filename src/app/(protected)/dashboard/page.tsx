@@ -19,10 +19,12 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getRecipes, getPatients, getInventory, Recipe, Patient, InventoryItem, RecipeStatus, ProactivePatientStatus } from '@/lib/data';
+import { getRecipes, getPatients, getInventory } from '@/lib/data';
 import { differenceInDays, format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { statusConfig } from '@/lib/constants';
+import { RecipeStatus, ProactivePatientStatus } from '@/lib/types';
+import type { Recipe, Patient, InventoryItem } from '@/lib/types';
 
 type KpiCardProps = {
   title: string;
@@ -324,5 +326,3 @@ export default function DashboardPage() {
     </>
   );
 }
-
-    

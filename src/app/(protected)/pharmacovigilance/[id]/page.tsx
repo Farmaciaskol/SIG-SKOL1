@@ -9,11 +9,13 @@ import {
   updatePharmacovigilanceReport,
   getPatient,
   getRecipe,
+} from '@/lib/data';
+import type {
   PharmacovigilanceReport,
-  PharmacovigilanceReportStatus,
   Patient,
   Recipe
-} from '@/lib/data';
+} from '@/lib/types';
+import { PharmacovigilanceReportStatus } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';

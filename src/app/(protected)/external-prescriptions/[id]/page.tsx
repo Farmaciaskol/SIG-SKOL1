@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
@@ -11,12 +12,14 @@ import {
   getRecipesForExternalPharmacy,
   getDispatchNotesForExternalPharmacy,
   getPatients,
+} from '@/lib/data';
+import type {
   ExternalPharmacy,
   Recipe,
   DispatchNote,
   Patient,
-  RecipeStatus
-} from '@/lib/data';
+} from '@/lib/types';
+import { RecipeStatus } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
 // UI Components

@@ -6,10 +6,12 @@ import {
   getRecipes,
   getInventory,
   getControlledSubstanceLog,
+} from '@/lib/data';
+import type {
   Recipe,
   InventoryItem,
   ControlledSubstanceLogEntry
-} from '@/lib/data';
+} from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { usePatientAuth } from '@/components/app/patient-auth-provider';
-import { getDashboardData, getMedicationInfo, submitPatientMessage, submitNewPrescription } from '@/lib/patient-actions';
+import { getDashboardData, getMedicationInfo, sendMessageFromPatient, submitNewPrescription } from '@/lib/patient-actions';
 import { Patient, Recipe, PatientMessage, ProactivePatientStatus } from '@/lib/types';
 import { Loader2, AlertTriangle, CheckCircle, Clock, FileText, Bot, Send, MessageSquare, Upload, X, FileUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -320,7 +320,7 @@ const SecureMessagingModal = ({ patientId, initialMessages }: { patientId: strin
         if (!newMessage.trim()) return;
         setIsSending(true);
         try {
-            const sentMessage = await submitPatientMessage(patientId, newMessage);
+            const sentMessage = await sendMessageFromPatient(patientId, newMessage);
             setMessages(prev => [...prev, sentMessage]);
             setNewMessage("");
 

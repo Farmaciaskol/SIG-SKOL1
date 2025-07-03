@@ -4,15 +4,16 @@
 import {
   getRecipesReadyForPickup,
   getMessagesForPatient,
-  sendMessageFromPatient,
   getRecipes
 } from './data';
+import type { PatientMessage, Recipe } from './types';
+import { RecipeStatus } from './types';
 import { simplifyMedicationInfo } from '@/ai/flows/simplify-medication-info';
 import { db, storage } from './firebase';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { doc, collection, setDoc } from 'firebase/firestore';
 import { addMonths } from 'date-fns';
-import { AuditTrailEntry, Recipe, RecipeStatus } from './types';
+import type { AuditTrailEntry } from './types';
 
 
 // --- PATIENT PORTAL ACTIONS ---
@@ -31,9 +32,25 @@ export async function getMedicationInfo(medicationName: string) {
     return await simplifyMedicationInfo(medicationName);
 }
 
-export async function submitPatientMessage(patientId: string, content: string) {
-    return await sendMessageFromPatient(patientId, content);
-}
+export async function sendMessageFromPatient(patientId: string, content: string): Promise<PatientMessage> {
+    if (!db) throw new Error("Firestore is not initialized.");
+    
+    const messageRef = doc(collection(db, 'patientMessages'));
+    
+    const newMessage: PatientMessage = {
+        id: messageRef.id,
+        patientId,
+        content,
+        sender: 'patient',
+        createdAt: new Date().toISOString(),
+        read: false, // New messages from patients are unread for pharmacists
+    };
+    
+    const { id, ...dataToSave } = newMessage;
+    await setDoc(messageRef, dataToSave);
+    
+    return newMessage;
+};
 
 export async function submitNewPrescription(patientId: string, imageDataUri: string): Promise<string> {
     if (!db || !storage) throw new Error("Firestore or Storage is not initialized.");

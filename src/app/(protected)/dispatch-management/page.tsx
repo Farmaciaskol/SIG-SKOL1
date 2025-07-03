@@ -10,17 +10,21 @@ import {
   getDispatchNotes,
   processDispatch,
   getRecipe,
+} from '@/lib/data';
+import type {
   Recipe,
   Patient,
   InventoryItem,
   ExternalPharmacy,
-  RecipeStatus,
-  SkolSuppliedItemsDispatchStatus,
   DispatchNote,
   DispatchItem,
+  AuditTrailEntry,
+} from '@/lib/types';
+import {
+  RecipeStatus,
+  SkolSuppliedItemsDispatchStatus,
   DispatchStatus,
-  type AuditTrailEntry,
-} from '@/lib/data';
+} from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { doc, writeBatch } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';

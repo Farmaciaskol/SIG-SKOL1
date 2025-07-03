@@ -15,7 +15,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { PlusCircle, Eye, Star, Search, MoreHorizontal } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { getControlledSubstanceLog, getPatients, getDoctors, ControlledSubstanceLogEntry, Patient, Doctor } from '@/lib/data';
+import { getControlledSubstanceLog, getPatients, getDoctors } from '@/lib/data';
+import type { ControlledSubstanceLogEntry, Patient, Doctor } from '@/lib/types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';

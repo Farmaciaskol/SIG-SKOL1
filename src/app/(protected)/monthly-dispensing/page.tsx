@@ -6,11 +6,15 @@ import Link from 'next/link';
 import {
   getMonthlyDispensations,
   getPatients,
+} from '@/lib/data';
+import type {
   MonthlyDispensationBox,
   Patient,
+} from '@/lib/types';
+import {
   MonthlyDispensationBoxStatus,
   DispensationItemStatus
-} from '@/lib/data';
+} from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';

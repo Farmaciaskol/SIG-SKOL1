@@ -9,7 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { getDoctors, getPatients, getRecipes, addDoctor, updateDoctor, deleteDoctor, Doctor, Patient, Recipe, RecipeStatus } from '@/lib/data';
+import { getDoctors, getPatients, getRecipes, addDoctor, updateDoctor, deleteDoctor } from '@/lib/data';
+import type { Doctor, Patient, Recipe } from '@/lib/types';
+import { RecipeStatus } from '@/lib/types';
 import { PlusCircle, Search, Phone, Mail, Pencil, Trash2, Users, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 

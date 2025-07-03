@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
@@ -5,7 +6,9 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { getPatients, deletePatient, Patient, ProactivePatientStatus, PatientActionNeeded } from '@/lib/data';
+import { getPatients, deletePatient } from '@/lib/data';
+import type { Patient } from '@/lib/types';
+import { ProactivePatientStatus, PatientActionNeeded } from '@/lib/types';
 import { runProactiveAnalysisForAllPatients } from '@/lib/actions';
 import { PlusCircle, Search, User, Heart, AlertTriangle, Pencil, Trash2, FileText, Repeat, Truck, CheckCircle2, Loader2, Wand2 } from 'lucide-react';
 import { cn } from '@/lib/utils';

@@ -6,10 +6,9 @@ import {
   getRecipes,
   getExternalPharmacies,
   registerPaymentForPharmacy,
-  Recipe,
-  ExternalPharmacy,
-  RecipeStatus
 } from '@/lib/data';
+import type { Recipe, ExternalPharmacy } from '@/lib/types';
+import { RecipeStatus } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import {
   Card,

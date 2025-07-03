@@ -12,10 +12,12 @@ import {
   getRecipes,
   getExternalPharmacies,
   addPharmacovigilanceReport,
+} from '@/lib/data';
+import type {
   Patient,
   Recipe,
   ExternalPharmacy,
-} from '@/lib/data';
+} from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';

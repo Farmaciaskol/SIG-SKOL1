@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
@@ -10,7 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { getExternalPharmacies, addExternalPharmacy, getRecipes, ExternalPharmacy, Recipe, RecipeStatus, updateExternalPharmacy, deleteExternalPharmacy } from '@/lib/data';
+import { getExternalPharmacies, addExternalPharmacy, getRecipes, updateExternalPharmacy, deleteExternalPharmacy } from '@/lib/data';
+import type { ExternalPharmacy, Recipe } from '@/lib/types';
+import { RecipeStatus } from '@/lib/types';
 import { PlusCircle, Search, Phone, Mail, Pencil, Trash2, Warehouse, Loader2, FileText, Banknote, Building2, User } from 'lucide-react';
 import Link from 'next/link';
 
