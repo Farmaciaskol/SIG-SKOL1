@@ -10,6 +10,20 @@ import { useSearchParams } from 'next/navigation';
 export default function NewRecipePage() {
   const searchParams = useSearchParams();
   const copyFromId = searchParams.get('copyFrom') ?? undefined;
+  const patientId = searchParams.get('patientId') ?? undefined;
+
+  const title = patientId
+    ? 'Nueva Receta para Paciente'
+    : copyFromId
+    ? 'Copiar Receta'
+    : 'Crear Nueva Receta';
+
+  const description = patientId
+    ? 'El paciente y su médico asociado han sido pre-seleccionados.'
+    : copyFromId
+    ? 'Ajusta los detalles y guarda la nueva copia de la receta.'
+    : 'Rellena los detalles para registrar una nueva receta magistral.';
+
 
   return (
     <div className="space-y-4">
@@ -21,15 +35,15 @@ export default function NewRecipePage() {
         </Button>
         <div>
           <h1 className="text-3xl font-bold tracking-tight font-headline">
-            {copyFromId ? 'Copiar Receta' : 'Crear Nueva Receta'}
+            {title}
           </h1>
           <p className="text-sm text-muted-foreground">
-            {copyFromId ? 'Ajusta los detalles y guarda la nueva copia de la receta.' : 'Rellena los detalles para registrar una nueva receta magistral.'}
+            {description}
           </p>
         </div>
       </div>
       
-      <RecipeForm copyFromId={copyFromId}/>
+      <RecipeForm copyFromId={copyFromId} patientId={patientId} />
     </div>
   );
 }

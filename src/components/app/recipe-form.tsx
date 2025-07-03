@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, React } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -118,6 +118,7 @@ type RecipeFormValues = z.infer<typeof recipeFormSchema>;
 interface RecipeFormProps {
     recipeId?: string;
     copyFromId?: string;
+    patientId?: string;
 }
 
 const defaultItem = {
@@ -138,7 +139,7 @@ const defaultItem = {
   sourceInventoryItemId: '',
 };
 
-export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
+export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -264,6 +265,21 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
                  toast({ title: 'Error', description: 'No se encontró la receta.', variant: 'destructive' });
                  router.push('/recipes');
             }
+        } else if (patientId) {
+            const preselectedPatient = patientsData.find(p => p.id === patientId);
+            if (preselectedPatient) {
+                form.setValue('patientId', preselectedPatient.id);
+                form.setValue('patientSelectionType', 'existing');
+
+                // Pre-fill doctor if there's an associated one
+                if (preselectedPatient.associatedDoctorIds && preselectedPatient.associatedDoctorIds.length > 0) {
+                    const mainDoctorId = preselectedPatient.associatedDoctorIds[0];
+                    if (doctorsData.some(d => d.id === mainDoctorId)) {
+                        form.setValue('doctorId', mainDoctorId);
+                        form.setValue('doctorSelectionType', 'existing');
+                    }
+                }
+            }
         }
       } catch (error) {
         console.error("Failed to fetch data:", error);
@@ -273,7 +289,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
       }
     };
     fetchData();
-  }, [recipeId, copyFromId, toast, router, form, loadFormData]);
+  }, [recipeId, copyFromId, patientId, toast, router, form, loadFormData]);
 
   const watchedItems = form.watch('items');
   const patientSelectionType = form.watch('patientSelectionType');
@@ -281,7 +297,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
   const selectedPharmacyId = form.watch('externalPharmacyId');
   const supplySource = form.watch('supplySource');
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (selectedPharmacyId) {
         const selectedPharmacy = externalPharmacies.find(p => p.id === selectedPharmacyId);
         if (selectedPharmacy && selectedPharmacy.transportCost) {
@@ -290,7 +306,7 @@ export function RecipeForm({ recipeId, copyFromId }: RecipeFormProps) {
     }
   }, [selectedPharmacyId, externalPharmacies, form]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const calculateTotals = () => {
       watchedItems.forEach((item, index) => {
         const { dosageValue, frequency, treatmentDurationValue, treatmentDurationUnit } = item;
