@@ -4,8 +4,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { getPatient, getRecipes, getDoctors, getControlledSubstanceLogForPatient, getPharmacovigilanceReportsForPatient, updatePatient } from '@/lib/data';
-import type { Patient, Recipe, Doctor, ControlledSubstanceLogEntry, PharmacovigilanceReport } from '@/lib/types';
+import { getPatient, getRecipes, getDoctors, getControlledSubstanceLogForPatient, getPharmacovigilanceReportsForPatient, updatePatient, getInventory } from '@/lib/data';
+import type { Patient, Recipe, Doctor, ControlledSubstanceLogEntry, PharmacovigilanceReport, InventoryItem } from '@/lib/types';
 import { PharmacovigilanceReportStatus } from '@/lib/types';
 import { analyzePatientHistory, AnalyzePatientHistoryOutput } from '@/ai/flows/analyze-patient-history';
 import { useToast } from '@/hooks/use-toast';
@@ -22,6 +22,7 @@ import { PatientFormDialog } from '@/components/app/patient-form-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const StatCard = ({ title, value, icon: Icon }: { title: string; value: string | number; icon: React.ElementType }) => (
   <Card>
@@ -55,6 +56,7 @@ export default function PatientDetailPage() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [allDoctors, setAllDoctors] = useState<Doctor[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [controlledLogs, setControlledLogs] = useState<ControlledSubstanceLogEntry[]>([]);
   const [pharmaReports, setPharmaReports] = useState<PharmacovigilanceReport[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,22 +74,24 @@ export default function PatientDetailPage() {
   const [isCommercialMedsModalOpen, setIsCommercialMedsModalOpen] = useState(false);
   const [isSavingMeds, setIsSavingMeds] = useState(false);
   const [currentMeds, setCurrentMeds] = useState<string[]>([]);
-  const [newMed, setNewMed] = useState('');
+  const [medToAdd, setMedToAdd] = useState('');
 
 
   const fetchData = useCallback(async () => {
     if (!id) return;
     setLoading(true);
     try {
-      const [patientData, allRecipes, allDoctorsData, controlledLogsData, pharmaReportsData] = await Promise.all([
+      const [patientData, allRecipes, allDoctorsData, controlledLogsData, pharmaReportsData, inventoryData] = await Promise.all([
         getPatient(id),
         getRecipes(),
         getDoctors(),
         getControlledSubstanceLogForPatient(id),
         getPharmacovigilanceReportsForPatient(id),
+        getInventory(),
       ]);
       
       setAllDoctors(allDoctorsData);
+      setInventory(inventoryData);
 
       if (patientData) {
         setPatient(patientData);
@@ -180,14 +184,14 @@ export default function PatientDetailPage() {
   
   const handleOpenCommercialMedsModal = () => {
     setCurrentMeds(patient?.commercialMedications || []);
-    setNewMed('');
+    setMedToAdd('');
     setIsCommercialMedsModalOpen(true);
   };
 
   const handleAddMed = () => {
-    if (newMed.trim() && !currentMeds.some(m => m.toLowerCase() === newMed.trim().toLowerCase())) {
-        setCurrentMeds([...currentMeds, newMed.trim()]);
-        setNewMed('');
+    if (medToAdd && !currentMeds.some(m => m.toLowerCase() === medToAdd.toLowerCase())) {
+        setCurrentMeds([...currentMeds, medToAdd]);
+        setMedToAdd('');
     }
   };
 
@@ -209,6 +213,12 @@ export default function PatientDetailPage() {
       setIsSavingMeds(false);
     }
   };
+
+  const availableInventoryMeds = useMemo(() => {
+    if (!inventory || !currentMeds) return [];
+    const currentMedsLower = currentMeds.map(m => m.toLowerCase());
+    return inventory.filter(item => !currentMedsLower.includes(item.name.toLowerCase()));
+  }, [inventory, currentMeds]);
 
 
   if (loading) {
@@ -520,23 +530,28 @@ export default function PatientDetailPage() {
             <DialogHeader>
             <DialogTitle>Editar Medicamentos Comerciales</DialogTitle>
             <DialogDescription>
-                Añada o elimine los medicamentos comerciales que el paciente está tomando.
+                Añada o elimine los medicamentos que el paciente está tomando, seleccionándolos desde el inventario.
             </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
                 <div className="flex items-center gap-2">
-                    <Input 
-                    value={newMed}
-                    onChange={(e) => setNewMed(e.target.value)}
-                    placeholder="Ej: Losartan 50mg"
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleAddMed();
-                        }
-                    }}
-                    />
-                    <Button onClick={handleAddMed} type="button">Añadir</Button>
+                    <Select value={medToAdd} onValueChange={setMedToAdd}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar medicamento del inventario..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableInventoryMeds.length > 0 ? (
+                          availableInventoryMeds.map(item => (
+                            <SelectItem key={item.id} value={item.name}>
+                              {item.name} ({item.quantity} {item.unit})
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <div className="p-2 text-sm text-muted-foreground text-center">No hay más medicamentos para añadir.</div>
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <Button onClick={handleAddMed} type="button" disabled={!medToAdd}>Añadir</Button>
                 </div>
                 <div className="space-y-2 max-h-60 overflow-y-auto p-2 border rounded-md">
                     {currentMeds.length > 0 ? currentMeds.map((med, index) => (
