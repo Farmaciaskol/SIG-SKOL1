@@ -125,7 +125,10 @@ import { Separator } from '@/components/ui/separator';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
 
-const StatCard = ({ title, value, icon: Icon, onClick, active = false }: { title: string, value: string | number, icon: React.ElementType, onClick: () => void, active?: boolean }) => (
+
+// --- HELPER COMPONENTS (defined outside the main component for clarity and performance) ---
+
+const StatCard = ({ title, value, icon: Icon, onClick, active = false }: { title: string; value: string | number; icon: React.ElementType; onClick: () => void; active?: boolean }) => (
   <Card className={cn("hover:shadow-md transition-shadow cursor-pointer", active && "ring-2 ring-primary")} onClick={onClick}>
     <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 pb-2">
       <CardTitle className="text-sm font-medium">{title}</CardTitle>
@@ -169,17 +172,95 @@ const calculateTotalCycles = (recipe: Recipe): number => {
       if (cycleDurationInDays <= 0) return 1;
   
       const estimatedCyclesByDate = Math.floor(prescriptionLifespanInDays / cycleDurationInDays);
-      
-      // The number of cycles cannot be less than 1 if the prescription is valid
       const finalEstimatedCycles = Math.max(1, estimatedCyclesByDate);
-      
       return Math.min(finalEstimatedCycles, MAX_REPREPARATIONS + 1);
     } catch (e) {
       console.error("Error calculating total cycles for recipe", recipe.id, e);
-      // Fallback in case of parsing errors
       return MAX_REPREPARATIONS + 1;
     }
 };
+
+const SendToPharmacyDialog = ({ recipe, pharmacy, patients, isOpen, onClose, onConfirm, isSubmitting }: { 
+    recipe: Recipe | null; 
+    pharmacy: ExternalPharmacy | undefined; 
+    patients: Patient[]; 
+    isOpen: boolean; 
+    onClose: () => void;
+    onConfirm: () => void;
+    isSubmitting: boolean;
+}) => {
+    const { toast } = useToast();
+
+    const descriptiveFilename = useMemo(() => {
+        if (!recipe) return 'receta.jpg';
+        const sanitize = (str: string) => str.replace(/ /g, '_').replace(/[^\w-.]/g, '');
+        const patientName = sanitize(patients.find(p => p.id === recipe.patientId)?.name || 'paciente');
+        const activeIngredient = sanitize(recipe.items[0]?.principalActiveIngredient || 'preparado');
+        const url = recipe.prescriptionImageUrl || '';
+        const extensionMatch = url.match(/\.(jpg|jpeg|png|pdf|webp)/i);
+        const extension = extensionMatch ? extensionMatch[1] : 'jpg';
+        return `${patientName}_${activeIngredient}.${extension}`;
+    }, [recipe, patients]);
+
+    const emailBody = useMemo(() => {
+        if (!recipe || !pharmacy) return '';
+        const patient = patients.find(p => p.id === recipe.patientId);
+        const item = recipe.items[0];
+        const safetyStockLine = item.safetyStockDays && item.safetyStockDays > 0 ? `\n- Incluye dosis de seguridad para ${item.safetyStockDays} día(s) adicional(es).` : '';
+        return `Estimados ${pharmacy.name},\n\nSolicitamos la preparación del siguiente preparado magistral:\n\n- Paciente: ${patient?.name || 'N/A'}\n- Receta ID: ${recipe.id}\n- Preparado: ${item.principalActiveIngredient} ${item.concentrationValue}${item.concentrationUnit}\n- Posología: ${item.usageInstructions}\n- Cantidad a preparar: ${item.totalQuantityValue} ${item.totalQuantityUnit}${safetyStockLine}\n\nPor favor, encontrar la receta adjunta.\n\nSaludos cordiales,\nEquipo Farmacia Skol`;
+    }, [recipe, pharmacy, patients]);
+
+    const copyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text);
+        toast({ title: "Copiado", description: "El texto se ha copiado al portapapeles." });
+    };
+
+    if (!recipe || !pharmacy) return null;
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Generar Correo para Recetario</DialogTitle>
+                    <DialogDescription>Copie esta información y envíela por correo a <span className="font-semibold text-primary">{pharmacy.email || 'la farmacia'}</span>.</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label>Asunto</Label>
+                        <div className="flex items-center gap-2">
+                            <Input readOnly value={`Solicitud de Preparado Magistral - Receta ${recipe.id}`} />
+                            <Button variant="outline" size="icon" onClick={() => copyToClipboard(`Solicitud de Preparado Magistral - Receta ${recipe.id}`)}><ClipboardCopy /></Button>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Cuerpo del Correo</Label>
+                        <div className="relative">
+                            <Textarea readOnly value={emailBody} className="h-64" />
+                            <Button variant="outline" size="icon" className="absolute top-2 right-2" onClick={() => copyToClipboard(emailBody)}><ClipboardCopy /></Button>
+                        </div>
+                    </div>
+                    {recipe.prescriptionImageUrl && (
+                        <div className="space-y-2">
+                            <Label>Adjunto</Label>
+                            <Button variant="link" asChild className="p-0 h-auto justify-start">
+                                <a href={recipe.prescriptionImageUrl} target="_blank" rel="noopener noreferrer" download={descriptiveFilename}>Descargar Imagen de la Receta</a>
+                            </Button>
+                        </div>
+                    )}
+                </div>
+                <DialogFooter>
+                    <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+                    <Button onClick={onConfirm} disabled={isSubmitting}>
+                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Marcar como Enviado
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+// --- MAIN COMPONENT ---
 
 export const RecipesClient = ({
   initialRecipes,
@@ -248,19 +329,10 @@ export const RecipesClient = ({
 
   useEffect(() => {
     setRecipes(initialRecipes);
-  }, [initialRecipes]);
-
-  useEffect(() => {
     setPatients(initialPatients);
-  }, [initialPatients]);
-
-  useEffect(() => {
     setDoctors(initialDoctors);
-  }, [initialDoctors]);
-
-  useEffect(() => {
     setExternalPharmacies(initialExternalPharmacies);
-  }, [initialExternalPharmacies]);
+  }, [initialRecipes, initialPatients, initialDoctors, initialExternalPharmacies]);
 
   const handleUpdateStatus = async (recipe: Recipe, newStatus: RecipeStatus, notes?: string) => {
     if (!user) {
@@ -269,7 +341,6 @@ export const RecipesClient = ({
     }
     setIsSubmitting(true);
     try {
-      // --- Connection to Controlled Drugs Module ---
       if (newStatus === RecipeStatus.Dispensed && recipe.isControlled) {
         const patient = patients.find(p => p.id === recipe.patientId);
         if (patient) {
@@ -481,12 +552,11 @@ export const RecipesClient = ({
       inPreparation: relevantRecipes.filter(r => r.status === RecipeStatus.Preparation || r.status === RecipeStatus.SentToExternal).length,
       readyForPickup: relevantRecipes.filter(r => r.status === RecipeStatus.ReadyForPickup || r.status === RecipeStatus.ReceivedAtSkol).length,
     }
-  }, [recipes, initialRecipes]);
+  }, [initialRecipes]);
 
   const filteredRecipes = useMemo(() => {
     return recipes
     .filter((recipe) => {
-      // Exclude portal recipes from this main view
       if (recipe.status === RecipeStatus.PendingReviewPortal) {
         return false;
       }
@@ -565,7 +635,6 @@ export const RecipesClient = ({
 
     return (
         <div className="flex items-center justify-end gap-1">
-            {/* --- STATE CHANGE ACTIONS --- */}
             {recipe.status === RecipeStatus.PendingValidation && (
                 <>
                     <TooltipProvider><Tooltip><TooltipTrigger asChild>
@@ -664,9 +733,9 @@ export const RecipesClient = ({
             </DropdownMenu>
         </div>
     );
-};
+  };
 
-  const MobileRecipeActions = ({ recipe, setRecipeToView }: { recipe: Recipe, setRecipeToView: (recipe: Recipe | null) => void }) => {
+  const MobileRecipeActions = ({ recipe }: { recipe: Recipe }) => {
     const totalCycles = calculateTotalCycles(recipe);
     const dispensedCount = recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0;
     const isExpired = recipe.dueDate ? new Date(recipe.dueDate) < new Date() : false;
@@ -682,7 +751,7 @@ export const RecipesClient = ({
     const ActionButton = () => {
       switch (recipe.status) {
         case RecipeStatus.PendingValidation:
-          return null; // Rendered separately below
+          return null;
         case RecipeStatus.Validated:
           return recipe.supplySource === 'Insumos de Skol' 
             ? <Button size="sm" asChild><Link href="/dispatch-management"><Truck className="mr-2 h-4 w-4" />Ir a Despacho</Link></Button>
@@ -768,90 +837,6 @@ export const RecipesClient = ({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-    );
-  }
-
-  const SendToPharmacyDialog = () => {
-    const pharmacy = getPharmacy(recipeToSend?.externalPharmacyId);
-
-    const descriptiveFilename = useMemo(() => {
-        if (!recipeToSend) return 'receta.jpg';
-    
-        const sanitize = (str: string) => str.replace(/ /g, '_').replace(/[^\w-.]/g, '');
-    
-        const patientName = sanitize(getPatientName(recipeToSend.patientId));
-        const activeIngredient = sanitize(recipeToSend.items[0]?.principalActiveIngredient || 'preparado');
-        
-        const url = recipeToSend.prescriptionImageUrl || '';
-        const extensionMatch = url.match(/\.(jpg|jpeg|png|pdf|webp)/i);
-        const extension = extensionMatch ? extensionMatch[1] : 'jpg';
-    
-        return `${patientName}_${activeIngredient}.${extension}`;
-    }, [recipeToSend]);
-
-    const emailBody = useMemo(() => {
-        if (!recipeToSend || !pharmacy) return '';
-        const patient = patients.find(p => p.id === recipeToSend.patientId);
-        const item = recipeToSend.items[0];
-
-        const safetyStockLine = item.safetyStockDays && item.safetyStockDays > 0
-            ? `\n- Incluye dosis de seguridad para ${item.safetyStockDays} día(s) adicional(es).`
-            : '';
-        
-        return `Estimados ${pharmacy.name},\n\nSolicitamos la preparación del siguiente preparado magistral:\n\n- Paciente: ${patient?.name || 'N/A'}\n- Receta ID: ${recipeToSend.id}\n- Preparado: ${item.principalActiveIngredient} ${item.concentrationValue}${item.concentrationUnit}\n- Posología: ${item.usageInstructions}\n- Cantidad a preparar: ${item.totalQuantityValue} ${item.totalQuantityUnit}${safetyStockLine}\n\nPor favor, encontrar la receta adjunta.\n\nSaludos cordiales,\nEquipo Farmacia Skol`;
-    }, [recipeToSend, pharmacy, patients]);
-
-    const copyToClipboard = (text: string) => {
-        navigator.clipboard.writeText(text);
-        toast({ title: "Copiado", description: "El texto se ha copiado al portapapeles." });
-    };
-
-    if (!recipeToSend || !pharmacy) return null;
-
-    return (
-        <Dialog open={!!recipeToSend} onOpenChange={() => setRecipeToSend(null)}>
-            <DialogContent className="sm:max-w-2xl">
-                <DialogHeader>
-                    <DialogTitle>Generar Correo para Recetario</DialogTitle>
-                    <DialogDescription>
-                        Copie esta información y envíela por correo a <span className="font-semibold text-primary">{pharmacy.email || 'la farmacia'}</span>.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                        <Label>Asunto</Label>
-                        <div className="flex items-center gap-2">
-                            <Input readOnly value={`Solicitud de Preparado Magistral - Receta ${recipeToSend.id}`} />
-                            <Button variant="outline" size="icon" onClick={() => copyToClipboard(`Solicitud de Preparado Magistral - Receta ${recipeToSend.id}`)}><ClipboardCopy /></Button>
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Cuerpo del Correo</Label>
-                        <div className="relative">
-                            <Textarea readOnly value={emailBody} className="h-64" />
-                            <Button variant="outline" size="icon" className="absolute top-2 right-2" onClick={() => copyToClipboard(emailBody)}><ClipboardCopy /></Button>
-                        </div>
-                    </div>
-                    {recipeToSend.prescriptionImageUrl && (
-                        <div className="space-y-2">
-                            <Label>Adjunto</Label>
-                            <Button variant="link" asChild className="p-0 h-auto justify-start">
-                                <a href={recipeToSend.prescriptionImageUrl} target="_blank" rel="noopener noreferrer" download={descriptiveFilename}>
-                                    Descargar Imagen de la Receta
-                                </a>
-                            </Button>
-                        </div>
-                    )}
-                </div>
-                <DialogFooter>
-                    <Button variant="ghost" onClick={() => setRecipeToSend(null)}>Cancelar</Button>
-                    <Button onClick={handleConfirmSend} disabled={isSubmitting}>
-                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Marcar como Enviado
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
     );
   }
 
@@ -988,7 +973,6 @@ export const RecipesClient = ({
         </Card>
       ) : (
         <>
-            {/* Desktop Table View */}
             <Card className="hidden w-full md:block mt-6">
                 <CardContent className="p-0">
                     <Table>
@@ -1034,9 +1018,7 @@ export const RecipesClient = ({
                                         </span>
                                         {recipe.items.length > 1 && <span className="text-xs font-bold text-muted-foreground mt-1">+ {recipe.items.length - 1} más</span>}
                                         </div>
-                                    ) : (
-                                        'N/A'
-                                    )}
+                                    ) : ( 'N/A' )}
                                 </TableCell>
                                 <TableCell>{format(new Date(recipe.createdAt), "d 'de' MMMM, yyyy", { locale: es })}</TableCell>
                                 <TableCell>
@@ -1046,52 +1028,28 @@ export const RecipesClient = ({
                                         {statusConfig[recipe.status]?.text || recipe.status}
                                     </Badge>
                                     {showCycleCount && (
-                                        <TooltipProvider>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Badge variant="secondary" className="font-mono">{`${currentCycle}/${totalCycles}`}</Badge>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    <p>Ciclos de preparación (Estimado)</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </TooltipProvider>
+                                        <TooltipProvider><Tooltip>
+                                            <TooltipTrigger asChild><Badge variant="secondary" className="font-mono">{`${currentCycle}/${totalCycles}`}</Badge></TooltipTrigger>
+                                            <TooltipContent><p>Ciclos de preparación (Estimado)</p></TooltipContent>
+                                        </Tooltip></TooltipProvider>
                                     )}
                                     {isPaymentPending && (
-                                        <TooltipProvider>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <span><DollarSign className="h-5 w-5 text-amber-500" /></span>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    <p>Pago pendiente para esta receta.</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </TooltipProvider>
+                                        <TooltipProvider><Tooltip>
+                                            <TooltipTrigger asChild><span><DollarSign className="h-5 w-5 text-amber-500" /></span></TooltipTrigger>
+                                            <TooltipContent><p>Pago pendiente para esta receta.</p></TooltipContent>
+                                        </Tooltip></TooltipProvider>
                                     )}
                                     {recipe.status === RecipeStatus.PendingReviewPortal && (
-                                        <TooltipProvider>
-                                            <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <span><UserSquare className="h-5 w-5 text-purple-500" /></span>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                                <p>Receta subida desde el Portal de Pacientes</p>
-                                            </TooltipContent>
-                                            </Tooltip>
-                                        </TooltipProvider>
+                                        <TooltipProvider><Tooltip>
+                                            <TooltipTrigger asChild><span><UserSquare className="h-5 w-5 text-purple-500" /></span></TooltipTrigger>
+                                            <TooltipContent><p>Receta subida desde el Portal de Pacientes</p></TooltipContent>
+                                        </Tooltip></TooltipProvider>
                                     )}
                                     {recipe.items.some(item => item.requiresFractionation) && (
-                                        <TooltipProvider>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                            <span><Split className="h-5 w-5 text-orange-500" /></span>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                            <p>Requiere Fraccionamiento</p>
-                                            </TooltipContent>
-                                        </Tooltip>
-                                        </TooltipProvider>
+                                        <TooltipProvider><Tooltip>
+                                            <TooltipTrigger asChild><span><Split className="h-5 w-5 text-orange-500" /></span></TooltipTrigger>
+                                            <TooltipContent><p>Requiere Fraccionamiento</p></TooltipContent>
+                                        </Tooltip></TooltipProvider>
                                     )}
                                     </div>
                                 </TableCell>
@@ -1103,34 +1061,15 @@ export const RecipesClient = ({
                     </Table>
                 </CardContent>
                  <CardFooter className="flex items-center justify-between px-4 py-2 border-t">
-                    <div className="text-xs text-muted-foreground">
-                        {selectedRecipes.length} de {paginatedRecipes.length} fila(s) seleccionadas.
-                    </div>
+                    <div className="text-xs text-muted-foreground">{selectedRecipes.length} de {paginatedRecipes.length} fila(s) seleccionadas.</div>
                     <div className="flex items-center space-x-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                            disabled={currentPage === 1}
-                        >
-                            Anterior
-                        </Button>
-                        <span className="text-sm">
-                            Página {currentPage} de {totalPages}
-                        </span>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                            disabled={currentPage === totalPages}
-                        >
-                            Siguiente
-                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1}>Anterior</Button>
+                        <span className="text-sm">Página {currentPage} de {totalPages}</span>
+                        <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages}>Siguiente</Button>
                     </div>
                 </CardFooter>
             </Card>
 
-            {/* Mobile Card View */}
             <div className="grid grid-cols-1 gap-4 md:hidden mt-6">
                 {paginatedRecipes.map((recipe) => {
                     const isPaymentPending = recipe.paymentStatus === 'Pendiente' && (recipe.status === RecipeStatus.ReceivedAtSkol || recipe.status === RecipeStatus.ReadyForPickup || recipe.status === RecipeStatus.Dispensed);
@@ -1149,94 +1088,48 @@ export const RecipesClient = ({
                                         <Link href={`/patients/${recipe.patientId}`} className="hover:underline">{getPatientName(recipe.patientId)}</Link>
                                     </CardTitle>
                                     <div className="flex flex-col items-start gap-1 mt-1">
-                                        <CardDescription className="text-xs">
-                                            Receta <Link href={`/recipes/${recipe.id}`} className="font-mono text-primary hover:underline">{recipe.id}</Link>
-                                        </CardDescription>
+                                        <CardDescription className="text-xs">Receta <Link href={`/recipes/${recipe.id}`} className="font-mono text-primary hover:underline">{recipe.id}</Link></CardDescription>
                                         <div className="flex items-center gap-2">
-                                            <Badge variant="outline" className={cn("font-normal text-xs text-center whitespace-nowrap", statusConfig[recipe.status]?.badge)}>
-                                                {statusConfig[recipe.status]?.text || recipe.status}
-                                            </Badge>
-                                            {showCycleCount && (
-                                                <Badge variant="secondary" className="font-mono text-xs">{`${currentCycle}/${totalCycles}`}</Badge>
-                                            )}
+                                            <Badge variant="outline" className={cn("font-normal text-xs text-center whitespace-nowrap", statusConfig[recipe.status]?.badge)}>{statusConfig[recipe.status]?.text || recipe.status}</Badge>
+                                            {showCycleCount && (<Badge variant="secondary" className="font-mono text-xs">{`${currentCycle}/${totalCycles}`}</Badge>)}
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <div className="flex items-center gap-1 shrink-0">
-                                {isPaymentPending && (
-                                    <TooltipProvider><Tooltip><TooltipTrigger asChild>
-                                        <span><DollarSign className="h-4 w-4 text-amber-500" /></span>
-                                    </TooltipTrigger><TooltipContent><p>Pago pendiente</p></TooltipContent></TooltipProvider>
-                                )}
-                                {recipe.status === RecipeStatus.PendingReviewPortal && (
-                                    <TooltipProvider><Tooltip><TooltipTrigger asChild><span><UserSquare className="h-4 w-4 text-purple-500" /></span></TooltipTrigger><TooltipContent><p>Receta del Portal</p></TooltipContent></TooltipProvider>
-                                )}
-                                {recipe.items.some(item => item.requiresFractionation) && (
-                                    <TooltipProvider><Tooltip><TooltipTrigger asChild><span><Split className="h-4 w-4 text-orange-500" /></span></TooltipTrigger><TooltipContent><p>Requiere Fraccionamiento</p></TooltipContent></TooltipProvider>
-                                )}
+                                {isPaymentPending && (<TooltipProvider><Tooltip><TooltipTrigger asChild><span><DollarSign className="h-4 w-4 text-amber-500" /></span></TooltipTrigger><TooltipContent><p>Pago pendiente</p></TooltipContent></Tooltip></TooltipProvider>)}
+                                {recipe.status === RecipeStatus.PendingReviewPortal && (<TooltipProvider><Tooltip><TooltipTrigger asChild><span><UserSquare className="h-4 w-4 text-purple-500" /></span></TooltipTrigger><TooltipContent><p>Receta del Portal</p></TooltipContent></Tooltip></TooltipProvider>)}
+                                {recipe.items.some(item => item.requiresFractionation) && (<TooltipProvider><Tooltip><TooltipTrigger asChild><span><Split className="h-4 w-4 text-orange-500" /></span></TooltipTrigger><TooltipContent><p>Requiere Fraccionamiento</p></TooltipContent></Tooltip></TooltipProvider>)}
                             </div>
                         </div>
                     </CardHeader>
                     <CardContent className="px-4 pb-4 pt-0 space-y-2">
                         {recipe.items.length > 0 ? (
                         <div>
-                            <p className="font-semibold text-foreground flex items-center gap-2" title={`${recipe.items[0].principalActiveIngredient} ${recipe.items[0].concentrationValue}${recipe.items[0].concentrationUnit}`}>
-                            {recipe.items[0].principalActiveIngredient}{' '}
-                            {recipe.items[0].concentrationValue}{recipe.items[0].concentrationUnit}
-                            {recipe.items.some(i => i.isRefrigerated) && <Snowflake className="h-4 w-4 text-blue-500" />}
-                            </p>
-                            <p className="text-sm text-muted-foreground truncate" title={recipe.items[0].usageInstructions}>
-                            {recipe.items[0].usageInstructions}
-                            </p>
-                            {recipe.items.length > 1 && (
-                            <p className="text-xs font-bold text-muted-foreground mt-1">
-                                + {recipe.items.length - 1} más
-                            </p>
-                            )}
+                            <p className="font-semibold text-foreground flex items-center gap-2" title={`${recipe.items[0].principalActiveIngredient} ${recipe.items[0].concentrationValue}${recipe.items[0].concentrationUnit}`}>{recipe.items[0].principalActiveIngredient}{' '}{recipe.items[0].concentrationValue}{recipe.items[0].concentrationUnit}{recipe.items.some(i => i.isRefrigerated) && <Snowflake className="h-4 w-4 text-blue-500" />}</p>
+                            <p className="text-sm text-muted-foreground truncate" title={recipe.items[0].usageInstructions}>{recipe.items[0].usageInstructions}</p>
+                            {recipe.items.length > 1 && (<p className="text-xs font-bold text-muted-foreground mt-1">+ {recipe.items.length - 1} más</p>)}
                         </div>
-                        ) : (
-                        <p className="text-sm text-muted-foreground">Sin preparado</p>
-                        )}
-                        <p className="text-xs text-muted-foreground pt-1">
-                            Creada: {format(new Date(recipe.createdAt), "d MMM yyyy", { locale: es })}
-                        </p>
+                        ) : (<p className="text-sm text-muted-foreground">Sin preparado</p>)}
+                        <p className="text-xs text-muted-foreground pt-1">Creada: {format(new Date(recipe.createdAt), "d MMM yyyy", { locale: es })}</p>
                     </CardContent>
-                    <CardFooter className="p-3 bg-muted/50">
-                        <MobileRecipeActions recipe={recipe} setRecipeToView={setRecipeToView} />
-                    </CardFooter>
+                    <CardFooter className="p-3 bg-muted/50"><MobileRecipeActions recipe={recipe} /></CardFooter>
                     </Card>
                 )})}
             </div>
              <div className="flex items-center justify-between pt-4 md:hidden">
                 <p className="text-sm text-muted-foreground">{filteredRecipes.length} resultados</p>
                 <div className="flex items-center space-x-2">
-                  <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      disabled={currentPage === 1}
-                  >
-                      Anterior
-                  </Button>
-                  <span className="text-sm">
-                      {currentPage} / {totalPages}
-                  </span>
-                  <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                      disabled={currentPage === totalPages}
-                  >
-                      Siguiente
-                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1}>Anterior</Button>
+                  <span className="text-sm">{currentPage} / {totalPages}</span>
+                  <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages}>Siguiente</Button>
                 </div>
             </div>
         </>
       )}
 
-      {/* --- DIALOGS --- */}
-      <SendToPharmacyDialog />
+      {/* DIALOGS */}
+      <SendToPharmacyDialog recipe={recipeToSend} pharmacy={getPharmacy(recipeToSend?.externalPharmacyId)} patients={patients} isOpen={!!recipeToSend} onClose={() => setRecipeToSend(null)} onConfirm={handleConfirmSend} isSubmitting={isSubmitting} />
       <Dialog open={!!recipeToView} onOpenChange={(open) => !open && setRecipeToView(null)}>
         <DialogContent className="sm:max-w-2xl"><DialogHeader><DialogTitle className="text-xl font-semibold">Detalle Receta: {recipeToView?.id}</DialogTitle><DialogDescription>Información completa de la receta y su historial.</DialogDescription></DialogHeader>
             <div className="max-h-[70vh] overflow-y-auto p-1 pr-4"><div className="space-y-6">
@@ -1300,46 +1193,30 @@ export const RecipesClient = ({
                     <div className="flex items-start space-x-3">
                         <Checkbox id="chk-etiqueta" checked={receptionChecklist.etiqueta} onCheckedChange={(checked) => handleReceptionChecklistChange('etiqueta', !!checked)} />
                         <div className="grid gap-1.5 leading-none">
-                            <label htmlFor="chk-etiqueta" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                Etiqueta Correcta
-                            </label>
-                            <p className="text-sm text-muted-foreground">
-                                El nombre del paciente y principio activo coinciden.
-                            </p>
+                            <label htmlFor="chk-etiqueta" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Etiqueta Correcta</label>
+                            <p className="text-sm text-muted-foreground">El nombre del paciente y principio activo coinciden.</p>
                         </div>
                     </div>
                      <div className="flex items-start space-x-3">
                         <Checkbox id="chk-vencimiento" checked={receptionChecklist.vencimiento} onCheckedChange={(checked) => handleReceptionChecklistChange('vencimiento', !!checked)} />
                         <div className="grid gap-1.5 leading-none">
-                            <label htmlFor="chk-vencimiento" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                Vencimiento y Lote Asignados
-                            </label>
-                            <p className="text-sm text-muted-foreground">
-                                Se ha ingresado el lote interno y vencimiento del preparado.
-                            </p>
+                            <label htmlFor="chk-vencimiento" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Vencimiento y Lote Asignados</label>
+                            <p className="text-sm text-muted-foreground">Se ha ingresado el lote interno y vencimiento del preparado.</p>
                         </div>
                     </div>
                     <div className="flex items-start space-x-3">
                         <Checkbox id="chk-aspecto" checked={receptionChecklist.aspecto} onCheckedChange={(checked) => handleReceptionChecklistChange('aspecto', !!checked)} />
                         <div className="grid gap-1.5 leading-none">
-                            <label htmlFor="chk-aspecto" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                Aspecto y Envase Adecuados
-                            </label>
-                            <p className="text-sm text-muted-foreground">
-                                El preparado tiene la apariencia, color y envase esperados.
-                            </p>
+                            <label htmlFor="chk-aspecto" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Aspecto y Envase Adecuados</label>
+                            <p className="text-sm text-muted-foreground">El preparado tiene la apariencia, color y envase esperados.</p>
                         </div>
                     </div>
                     {recipeToReceive?.items.some(i => i.isRefrigerated) && (
                          <div className="flex items-start space-x-3 p-3 rounded-md bg-sky-50 border border-sky-200">
                             <Checkbox id="chk-frio" checked={receptionChecklist.cadenaFrio} onCheckedChange={(checked) => handleReceptionChecklistChange('cadenaFrio', !!checked)} />
                             <div className="grid gap-1.5 leading-none">
-                                <label htmlFor="chk-frio" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-sky-800">
-                                    Cadena de Frío Verificada
-                                </label>
-                                <p className="text-sm text-sky-700">
-                                    El preparado se recibió y mantuvo en condiciones de refrigeración.
-                                </p>
+                                <label htmlFor="chk-frio" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-sky-800">Cadena de Frío Verificada</label>
+                                <p className="text-sm text-sky-700">El preparado se recibió y mantuvo en condiciones de refrigeración.</p>
                             </div>
                         </div>
                     )}
@@ -1362,9 +1239,7 @@ export const RecipesClient = ({
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle>¿Archivar esta receta?</AlertDialogTitle>
-                <AlertDialogDescription>
-                    La receta <span className="font-bold font-mono text-foreground">{recipeToArchive?.id}</span> será archivada y no aparecerá en las vistas principales. Podrá encontrarla usando el filtro de estado "Archivada".
-                </AlertDialogDescription>
+                <AlertDialogDescription>La receta <span className="font-bold font-mono text-foreground">{recipeToArchive?.id}</span> será archivada y no aparecerá en las vistas principales. Podrá encontrarla usando el filtro de estado "Archivada".</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogCancel onClick={() => setRecipeToArchive(null)}>Cancelar</AlertDialogCancel>
@@ -1376,7 +1251,6 @@ export const RecipesClient = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Batch Action Bar */}
       {selectedRecipes.length > 0 && (
         <Card className="fixed bottom-4 left-1/2 -translate-x-1/2 w-auto max-w-lg z-50 shadow-2xl">
             <CardContent className="p-3 flex items-center justify-between gap-4">
