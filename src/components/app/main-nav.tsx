@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -311,9 +310,10 @@ export function MainNav({
             </SidebarMenu>
           </SidebarFooter>
         </Sidebar>
-        <main className="flex-1 w-full overflow-y-auto">
-          <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b bg-card">
-            <div className="flex items-center gap-4 pl-6">
+        
+        <div className="flex flex-1 flex-col">
+          <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between gap-4 border-b bg-card px-6">
+            <div className="flex items-center gap-4">
                 <SidebarTrigger className="md:hidden bg-primary text-primary-foreground hover:bg-primary/90" />
                 <Link href="/dashboard" className="md:hidden">
                     <div className="h-9 w-9 bg-primary rounded-md flex items-center justify-center p-1">
@@ -329,7 +329,7 @@ export function MainNav({
                 </Link>
             </div>
             
-            <div className="flex items-center gap-2 pr-6">
+            <div className="flex items-center gap-2">
                 <AlertsBell 
                   portalInboxCount={portalInboxCount} 
                   itemsToDispatchCount={itemsToDispatchCount} 
@@ -370,10 +370,10 @@ export function MainNav({
                 )}
             </div>
           </header>
-          <div className="w-full px-6 md:px-8 py-8">
+          <main className="flex-1 overflow-y-auto p-6 md:p-8">
             {props.children}
-          </div>
-        </main>
+          </main>
+        </div>
       </div>
     </SidebarProvider>
   );
