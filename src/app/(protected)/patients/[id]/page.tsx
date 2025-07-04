@@ -23,6 +23,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 const StatCard = ({ title, value, icon: Icon }: { title: string; value: string | number; icon: React.ElementType }) => (
   <Card>
@@ -122,6 +123,9 @@ export default function PatientDetailPage() {
   const activeTreatments = useMemo(() => {
     if (!patient) return [];
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Compare dates only
+
     const activeMagistralRecipes = recipes
         .filter(r => ![
             RecipeStatus.Dispensed,
@@ -129,18 +133,30 @@ export default function PatientDetailPage() {
             RecipeStatus.Rejected,
             RecipeStatus.Archived,
         ].includes(r.status))
-        .map(r => ({
-            type: 'magistral' as const,
-            name: r.items[0]?.principalActiveIngredient || 'Preparado Magistral',
-            details: `Receta #${r.id.substring(0, 6)}... - ${r.status}`,
-            id: r.id
-        }));
+        .map(r => {
+            let isExpired = false;
+            if (r.dueDate) {
+                const dueDate = parseISO(r.dueDate);
+                if (isValid(dueDate)) {
+                    dueDate.setHours(0, 0, 0, 0);
+                    isExpired = dueDate < today;
+                }
+            }
+            return {
+                type: 'magistral' as const,
+                name: r.items[0]?.principalActiveIngredient || 'Preparado Magistral',
+                details: `Receta #${r.id.substring(0, 6)}... - ${r.status}`,
+                id: r.id,
+                isExpired,
+            }
+        });
     
     const activeCommercialMeds = (patient.commercialMedications || []).map((med, index) => ({
         type: 'commercial' as const,
         name: med,
         details: 'Medicamento Comercial',
-        id: `comm-${index}`
+        id: `comm-${index}`,
+        isExpired: false,
     }));
 
     return [...activeMagistralRecipes, ...activeCommercialMeds];
@@ -349,10 +365,16 @@ export default function PatientDetailPage() {
                     {activeTreatments.length > 0 ? (
                         <ul className="space-y-3">
                             {activeTreatments.map((treatment) => (
-                                <li key={treatment.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                                <li key={treatment.id} className={cn("flex items-center justify-between p-3 bg-muted/50 rounded-lg", treatment.isExpired && "bg-red-50 border-l-4 border-red-400")}>
                                     <div>
-                                        <p className="font-semibold text-foreground">{treatment.name}</p>
+                                        <p className={cn("font-semibold text-foreground", treatment.isExpired && "text-red-800")}>{treatment.name}</p>
                                         <p className="text-xs text-muted-foreground">{treatment.details}</p>
+                                        {treatment.isExpired && (
+                                            <div className="flex items-center gap-1.5 mt-2 text-red-600">
+                                                <AlertTriangle className="h-4 w-4" />
+                                                <p className="text-sm font-semibold">Receta Vencida</p>
+                                            </div>
+                                        )}
                                     </div>
                                     {treatment.type === 'magistral' && (
                                         <Button variant="ghost" size="sm" asChild>
