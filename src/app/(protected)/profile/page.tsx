@@ -17,6 +17,13 @@ import { PREDEFINED_AVATARS, getAvatar } from '@/components/app/predefined-avata
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 
+const PlaceholderUserIcon = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <circle cx="12" cy="9" r="4" />
+    <path d="M12 14c-3.866 0-7 3.134-7 7v1h14v-1c0-3.866-3.134-7-7-7z" />
+  </svg>
+);
+
 export default function ProfilePage() {
   const [user, authLoading] = useAuthState(auth);
   const [appUser, setAppUser] = useState<User | null>(null);
@@ -92,7 +99,13 @@ export default function ProfilePage() {
     );
   }
   
-  const DisplayAvatar = getAvatar(appUser.avatar) || <AvatarFallback>{appUser.name.charAt(0)}</AvatarFallback>;
+  const DisplayAvatar = appUser.avatar
+    ? getAvatar(appUser.avatar)
+    : (
+        <AvatarFallback className="bg-primary text-primary-foreground">
+            <PlaceholderUserIcon className="h-12 w-12" />
+        </AvatarFallback>
+      );
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">

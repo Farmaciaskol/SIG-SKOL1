@@ -165,6 +165,12 @@ function AlertsBell({ portalInboxCount, itemsToDispatchCount, lowStockCount }: O
   );
 }
 
+const PlaceholderUserIcon = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <circle cx="12" cy="9" r="4" />
+    <path d="M12 14c-3.866 0-7 3.134-7 7v1h14v-1c0-3.866-3.134-7-7-7z" />
+  </svg>
+);
 
 export function MainNav({
   className,
@@ -215,7 +221,11 @@ export function MainNav({
 
   const DisplayAvatar = appUser?.avatar 
     ? getAvatar(appUser.avatar) 
-    : <AvatarFallback>{user?.displayName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase()}</AvatarFallback>;
+    : (
+      <AvatarFallback className="bg-primary text-primary-foreground">
+        <PlaceholderUserIcon className="h-5 w-5" />
+      </AvatarFallback>
+    );
 
 
   return (
