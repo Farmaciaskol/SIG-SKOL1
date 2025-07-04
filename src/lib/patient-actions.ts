@@ -3,8 +3,6 @@
 'use server';
 
 import {
-  getRecipesReadyForPickup,
-  getMessagesForPatient,
   getRecipes,
   getRecipe,
   updateRecipe
@@ -22,11 +20,9 @@ import { MAX_REPREPARATIONS } from './constants';
 // --- PATIENT PORTAL ACTIONS ---
 
 export async function getDashboardData(patientId: string) {
-    const [readyForPickup, allPatientRecipes, messages] = await Promise.all([
-        getRecipesReadyForPickup(patientId),
-        getRecipes(patientId),
-        getMessagesForPatient(patientId)
-    ]);
+    const allPatientRecipes = await getRecipes(patientId);
+    const readyForPickup = allPatientRecipes.filter(r => r.status === RecipeStatus.ReadyForPickup || r.status === RecipeStatus.ReceivedAtSkol);
+    const messages = await getMessagesForPatient(patientId);
     const activeMagistralRecipes = allPatientRecipes.filter(r => r.status !== 'Dispensada' && r.status !== 'Anulada' && r.status !== 'Rechazada' && r.status !== 'Archivada');
     return { readyForPickup, activeMagistralRecipes, messages };
 }

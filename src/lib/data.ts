@@ -88,7 +88,7 @@ export const getAllMessages = async (): Promise<PatientMessage[]> => {
 
 export const getRecipesReadyForPickup = async (patientId: string): Promise<Recipe[]> => {
     if (!db) return [];
-    const q = query(collection(db, 'recipes'), where('patientId', '==', patientId), where('status', '==', RecipeStatus.ReadyForPickup));
+    const q = query(collection(db, 'recipes'), where('patientId', '==', patientId), where('status', 'in', [RecipeStatus.ReadyForPickup, RecipeStatus.ReceivedAtSkol]));
     return fetchCollection<Recipe>('recipes', q);
 }
 
@@ -859,4 +859,3 @@ export const markMessagesAsRead = async (patientId: string): Promise<void> => {
     await batch.commit();
 };
     
-
