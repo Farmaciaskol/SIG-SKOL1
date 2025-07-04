@@ -657,8 +657,13 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
       router.push('/recipes');
       router.refresh();
     } catch (error) {
-      console.error('Failed to save recipe:', error);
-      toast({ title: 'Error al Guardar', description: `No se pudo guardar la receta. ${error instanceof Error ? error.message : 'Por favor, intente de nuevo.'}`, variant: 'destructive' });
+        const errorMessage = error instanceof Error ? error.message : 'Por favor, intente de nuevo.';
+        toast({ 
+            title: 'Error al Guardar', 
+            description: `No se pudo guardar la receta. ${errorMessage}`, 
+            variant: 'destructive',
+            duration: 9000,
+        });
     }
   };
 
@@ -708,11 +713,17 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
                             alt="Vista previa de receta" 
                             fill
                             className={cn(
-                              "object-contain transition-transform duration-300 ease-in-out cursor-pointer",
-                              isZoomed ? "scale-125" : "scale-100"
+                              "object-contain transition-transform duration-300 ease-in-out",
                             )}
-                            onClick={() => setIsZoomed(!isZoomed)}
                           />
+                           <div className="absolute top-2 right-2 flex flex-col gap-2">
+                            <Button type="button" variant="secondary" size="icon" className="h-8 w-8 bg-black/50 hover:bg-black/70 text-white rounded-full" onClick={()=> setIsZoomed(true)}>
+                                <ZoomIn className="h-4 w-4" />
+                            </Button>
+                            <Button type="button" variant="secondary" size="icon" className="h-8 w-8 bg-black/50 hover:bg-black/70 text-white rounded-full" onClick={() => { setPreviewImage(null); setImageFile(null); if(fileInputRef.current) fileInputRef.current.value = ""; }}>
+                                <XIcon className="h-4 w-4" />
+                            </Button>
+                           </div>
                       </>
                     ) : (
                       <div onClick={() => fileInputRef.current?.click()} className="text-center cursor-pointer p-4">
@@ -732,9 +743,6 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
                     </Button>
                 </CardFooter>
               </Card>
-               <Button type="button" onClick={()=> setIsZoomed(true)} variant="outline" size="sm" className="w-full">
-                <ZoomIn className="mr-2 h-4 w-4" /> Ampliar
-              </Button>
           </div>
 
           {/* Right Column (Form Fields) */}
