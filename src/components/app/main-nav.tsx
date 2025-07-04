@@ -66,7 +66,6 @@ const menuGroups = [
       items: [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { href: '/portal-inbox', label: 'Bandeja Portal', icon: Inbox },
-        { href: '/messaging', label: 'Mensajería', icon: MessageSquare },
         { href: '/recipes', label: 'Recetas', icon: FileText },
       ],
     },
@@ -111,8 +110,8 @@ interface MainNavProps extends React.HTMLAttributes<HTMLElement> {
   unreadMessagesCount: number;
 }
 
-function AlertsBell({ portalInboxCount, itemsToDispatchCount, lowStockCount, unreadMessagesCount }: Omit<MainNavProps, keyof React.HTMLAttributes<HTMLElement>>) {
-  const totalAlerts = portalInboxCount + itemsToDispatchCount + lowStockCount + unreadMessagesCount;
+function AlertsBell({ portalInboxCount, itemsToDispatchCount, lowStockCount }: Omit<MainNavProps, keyof React.HTMLAttributes<HTMLElement> | 'unreadMessagesCount'>) {
+  const totalAlerts = portalInboxCount + itemsToDispatchCount + lowStockCount;
 
   return (
     <DropdownMenu>
@@ -132,14 +131,6 @@ function AlertsBell({ portalInboxCount, itemsToDispatchCount, lowStockCount, unr
         <DropdownMenuSeparator />
         {totalAlerts > 0 ? (
           <>
-             {unreadMessagesCount > 0 && (
-              <DropdownMenuItem asChild>
-                <Link href="/messaging" className="flex justify-between items-center cursor-pointer">
-                  <span>Mensajes de Pacientes Nuevos</span>
-                  <Badge>{unreadMessagesCount}</Badge>
-                </Link>
-              </DropdownMenuItem>
-            )}
             {portalInboxCount > 0 && (
               <DropdownMenuItem asChild>
                 <Link href="/portal-inbox" className="flex justify-between items-center cursor-pointer">
@@ -263,11 +254,21 @@ export function MainNav({
           
           {/* Header Right Side */}
           <div className="flex items-center gap-2">
+            <Button asChild variant="ghost" size="icon" className="relative h-9 w-9">
+              <Link href="/messaging">
+                <MessageSquare className="h-5 w-5" />
+                {unreadMessagesCount > 0 && (
+                  <Badge variant="destructive" className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full p-0">
+                    {unreadMessagesCount}
+                  </Badge>
+                )}
+                <span className="sr-only">Mensajería</span>
+              </Link>
+            </Button>
             <AlertsBell 
               portalInboxCount={portalInboxCount} 
               itemsToDispatchCount={itemsToDispatchCount} 
               lowStockCount={lowStockCount} 
-              unreadMessagesCount={unreadMessagesCount}
             />
             {user && (
               <DropdownMenu>
@@ -356,9 +357,6 @@ export function MainNav({
                                   <item.icon className="h-4 w-4" />
                                   <span>{item.label}</span>
                                 </div>
-                                {item.href === '/messaging' && unreadMessagesCount > 0 && (
-                                  <Badge className="h-5">{unreadMessagesCount}</Badge>
-                                )}
                                 {item.href === '/portal-inbox' && portalInboxCount > 0 && (
                                   <Badge className="h-5">{portalInboxCount}</Badge>
                                 )}
