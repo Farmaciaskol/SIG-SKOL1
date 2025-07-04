@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import Link from 'next/link';
@@ -308,7 +306,7 @@ export function MainNav({
                 <SidebarTrigger className="md:hidden bg-primary text-primary-foreground hover:bg-primary/90" />
                 <div className="md:hidden">
                     <Image
-                        src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/FARMACIA_SK.jpg?alt=media&token=42d10668-3e42-498c-84bc-2a07c645e998"
+                        src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/AISelect_20250704_014426_Drive.jpg?alt=media&token=a1b2c3d4-e5f6-7890-1234-567890abcdef"
                         alt="Skol Pharmacy Logo"
                         width={40}
                         height={40}
