@@ -89,7 +89,6 @@ const menuGroups = [
         { href: '/reports', label: 'Reportes', icon: BarChart2 },
         { href: '/user-management', label: 'Gestión Usuarios', icon: UserCog },
         { href: '/settings', label: 'Configuración', icon: Settings },
-        { href: '/prueba', label: 'Página de Pruebas', icon: Wand2 },
       ],
     },
 ];
