@@ -304,16 +304,18 @@ export function MainNav({
           <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b bg-background px-6">
             <div className="flex items-center gap-4">
                 <SidebarTrigger className="md:hidden bg-primary text-primary-foreground hover:bg-primary/90" />
-                <div className="md:hidden h-9 w-9 bg-primary rounded-md flex items-center justify-center p-1">
-                    <Image
-                        src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20BLANCO.png?alt=media&token=abcdef12-3456-7890-abcd-ef1234567890"
-                        alt="Skol Pharmacy Logo"
-                        width={28}
-                        height={28}
-                        className="object-contain"
-                        priority
-                    />
-                </div>
+                <Link href="/dashboard" className="md:hidden">
+                    <div className="h-9 w-9 bg-primary rounded-md flex items-center justify-center p-1">
+                        <Image
+                            src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20BLANCO.png?alt=media&token=abcdef12-3456-7890-abcd-ef1234567890"
+                            alt="Skol Pharmacy Logo"
+                            width={28}
+                            height={28}
+                            className="object-contain"
+                            priority
+                        />
+                    </div>
+                </Link>
             </div>
             
             <div className="flex items-center gap-2">
