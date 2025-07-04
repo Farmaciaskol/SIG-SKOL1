@@ -377,7 +377,7 @@ const SendBatchDialog = ({ recipes: recipesToSend, isOpen, onClose, onConfirm, i
                                         <div className="space-y-1">
                                             <Label>Contenido del Correo</Label>
                                             <div className="p-4 border rounded-md bg-muted/30 space-y-4">
-                                                <p className="text-sm">Estimados {pharmacyName},</p>
+                                                <p className="text-sm">Estimados ${pharmacyName},</p>
                                                 <p className="text-sm">Solicitamos la preparación de las siguientes recetas:</p>
                                                 
                                                 <div className="border rounded-md overflow-hidden bg-background">
@@ -1104,7 +1104,7 @@ export const RecipesClient = ({
     <>
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground tracking-tight font-headline">Gestión de Recetas</h1>
+          <h1 className="text-3xl font-bold text-primary tracking-tight font-headline">Gestión de Recetas</h1>
           <p className="text-sm text-muted-foreground">
             Visualiza, filtra y gestiona todas las recetas del sistema.
           </p>
