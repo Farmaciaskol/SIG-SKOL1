@@ -304,9 +304,9 @@ export function MainNav({
           <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b bg-background px-6">
             <div className="flex items-center gap-4">
                 <SidebarTrigger className="md:hidden bg-primary text-primary-foreground hover:bg-primary/90" />
-                <div className="md:hidden h-9 w-9 bg-card rounded-md flex items-center justify-center p-1">
+                <div className="md:hidden h-9 w-9 bg-primary rounded-md flex items-center justify-center p-1">
                     <Image
-                        src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/AISelect_20250704_014426_Drive.jpg?alt=media&token=a1b2c3d4-e5f6-7890-1234-567890abcdef"
+                        src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20BLANCO.png?alt=media&token=abcdef12-3456-7890-abcd-ef1234567890"
                         alt="Skol Pharmacy Logo"
                         width={28}
                         height={28}
