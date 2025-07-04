@@ -125,7 +125,7 @@ import { Separator } from '@/components/ui/separator';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
 
-const StatCard = ({ title, value, icon: Icon, onClick, active = false }: { title: string; value: string | number; icon: React.ElementType, onClick: () => void, active?: boolean }) => (
+const StatCard = ({ title, value, icon: Icon, onClick, active = false }: { title: string, value: string | number, icon: React.ElementType, onClick: () => void, active?: boolean }) => (
   <Card className={cn("hover:shadow-md transition-shadow cursor-pointer", active && "ring-2 ring-primary")} onClick={onClick}>
     <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 pb-2">
       <CardTitle className="text-sm font-medium">{title}</CardTitle>
@@ -1019,7 +1019,7 @@ Equipo Farmacia Skol`;
                         <TableBody>
                         {paginatedRecipes.map((recipe) => {
                             const StatusIcon = statusConfig[recipe.status]?.icon || FileX;
-                            const isPaymentPending = recipe.paymentStatus === 'Pendiente' && [RecipeStatus.ReceivedAtSkol, RecipeStatus.ReadyForPickup, RecipeStatus.Dispensed].includes(recipe.status);
+                            const isPaymentPending = recipe.paymentStatus === 'Pendiente' && (recipe.status === RecipeStatus.ReceivedAtSkol || recipe.status === RecipeStatus.ReadyForPickup || recipe.status === RecipeStatus.Dispensed);
                             const dispensedCount = recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0;
                             const totalCycles = calculateTotalCycles(recipe);
                             const showCycleCount = ![RecipeStatus.Archived, RecipeStatus.Rejected, RecipeStatus.Cancelled].includes(recipe.status);
@@ -1146,11 +1146,11 @@ Equipo Farmacia Skol`;
             {/* Mobile Card View */}
             <div className="grid grid-cols-1 gap-4 md:hidden mt-6">
                 {paginatedRecipes.map((recipe) => {
-                    const isPaymentPending = recipe.paymentStatus === 'Pendiente' && [RecipeStatus.ReceivedAtSkol, RecipeStatus.ReadyForPickup, RecipeStatus.Dispensed].includes(recipe.status);
+                    const isPaymentPending = recipe.paymentStatus === 'Pendiente' && (recipe.status === RecipeStatus.ReceivedAtSkol || recipe.status === RecipeStatus.ReadyForPickup || recipe.status === RecipeStatus.Dispensed);
                     const totalCycles = calculateTotalCycles(recipe);
                     const dispensedCount = recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0;
                     const showCycleCount = ![RecipeStatus.Archived, RecipeStatus.Rejected, RecipeStatus.Cancelled].includes(recipe.status);
-                    const currentCycle = Math.min(dispensedCount, totalCycles);
+                    const currentCycle = Math.min(dispensedCount + 1, totalCycles);
                     return (
                     <Card key={recipe.id} className={cn(selectedRecipes.includes(recipe.id) && "ring-2 ring-primary")}>
                     <CardHeader className="p-4">
