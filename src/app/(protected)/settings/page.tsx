@@ -93,6 +93,9 @@ export default function SettingsPage() {
     try {
       const data = await getAppSettings();
       if (data) {
+        if (data.pharmaceuticalForms && !data.pharmaceuticalForms.find(f => f.toLowerCase() === 'papelillo')) {
+          data.pharmaceuticalForms.push('Papelillo');
+        }
         setSettings(data);
       }
     } catch (error) {

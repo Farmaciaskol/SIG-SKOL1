@@ -92,6 +92,11 @@ export const PHARMACEUTICAL_FORM_DEFAULTS: Record<string, {
     dosageUnit: 'mL',
     totalQuantityUnit: 'mL',
   },
+  'papelillo': {
+    concentrationUnit: 'mg',
+    dosageUnit: 'papelillo(s)',
+    totalQuantityUnit: 'papelillo(s)',
+  },
 };
 
 export const MAX_REPREPARATIONS = 4;
