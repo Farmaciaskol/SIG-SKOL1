@@ -60,11 +60,21 @@ export default function LoginPage() {
         </div>
       </div>
       
-      {/* Right Form Panel */}
-      <div className="flex items-center justify-center p-4">
+      {/* Right Form Panel / Mobile View */}
+      <div className="bg-blue-600 lg:bg-background flex flex-col items-center justify-center p-6 lg:p-4 min-h-screen">
+        <div className="lg:hidden mb-8">
+            <Image
+                src="https://placehold.co/180x60.png"
+                data-ai-hint="logo pharmacy white"
+                alt="Farmacia Skol Logo"
+                width={180}
+                height={60}
+                priority
+            />
+        </div>
         <div className="w-full max-w-sm space-y-6">
             <div className="w-full bg-card rounded-xl shadow-lg p-6 sm:p-8 space-y-6">
-                <div className="text-center sm:text-left">
+                <div className="text-center">
                   <h1 className="text-2xl font-bold font-headline text-foreground">
                     Acceso de Administrador
                   </h1>
@@ -114,9 +124,9 @@ export default function LoginPage() {
                   </Button>
                 </form>
             </div>
-            <p className="px-8 text-center text-sm text-muted-foreground">
+            <p className="px-8 text-center text-sm text-gray-200 lg:text-muted-foreground">
               ¿Es usted un paciente?{' '}
-              <Link href="/patient-portal/login" className="font-semibold text-primary hover:underline">
+              <Link href="/patient-portal/login" className="font-semibold text-white lg:text-primary hover:underline">
                 Ingrese al Portal de Pacientes
               </Link>
             </p>
