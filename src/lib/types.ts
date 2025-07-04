@@ -11,6 +11,7 @@ export enum RecipeStatus {
   ReadyForPickup = 'Lista para Retiro',
   Dispensed = 'Dispensada',
   Cancelled = 'Anulada',
+  Archived = 'Archivada',
 }
 
 export enum ProactivePatientStatus {

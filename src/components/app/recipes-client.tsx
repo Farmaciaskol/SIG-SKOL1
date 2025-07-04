@@ -94,6 +94,7 @@ import {
   FileClock,
   Inbox,
   Snowflake,
+  Archive,
 } from 'lucide-react';
 import {
   getRecipes,
@@ -165,6 +166,7 @@ export const RecipesClient = ({
   const [recipeToReprepare, setRecipeToReprepare] = useState<Recipe | null>(null);
   const [recipeToReceive, setRecipeToReceive] = useState<Recipe | null>(null);
   const [recipeToPrint, setRecipeToPrint] = useState<Recipe | null>(null);
+  const [recipeToArchive, setRecipeToArchive] = useState<Recipe | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Dialogs form fields
@@ -343,6 +345,12 @@ export const RecipesClient = ({
         setIsSubmitting(false);
     }
   };
+
+  const handleConfirmArchive = async () => {
+    if (!recipeToArchive) return;
+    await handleUpdateStatus(recipeToArchive, RecipeStatus.Archived, 'Receta archivada.');
+    setRecipeToArchive(null);
+  };
   
   const handleBatchDelete = async () => {
     setIsSubmitting(true);
@@ -445,7 +453,13 @@ export const RecipesClient = ({
         getPatientName(recipe.patientId).toLowerCase().includes(lowerCaseSearchTerm) ||
         recipe.items.some(item => item.principalActiveIngredient.toLowerCase().includes(lowerCaseSearchTerm));
       
-      const statusMatch = statusFilter === 'all' || recipe.status === statusFilter;
+      let statusMatch = true;
+      if (statusFilter === 'all') {
+          statusMatch = recipe.status !== RecipeStatus.Archived;
+      } else {
+          statusMatch = recipe.status === statusFilter;
+      }
+
       const doctorMatch = doctorFilter === 'all' || recipe.doctorId === doctorFilter;
       const pharmacyMatch = pharmacyFilter === 'all' || recipe.externalPharmacyId === pharmacyFilter;
       
@@ -497,6 +511,7 @@ export const RecipesClient = ({
     else if (cycleLimitReached) disabledReprepareTooltip = `Límite de ${MAX_REPREPARATIONS + 1} ciclos alcanzado.`;
 
     const canEdit = recipe.status !== RecipeStatus.Dispensed && recipe.status !== RecipeStatus.Cancelled;
+    const isArchivable = [RecipeStatus.Rejected, RecipeStatus.Cancelled, RecipeStatus.Dispensed].includes(recipe.status) || isExpired;
 
     return (
         <div className="flex items-center justify-end gap-1">
@@ -570,6 +585,11 @@ export const RecipesClient = ({
                          <DropdownMenuItem disabled={!canReprepare} onSelect={() => canReprepare && setRecipeToReprepare(recipe)}><Copy className="mr-2 h-4 w-4" /><span>Re-preparar</span></DropdownMenuItem>
                     )}
                     <DropdownMenuSeparator />
+                    {isArchivable && (
+                        <DropdownMenuItem className="text-gray-600 focus:text-gray-700 focus:bg-gray-100" onClick={() => setRecipeToArchive(recipe)}>
+                            <Archive className="mr-2 h-4 w-4" />Archivar
+                        </DropdownMenuItem>
+                    )}
                     {recipe.status !== RecipeStatus.Cancelled && recipe.status !== RecipeStatus.Dispensed && (
                         <DropdownMenuItem className="text-amber-600 focus:text-amber-600 focus:bg-amber-50" onClick={() => setRecipeToCancel(recipe)}><Ban className="mr-2 h-4 w-4" />Anular</DropdownMenuItem>
                     )}
@@ -586,6 +606,7 @@ export const RecipesClient = ({
     const cycleLimitReached = dispensedCount >= MAX_REPREPARATIONS + 1;
     const canReprepare = recipe.status === RecipeStatus.Dispensed && !isExpired && !cycleLimitReached;
     const canEdit = recipe.status !== RecipeStatus.Dispensed && recipe.status !== RecipeStatus.Cancelled;
+    const isArchivable = [RecipeStatus.Rejected, RecipeStatus.Cancelled, RecipeStatus.Dispensed].includes(recipe.status) || isExpired;
 
     const ActionButton = () => {
       switch (recipe.status) {
@@ -647,6 +668,11 @@ export const RecipesClient = ({
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
+            {isArchivable && (
+                <DropdownMenuItem className="text-gray-600 focus:text-gray-700 focus:bg-gray-100" onClick={() => setRecipeToArchive(recipe)}>
+                    <Archive className="mr-2 h-4 w-4" />Archivar
+                </DropdownMenuItem>
+            )}
             {recipe.status !== RecipeStatus.Cancelled && recipe.status !== RecipeStatus.Dispensed && (
               <DropdownMenuItem className="text-amber-600 focus:text-amber-600 focus:bg-amber-50" onClick={() => setRecipeToCancel(recipe)}><Ban className="mr-2 h-4 w-4" />Anular Receta</DropdownMenuItem>
             )}
@@ -661,8 +687,8 @@ export const RecipesClient = ({
     <>
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-800 tracking-tight font-headline">Gestión de Recetas</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-3xl font-bold text-foreground tracking-tight font-headline">Gestión de Recetas</h1>
+          <p className="text-sm text-muted-foreground">
             Visualiza, filtra y gestiona todas las recetas del sistema.
           </p>
         </div>
@@ -820,16 +846,16 @@ export const RecipesClient = ({
                                 <TableCell className="max-w-[300px]">
                                     {recipe.items.length > 0 ? (
                                         <div className="flex flex-col">
-                                        <span className="text-sm font-medium text-slate-800 flex items-center gap-2 truncate" title={`${recipe.items[0].principalActiveIngredient} ${recipe.items[0].concentrationValue}${recipe.items[0].concentrationUnit}`}>
+                                        <span className="text-sm font-medium text-foreground flex items-center gap-2 truncate" title={`${recipe.items[0].principalActiveIngredient} ${recipe.items[0].concentrationValue}${recipe.items[0].concentrationUnit}`}>
                                             {recipe.items[0].principalActiveIngredient}{' '}
                                             {recipe.items[0].concentrationValue}
                                             {recipe.items[0].concentrationUnit}
                                             {recipe.items.some(i => i.isRefrigerated) && <Snowflake className="h-4 w-4 text-blue-500" />}
                                         </span>
-                                        <span className="text-xs text-slate-500 truncate" title={recipe.items[0].usageInstructions}>
+                                        <span className="text-xs text-muted-foreground truncate" title={recipe.items[0].usageInstructions}>
                                             {recipe.items[0].usageInstructions}
                                         </span>
-                                        {recipe.items.length > 1 && <span className="text-xs font-bold text-slate-500 mt-1">+ {recipe.items.length - 1} más</span>}
+                                        {recipe.items.length > 1 && <span className="text-xs font-bold text-muted-foreground mt-1">+ {recipe.items.length - 1} más</span>}
                                         </div>
                                     ) : (
                                         'N/A'
@@ -943,28 +969,28 @@ export const RecipesClient = ({
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-2 pb-4">
-                    <p className="font-bold text-lg text-slate-800 truncate" title={getPatientName(recipe.patientId)}>{getPatientName(recipe.patientId)}</p>
+                    <p className="font-bold text-lg text-foreground truncate" title={getPatientName(recipe.patientId)}>{getPatientName(recipe.patientId)}</p>
                     {recipe.items.length > 0 ? (
                         <div>
-                        <p className="font-medium text-sm text-slate-800 flex items-center gap-2 truncate" title={`${recipe.items[0].principalActiveIngredient} ${recipe.items[0].concentrationValue}${recipe.items[0].concentrationUnit}`}>
+                        <p className="font-medium text-sm text-foreground flex items-center gap-2 truncate" title={`${recipe.items[0].principalActiveIngredient} ${recipe.items[0].concentrationValue}${recipe.items[0].concentrationUnit}`}>
                             {recipe.items[0].principalActiveIngredient}{' '}
                             {recipe.items[0].concentrationValue}
                             {recipe.items[0].concentrationUnit}
                             {recipe.items.some(i => i.isRefrigerated) && <Snowflake className="h-4 w-4 text-blue-500" />}
                         </p>
-                        <p className="text-xs text-slate-500 truncate" title={recipe.items[0].usageInstructions}>
+                        <p className="text-xs text-muted-foreground truncate" title={recipe.items[0].usageInstructions}>
                             {recipe.items[0].usageInstructions}
                         </p>
                         {recipe.items.length > 1 && (
-                            <p className="text-xs font-bold text-slate-500 mt-1">
+                            <p className="text-xs font-bold text-muted-foreground mt-1">
                             + {recipe.items.length - 1} más
                             </p>
                         )}
                         </div>
                     ) : (
-                        <p className="text-sm text-slate-500">Sin preparado</p>
+                        <p className="text-sm text-muted-foreground">Sin preparado</p>
                     )}
-                     <p className="text-xs text-slate-500 pt-1">Creada: {format(new Date(recipe.createdAt), "d MMM yyyy", { locale: es })}</p>
+                     <p className="text-xs text-muted-foreground pt-1">Creada: {format(new Date(recipe.createdAt), "d MMM yyyy", { locale: es })}</p>
                   </CardContent>
                   <CardFooter className="p-3 bg-muted/50"><MobileRecipeActions recipe={recipe} setRecipeToView={setRecipeToView} /></CardFooter>
                 </Card>
@@ -1001,19 +1027,19 @@ export const RecipesClient = ({
       <Dialog open={!!recipeToView} onOpenChange={(open) => !open && setRecipeToView(null)}>
         <DialogContent className="sm:max-w-2xl"><DialogHeader><DialogTitle className="text-xl font-semibold">Detalle Receta: {recipeToView?.id}</DialogTitle><DialogDescription>Información completa de la receta y su historial.</DialogDescription></DialogHeader>
             <div className="max-h-[70vh] overflow-y-auto p-1 pr-4"><div className="space-y-6">
-                <div className="space-y-1"><h3 className="text-sm font-semibold text-slate-700">Paciente:</h3><p className="text-slate-500">{getPatientName(recipeToView?.patientId || '')}</p></div>
-                <div className="space-y-1"><h3 className="text-sm font-semibold text-slate-700">Estado Actual:</h3>{recipeToView && <Badge>{statusConfig[recipeToView.status]?.text || recipeToView.status}</Badge>}</div>
-                <div className="space-y-2"><h3 className="text-sm font-semibold text-slate-700">Items:</h3>{recipeToView?.items.map((item, index) => ( <div key={index} className="text-sm p-3 border rounded-md bg-muted/50"><p className="font-medium text-slate-800 flex items-center gap-2">{item.principalActiveIngredient} {item.concentrationValue}{item.concentrationUnit} {item.isRefrigerated && <Snowflake className="h-4 w-4 text-blue-500" />}</p><p className="text-slate-500">{item.usageInstructions}</p></div>))}</div>
-                <div className="space-y-2"><h3 className="text-sm font-semibold text-slate-700">Historial de Auditoría:</h3><Table><TableHeader><TableRow><TableHead>Fecha</TableHead><TableHead>Estado</TableHead><TableHead>Notas</TableHead></TableRow></TableHeader><TableBody>{recipeToView?.auditTrail?.slice().reverse().map((entry, index) => (<TableRow key={index}><TableCell>{format(parseISO(entry.date), 'dd-MM-yy HH:mm')}</TableCell><TableCell>{statusConfig[entry.status]?.text || entry.status}</TableCell><TableCell>{entry.notes}</TableCell></TableRow>))}</TableBody></Table></div>
+                <div className="space-y-1"><h3 className="text-sm font-semibold text-foreground">Paciente:</h3><p className="text-muted-foreground">{getPatientName(recipeToView?.patientId || '')}</p></div>
+                <div className="space-y-1"><h3 className="text-sm font-semibold text-foreground">Estado Actual:</h3>{recipeToView && <Badge>{statusConfig[recipeToView.status]?.text || recipeToView.status}</Badge>}</div>
+                <div className="space-y-2"><h3 className="text-sm font-semibold text-foreground">Items:</h3>{recipeToView?.items.map((item, index) => ( <div key={index} className="text-sm p-3 border rounded-md bg-muted/50"><p className="font-medium text-foreground flex items-center gap-2">{item.principalActiveIngredient} {item.concentrationValue}{item.concentrationUnit} {item.isRefrigerated && <Snowflake className="h-4 w-4 text-blue-500" />}</p><p className="text-muted-foreground">{item.usageInstructions}</p></div>))}</div>
+                <div className="space-y-2"><h3 className="text-sm font-semibold text-foreground">Historial de Auditoría:</h3><Table><TableHeader><TableRow><TableHead>Fecha</TableHead><TableHead>Estado</TableHead><TableHead>Notas</TableHead></TableRow></TableHeader><TableBody>{recipeToView?.auditTrail?.slice().reverse().map((entry, index) => (<TableRow key={index}><TableCell>{format(parseISO(entry.date), 'dd-MM-yy HH:mm')}</TableCell><TableCell>{statusConfig[entry.status]?.text || entry.status}</TableCell><TableCell>{entry.notes}</TableCell></TableRow>))}</TableBody></Table></div>
             </div></div><DialogFooter><Button variant="outline" onClick={() => setRecipeToView(null)}>Cerrar</Button></DialogFooter>
         </DialogContent>
       </Dialog>
       <AlertDialog open={!!recipeToDelete} onOpenChange={(open) => !open && setRecipeToDelete(null)}>
-        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Estás seguro que deseas eliminar esta receta?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. La receta con ID <span className="font-bold font-mono text-slate-800">{recipeToDelete?.id}</span> será eliminada permanentemente.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel onClick={() => setRecipeToDelete(null)}>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleConfirmDelete} disabled={isSubmitting} className="bg-destructive hover:bg-destructive/90">{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Eliminar</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Estás seguro que deseas eliminar esta receta?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. La receta con ID <span className="font-bold font-mono text-foreground">{recipeToDelete?.id}</span> será eliminada permanentemente.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel onClick={() => setRecipeToDelete(null)}>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleConfirmDelete} disabled={isSubmitting} className="bg-destructive hover:bg-destructive/90">{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Eliminar</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
       </AlertDialog>
-      <Dialog open={!!recipeToReject} onOpenChange={(open) => {if (!open) {setRecipeToReject(null); setReason('');}}}><DialogContent><DialogHeader><DialogTitle className="text-xl font-semibold">Rechazar Receta: {recipeToReject?.id}</DialogTitle><DialogDescription>Por favor, ingrese el motivo del rechazo. Este quedará registrado en el historial de la receta.</DialogDescription></DialogHeader><div className="grid gap-4 py-4"><Label htmlFor="reason-textarea" className="text-sm font-medium text-slate-700">Motivo del Rechazo *</Label><Textarea id="reason-textarea" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ej: Dosis inconsistente con la indicación."/></div><DialogFooter><Button variant="ghost" onClick={() => {setRecipeToReject(null); setReason('');}}>Cancelar</Button><Button variant="destructive" onClick={handleConfirmReject} disabled={!reason.trim() || isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Confirmar Rechazo</Button></DialogFooter></DialogContent></Dialog>
-      <Dialog open={!!recipeToCancel} onOpenChange={(open) => {if (!open) {setRecipeToCancel(null); setReason('');}}}><DialogContent><DialogHeader><DialogTitle className="text-xl font-semibold">Anular Receta: {recipeToCancel?.id}</DialogTitle><DialogDescription>Por favor, ingrese el motivo de la anulación. Esta acción es irreversible.</DialogDescription></DialogHeader><div className="grid gap-4 py-4"><Label htmlFor="reason-textarea" className="text-sm font-medium text-slate-700">Motivo de la Anulación *</Label><Textarea id="reason-textarea" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ej: Solicitado por el paciente."/></div><DialogFooter><Button variant="ghost" onClick={() => {setRecipeToCancel(null); setReason('');}}>Cancelar</Button><Button variant="destructive" onClick={handleConfirmCancel} disabled={!reason.trim() || isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Confirmar Anulación</Button></DialogFooter></DialogContent></Dialog>
-      <Dialog open={!!recipeToReprepare} onOpenChange={(open) => { if (!open) { setRecipeToReprepare(null); setControlledFolio(''); } }}><DialogContent><DialogHeader><DialogTitle className="text-xl font-semibold">Re-preparar Receta: {recipeToReprepare?.id}</DialogTitle></DialogHeader>{recipeToReprepare?.isControlled ? (<div className="space-y-4"><DialogDescription>Esta es una receta controlada. Para re-preparar, debe ingresar el folio de la nueva receta física/electrónica.</DialogDescription><div className="grid gap-2 py-2"><Label htmlFor="controlled-folio" className="mb-1 text-sm font-medium text-slate-700">Nuevo Folio de Receta Controlada *</Label><Input id="controlled-folio" value={controlledFolio} onChange={(e) => setControlledFolio(e.target.value)} placeholder="Ej: A12345678"/></div></div>) : (<DialogDescription>¿Está seguro que desea iniciar un nuevo ciclo para esta receta? La receta volverá al estado 'Pendiente Validación'.</DialogDescription>)}<DialogFooter><Button variant="ghost" onClick={() => setRecipeToReprepare(null)}>Cancelar</Button><Button onClick={handleConfirmReprepare} disabled={isSubmitting || (recipeToReprepare?.isControlled && !controlledFolio.trim())}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Confirmar Re-preparación</Button></DialogFooter></DialogContent></Dialog>
+      <Dialog open={!!recipeToReject} onOpenChange={(open) => {if (!open) {setRecipeToReject(null); setReason('');}}}><DialogContent><DialogHeader><DialogTitle className="text-xl font-semibold">Rechazar Receta: {recipeToReject?.id}</DialogTitle><DialogDescription>Por favor, ingrese el motivo del rechazo. Este quedará registrado en el historial de la receta.</DialogDescription></DialogHeader><div className="grid gap-4 py-4"><Label htmlFor="reason-textarea" className="text-sm font-medium text-foreground">Motivo del Rechazo *</Label><Textarea id="reason-textarea" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ej: Dosis inconsistente con la indicación."/></div><DialogFooter><Button variant="ghost" onClick={() => {setRecipeToReject(null); setReason('');}}>Cancelar</Button><Button variant="destructive" onClick={handleConfirmReject} disabled={!reason.trim() || isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Confirmar Rechazo</Button></DialogFooter></DialogContent></Dialog>
+      <Dialog open={!!recipeToCancel} onOpenChange={(open) => {if (!open) {setRecipeToCancel(null); setReason('');}}}><DialogContent><DialogHeader><DialogTitle className="text-xl font-semibold">Anular Receta: {recipeToCancel?.id}</DialogTitle><DialogDescription>Por favor, ingrese el motivo de la anulación. Esta acción es irreversible.</DialogDescription></DialogHeader><div className="grid gap-4 py-4"><Label htmlFor="reason-textarea" className="text-sm font-medium text-foreground">Motivo de la Anulación *</Label><Textarea id="reason-textarea" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ej: Solicitado por el paciente."/></div><DialogFooter><Button variant="ghost" onClick={() => {setRecipeToCancel(null); setReason('');}}>Cancelar</Button><Button variant="destructive" onClick={handleConfirmCancel} disabled={!reason.trim() || isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Confirmar Anulación</Button></DialogFooter></DialogContent></Dialog>
+      <Dialog open={!!recipeToReprepare} onOpenChange={(open) => { if (!open) { setRecipeToReprepare(null); setControlledFolio(''); } }}><DialogContent><DialogHeader><DialogTitle className="text-xl font-semibold">Re-preparar Receta: {recipeToReprepare?.id}</DialogTitle></DialogHeader>{recipeToReprepare?.isControlled ? (<div className="space-y-4"><DialogDescription>Esta es una receta controlada. Para re-preparar, debe ingresar el folio de la nueva receta física/electrónica.</DialogDescription><div className="grid gap-2 py-2"><Label htmlFor="controlled-folio" className="mb-1 text-sm font-medium text-foreground">Nuevo Folio de Receta Controlada *</Label><Input id="controlled-folio" value={controlledFolio} onChange={(e) => setControlledFolio(e.target.value)} placeholder="Ej: A12345678"/></div></div>) : (<DialogDescription>¿Está seguro que desea iniciar un nuevo ciclo para esta receta? La receta volverá al estado 'Pendiente Validación'.</DialogDescription>)}<DialogFooter><Button variant="ghost" onClick={() => setRecipeToReprepare(null)}>Cancelar</Button><Button onClick={handleConfirmReprepare} disabled={isSubmitting || (recipeToReprepare?.isControlled && !controlledFolio.trim())}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Confirmar Re-preparación</Button></DialogFooter></DialogContent></Dialog>
       <Dialog open={!!recipeToReceive} onOpenChange={(open) => {if (!open) { setRecipeToReceive(null); setInternalLot(''); setPreparationExpiry(undefined); setReceptionChecklist({ etiqueta: false, vencimiento: false, aspecto: false, cadenaFrio: false }); }}}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
@@ -1023,11 +1049,11 @@ export const RecipesClient = ({
           <div className="grid gap-6 py-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <Label htmlFor="internal-lot" className="text-sm font-medium text-slate-700">Lote Interno Skol *</Label>
+                    <Label htmlFor="internal-lot" className="text-sm font-medium text-foreground">Lote Interno Skol *</Label>
                     <Input id="internal-lot" value={internalLot} onChange={(e) => setInternalLot(e.target.value)} placeholder="Lote asignado por Skol"/>
                 </div>
                 <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-700">Fecha de Vencimiento del Preparado *</Label>
+                    <Label className="text-sm font-medium text-foreground">Fecha de Vencimiento del Preparado *</Label>
                     <Popover>
                         <PopoverTrigger asChild>
                             <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !preparationExpiry && "text-muted-foreground")}>
@@ -1045,7 +1071,7 @@ export const RecipesClient = ({
             <Separator />
 
             <div className="space-y-4 rounded-lg">
-                <h4 className="font-semibold text-slate-800">Checklist de Recepción de Calidad *</h4>
+                <h4 className="font-semibold text-foreground">Checklist de Recepción de Calidad *</h4>
                 <div className="space-y-4">
                     <div className="flex items-start space-x-3">
                         <Checkbox id="chk-etiqueta" checked={receptionChecklist.etiqueta} onCheckedChange={(checked) => handleReceptionChecklistChange('etiqueta', !!checked)} />
@@ -1107,6 +1133,24 @@ export const RecipesClient = ({
       </Dialog>
       <Dialog open={!!recipeToPrint} onOpenChange={(open) => !open && setRecipeToPrint(null)}><DialogContent><DialogHeader><DialogTitle className="text-xl font-semibold">Imprimir Etiqueta: {recipeToPrint?.id}</DialogTitle><DialogDescription>Vista previa de la etiqueta para el paciente.</DialogDescription></DialogHeader><div className="my-6 p-4 border rounded-lg bg-muted/50 space-y-2 font-mono text-sm"><p><span className="font-semibold">SKOL Pharmacy</span></p><p>Paciente: {getPatientName(recipeToPrint?.patientId || '')}</p><p>Receta: {recipeToPrint?.id}</p><p>Producto: {recipeToPrint?.items[0]?.principalActiveIngredient} {recipeToPrint?.items[0]?.concentrationValue}{recipeToPrint?.items[0]?.concentrationUnit}</p><p className="pt-2">Instrucciones: {recipeToPrint?.items[0]?.usageInstructions}</p><p className="pt-2">Vencimiento: {recipeToPrint?.preparationExpiryDate ? format(parseISO(recipeToPrint.preparationExpiryDate), 'dd-MM-yyyy') : 'N/A'}</p><p>Lote: {recipeToPrint?.internalPreparationLot || 'N/A'}</p></div><DialogFooter><Button variant="outline" onClick={() => setRecipeToPrint(null)}>Cerrar</Button><Button onClick={() => toast({title: 'Imprimiendo...', description: 'La funcionalidad de impresión real no está implementada.'})}><Printer className="mr-2 h-4 w-4"/>Imprimir</Button></DialogFooter></DialogContent></Dialog>
       <AlertDialog open={isDeleteBatchAlertOpen} onOpenChange={setIsDeleteBatchAlertOpen}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Eliminar {selectedRecipes.length} recetas?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Las recetas seleccionadas serán eliminadas permanentemente.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleBatchDelete} disabled={isSubmitting} className="bg-destructive hover:bg-destructive/90">{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Eliminar</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+      
+      <AlertDialog open={!!recipeToArchive} onOpenChange={(open) => !open && setRecipeToArchive(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>¿Archivar esta receta?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    La receta <span className="font-bold font-mono text-foreground">{recipeToArchive?.id}</span> será archivada y no aparecerá en las vistas principales. Podrá encontrarla usando el filtro de estado "Archivada".
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setRecipeToArchive(null)}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleConfirmArchive} disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Confirmar y Archivar
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Batch Action Bar */}
       {selectedRecipes.length > 0 && (

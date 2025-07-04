@@ -9,6 +9,7 @@ import {
   Package,
   FlaskConical,
   ShieldCheck,
+  Archive,
   LucideIcon
 } from 'lucide-react';
 import { RecipeStatus } from './types';
@@ -107,4 +108,5 @@ export const statusConfig: Record<RecipeStatus, { text: string; badge: string; i
   [RecipeStatus.Dispensed]: { text: 'Dispensada', badge: 'bg-green-100 text-green-800 border-green-200', icon: CheckCheck },
   [RecipeStatus.Rejected]: { text: 'Rechazada', badge: 'bg-red-100 text-red-800 border-red-200', icon: XCircle },
   [RecipeStatus.Cancelled]: { text: 'Anulada', badge: 'bg-slate-200 text-slate-800 border-slate-300', icon: Ban },
+  [RecipeStatus.Archived]: { text: 'Archivada', badge: 'bg-gray-200 text-gray-800 border-gray-300', icon: Archive },
 };
