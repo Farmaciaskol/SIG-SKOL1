@@ -150,7 +150,11 @@ export default function DispatchManagementPage() {
         const inventoryItem = inventory.find(i => i.id === recipeItem.sourceInventoryItemId);
 
         if (inventoryItem) {
-             if (inventoryItem.itemsPerBaseUnit && inventoryItem.doseValue) {
+            if (inventoryItem.quantity <= 0) {
+                items.push({ recipe, patient, inventoryItem, recipeItem, error: `Stock insuficiente (0) para ${inventoryItem.name}.` });
+                continue;
+            }
+            if (inventoryItem.itemsPerBaseUnit && inventoryItem.doseValue) {
                 const recipeTotalPA = Number(recipeItem.concentrationValue) * Number(recipeItem.totalQuantityValue);
                 const inventoryTotalPAperUnit = inventoryItem.doseValue * inventoryItem.itemsPerBaseUnit;
 
@@ -158,7 +162,11 @@ export default function DispatchManagementPage() {
                     items.push({ recipe, patient, inventoryItem, recipeItem, error: 'Valores inválidos en receta o insumo para calcular fraccionamiento.' });
                 } else {
                     const quantityToDispatch = Math.ceil(recipeTotalPA / inventoryTotalPAperUnit);
-                    items.push({ recipe, patient, inventoryItem, recipeItem, quantityToDispatch });
+                    if (inventoryItem.quantity < quantityToDispatch) {
+                        items.push({ recipe, patient, inventoryItem, recipeItem, quantityToDispatch, error: `Stock insuficiente. Se requieren ${quantityToDispatch}, disponibles: ${inventoryItem.quantity}.` });
+                    } else {
+                        items.push({ recipe, patient, inventoryItem, recipeItem, quantityToDispatch });
+                    }
                 }
             } else {
                  items.push({ recipe, patient, inventoryItem, recipeItem, error: 'Insumo no configurado para fraccionamiento (P.A. o Unidades/Envase).' });
