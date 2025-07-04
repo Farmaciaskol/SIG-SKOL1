@@ -26,6 +26,7 @@ import {
   Inbox,
   Bell,
   User,
+  MessageSquare,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -65,6 +66,7 @@ const menuGroups = [
       items: [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { href: '/portal-inbox', label: 'Bandeja Portal', icon: Inbox },
+        { href: '/messaging', label: 'Mensajería', icon: MessageSquare },
         { href: '/recipes', label: 'Recetas', icon: FileText },
       ],
     },
@@ -106,10 +108,11 @@ interface MainNavProps extends React.HTMLAttributes<HTMLElement> {
   portalInboxCount: number;
   itemsToDispatchCount: number;
   lowStockCount: number;
+  unreadMessagesCount: number;
 }
 
-function AlertsBell({ portalInboxCount, itemsToDispatchCount, lowStockCount }: Omit<MainNavProps, keyof React.HTMLAttributes<HTMLElement>>) {
-  const totalAlerts = portalInboxCount + itemsToDispatchCount + lowStockCount;
+function AlertsBell({ portalInboxCount, itemsToDispatchCount, lowStockCount, unreadMessagesCount }: Omit<MainNavProps, keyof React.HTMLAttributes<HTMLElement>>) {
+  const totalAlerts = portalInboxCount + itemsToDispatchCount + lowStockCount + unreadMessagesCount;
 
   return (
     <DropdownMenu>
@@ -129,6 +132,14 @@ function AlertsBell({ portalInboxCount, itemsToDispatchCount, lowStockCount }: O
         <DropdownMenuSeparator />
         {totalAlerts > 0 ? (
           <>
+             {unreadMessagesCount > 0 && (
+              <DropdownMenuItem asChild>
+                <Link href="/messaging" className="flex justify-between items-center cursor-pointer">
+                  <span>Mensajes de Pacientes Nuevos</span>
+                  <Badge>{unreadMessagesCount}</Badge>
+                </Link>
+              </DropdownMenuItem>
+            )}
             {portalInboxCount > 0 && (
               <DropdownMenuItem asChild>
                 <Link href="/portal-inbox" className="flex justify-between items-center cursor-pointer">
@@ -176,6 +187,7 @@ export function MainNav({
   portalInboxCount,
   itemsToDispatchCount,
   lowStockCount,
+  unreadMessagesCount,
   ...props
 }: MainNavProps) {
   const pathname = usePathname();
@@ -238,7 +250,8 @@ export function MainNav({
             <Link href="/dashboard" className="md:hidden">
               <div className="h-9 w-9 bg-primary rounded-md flex items-center justify-center p-1">
                 <Image
-                  src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20BLANCO.png?alt=media&token=abcdef12-3456-7890-abcd-ef1234567890"
+                  src="https://placehold.co/28x28/FFFFFF/FFFFFF.png"
+                  data-ai-hint="logo pharmacy white"
                   alt="Skol Pharmacy Logo"
                   width={28}
                   height={28}
@@ -255,6 +268,7 @@ export function MainNav({
               portalInboxCount={portalInboxCount} 
               itemsToDispatchCount={itemsToDispatchCount} 
               lowStockCount={lowStockCount} 
+              unreadMessagesCount={unreadMessagesCount}
             />
             {user && (
               <DropdownMenu>
@@ -298,7 +312,8 @@ export function MainNav({
             <SidebarHeader className="p-4 group-data-[collapsible=icon]:p-2 justify-center transition-all duration-200">
               <div className="w-full px-4 group-data-[collapsible=icon]:hidden">
                 <Image
-                  src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=abcdef12-3456-7890-abcd-ef1234567890"
+                  src="https://placehold.co/120x120.png"
+                  data-ai-hint="logo pharmacy"
                   alt="Skol Pharmacy Logo"
                   width={120}
                   height={120}
@@ -308,7 +323,8 @@ export function MainNav({
               </div>
               <div className="hidden group-data-[collapsible=icon]:block">
                 <Image
-                  src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=abcdef12-3456-7890-abcd-ef1234567890"
+                  src="https://placehold.co/32x32.png"
+                  data-ai-hint="logo pharmacy"
                   alt="Skol Pharmacy Logo"
                   width={32}
                   height={32}
@@ -338,9 +354,17 @@ export function MainNav({
                                 pathname.startsWith(item.href) ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground font-semibold" : "text-foreground hover:bg-accent hover:text-accent-foreground"
                               )}
                             >
-                              <Link href={item.href}>
-                                <item.icon className="h-4 w-4" />
-                                <span>{item.label}</span>
+                              <Link href={item.href} className="flex justify-between items-center w-full">
+                                <div className="flex items-center gap-2">
+                                  <item.icon className="h-4 w-4" />
+                                  <span>{item.label}</span>
+                                </div>
+                                {item.href === '/messaging' && unreadMessagesCount > 0 && (
+                                  <Badge className="h-5">{unreadMessagesCount}</Badge>
+                                )}
+                                {item.href === '/portal-inbox' && portalInboxCount > 0 && (
+                                  <Badge className="h-5">{portalInboxCount}</Badge>
+                                )}
                               </Link>
                             </SidebarMenuButton>
                           </SidebarMenuItem>

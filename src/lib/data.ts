@@ -82,6 +82,9 @@ export const getMessagesForPatient = async (patientId: string): Promise<PatientM
     const messages = await fetchCollection<PatientMessage>('patientMessages', q);
     return messages.sort((a,b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 };
+export const getAllMessages = async (): Promise<PatientMessage[]> => {
+    return fetchCollection<PatientMessage>('patientMessages');
+};
 
 export const getRecipesReadyForPickup = async (patientId: string): Promise<Recipe[]> => {
     if (!db) return [];
@@ -813,4 +816,47 @@ export const batchSendRecipesToExternal = async (recipeIds: string[], userId: st
     await batch.commit();
 };
 
+export async function sendMessageFromPharmacist(patientId: string, content: string): Promise<PatientMessage> {
+    if (!db) throw new Error("Firestore is not initialized.");
     
+    const messageRef = doc(collection(db, 'patientMessages'));
+    
+    const newMessage: PatientMessage = {
+        id: messageRef.id,
+        patientId,
+        content,
+        sender: 'pharmacist',
+        createdAt: new Date().toISOString(),
+        read: true, 
+    };
+    
+    const { id, ...dataToSave } = newMessage;
+    await setDoc(messageRef, dataToSave);
+    
+    return newMessage;
+};
+
+export const markMessagesAsRead = async (patientId: string): Promise<void> => {
+    if (!db) throw new Error("Firestore is not initialized.");
+
+    const messagesQuery = query(
+        collection(db, 'patientMessages'), 
+        where('patientId', '==', patientId),
+        where('sender', '==', 'patient'),
+        where('read', '==', false)
+    );
+
+    const querySnapshot = await getDocs(messagesQuery);
+    if (querySnapshot.empty) {
+        return; // No messages to mark as read
+    }
+
+    const batch = writeBatch(db);
+    querySnapshot.docs.forEach(doc => {
+        batch.update(doc.ref, { read: true });
+    });
+
+    await batch.commit();
+};
+    
+

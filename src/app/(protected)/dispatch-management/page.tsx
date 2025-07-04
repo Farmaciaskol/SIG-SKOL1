@@ -106,7 +106,8 @@ const PrintableDispatchNote = ({ note, pharmacy, onClose, getInventoryItem, getP
                     <header className="flex justify-between items-center border-b-2 border-black pb-4">
                         <div className="w-40 h-auto">
                             <Image
-                                src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=abcdef12-3456-7890-abcd-ef1234567890"
+                                src="https://placehold.co/160x160.png"
+                                data-ai-hint="logo pharmacy"
                                 alt="Skol Pharmacy Logo"
                                 width={160}
                                 height={160}
