@@ -43,11 +43,11 @@ export default function LoginPage() {
       <div className="hidden lg:flex flex-col items-center justify-center p-12 text-center bg-sky-800">
         <div className="space-y-4 max-w-md">
           <Image
-            src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
+            src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/FARMACIA_SK.jpg?alt=media&token=42d10668-3e42-498c-84bc-2a07c645e998"
             alt="Skol Pharmacy Logo"
-            width={150}
-            height={50}
-            className="mx-auto [filter:brightness(0)_invert(1)]"
+            width={120}
+            height={120}
+            className="mx-auto"
             priority
           />
           <h1 className="text-4xl font-bold text-white font-headline mt-6">
@@ -63,11 +63,11 @@ export default function LoginPage() {
       <div className="flex items-center justify-center py-12 px-4 bg-sky-800 lg:bg-background">
         <div className="w-full max-w-sm space-y-8">
             <Image
-                src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
+                src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/FARMACIA_SK.jpg?alt=media&token=42d10668-3e42-498c-84bc-2a07c645e998"
                 alt="Skol Pharmacy Logo"
-                width={150}
-                height={50}
-                className="mx-auto lg:hidden [filter:brightness(0)_invert(1)]"
+                width={120}
+                height={120}
+                className="mx-auto lg:hidden"
                 priority
             />
             <div className="w-full bg-card rounded-xl shadow-xl p-8 space-y-6">
