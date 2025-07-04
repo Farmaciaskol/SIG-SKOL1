@@ -88,7 +88,29 @@ export const getRecipesReadyForPickup = async (patientId: string): Promise<Recip
     const q = query(collection(db, 'recipes'), where('patientId', '==', patientId), where('status', '==', RecipeStatus.ReadyForPickup));
     return fetchCollection<Recipe>('recipes', q);
 }
-export const getAppSettings = async (): Promise<AppSettings | null> => getDocument<AppSettings>('appSettings', 'global');
+
+export const getAppSettings = async (): Promise<AppSettings | null> => {
+    const settings = await getDocument<AppSettings>('appSettings', 'global');
+    if (settings && db) {
+        let needsUpdate = false;
+        const forms = settings.pharmaceuticalForms || [];
+        
+        if (!forms.some(f => f.toLowerCase() === 'papelillo')) {
+            forms.push('Papelillo');
+            settings.pharmaceuticalForms = forms;
+            needsUpdate = true;
+        }
+
+        if (needsUpdate) {
+            try {
+                await updateDoc(doc(db, 'appSettings', 'global'), { pharmaceuticalForms: settings.pharmaceuticalForms });
+            } catch (error) {
+                console.error("Failed to auto-update app settings:", error);
+            }
+        }
+    }
+    return settings;
+};
 
 
 // Filtered fetch functions
