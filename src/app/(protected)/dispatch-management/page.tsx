@@ -48,6 +48,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CheckCircle, XCircle, Package, History, PackageCheck, Loader2, Truck, AlertTriangle, Check, ShieldCheck, FileWarning, Snowflake, Printer, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format, parseISO } from 'date-fns';
@@ -59,7 +60,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import Image from 'next/image';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
 
@@ -143,7 +143,7 @@ const PrintableDispatchNote = ({ note, pharmacy, onClose, getInventoryItem, getP
                         <div>
                             <h2 className="font-bold mb-2">DE:</h2>
                             <p className="font-semibold">FARMACIA SKOL</p>
-                            <p>Av. Apoquindo 4501, Las Condes</p>
+                            <p>Av. Irrazabal 635, local 3, Ñuñoa</p>
                             <p>Santiago, Chile</p>
                         </div>
                         <div>
