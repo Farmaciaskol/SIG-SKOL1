@@ -27,6 +27,7 @@ import {
   CalendarDays,
   DollarSign,
   Inbox,
+  Bell,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -54,6 +55,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '../ui/button';
 import React from 'react';
+import { Badge } from '../ui/badge';
 
 const menuGroups = [
     {
@@ -98,8 +100,76 @@ const bottomMenuItems = [
     { href: '/patient-portal/login', label: 'Portal de Pacientes', icon: UserSquare },
 ];
 
+interface MainNavProps extends React.HTMLAttributes<HTMLElement> {
+  portalInboxCount: number;
+  itemsToDispatchCount: number;
+  lowStockCount: number;
+}
 
-export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElement>) {
+function AlertsBell({ portalInboxCount, itemsToDispatchCount, lowStockCount }: Omit<MainNavProps, keyof React.HTMLAttributes<HTMLElement>>) {
+  const totalAlerts = portalInboxCount + itemsToDispatchCount + lowStockCount;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="relative h-9 w-9">
+          <Bell className="h-5 w-5" />
+          {totalAlerts > 0 && (
+            <Badge variant="destructive" className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full p-0">
+              {totalAlerts}
+            </Badge>
+          )}
+          <span className="sr-only">Notificaciones</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-80">
+        <DropdownMenuLabel>Alertas y Tareas Pendientes</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {totalAlerts > 0 ? (
+          <>
+            {portalInboxCount > 0 && (
+              <DropdownMenuItem asChild>
+                <Link href="/portal-inbox" className="flex justify-between items-center cursor-pointer">
+                  <span>Nuevas Recetas del Portal</span>
+                  <Badge>{portalInboxCount}</Badge>
+                </Link>
+              </DropdownMenuItem>
+            )}
+            {itemsToDispatchCount > 0 && (
+              <DropdownMenuItem asChild>
+                <Link href="/dispatch-management" className="flex justify-between items-center cursor-pointer">
+                  <span>Insumos por Despachar</span>
+                  <Badge>{itemsToDispatchCount}</Badge>
+                </Link>
+              </DropdownMenuItem>
+            )}
+            {lowStockCount > 0 && (
+              <DropdownMenuItem asChild>
+                <Link href="/inventory" className="flex justify-between items-center cursor-pointer">
+                  <span>Productos con Stock Bajo</span>
+                  <Badge variant="secondary">{lowStockCount}</Badge>
+                </Link>
+              </DropdownMenuItem>
+            )}
+          </>
+        ) : (
+          <DropdownMenuItem disabled>
+            <p className="text-sm text-muted-foreground p-2">No hay notificaciones nuevas.</p>
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+
+export function MainNav({
+  className,
+  portalInboxCount,
+  itemsToDispatchCount,
+  lowStockCount,
+  ...props
+}: MainNavProps) {
   const pathname = usePathname();
   const [user] = useAuthState(auth);
   
@@ -203,32 +273,40 @@ export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElemen
                 <SidebarTrigger className="md:hidden bg-primary text-primary-foreground hover:bg-primary/90" />
             </div>
             
-            {user && (
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                            <Avatar className="h-9 w-9">
-                                <AvatarFallback>{user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase()}</AvatarFallback>
-                            </Avatar>
-                          </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56" align="end" forceMount>
-                        <DropdownMenuLabel className="font-normal">
-                          <div className="flex flex-col space-y-1">
-                            <p className="text-sm font-medium leading-none">{user.displayName || "Usuario"}</p>
-                            <p className="text-xs leading-none text-muted-foreground">
-                              {user.email}
-                            </p>
-                          </div>
-                        </DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
-                            <LogOut className="mr-2 h-4 w-4" />
-                            <span>Cerrar Sesión</span>
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            )}
+            <div className="flex items-center gap-2">
+                <AlertsBell 
+                  portalInboxCount={portalInboxCount} 
+                  itemsToDispatchCount={itemsToDispatchCount} 
+                  lowStockCount={lowStockCount} 
+                />
+
+                {user && (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                                <Avatar className="h-9 w-9">
+                                    <AvatarFallback>{user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase()}</AvatarFallback>
+                                </Avatar>
+                              </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-56" align="end" forceMount>
+                            <DropdownMenuLabel className="font-normal">
+                              <div className="flex flex-col space-y-1">
+                                <p className="text-sm font-medium leading-none">{user.displayName || "Usuario"}</p>
+                                <p className="text-xs leading-none text-muted-foreground">
+                                  {user.email}
+                                </p>
+                              </div>
+                            </DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                                <LogOut className="mr-2 h-4 w-4" />
+                                <span>Cerrar Sesión</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                )}
+            </div>
           </header>
           <div className="w-full px-6 md:px-8 py-8">
             {props.children}
