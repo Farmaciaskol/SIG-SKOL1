@@ -103,7 +103,8 @@ import {
   Snowflake,
   Archive,
   ClipboardCopy,
-  DollarSign
+  DollarSign,
+  FlaskConical,
 } from 'lucide-react';
 import {
   deleteRecipe,
@@ -775,6 +776,7 @@ export const RecipesClient = ({
       pendingValidation: relevantRecipes.filter(r => r.status === RecipeStatus.PendingValidation).length,
       inPreparation: relevantRecipes.filter(r => r.status === RecipeStatus.Preparation || r.status === RecipeStatus.SentToExternal).length,
       readyForPickup: relevantRecipes.filter(r => r.status === RecipeStatus.ReadyForPickup || r.status === RecipeStatus.ReceivedAtSkol).length,
+      rejected: relevantRecipes.filter(r => r.status === RecipeStatus.Rejected).length,
     }
   }, [initialRecipes]);
 
@@ -1080,16 +1082,15 @@ export const RecipesClient = ({
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mt-6">
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5 mt-6">
         <StatCard 
-          title="Bandeja de Entrada Portal" 
+          title="Bandeja Portal" 
           value={stats.pendingPortal} 
           icon={Inbox}
           onClick={() => router.push('/portal-inbox')}
-          active={statusFilter === RecipeStatus.PendingReviewPortal}
         />
         <StatCard 
-          title="Pendientes de Validación" 
+          title="Pend. Validación" 
           value={stats.pendingValidation} 
           icon={FileClock}
           onClick={() => setStatusFilter(RecipeStatus.PendingValidation)}
@@ -1098,16 +1099,23 @@ export const RecipesClient = ({
         <StatCard 
           title="En Preparación" 
           value={stats.inPreparation} 
-          icon={Truck}
+          icon={FlaskConical}
           onClick={() => setStatusFilter(RecipeStatus.Preparation)}
           active={statusFilter === RecipeStatus.Preparation}
         />
         <StatCard 
-          title="Listas para Retiro" 
+          title="Para Retiro" 
           value={stats.readyForPickup} 
           icon={Package}
           onClick={() => setStatusFilter(RecipeStatus.ReadyForPickup)}
           active={statusFilter === RecipeStatus.ReadyForPickup}
+        />
+        <StatCard 
+          title="Rechazadas" 
+          value={stats.rejected} 
+          icon={XCircle}
+          onClick={() => setStatusFilter(RecipeStatus.Rejected)}
+          active={statusFilter === RecipeStatus.Rejected}
         />
       </div>
 
