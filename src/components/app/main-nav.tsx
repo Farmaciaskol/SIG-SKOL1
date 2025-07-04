@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -230,89 +231,8 @@ export function MainNav({
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen bg-background">
-        <Sidebar className="border-r bg-card">
-          <SidebarHeader className="p-4 group-data-[collapsible=icon]:p-2 justify-center transition-all duration-200">
-            <div className="w-full px-4 group-data-[collapsible=icon]:hidden">
-              <Image
-                src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=abcdef12-3456-7890-abcd-ef1234567890"
-                alt="Skol Pharmacy Logo"
-                width={120}
-                height={120}
-                className="mx-auto"
-                priority
-              />
-            </div>
-            <div className="hidden group-data-[collapsible=icon]:block">
-              <Image
-                src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=abcdef12-3456-7890-abcd-ef1234567890"
-                alt="Skol Pharmacy Logo"
-                width={32}
-                height={32}
-                className="mx-auto"
-                priority
-              />
-            </div>
-          </SidebarHeader>
-          <SidebarContent className="p-0 flex-1">
-            <Accordion type="multiple" value={openItems} onValueChange={setOpenItems} className="w-full px-4">
-              {menuGroups.map((group) => (
-                <AccordionItem key={group.title} value={group.title} className="border-b-0">
-                  <AccordionTrigger
-                    className="py-2 px-0 hover:no-underline hover:bg-transparent rounded-none text-foreground/60 font-semibold text-xs justify-start gap-1 capitalize data-[state=open]:text-primary"
-                  >
-                    <span className="tracking-wider">{group.title}</span>
-                  </AccordionTrigger>
-                  <AccordionContent className="pl-2 pt-1 pb-1">
-                    <SidebarMenu>
-                      {group.items.map((item) => (
-                        <SidebarMenuItem key={item.href}>
-                          <SidebarMenuButton
-                            asChild
-                            isActive={pathname.startsWith(item.href)}
-                            className={cn(
-                                "justify-start font-normal text-sm",
-                                pathname.startsWith(item.href) ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground font-semibold" : "text-foreground hover:bg-accent hover:text-accent-foreground"
-                            )}
-                          >
-                            <Link href={item.href}>
-                              <item.icon className="h-4 w-4" />
-                              <span>{item.label}</span>
-                            </Link>
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      ))}
-                    </SidebarMenu>
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          </SidebarContent>
-           <SidebarFooter className="mt-auto border-t p-4 space-y-4">
-             <SidebarMenu className="px-0">
-                {bottomMenuItems.map((item) => (
-                    <SidebarMenuItem key={item.href}>
-                        <SidebarMenuButton
-                            asChild
-                            isActive={pathname.startsWith(item.href)}
-                           className={cn(
-                                "justify-start font-normal text-sm",
-                                pathname.startsWith(item.href) ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground font-semibold" : "text-foreground hover:bg-accent hover:text-accent-foreground"
-                            )}
-                        >
-                        <Link href={item.href}>
-                            <item.icon className="h-4 w-4" />
-                            <span>{item.label}</span>
-                        </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                ))}
-            </SidebarMenu>
-          </SidebarFooter>
-        </Sidebar>
-        
-        <div className="flex flex-1 flex-col">
-          <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between gap-4 border-b bg-card px-6">
+      <div className="flex h-screen flex-col bg-background">
+        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between gap-4 border-b bg-card px-6">
             <div className="flex items-center gap-4">
                 <SidebarTrigger className="md:hidden bg-primary text-primary-foreground hover:bg-primary/90" />
                 <Link href="/dashboard" className="md:hidden">
@@ -369,10 +289,92 @@ export function MainNav({
                     </DropdownMenu>
                 )}
             </div>
-          </header>
-          <main className="flex-1 overflow-y-auto p-6 md:p-8">
-            {props.children}
-          </main>
+        </header>
+
+        <div className="flex flex-1 overflow-hidden">
+            <Sidebar className="border-r bg-card">
+              <SidebarHeader className="p-4 group-data-[collapsible=icon]:p-2 justify-center transition-all duration-200">
+                <div className="w-full px-4 group-data-[collapsible=icon]:hidden">
+                  <Image
+                    src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=abcdef12-3456-7890-abcd-ef1234567890"
+                    alt="Skol Pharmacy Logo"
+                    width={120}
+                    height={120}
+                    className="mx-auto"
+                    priority
+                  />
+                </div>
+                <div className="hidden group-data-[collapsible=icon]:block">
+                  <Image
+                    src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=abcdef12-3456-7890-abcd-ef1234567890"
+                    alt="Skol Pharmacy Logo"
+                    width={32}
+                    height={32}
+                    className="mx-auto"
+                    priority
+                  />
+                </div>
+              </SidebarHeader>
+              <SidebarContent className="p-0 flex-1">
+                <Accordion type="multiple" value={openItems} onValueChange={setOpenItems} className="w-full px-4">
+                  {menuGroups.map((group) => (
+                    <AccordionItem key={group.title} value={group.title} className="border-b-0">
+                      <AccordionTrigger
+                        className="py-2 px-0 hover:no-underline hover:bg-transparent rounded-none text-foreground/60 font-semibold text-xs justify-start gap-1 capitalize data-[state=open]:text-primary"
+                      >
+                        <span className="tracking-wider">{group.title}</span>
+                      </AccordionTrigger>
+                      <AccordionContent className="pl-2 pt-1 pb-1">
+                        <SidebarMenu>
+                          {group.items.map((item) => (
+                            <SidebarMenuItem key={item.href}>
+                              <SidebarMenuButton
+                                asChild
+                                isActive={pathname.startsWith(item.href)}
+                                className={cn(
+                                    "justify-start font-normal text-sm",
+                                    pathname.startsWith(item.href) ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground font-semibold" : "text-foreground hover:bg-accent hover:text-accent-foreground"
+                                )}
+                              >
+                                <Link href={item.href}>
+                                  <item.icon className="h-4 w-4" />
+                                  <span>{item.label}</span>
+                                </Link>
+                              </SidebarMenuButton>
+                            </SidebarMenuItem>
+                          ))}
+                        </SidebarMenu>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </SidebarContent>
+              <SidebarFooter className="mt-auto border-t p-4 space-y-4">
+                <SidebarMenu className="px-0">
+                    {bottomMenuItems.map((item) => (
+                        <SidebarMenuItem key={item.href}>
+                            <SidebarMenuButton
+                                asChild
+                                isActive={pathname.startsWith(item.href)}
+                              className={cn(
+                                    "justify-start font-normal text-sm",
+                                    pathname.startsWith(item.href) ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground font-semibold" : "text-foreground hover:bg-accent hover:text-accent-foreground"
+                                )}
+                            >
+                            <Link href={item.href}>
+                                <item.icon className="h-4 w-4" />
+                                <span>{item.label}</span>
+                            </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    ))}
+                </SidebarMenu>
+              </SidebarFooter>
+            </Sidebar>
+
+            <main className="flex-1 overflow-y-auto p-6 md:p-8">
+              {props.children}
+            </main>
         </div>
       </div>
     </SidebarProvider>
