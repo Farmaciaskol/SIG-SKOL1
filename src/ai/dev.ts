@@ -8,4 +8,3 @@ import '@/ai/tools/vademecum.ts';
 import '@/ai/flows/validate-active-ingredient.ts';
 import '@/ai/flows/analyze-patient-proactive-alerts.ts';
 import '@/ai/flows/simplify-medication-info.ts';
-import '@/ai/tools/find-entities.ts';
