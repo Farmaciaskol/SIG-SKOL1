@@ -116,7 +116,7 @@ import type {
   AuditTrailEntry,
 } from '@/lib/types';
 import { RecipeStatus } from '@/lib/types';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DateRange } from "react-day-picker";
 import { useToast } from '@/hooks/use-toast';
@@ -140,6 +140,50 @@ const StatCard = ({ title, value, icon: Icon, onClick, active = false }: { title
     </CardContent>
   </Card>
 );
+
+const calculateTotalCycles = (recipe: Recipe): number => {
+  if (!recipe.dueDate || !recipe.createdAt || !recipe.items?.[0]) {
+    return MAX_REPREPARATIONS + 1;
+  }
+
+  try {
+    const prescriptionLifespanInDays = differenceInDays(parseISO(recipe.dueDate), parseISO(recipe.createdAt));
+    if (prescriptionLifespanInDays <= 0) return 1;
+
+    const item = recipe.items[0];
+    const durationValue = parseInt(item.treatmentDurationValue, 10);
+    if (isNaN(durationValue)) return MAX_REPREPARATIONS + 1;
+
+    let cycleDurationInDays = 0;
+
+    switch (item.treatmentDurationUnit) {
+      case 'días':
+        cycleDurationInDays = durationValue;
+        break;
+      case 'semanas':
+        cycleDurationInDays = durationValue * 7;
+        break;
+      case 'meses':
+        cycleDurationInDays = durationValue * 30;
+        break;
+      default:
+        cycleDurationInDays = 30; // Fallback for unknown units
+    }
+
+    if (cycleDurationInDays <= 0) return MAX_REPREPARATIONS + 1;
+
+    const estimatedCyclesByDate = Math.floor(prescriptionLifespanInDays / cycleDurationInDays);
+    
+    // The number of cycles cannot be less than 1 if the prescription is valid
+    const finalEstimatedCycles = Math.max(1, estimatedCyclesByDate);
+    
+    return Math.min(finalEstimatedCycles, MAX_REPREPARATIONS + 1);
+  } catch (e) {
+    console.error("Error calculating total cycles for recipe", recipe.id, e);
+    // Fallback in case of parsing errors
+    return MAX_REPREPARATIONS + 1;
+  }
+};
 
 export const RecipesClient = ({
   initialRecipes,
@@ -522,13 +566,14 @@ export const RecipesClient = ({
   }
 
   const RecipeActions = ({ recipe }: { recipe: Recipe }) => {
+    const totalCycles = calculateTotalCycles(recipe);
     const dispensedCount = recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0;
     const isExpired = recipe.dueDate ? new Date(recipe.dueDate) < new Date() : false;
-    const cycleLimitReached = dispensedCount >= MAX_REPREPARATIONS + 1;
+    const cycleLimitReached = dispensedCount >= totalCycles;
     const canReprepare = recipe.status === RecipeStatus.Dispensed && !isExpired && !cycleLimitReached;
     let disabledReprepareTooltip = '';
     if (isExpired) disabledReprepareTooltip = 'El documento de la receta ha vencido.';
-    else if (cycleLimitReached) disabledReprepareTooltip = `Límite de ${MAX_REPREPARATIONS + 1} ciclos alcanzado.`;
+    else if (cycleLimitReached) disabledReprepareTooltip = `Límite de ${totalCycles} ciclos estimado alcanzado.`;
 
     const canEdit = recipe.status !== RecipeStatus.Dispensed && recipe.status !== RecipeStatus.Cancelled;
     const isArchivable = [RecipeStatus.Rejected, RecipeStatus.Cancelled, RecipeStatus.Dispensed].includes(recipe.status) || isExpired;
@@ -637,13 +682,14 @@ export const RecipesClient = ({
 };
 
   const MobileRecipeActions = ({ recipe, setRecipeToView }: { recipe: Recipe, setRecipeToView: (recipe: Recipe | null) => void }) => {
+    const totalCycles = calculateTotalCycles(recipe);
     const dispensedCount = recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0;
     const isExpired = recipe.dueDate ? new Date(recipe.dueDate) < new Date() : false;
-    const cycleLimitReached = dispensedCount >= MAX_REPREPARATIONS + 1;
+    const cycleLimitReached = dispensedCount >= totalCycles;
     const canReprepare = recipe.status === RecipeStatus.Dispensed && !isExpired && !cycleLimitReached;
     let disabledReprepareTooltip = '';
     if (isExpired) disabledReprepareTooltip = 'El documento de la receta ha vencido.';
-    else if (cycleLimitReached) disabledReprepareTooltip = `Límite de ${MAX_REPREPARATIONS + 1} ciclos alcanzado.`;
+    else if (cycleLimitReached) disabledReprepareTooltip = `Límite de ${totalCycles} ciclos estimado alcanzado.`;
 
     const canEdit = recipe.status !== RecipeStatus.Dispensed && recipe.status !== RecipeStatus.Cancelled;
     const isArchivable = [RecipeStatus.Rejected, RecipeStatus.Cancelled, RecipeStatus.Dispensed].includes(recipe.status) || isExpired;
@@ -990,7 +1036,7 @@ Equipo Farmacia Skol`;
                             const StatusIcon = statusConfig[recipe.status]?.icon || FileX;
                             const isPaymentPending = recipe.paymentStatus === 'Pendiente' && [RecipeStatus.ReceivedAtSkol, RecipeStatus.ReadyForPickup, RecipeStatus.Dispensed].includes(recipe.status);
                             const dispensedCount = recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0;
-                            const totalCycles = MAX_REPREPARATIONS + 1;
+                            const totalCycles = calculateTotalCycles(recipe);
                             const showCycleCount = ![RecipeStatus.Archived, RecipeStatus.Rejected, RecipeStatus.Cancelled].includes(recipe.status);
                             const currentCycle = Math.min(dispensedCount + 1, totalCycles);
                             return (
@@ -1034,7 +1080,7 @@ Equipo Farmacia Skol`;
                                                     <Badge variant="secondary" className="font-mono">{`${currentCycle}/${totalCycles}`}</Badge>
                                                 </TooltipTrigger>
                                                 <TooltipContent>
-                                                    <p>Ciclo de re-preparación</p>
+                                                    <p>Ciclos de preparación (Estimado)</p>
                                                 </TooltipContent>
                                             </Tooltip>
                                         </TooltipProvider>
@@ -1116,8 +1162,8 @@ Equipo Farmacia Skol`;
             <div className="grid grid-cols-1 gap-4 md:hidden mt-6">
                 {paginatedRecipes.map((recipe) => {
                     const isPaymentPending = recipe.paymentStatus === 'Pendiente' && [RecipeStatus.ReceivedAtSkol, RecipeStatus.ReadyForPickup, RecipeStatus.Dispensed].includes(recipe.status);
+                    const totalCycles = calculateTotalCycles(recipe);
                     const dispensedCount = recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0;
-                    const totalCycles = MAX_REPREPARATIONS + 1;
                     const showCycleCount = ![RecipeStatus.Archived, RecipeStatus.Rejected, RecipeStatus.Cancelled].includes(recipe.status);
                     const currentCycle = Math.min(dispensedCount + 1, totalCycles);
                     return (
