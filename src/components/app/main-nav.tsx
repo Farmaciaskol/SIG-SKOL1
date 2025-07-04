@@ -310,8 +310,8 @@ export function MainNav({
                     <Image
                         src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
                         alt="Skol Pharmacy Logo"
-                        width={100}
-                        height={28}
+                        width={80}
+                        height={22}
                         priority
                     />
                 </div>
