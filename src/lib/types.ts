@@ -298,7 +298,8 @@ export interface DispatchNote {
     createdAt: string; // ISO String
     completedAt?: string; // ISO String
     items: DispatchItem[];
-    dispatcherName?: string;
+    dispatcherId: string;
+    dispatcherName: string;
     receivedByName?: string;
     notes?: string;
 }

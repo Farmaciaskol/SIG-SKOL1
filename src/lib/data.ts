@@ -384,7 +384,7 @@ export const addLotToInventoryItem = async (itemId: string, newLot: LotDetail): 
     });
 };
 
-export const processDispatch = async (pharmacyId: string, dispatchItems: DispatchItem[]): Promise<string> => {
+export const processDispatch = async (pharmacyId: string, dispatchItems: DispatchItem[], dispatcherId: string, dispatcherName: string): Promise<string> => {
     if (!db) throw new Error("Firestore is not initialized.");
 
     const batch = writeBatch(db);
@@ -425,8 +425,15 @@ export const processDispatch = async (pharmacyId: string, dispatchItems: Dispatc
         batch.update(recipeRef, { skolSuppliedItemsDispatchStatus: newStatus });
     }
 
-    const newDispatchNote: DispatchNote = { id: dispatchNoteId, externalPharmacyId: pharmacyId, status: DispatchStatus.Active, createdAt: new Date().toISOString(), items: dispatchItems };
-    batch.set(dispatchNoteRef, newDispatchNote);
+    const newDispatchNote: Omit<DispatchNote, 'id'> = {
+        externalPharmacyId: pharmacyId,
+        status: DispatchStatus.Active,
+        createdAt: new Date().toISOString(),
+        items: dispatchItems,
+        dispatcherId,
+        dispatcherName,
+    };
+    batch.set(dispatchNoteRef, newDispatchNote as any);
     await batch.commit();
     return dispatchNoteId;
 };

@@ -10,6 +10,7 @@ import {
   getDispatchNotes,
   processDispatch,
   getRecipe,
+  getUsers
 } from '@/lib/data';
 import type {
   Recipe,
@@ -19,6 +20,7 @@ import type {
   DispatchNote,
   DispatchItem,
   AuditTrailEntry,
+  User,
 } from '@/lib/types';
 import {
   RecipeStatus,
@@ -28,7 +30,7 @@ import {
 import { db } from '@/lib/firebase';
 import { doc, writeBatch } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Accordion,
@@ -44,7 +46,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { CheckCircle, XCircle, Package, History, PackageCheck, Loader2, Truck, AlertTriangle, Check, ShieldCheck, FileWarning, Snowflake } from 'lucide-react';
+import { CheckCircle, XCircle, Package, History, PackageCheck, Loader2, Truck, AlertTriangle, Check, ShieldCheck, FileWarning, Snowflake, Printer, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -52,6 +54,12 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import Image from 'next/image';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '@/lib/firebase';
+import { Dialog, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Separator } from '@/components/ui/separator';
 
 type ItemForDispatch = {
   recipe: Recipe;
@@ -76,8 +84,127 @@ type ValidationState = {
   [itemId: string]: ItemValidationState;
 };
 
+const PrintableDispatchNote = ({ note, pharmacy, onClose, getInventoryItemName, getPatientName }: { 
+    note: DispatchNote | null; 
+    pharmacy: ExternalPharmacy | undefined; 
+    onClose: () => void;
+    getInventoryItemName: (id: string) => string;
+    getPatientName: (id: string) => string;
+}) => {
+    if (!note || !pharmacy) return null;
+
+    const handlePrint = () => {
+        window.print();
+    };
+
+    return (
+        <Dialog open={!!note} onOpenChange={onClose}>
+            <div id="printable-area" className="printable-note bg-white text-black p-8 font-sans">
+                 <style jsx global>{`
+                    @media print {
+                        body * {
+                            visibility: hidden;
+                        }
+                        #printable-area, #printable-area * {
+                            visibility: visible;
+                        }
+                        #printable-area {
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            width: 100%;
+                            height: 100%;
+                        }
+                        .no-print {
+                            display: none;
+                        }
+                    }
+                `}</style>
+                <header className="flex justify-between items-center border-b-2 border-black pb-4">
+                    <div className="w-40 h-auto">
+                        <Image
+                            src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=abcdef12-3456-7890-abcd-ef1234567890"
+                            alt="Skol Pharmacy Logo"
+                            width={160}
+                            height={160}
+                            className="object-contain"
+                        />
+                    </div>
+                    <div className="text-right">
+                        <h1 className="text-3xl font-bold">NOTA DE DESPACHO</h1>
+                        <p className="font-mono text-lg mt-1">Folio: {note.id}</p>
+                    </div>
+                </header>
+
+                <section className="grid grid-cols-2 gap-8 my-6 text-sm">
+                    <div>
+                        <h2 className="font-bold mb-2">DE:</h2>
+                        <p className="font-semibold">FARMACIA SKOL</p>
+                        <p>Av. Apoquindo 4501, Las Condes</p>
+                        <p>Santiago, Chile</p>
+                    </div>
+                     <div>
+                        <h2 className="font-bold mb-2">PARA:</h2>
+                        <p className="font-semibold">{pharmacy.name}</p>
+                        <p>{pharmacy.address || 'Dirección no especificada'}</p>
+                    </div>
+                </section>
+                
+                 <section className="grid grid-cols-2 gap-8 my-6 text-sm">
+                    <div><span className="font-bold">Fecha de Emisión:</span> {format(parseISO(note.createdAt), "d 'de' MMMM, yyyy", { locale: es })}</div>
+                    <div><span className="font-bold">Generado por:</span> {note.dispatcherName}</div>
+                 </section>
+
+                <section className="my-6">
+                    <Table className="text-black">
+                        <TableHeader className="bg-gray-100">
+                            <TableRow>
+                                <TableHead className="text-black font-bold">Producto Insumo</TableHead>
+                                <TableHead className="text-black font-bold">Receta ID / Paciente</TableHead>
+                                <TableHead className="text-black font-bold">Lote</TableHead>
+                                <TableHead className="text-black font-bold text-right">Cantidad</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {note.items.map((item, index) => (
+                                <TableRow key={index} className="border-gray-300">
+                                    <TableCell>{getInventoryItemName(item.inventoryItemId)}</TableCell>
+                                    <TableCell>
+                                        <p className="font-mono">{item.recipeId}</p>
+                                        <p className="text-xs">{getPatientName(item.recipeId)}</p>
+                                    </TableCell>
+                                    <TableCell>{item.lotNumber}</TableCell>
+                                    <TableCell className="text-right">{item.quantity}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </section>
+                
+                <footer className="mt-16 pt-8 border-t-2 border-dashed border-gray-400 grid grid-cols-2 gap-16 text-center text-sm">
+                    <div>
+                        <div className="border-b border-gray-500 w-full mb-2 h-16"></div>
+                        <p className="font-bold">DESPACHADO POR</p>
+                        <p>FARMACIA SKOL</p>
+                    </div>
+                     <div>
+                        <div className="border-b border-gray-500 w-full mb-2 h-16"></div>
+                        <p className="font-bold">RECIBIDO POR</p>
+                        <p>{pharmacy.name}</p>
+                    </div>
+                </footer>
+            </div>
+            <div className="flex justify-end gap-2 p-6 border-t no-print">
+                <Button variant="outline" onClick={onClose}>Cerrar</Button>
+                <Button onClick={handlePrint}><Printer className="mr-2 h-4 w-4"/>Imprimir</Button>
+            </div>
+        </Dialog>
+    );
+}
+
 export default function DispatchManagementPage() {
   const { toast } = useToast();
+  const [user] = useAuthState(auth);
   const [loading, setLoading] = useState(true);
   const [isDispatching, setIsDispatching] = useState(false);
   const [updatingNoteId, setUpdatingNoteId] = useState<string | null>(null);
@@ -87,6 +214,7 @@ export default function DispatchManagementPage() {
   const [externalPharmacies, setExternalPharmacies] = useState<ExternalPharmacy[]>([]);
   const [dispatchNotes, setDispatchNotes] = useState<DispatchNote[]>([]);
   const [validationState, setValidationState] = useState<ValidationState>({});
+  const [printingNote, setPrintingNote] = useState<DispatchNote | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -240,6 +368,10 @@ export default function DispatchManagementPage() {
   };
 
   const handleGenerateDispatchNote = async (pharmacyId: string, items: ItemForDispatch[]) => {
+    if (!user) {
+        toast({ title: "Error de autenticación", description: "Debe iniciar sesión para generar una nota de despacho.", variant: "destructive" });
+        return;
+    }
     setIsDispatching(true);
     try {
         const validatedItems = items.filter(item => {
@@ -268,7 +400,7 @@ export default function DispatchManagementPage() {
             }
         });
         
-        await processDispatch(pharmacyId, dispatchItems);
+        await processDispatch(pharmacyId, dispatchItems, user.uid, user.displayName || "Usuario del Sistema");
 
         toast({
             title: "Nota de Despacho Generada",
@@ -300,6 +432,12 @@ export default function DispatchManagementPage() {
   };
   
   const getPharmacyName = (pharmacyId: string) => externalPharmacies.find(p => p.id === pharmacyId)?.name || 'Desconocido';
+  const getInventoryItemName = (id: string) => inventory.find(i => i.id === id)?.name || 'N/A';
+  const getPatientName = (recipeId: string) => {
+    const recipe = recipes.find(r => r.id === recipeId);
+    if (!recipe) return 'N/A';
+    return patients.find(p => p.id === recipe.patientId)?.name || 'N/A';
+  }
 
   const handleMarkAsReceived = async (noteId: string) => {
     if (!db) return;
@@ -377,6 +515,13 @@ export default function DispatchManagementPage() {
 
   return (
     <>
+      <PrintableDispatchNote 
+        note={printingNote}
+        pharmacy={externalPharmacies.find(p => p.id === printingNote?.externalPharmacyId)}
+        onClose={() => setPrintingNote(null)}
+        getInventoryItemName={getInventoryItemName}
+        getPatientName={getPatientName}
+      />
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground font-headline">Gestión de Despachos</h1>
@@ -528,31 +673,38 @@ export default function DispatchManagementPage() {
                     {activeDispatches.map(note => (
                          <Card key={note.id}>
                             <CardHeader>
-                                <CardTitle className="flex justify-between items-center flex-wrap gap-2 text-lg font-bold text-foreground">
-                                    <span>Nota de Despacho: <span className="font-mono text-primary">{note.id}</span></span>
-                                    <Badge variant="secondary">{getPharmacyName(note.externalPharmacyId)}</Badge>
-                                </CardTitle>
-                                <p className="text-sm text-muted-foreground">
-                                    Enviado el: {format(new Date(note.createdAt), 'dd MMMM, yyyy HH:mm', { locale: es })}
-                                </p>
+                                <div className="flex justify-between items-center flex-wrap gap-2">
+                                  <CardTitle className="text-lg font-bold text-foreground">
+                                      Nota de Despacho: <span className="font-mono text-primary">{note.id}</span>
+                                  </CardTitle>
+                                  <Badge variant="secondary">{getPharmacyName(note.externalPharmacyId)}</Badge>
+                                </div>
+                                <CardDescription>
+                                    Enviado el: {format(new Date(note.createdAt), 'dd MMMM, yyyy HH:mm', { locale: es })} por {note.dispatcherName}
+                                </CardDescription>
                             </CardHeader>
                             <CardContent>
+                                <h4 className="text-sm font-semibold mb-2">Items Despachados:</h4>
                                 <ul className="space-y-2 text-sm">
                                     {note.items.map((item, index) => (
                                         <li key={index} className="flex flex-col sm:flex-row justify-between p-2 bg-muted/50 rounded-md">
-                                            <span className="font-medium text-foreground">{item.recipeItemName} (Receta: {item.recipeId})</span>
-                                            <span className="font-mono text-xs text-muted-foreground">Lote: {item.lotNumber} | Cant: {item.quantity}</span>
+                                            <div>
+                                              <span className="font-medium text-foreground">{getInventoryItemName(item.inventoryItemId)}</span>
+                                              <p className="text-xs text-muted-foreground">Receta: <Link className="font-mono text-primary hover:underline" href={`/recipes/${item.recipeId}`}>{item.recipeId}</Link></p>
+                                            </div>
+                                            <span className="font-mono text-xs text-muted-foreground mt-1 sm:mt-0">Lote: {item.lotNumber} | Cant: {item.quantity}</span>
                                         </li>
                                     ))}
                                 </ul>
                             </CardContent>
-                             <CardFooter className="bg-muted/50 p-3">
-                                <div className="flex justify-end w-full">
-                                    <Button variant="outline" onClick={() => handleMarkAsReceived(note.id)} disabled={updatingNoteId === note.id}>
-                                        {updatingNoteId === note.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        <Truck className="mr-2 h-4 w-4"/> Marcar como Recibido
-                                    </Button>
-                                </div>
+                             <CardFooter className="bg-muted/50 p-3 flex justify-between items-center">
+                                <Button variant="outline" size="sm" onClick={() => setPrintingNote(note)}>
+                                  <Printer className="mr-2 h-4 w-4"/> Imprimir
+                                </Button>
+                                <Button onClick={() => handleMarkAsReceived(note.id)} disabled={updatingNoteId === note.id}>
+                                    {updatingNoteId === note.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    <Truck className="mr-2 h-4 w-4"/> Marcar como Recibido
+                                </Button>
                              </CardFooter>
                         </Card>
                     ))}
@@ -576,17 +728,24 @@ export default function DispatchManagementPage() {
                     {historicalDispatches.map(note => (
                          <Card key={note.id}>
                             <CardHeader>
-                                <CardTitle className="flex justify-between items-center flex-wrap gap-2 text-lg font-bold text-foreground">
-                                    <span>Nota de Despacho: <span className="font-mono text-primary">{note.id}</span></span>
-                                    <Badge variant={note.status === 'Recibido' ? 'default' : 'destructive'}>{note.status}</Badge>
-                                </CardTitle>
-                                 <p className="text-sm text-muted-foreground">
+                                <div className="flex justify-between items-center flex-wrap gap-2">
+                                  <CardTitle className="text-lg font-bold text-foreground">
+                                      Nota de Despacho: <span className="font-mono text-primary">{note.id}</span>
+                                  </CardTitle>
+                                  <Badge variant={note.status === 'Recibido' ? 'default' : 'destructive'}>{note.status}</Badge>
+                                </div>
+                                <CardDescription>
                                     Enviado: {format(new Date(note.createdAt), 'dd MMM yyyy')}{note.completedAt ? `, Completado: ${format(new Date(note.completedAt), 'dd MMM yyyy')}`: ''}
-                                 </p>
+                                </CardDescription>
                             </CardHeader>
                              <CardContent>
                                 <p className="text-sm text-muted-foreground">{note.items.length} ítem(s) despachado(s) a {getPharmacyName(note.externalPharmacyId)}.</p>
                              </CardContent>
+                              <CardFooter className="bg-muted/50 p-3 flex justify-end">
+                                <Button variant="outline" size="sm" onClick={() => setPrintingNote(note)}>
+                                  <Printer className="mr-2 h-4 w-4"/> Imprimir
+                                </Button>
+                             </CardFooter>
                         </Card>
                     ))}
                  </div>
