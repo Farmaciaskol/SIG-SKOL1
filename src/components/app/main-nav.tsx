@@ -250,7 +250,7 @@ export function MainNav({
             <Link href="/dashboard" className="md:hidden">
               <div className="h-9 w-9 bg-primary rounded-md flex items-center justify-center p-1">
                 <Image
-                  src="https://placehold.co/28x28/FFFFFF/FFFFFF.png"
+                  src="https://placehold.co/28x28.png"
                   data-ai-hint="logo pharmacy white"
                   alt="Skol Pharmacy Logo"
                   width={28}
