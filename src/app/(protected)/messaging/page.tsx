@@ -227,7 +227,7 @@ export default function MessagingPage() {
         setSelectedConversation(conversation);
         if (conversation.unreadCount > 0) {
             try {
-                await markMessagesAsRead(conversation.patientId);
+                await markMessagesAsRead(conversation.patientId, 'pharmacist');
                 await fetchData(); // Refresh data to update unread counts
             } catch (error) {
                 toast({ title: "Error", description: "No se pudo marcar el mensaje como leído.", variant: "destructive" });

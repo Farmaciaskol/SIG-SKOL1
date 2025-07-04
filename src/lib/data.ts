@@ -827,7 +827,7 @@ export async function sendMessageFromPharmacist(patientId: string, content: stri
         content,
         sender: 'pharmacist',
         createdAt: new Date().toISOString(),
-        read: true, 
+        read: false, 
     };
     
     const { id, ...dataToSave } = newMessage;
@@ -836,13 +836,15 @@ export async function sendMessageFromPharmacist(patientId: string, content: stri
     return newMessage;
 };
 
-export const markMessagesAsRead = async (patientId: string): Promise<void> => {
+export const markMessagesAsRead = async (patientId: string, reader: 'pharmacist' | 'patient'): Promise<void> => {
     if (!db) throw new Error("Firestore is not initialized.");
+    
+    const senderToMark = reader === 'pharmacist' ? 'patient' : 'pharmacist';
 
     const messagesQuery = query(
         collection(db, 'patientMessages'), 
         where('patientId', '==', patientId),
-        where('sender', '==', 'patient'),
+        where('sender', '==', senderToMark),
         where('read', '==', false)
     );
 

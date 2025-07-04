@@ -3,18 +3,17 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { usePatientAuth } from '@/components/app/patient-auth-provider';
-import { getDashboardData, getMedicationInfo, sendMessageFromPatient, submitNewPrescription, requestRepreparationFromPortal } from '@/lib/patient-actions';
-import { Patient, Recipe, PatientMessage, ProactivePatientStatus } from '@/lib/types';
-import { Loader2, AlertTriangle, CheckCircle, Clock, FileText, Bot, Send, MessageSquare, Upload, X, Repeat, CreditCard, ChevronRight, Package, FileUp } from 'lucide-react';
+import { getDashboardData, submitNewPrescription, requestRepreparationFromPortal } from '@/lib/patient-actions';
+import { Patient, Recipe, ProactivePatientStatus } from '@/lib/types';
+import { Loader2, AlertTriangle, Clock, FileText, Upload, X, Repeat, CreditCard, ChevronRight, Package, FileUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { format, parseISO, differenceInDays } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { MAX_REPREPARATIONS } from '@/lib/constants';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import React from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -208,17 +207,12 @@ export default function PatientPortalDashboardPage() {
     const [dashboardData, setDashboardData] = useState<{
         readyForPickup: Recipe[];
         activeMagistralRecipes: Recipe[];
-        messages: PatientMessage[];
     } | null>(null);
     const [loading, setLoading] = useState(true);
 
-    const [isMedInfoOpen, setIsMedInfoOpen] = useState(false);
-    const [isMessagingOpen, setIsMessagingOpen] = useState(false);
     const [isRecipeManagerOpen, setIsRecipeManagerOpen] = useState(false);
     const [isUploadOpen, setIsUploadOpen] = useState(false);
-    const [selectedMed, setSelectedMed] = useState({ name: '', info: '' });
     const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
-    const [isFetchingMedInfo, setIsFetchingMedInfo] = useState(false);
 
     const fetchData = useCallback(async () => {
         if (!patient) return;
@@ -266,7 +260,6 @@ export default function PatientPortalDashboardPage() {
                 <CardContent>
                     <ul className="divide-y">
                         <QuickAccessListItem icon={Upload} title="Cargar Nueva Receta" description="Sube una foto de tu nueva receta médica." onClick={() => setIsUploadOpen(true)} />
-                        <QuickAccessListItem icon={MessageSquare} title="Acceso a Chat con Soporte" description="Comunícate con nuestro equipo." onClick={() => setIsMessagingOpen(true)} />
                         <QuickAccessListItem icon={CreditCard} title="Consultar Saldos y Pagos" description="Esta función estará disponible próximamente." disabled={true} />
                     </ul>
                 </CardContent>
@@ -299,31 +292,6 @@ export default function PatientPortalDashboardPage() {
                 </CardContent>
               </Card>
             
-            <Dialog open={isMedInfoOpen} onOpenChange={setIsMedInfoOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2"><Bot /> Información sobre: {selectedMed.name}</DialogTitle>
-                        <DialogDescription>Generado por IA. Esto no reemplaza el consejo profesional.</DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4 whitespace-pre-wrap">
-                        {isFetchingMedInfo ? <Loader2 className="animate-spin h-6 w-6 mx-auto" /> : selectedMed.info}
-                    </div>
-                    <DialogFooter>
-                        <Button onClick={() => setIsMedInfoOpen(false)}>Entendido</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            <Dialog open={isMessagingOpen} onOpenChange={setIsMessagingOpen}>
-                <DialogContent className="sm:max-w-[425px]">
-                  <DialogHeader>
-                    <DialogTitle>Mensajería Segura</DialogTitle>
-                    <DialogDescription>Comunícate con nuestro equipo para dudas no urgentes.</DialogDescription>
-                  </DialogHeader>
-                  <SecureMessagingModal patientId={patient.id} initialMessages={dashboardData.messages} />
-                </DialogContent>
-            </Dialog>
-
             <RecipeManagementDialog
               isOpen={isRecipeManagerOpen}
               onOpenChange={setIsRecipeManagerOpen}
@@ -344,74 +312,6 @@ export default function PatientPortalDashboardPage() {
         </div>
     );
 }
-
-const SecureMessagingModal = ({ patientId, initialMessages }: { patientId: string; initialMessages: PatientMessage[] }) => {
-    const [messages, setMessages] = useState(initialMessages);
-    const [newMessage, setNewMessage] = useState("");
-    const [isSending, setIsSending] = useState(false);
-    const { toast } = useToast();
-    const messagesEndRef = React.useRef<HTMLDivElement>(null);
-
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-
-    React.useEffect(scrollToBottom, [messages]);
-
-    const handleSendMessage = async () => {
-        if (!newMessage.trim()) return;
-        setIsSending(true);
-        try {
-            const sentMessage = await sendMessageFromPatient(patientId, newMessage);
-            setMessages(prev => [...prev, sentMessage]);
-            setNewMessage("");
-
-            setTimeout(() => {
-                setMessages(prev => [...prev, {
-                    id: `auto-${Date.now()}`,
-                    patientId,
-                    content: "Hemos recibido tu mensaje. Nuestro equipo te responderá a la brevedad.",
-                    sender: 'pharmacist',
-                    createdAt: new Date().toISOString(),
-                    read: true
-                }]);
-            }, 1000);
-
-        } catch (error) {
-            toast({ title: "Error", description: "No se pudo enviar el mensaje.", variant: "destructive" });
-        } finally {
-            setIsSending(false);
-        }
-    };
-    
-    return (
-        <div className="flex flex-col h-[60vh]">
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/30 rounded-md">
-                {messages.map(msg => (
-                    <div key={msg.id} className={`flex ${msg.sender === 'patient' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[80%] p-3 rounded-lg ${msg.sender === 'patient' ? 'bg-primary text-primary-foreground' : 'bg-background'}`}>
-                           <p>{msg.content}</p>
-                           <p className={`text-xs mt-1 ${msg.sender === 'patient' ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>{format(parseISO(msg.createdAt), 'HH:mm')}</p>
-                        </div>
-                    </div>
-                ))}
-                <div ref={messagesEndRef} />
-            </div>
-            <div className="mt-4 flex items-center gap-2">
-                <Textarea 
-                    value={newMessage}
-                    onChange={e => setNewMessage(e.target.value)}
-                    placeholder="Escribe tu consulta..."
-                    disabled={isSending}
-                />
-                <Button onClick={handleSendMessage} disabled={isSending || !newMessage.trim()}>
-                    {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                </Button>
-            </div>
-        </div>
-    );
-};
-
 
 function RecipeManagementDialog({ isOpen, onOpenChange, recipe, patientId, onSuccess, userId }: { isOpen: boolean; onOpenChange: (open: boolean) => void; recipe: Recipe | null; patientId: string; onSuccess: () => void; userId?: string; }) {
   const { toast } = useToast();
