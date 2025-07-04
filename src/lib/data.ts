@@ -155,6 +155,15 @@ export const deleteRecipe = async (id: string): Promise<void> => {
 
 export const addDoctor = async (doctor: Omit<Doctor, 'id'>): Promise<string> => {
     if (!db) throw new Error("Firestore is not initialized.");
+
+    if (doctor.license) {
+        const q = query(collection(db, "doctors"), where("license", "==", doctor.license));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+            throw new Error('Ya existe un médico con este número de colegiatura.');
+        }
+    }
+    
     const docRef = await addDoc(collection(db, 'doctors'), doctor);
     return docRef.id;
 };
@@ -214,6 +223,11 @@ export const saveRecipe = async (data: any, imageFile: File | null, userId: stri
 
     let patientId = data.patientId;
     if (data.patientSelectionType === 'new' && data.newPatientName && data.newPatientRut) {
+        const q = query(collection(db, "patients"), where("rut", "==", data.newPatientRut));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+            throw new Error('Ya existe un paciente con este RUT. Por favor, selecciónelo de la lista de pacientes existentes.');
+        }
         const newPatientRef = doc(collection(db, 'patients'));
         patientId = newPatientRef.id;
         await setDoc(newPatientRef, { name: data.newPatientName, rut: data.newPatientRut, email: '', phone: '', isChronic: false, proactiveStatus: 'OK', proactiveMessage: 'No requiere acción.', actionNeeded: 'NONE' });
@@ -221,6 +235,11 @@ export const saveRecipe = async (data: any, imageFile: File | null, userId: stri
 
     let doctorId = data.doctorId;
     if (data.doctorSelectionType === 'new' && data.newDoctorName && data.newDoctorLicense) {
+        const q = query(collection(db, "doctors"), where("license", "==", data.newDoctorLicense));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+            throw new Error('Ya existe un médico con este número de colegiatura. Por favor, selecciónelo de la lista de médicos existentes.');
+        }
         const newDoctorRef = doc(collection(db, 'doctors'));
         doctorId = newDoctorRef.id;
         await setDoc(newDoctorRef, { name: data.newDoctorName, specialty: data.newDoctorSpecialty || '', license: data.newDoctorLicense, rut: data.newDoctorRut || '' });
@@ -290,6 +309,13 @@ export const saveRecipe = async (data: any, imageFile: File | null, userId: stri
 
 export const addInventoryItem = async (item: Omit<InventoryItem, 'id' | 'quantity' | 'lots'>): Promise<string> => {
     if (!db) throw new Error("Firestore is not initialized.");
+    
+    const q = query(collection(db, "inventory"), where("name", "==", item.name));
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+        throw new Error('Ya existe un producto de inventario con este nombre.');
+    }
+    
     const itemData = { ...item, quantity: 0, lots: [] };
     const docRef = await addDoc(collection(db, 'inventory'), itemData as any);
     return docRef.id;
@@ -516,6 +542,12 @@ export const updatePatient = async (id: string, updates: Partial<Patient> & { pa
 export const addPatient = async (patient: Omit<Patient, 'id' | 'proactiveStatus' | 'proactiveMessage' | 'actionNeeded' | 'commercialMedications'> & { password?: string }): Promise<string> => {
     if (!db) throw new Error("Firestore is not initialized.");
     
+    const q = query(collection(db, "patients"), where("rut", "==", patient.rut));
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+        throw new Error('Ya existe un paciente con este RUT.');
+    }
+
     const { password, ...patientData } = patient;
 
     // --- Firebase Auth User Creation (Simulated) ---
