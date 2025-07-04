@@ -225,7 +225,7 @@ export function MainNav({
           <SidebarHeader className="p-4 group-data-[collapsible=icon]:p-2 justify-center transition-all duration-200">
             <div className="w-full px-4 group-data-[collapsible=icon]:hidden">
               <Image
-                src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/FARMACIA_SK.jpg?alt=media&token=42d10668-3e42-498c-84bc-2a07c645e998"
+                src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=abcdef12-3456-7890-abcd-ef1234567890"
                 alt="Skol Pharmacy Logo"
                 width={120}
                 height={120}
@@ -235,7 +235,7 @@ export function MainNav({
             </div>
             <div className="hidden group-data-[collapsible=icon]:block">
               <Image
-                src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/FARMACIA_SK.jpg?alt=media&token=42d10668-3e42-498c-84bc-2a07c645e998"
+                src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=abcdef12-3456-7890-abcd-ef1234567890"
                 alt="Skol Pharmacy Logo"
                 width={32}
                 height={32}
