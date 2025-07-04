@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -119,12 +120,15 @@ export const InventoryItemForm = ({ item, onFinished }: { item?: InventoryItem; 
                         <FormField control={form.control} name="name" render={({ field }) => (
                             <FormItem><FormLabel>Nombre Comercial *</FormLabel><FormControl><Input placeholder="Ej: Tapsin, Aspirina" {...field} /></FormControl><FormMessage /></FormItem>
                         )}/>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <FormField control={form.control} name="sku" render={({ field }) => (
                                 <FormItem><FormLabel>Código Nacional / ISP</FormLabel><FormControl><Input placeholder="Ej: F-12345" {...field} /></FormControl><FormMessage /></FormItem>
                             )}/>
                             <FormField control={form.control} name="manufacturer" render={({ field }) => (
                                 <FormItem><FormLabel>Laboratorio / Fabricante</FormLabel><FormControl><Input placeholder="Ej: Bayer, Pfizer" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                            <FormField control={form.control} name="barcode" render={({ field }) => (
+                                <FormItem><FormLabel>Código de Barras</FormLabel><FormControl><Input placeholder="Ej: 780000123456" {...field} /></FormControl><FormMessage /></FormItem>
                             )}/>
                         </div>
                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
