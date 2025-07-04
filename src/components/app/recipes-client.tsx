@@ -950,7 +950,10 @@ Equipo Farmacia Skol`;
                         <TableBody>
                         {paginatedRecipes.map((recipe) => {
                             const StatusIcon = statusConfig[recipe.status]?.icon || FileX;
-                            const isPaymentPending = [RecipeStatus.ReceivedAtSkol, RecipeStatus.ReadyForPickup, RecipeStatus.Dispensed].includes(recipe.status) && recipe.paymentStatus !== 'Pagado';
+                            const isPaymentPending = recipe.paymentStatus === 'Pendiente' && [RecipeStatus.ReceivedAtSkol, RecipeStatus.ReadyForPickup, RecipeStatus.Dispensed].includes(recipe.status);
+                            const dispensedCount = recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0;
+                            const totalCycles = MAX_REPREPARATIONS + 1;
+                            const showCycleCount = ![RecipeStatus.Archived, RecipeStatus.Rejected, RecipeStatus.Cancelled].includes(recipe.status);
                             return (
                                 <TableRow key={recipe.id} className={cn("hover:bg-muted/50", selectedRecipes.includes(recipe.id) && "bg-muted/50")}>
                                 <TableCell className="p-4"><Checkbox onCheckedChange={() => toggleSelectRecipe(recipe.id)} checked={selectedRecipes.includes(recipe.id)}/></TableCell>
@@ -985,6 +988,18 @@ Equipo Farmacia Skol`;
                                         <StatusIcon className="h-3 w-3 mr-1.5" />
                                         {statusConfig[recipe.status]?.text || recipe.status}
                                     </Badge>
+                                    {showCycleCount && (
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Badge variant="secondary" className="font-mono">{`${dispensedCount + 1}/${totalCycles}`}</Badge>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Ciclo de re-preparación</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    )}
                                     {isPaymentPending && (
                                         <TooltipProvider>
                                             <Tooltip>
@@ -1061,7 +1076,10 @@ Equipo Farmacia Skol`;
             {/* Mobile Card View */}
             <div className="grid grid-cols-1 gap-4 md:hidden mt-6">
                 {paginatedRecipes.map((recipe) => {
-                    const isPaymentPending = [RecipeStatus.ReceivedAtSkol, RecipeStatus.ReadyForPickup, RecipeStatus.Dispensed].includes(recipe.status) && recipe.paymentStatus !== 'Pagado';
+                    const isPaymentPending = recipe.paymentStatus === 'Pendiente' && [RecipeStatus.ReceivedAtSkol, RecipeStatus.ReadyForPickup, RecipeStatus.Dispensed].includes(recipe.status);
+                    const dispensedCount = recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0;
+                    const totalCycles = MAX_REPREPARATIONS + 1;
+                    const showCycleCount = ![RecipeStatus.Archived, RecipeStatus.Rejected, RecipeStatus.Cancelled].includes(recipe.status);
                     return (
                     <Card key={recipe.id} className={cn(selectedRecipes.includes(recipe.id) && "ring-2 ring-primary")}>
                     <CardHeader className="p-4">
@@ -1076,9 +1094,14 @@ Equipo Farmacia Skol`;
                                         <CardDescription className="text-xs">
                                             Receta <Link href={`/recipes/${recipe.id}`} className="font-mono text-primary hover:underline">{recipe.id}</Link>
                                         </CardDescription>
-                                         <Badge variant="outline" className={cn("font-normal text-xs text-center whitespace-nowrap", statusConfig[recipe.status]?.badge)}>
-                                            {statusConfig[recipe.status]?.text || recipe.status}
-                                        </Badge>
+                                        <div className="flex items-center gap-2">
+                                            <Badge variant="outline" className={cn("font-normal text-xs text-center whitespace-nowrap", statusConfig[recipe.status]?.badge)}>
+                                                {statusConfig[recipe.status]?.text || recipe.status}
+                                            </Badge>
+                                            {showCycleCount && (
+                                                <Badge variant="secondary" className="font-mono text-xs">{`${dispensedCount + 1}/${totalCycles}`}</Badge>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
