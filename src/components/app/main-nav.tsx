@@ -57,6 +57,10 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '../ui/button';
 import React from 'react';
 import { Badge } from '../ui/badge';
+import { getAvatar } from '@/components/app/predefined-avatars';
+import { getUsers } from '@/lib/data';
+import { User as AppUser } from '@/lib/types';
+
 
 const menuGroups = [
     {
@@ -173,9 +177,21 @@ export function MainNav({
 }: MainNavProps) {
   const pathname = usePathname();
   const [user] = useAuthState(auth);
+  const [appUser, setAppUser] = React.useState<AppUser | null>(null);
   
   const defaultOpenGroup = menuGroups.find(group => group.items.some(item => pathname.startsWith(item.href)))?.title || 'Principal';
   const [openItems, setOpenItems] = React.useState([defaultOpenGroup]);
+
+  React.useEffect(() => {
+    async function fetchAppUser() {
+      if (user?.email) {
+        const allUsers = await getUsers();
+        const foundUser = allUsers.find(u => u.email === user.email);
+        setAppUser(foundUser || null);
+      }
+    }
+    fetchAppUser();
+  }, [user]);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -187,6 +203,11 @@ export function MainNav({
       setOpenItems(prev => [...prev, activeGroup]);
     }
   }, [pathname, openItems]);
+
+  const DisplayAvatar = appUser?.avatar 
+    ? getAvatar(appUser.avatar) 
+    : <AvatarFallback>{user?.displayName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase()}</AvatarFallback>;
+
 
   return (
     <SidebarProvider>
@@ -286,14 +307,14 @@ export function MainNav({
                         <DropdownMenuTrigger asChild>
                               <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                                 <Avatar className="h-9 w-9">
-                                    <AvatarFallback>{user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase()}</AvatarFallback>
+                                    {DisplayAvatar}
                                 </Avatar>
                               </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="w-56" align="end" forceMount>
                             <DropdownMenuLabel className="font-normal">
                               <div className="flex flex-col space-y-1">
-                                <p className="text-sm font-medium leading-none">{user.displayName || "Usuario"}</p>
+                                <p className="text-sm font-medium leading-none">{appUser?.name || user.displayName || "Usuario"}</p>
                                 <p className="text-xs leading-none text-muted-foreground">
                                   {user.email}
                                 </p>

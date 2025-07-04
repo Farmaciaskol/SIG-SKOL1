@@ -273,6 +273,7 @@ export interface User {
   name: string;
   email: string;
   roleId: string;
+  avatar?: string;
 }
 
 export interface Role {
