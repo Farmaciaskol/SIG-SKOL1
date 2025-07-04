@@ -236,6 +236,9 @@ export const saveRecipe = async (data: any, imageFile: File | null, userId: stri
             imageUrl = await getDownloadURL(uploadResult.ref);
         } catch (storageError: any) {
             console.error("Firebase Storage upload failed in saveRecipe:", storageError);
+            const currentUser = auth?.currentUser;
+            console.log("Auth state during failed recipe save:", { email: currentUser?.email, uid: currentUser?.uid, isAnonymous: currentUser?.isAnonymous });
+
             let userMessage = `Error de autorización: Su usuario no tiene permiso para subir archivos. Por favor, vaya a la consola de Firebase -> Storage -> Rules y asegúrese de que los usuarios autenticados pueden escribir.`;
             if (storageError.code !== 'storage/unauthorized') {
                 userMessage = `Error al subir imagen. Código: ${storageError.code || 'UNKNOWN'}.`;

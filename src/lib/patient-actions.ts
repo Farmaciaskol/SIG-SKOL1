@@ -71,9 +71,12 @@ export async function submitNewPrescription(patientId: string, imageFile: File):
         imageUrl = await getDownloadURL(uploadResult.ref);
     } catch (storageError: any) {
         console.error("Firebase Storage upload failed in submitNewPrescription:", storageError);
-        let userMessage = `Error al subir imagen. Código: ${storageError.code || 'UNKNOWN'}`;
-        if (storageError.code === 'storage/unauthorized') {
-            userMessage = "Error de autorización: No tiene permiso para subir archivos. Vaya a la consola de Firebase -> Storage -> Rules y asegúrese de que los usuarios autenticados pueden escribir.";
+        const currentUser = auth?.currentUser;
+        console.log("Auth state during failed portal upload:", { email: currentUser?.email, uid: currentUser?.uid, isAnonymous: currentUser?.isAnonymous });
+        
+        let userMessage = `Error de autorización: Su usuario no tiene permiso para subir archivos. Por favor, vaya a la consola de Firebase -> Storage -> Rules y asegúrese de que los usuarios autenticados pueden escribir.`;
+        if (storageError.code !== 'storage/unauthorized') {
+            userMessage = `Error al subir imagen. Código: ${storageError.code || 'UNKNOWN'}.`;
         }
         throw new Error(userMessage);
     }
