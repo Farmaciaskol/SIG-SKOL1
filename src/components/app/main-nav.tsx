@@ -28,6 +28,7 @@ import {
   DollarSign,
   Inbox,
   Bell,
+  User,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -299,6 +300,12 @@ export function MainNav({
                               </div>
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
+                            <DropdownMenuItem asChild>
+                              <Link href="/profile" className="cursor-pointer">
+                                  <User className="mr-2 h-4 w-4" />
+                                  <span>Mi Perfil</span>
+                              </Link>
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
                                 <LogOut className="mr-2 h-4 w-4" />
                                 <span>Cerrar Sesión</span>
