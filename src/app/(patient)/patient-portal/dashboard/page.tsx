@@ -41,7 +41,7 @@ const ProactiveActionCard = ({ patient }: { patient: Patient }) => {
 
     return (
         <Card className={`border-l-4 ${config.color}`}>
-            <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-4">
+            <CardHeader className="flex flex-row items-center gap-4 space-y-0 p-4">
                 <config.icon className={`h-8 w-8 ${config.color.split(' ')[0]}`} />
                 <div>
                     <CardTitle>{config.title}</CardTitle>
@@ -54,11 +54,11 @@ const ProactiveActionCard = ({ patient }: { patient: Patient }) => {
 
 const ActionCard = ({ title, value, icon: Icon, onClick }: { title: string; value: string | number; icon: React.ElementType; onClick?: () => void }) => (
   <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={onClick}>
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 pb-2">
       <CardTitle className="text-sm font-medium">{title}</CardTitle>
       <Icon className="h-4 w-4 text-muted-foreground" />
     </CardHeader>
-    <CardContent>
+    <CardContent className="p-4 pt-0">
       <div className="text-2xl font-bold">{value}</div>
     </CardContent>
   </Card>
@@ -110,11 +110,11 @@ const PrescriptionUploadCard = ({ patientId, onUploadSuccess }: { patientId: str
 
   return (
     <Card className="col-span-1 lg:col-span-2">
-      <CardHeader>
+      <CardHeader className="p-4">
         <CardTitle>Cargar Nueva Receta</CardTitle>
         <CardDescription>Sube una foto clara de tu receta médica para que la procesemos.</CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col md:flex-row items-center gap-4">
+      <CardContent className="flex flex-col md:flex-row items-center gap-4 p-4">
         <div
           className="flex-1 w-full flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary relative"
           onClick={() => fileInputRef.current?.click()}
@@ -226,10 +226,10 @@ export default function PatientPortalDashboardPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Mis Tratamientos */}
               <Card>
-                <CardHeader>
+                <CardHeader className="p-4">
                   <CardTitle>Mis Tratamientos Activos</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-4">
                   {allActiveTreatments.length > 0 ? (
                     <ul className="space-y-3">
                       {allActiveTreatments.map((med, index) => (
@@ -252,11 +252,11 @@ export default function PatientPortalDashboardPage() {
 
               {/* Mis Recetas */}
               <Card>
-                <CardHeader>
+                <CardHeader className="p-4">
                   <CardTitle>Mis Recetas Magistrales</CardTitle>
                   <CardDescription>Aquí puedes ver la vigencia de tus recetas originales.</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-4">
                   {activeMagistralRecipes.length > 0 ? (
                     <ul className="space-y-3">
                         {activeMagistralRecipes.map(recipe => {

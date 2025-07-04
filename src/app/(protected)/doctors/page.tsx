@@ -224,11 +224,11 @@ export default function DoctorsPage() {
 
     return (
         <Card className="flex flex-col">
-            <CardHeader>
+            <CardHeader className="p-4">
             <CardTitle className="text-lg font-bold text-foreground truncate" title={doctor.name}>{doctor.name}</CardTitle>
             <p className="text-sm font-medium text-primary truncate" title={doctor.specialty}>{doctor.specialty}</p>
             </CardHeader>
-            <CardContent className="flex-grow space-y-6">
+            <CardContent className="flex-grow space-y-4 p-4">
             <div>
                 <p className="text-xs text-muted-foreground">Reg: {doctor.license || 'N/A'} | RUT: {doctor.rut || 'N/A'}</p>
                 <div className="mt-4 space-y-2">
@@ -286,7 +286,7 @@ export default function DoctorsPage() {
                 </div>
             </div>
             </CardContent>
-            <CardFooter className="bg-muted/50 p-3 flex justify-between items-center">
+            <CardFooter className="bg-muted/50 p-4 flex justify-between items-center">
                  <Button asChild>
                     <Link href={`/doctors/${doctor.id}`}>Ver Detalle</Link>
                 </Button>

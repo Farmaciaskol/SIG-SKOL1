@@ -148,11 +148,11 @@ export default function PatientsPage() {
 
     return (
         <Card className={cn("flex flex-col justify-between transition-shadow hover:shadow-md", statusStyles[patient.proactiveStatus])}>
-            <CardHeader className="pb-3">
+            <CardHeader className="p-4">
                 <div className="flex justify-between items-start">
                     <div>
-                        <CardTitle className="text-lg font-bold text-foreground hover:underline truncate">
-                            <Link href={`/patients/${patient.id}`} title={patient.name}>
+                        <CardTitle className="text-lg font-bold text-foreground hover:underline">
+                            <Link href={`/patients/${patient.id}`} title={patient.name} className="truncate">
                                 {patient.name}
                             </Link>
                         </CardTitle>
@@ -167,13 +167,13 @@ export default function PatientsPage() {
                     </div>
                 </div>
             </CardHeader>
-            <CardContent className="py-2">
+            <CardContent className="p-4">
                 <div className="flex items-start text-sm">
                     <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
                     <p className="text-foreground/90 leading-snug">{patient.proactiveMessage}</p>
                 </div>
             </CardContent>
-            <CardFooter className="flex justify-between items-center bg-muted/50 py-3 px-4 mt-2">
+            <CardFooter className="flex justify-between items-center bg-muted/50 p-4 mt-2">
                 <Button asChild>
                     <Link href={buttonHref}>
                         <ButtonIcon className="mr-2 h-4 w-4" />

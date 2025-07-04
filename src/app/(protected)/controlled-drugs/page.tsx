@@ -184,20 +184,20 @@ export default function ControlledDrugsPage() {
             <div className="grid gap-4 md:hidden">
                 {filteredLogEntries.map((entry) => (
                     <Card key={entry.id}>
-                        <CardHeader>
+                        <CardHeader className="p-4">
                             <div className="flex justify-between items-start">
                                 <CardTitle className="font-mono">{entry.internalFolio}</CardTitle>
                                 <Badge variant={entry.controlledType === 'Estupefaciente' ? 'destructive' : 'secondary'}>{entry.controlledType}</Badge>
                             </div>
                             <p className="text-xs text-muted-foreground">{format(new Date(entry.dispensationDate), 'dd MMMM, yyyy', {locale: es})}</p>
                         </CardHeader>
-                        <CardContent className="space-y-2 text-sm">
+                        <CardContent className="space-y-2 text-sm p-4">
                             <p><span className="font-semibold">Medicamento:</span> {entry.medicationName}</p>
                             <p><span className="font-semibold">Paciente:</span> {getPatientName(entry.patientId)}</p>
                             <p><span className="font-semibold">Médico:</span> {getDoctorName(entry.doctorId)}</p>
                             <p><span className="font-semibold">Folio Receta:</span> <span className="font-mono">{entry.prescriptionFolio}</span></p>
                         </CardContent>
-                        <CardFooter className="bg-muted/50 p-3">
+                        <CardFooter className="bg-muted/50 p-4">
                              <Button variant="outline" size="sm" className="w-full" onClick={() => setViewingImage(entry.prescriptionImageUrl || null)} disabled={!entry.prescriptionImageUrl}>
                                <Eye className="mr-2 h-4 w-4"/> Ver Adjunto
                              </Button>

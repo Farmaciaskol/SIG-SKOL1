@@ -129,11 +129,11 @@ import { auth } from '@/lib/firebase';
 
 const StatCard = ({ title, value, icon: Icon, onClick, active = false }: { title: string; value: string | number; icon: React.ElementType, onClick: () => void, active?: boolean }) => (
   <Card className={cn("hover:shadow-md transition-shadow cursor-pointer", active && "ring-2 ring-primary")} onClick={onClick}>
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 pb-2">
       <CardTitle className="text-sm font-medium">{title}</CardTitle>
       <Icon className="h-4 w-4 text-muted-foreground" />
     </CardHeader>
-    <CardContent>
+    <CardContent className="p-4 pt-0">
       <p className="text-2xl font-bold">{value}</p>
     </CardContent>
   </Card>
@@ -594,7 +594,7 @@ export const RecipesClient = ({
                         </DropdownMenuItem>
                     )}
                     {recipe.status !== RecipeStatus.Cancelled && recipe.status !== RecipeStatus.Dispensed && (
-                        <DropdownMenuItem className="text-amber-600 focus:text-amber-600 focus:bg-amber-50" onClick={() => setRecipeToCancel(recipe)}><Ban className="mr-2 h-4 w-4" />Anular</DropdownMenuItem>
+                        <DropdownMenuItem className="text-amber-600 focus:text-amber-600 focus:bg-amber-50" onClick={() => setRecipeToCancel(recipe)}><Ban className="mr-2 h-4 w-4" />Anular Receta</DropdownMenuItem>
                     )}
                     <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50" onClick={() => setRecipeToDelete(recipe)}><Trash2 className="mr-2 h-4 w-4" />Eliminar</DropdownMenuItem>
                 </DropdownMenuContent>
@@ -1039,10 +1039,10 @@ Equipo Farmacia Skol`;
             <div className="grid grid-cols-1 gap-4 md:hidden mt-6">
             {paginatedRecipes.map((recipe) => (
                 <Card key={recipe.id} className={cn(selectedRecipes.includes(recipe.id) && "ring-2 ring-primary")}>
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardHeader className="flex flex-row items-center justify-between p-4">
                     <div className="flex items-center gap-2">
                         <Checkbox onCheckedChange={() => toggleSelectRecipe(recipe.id)} checked={selectedRecipes.includes(recipe.id)}/>
-                        <Link href={`/recipes/${recipe.id}`} className="text-lg font-bold text-primary hover:underline">{recipe.id}</Link>
+                        <Link href={`/recipes/${recipe.id}`} className="text-lg font-bold text-primary hover:underline whitespace-nowrap">{recipe.id}</Link>
                     </div>
                     <div className="flex items-center gap-2">
                       {recipe.status === RecipeStatus.PendingReviewPortal && (
@@ -1074,7 +1074,7 @@ Equipo Farmacia Skol`;
                       </Badge>
                     </div>
                   </CardHeader>
-                  <CardContent className="space-y-2 pb-4">
+                  <CardContent className="space-y-2 p-4 pt-0">
                     <p className="font-bold text-lg text-foreground truncate" title={getPatientName(recipe.patientId)}>{getPatientName(recipe.patientId)}</p>
                     {recipe.items.length > 0 ? (
                         <div>
@@ -1098,7 +1098,7 @@ Equipo Farmacia Skol`;
                     )}
                      <p className="text-xs text-muted-foreground pt-1">Creada: {format(new Date(recipe.createdAt), "d MMM yyyy", { locale: es })}</p>
                   </CardContent>
-                  <CardFooter className="p-3 bg-muted/50"><MobileRecipeActions recipe={recipe} setRecipeToView={setRecipeToView} /></CardFooter>
+                  <CardFooter className="p-4 bg-muted/50"><MobileRecipeActions recipe={recipe} setRecipeToView={setRecipeToView} /></CardFooter>
                 </Card>
             ))}
             </div>

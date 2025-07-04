@@ -75,7 +75,7 @@ const PharmacyCard = ({ pharmacy, onEdit, onDelete }: { pharmacy: PharmacyWithSt
 
   return (
     <Card className="flex flex-col">
-      <CardHeader>
+      <CardHeader className="p-4">
         <div className="flex justify-between items-start">
             <CardTitle className="text-lg font-bold text-foreground">{pharmacy.name}</CardTitle>
             <div className="flex items-center gap-1">
@@ -109,7 +109,7 @@ const PharmacyCard = ({ pharmacy, onEdit, onDelete }: { pharmacy: PharmacyWithSt
             )}
         </div>
       </CardHeader>
-      <CardContent className="flex-grow space-y-6">
+      <CardContent className="flex-grow space-y-4 p-4">
         
         <div className="border-t pt-4 grid grid-cols-3 gap-4 text-center">
             <div>
@@ -186,11 +186,11 @@ type PharmacyFormValues = z.infer<typeof pharmacyFormSchema>;
 
 const StatCard = ({ title, value, icon: Icon }: { title: string; value: string | number; icon: React.ElementType }) => (
     <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 pb-2">
             <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
             <Icon className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 pt-0">
             <div className="text-2xl font-bold text-foreground">{value}</div>
         </CardContent>
     </Card>
