@@ -600,24 +600,53 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
     setIsAiExtracting(true);
     try {
       const result = await extractRecipeDataFromImage({ photoDataUri: previewImage });
-      if (result.patientName) {
-        form.setValue('newPatientName', result.patientName);
+
+      // Handle Patient
+      if (result.suggestedPatientId && patients.some(p => p.id === result.suggestedPatientId)) {
+        form.setValue('patientSelectionType', 'existing');
+        form.setValue('patientId', result.suggestedPatientId);
+        form.setValue('newPatientName', '');
+        form.setValue('newPatientRut', '');
+        toast({ title: 'Paciente Encontrado', description: `Se ha pre-seleccionado a ${result.patientName}.` });
+      } else if (result.patientName) {
         form.setValue('patientSelectionType', 'new');
+        form.setValue('newPatientName', result.patientName);
+        form.setValue('newPatientRut', result.patientRut || '');
+        form.setValue('patientId', '');
       }
-      if (result.patientRut) form.setValue('newPatientRut', result.patientRut);
-      if (result.doctorName) {
-        form.setValue('newDoctorName', result.doctorName);
+
+      // Handle Doctor
+      if (result.suggestedDoctorId && doctors.some(d => d.id === result.suggestedDoctorId)) {
+        form.setValue('doctorSelectionType', 'existing');
+        form.setValue('doctorId', result.suggestedDoctorId);
+        form.setValue('newDoctorName', '');
+        form.setValue('newDoctorRut', '');
+        form.setValue('newDoctorLicense', '');
+        form.setValue('newDoctorSpecialty', '');
+         toast({ title: 'Médico Encontrado', description: `Se ha pre-seleccionado a ${result.doctorName}.` });
+      } else if (result.doctorName) {
         form.setValue('doctorSelectionType', 'new');
+        form.setValue('newDoctorName', result.doctorName);
+        form.setValue('newDoctorRut', result.doctorRut || '');
+        form.setValue('newDoctorLicense', result.doctorLicense || '');
+        form.setValue('newDoctorSpecialty', result.doctorSpecialty || '');
+        form.setValue('doctorId', '');
       }
-      if (result.doctorRut) form.setValue('newDoctorRut', result.doctorRut);
-      if (result.doctorLicense) form.setValue('newDoctorLicense', result.doctorLicense);
-      if (result.doctorSpecialty) form.setValue('newDoctorSpecialty', result.doctorSpecialty);
+      
+      // Handle other fields
+      if (result.patientAddress) form.setValue('dispatchAddress', result.patientAddress);
       if (result.prescriptionDate) form.setValue('prescriptionDate', parseISO(result.prescriptionDate));
       if (result.items && result.items.length > 0) {
+        // Clear existing items before adding new ones
+        while(fields.length > 0) {
+            remove(0);
+        }
         const filledItems = result.items.map(item => ({ ...defaultItem, ...item }));
-        form.setValue('items', filledItems);
+        filledItems.forEach(item => append(item));
       }
-      toast({ title: 'Extracción Exitosa', description: 'Los campos del formulario han sido pre-rellenados.' });
+
+      toast({ title: 'Extracción Completada', description: 'Se han rellenado los campos del formulario.' });
+
     } catch (error) {
       console.error('AI extraction failed:', error);
       toast({ title: 'Error de IA', description: 'No se pudo extraer la información de la imagen.', variant: 'destructive' });
