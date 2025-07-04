@@ -954,6 +954,7 @@ Equipo Farmacia Skol`;
                             const dispensedCount = recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0;
                             const totalCycles = MAX_REPREPARATIONS + 1;
                             const showCycleCount = ![RecipeStatus.Archived, RecipeStatus.Rejected, RecipeStatus.Cancelled].includes(recipe.status);
+                            const currentCycle = Math.min(dispensedCount + 1, totalCycles);
                             return (
                                 <TableRow key={recipe.id} className={cn("hover:bg-muted/50", selectedRecipes.includes(recipe.id) && "bg-muted/50")}>
                                 <TableCell className="p-4"><Checkbox onCheckedChange={() => toggleSelectRecipe(recipe.id)} checked={selectedRecipes.includes(recipe.id)}/></TableCell>
@@ -992,7 +993,7 @@ Equipo Farmacia Skol`;
                                         <TooltipProvider>
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
-                                                    <Badge variant="secondary" className="font-mono">{`${dispensedCount + 1}/${totalCycles}`}</Badge>
+                                                    <Badge variant="secondary" className="font-mono">{`${currentCycle}/${totalCycles}`}</Badge>
                                                 </TooltipTrigger>
                                                 <TooltipContent>
                                                     <p>Ciclo de re-preparación</p>
@@ -1080,6 +1081,7 @@ Equipo Farmacia Skol`;
                     const dispensedCount = recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0;
                     const totalCycles = MAX_REPREPARATIONS + 1;
                     const showCycleCount = ![RecipeStatus.Archived, RecipeStatus.Rejected, RecipeStatus.Cancelled].includes(recipe.status);
+                    const currentCycle = Math.min(dispensedCount + 1, totalCycles);
                     return (
                     <Card key={recipe.id} className={cn(selectedRecipes.includes(recipe.id) && "ring-2 ring-primary")}>
                     <CardHeader className="p-4">
@@ -1099,7 +1101,7 @@ Equipo Farmacia Skol`;
                                                 {statusConfig[recipe.status]?.text || recipe.status}
                                             </Badge>
                                             {showCycleCount && (
-                                                <Badge variant="secondary" className="font-mono text-xs">{`${dispensedCount + 1}/${totalCycles}`}</Badge>
+                                                <Badge variant="secondary" className="font-mono text-xs">{`${currentCycle}/${totalCycles}`}</Badge>
                                             )}
                                         </div>
                                     </div>
