@@ -693,6 +693,10 @@ export const RecipesClient = ({
         if (!recipeToSend || !pharmacy) return '';
         const patient = patients.find(p => p.id === recipeToSend.patientId);
         const item = recipeToSend.items[0];
+
+        const safetyStockLine = item.safetyStockDays && item.safetyStockDays > 0
+            ? `\n- Incluye dosis de seguridad para ${item.safetyStockDays} día(s) adicional(es).`
+            : '';
         
         return `Estimados ${pharmacy.name},
 
@@ -702,13 +706,13 @@ Solicitamos la preparación del siguiente preparado magistral:
 - Receta ID: ${recipeToSend.id}
 - Preparado: ${item.principalActiveIngredient} ${item.concentrationValue}${item.concentrationUnit}
 - Posología: ${item.usageInstructions}
-- Cantidad a preparar: ${item.totalQuantityValue} ${item.totalQuantityUnit}
+- Cantidad a preparar: ${item.totalQuantityValue} ${item.totalQuantityUnit}${safetyStockLine}
 
 Por favor, encontrar la receta adjunta.
 
 Saludos cordiales,
 Equipo Farmacia Skol`;
-    }, [recipeToSend, pharmacy]);
+    }, [recipeToSend, pharmacy, patients]);
 
     const handleConfirmSend = async () => {
         if (!recipeToSend) return;
