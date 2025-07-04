@@ -311,7 +311,7 @@ export function MainNav({
           </SidebarFooter>
         </Sidebar>
         <main className="flex-1 w-full overflow-y-auto">
-          <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b bg-background px-6">
+          <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b bg-card px-6">
             <div className="flex items-center gap-4">
                 <SidebarTrigger className="md:hidden bg-primary text-primary-foreground hover:bg-primary/90" />
                 <Link href="/dashboard" className="md:hidden">
