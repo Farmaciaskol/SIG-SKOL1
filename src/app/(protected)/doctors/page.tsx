@@ -21,7 +21,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
@@ -42,7 +41,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 
 type DoctorWithStats = Doctor & {
@@ -289,56 +287,17 @@ export default function DoctorsPage() {
             </div>
             </CardContent>
             <CardFooter className="bg-muted/50 p-3 flex justify-between items-center">
-                <Dialog>
-                    <DialogTrigger asChild>
-                        <Button variant="link" className="p-0 h-auto">Ver Pacientes</Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-xl">
-                        <DialogHeader>
-                            <DialogTitle>Pacientes de {doctor.name}</DialogTitle>
-                            <DialogDescription>
-                                Lista de pacientes que han recibido recetas de este médico.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="max-h-80 overflow-y-auto">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Nombre</TableHead>
-                                        <TableHead>RUT</TableHead>
-                                        <TableHead>Es Crónico</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {doctor.patients.length > 0 ? doctor.patients.map(patient => (
-                                        <TableRow key={patient.id}>
-                                            <TableCell className="font-medium">
-                                                <Link href={`/patients/${patient.id}`} className="hover:underline text-primary">
-                                                    {patient.name}
-                                                </Link>
-                                            </TableCell>
-                                            <TableCell>{patient.rut}</TableCell>
-                                            <TableCell>{patient.isChronic ? 'Sí' : 'No'}</TableCell>
-                                        </TableRow>
-                                    )) : (
-                                        <TableRow>
-                                            <TableCell colSpan={3} className="text-center">No hay pacientes asociados.</TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    </DialogContent>
-                </Dialog>
-            
-            <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openFormForEdit(doctor)}>
-                    <Pencil className="h-4 w-4" />
+                 <Button asChild>
+                    <Link href={`/doctors/${doctor.id}`}>Ver Detalle</Link>
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-red-100 hover:text-red-600" onClick={() => setDoctorToDelete(doctor)}>
-                    <Trash2 className="h-4 w-4" />
-                </Button>
-            </div>
+                <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openFormForEdit(doctor)}>
+                        <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-red-100 hover:text-red-600" onClick={() => setDoctorToDelete(doctor)}>
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                </div>
             </CardFooter>
         </Card>
     );
