@@ -465,6 +465,26 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
       }
     }
   }, [watchedPatientId, patientSelectionType, patients, form]);
+  
+  const prescriptionDate = useWatch({ control: form.control, name: 'prescriptionDate' });
+  const prevPrescriptionDateRef = React.useRef<string | undefined>();
+
+  React.useEffect(() => {
+    if (prescriptionDate && isValid(prescriptionDate)) {
+      const currentPrescriptionDateString = prescriptionDate.toISOString();
+      const prevPrescriptionDateString = prevPrescriptionDateRef.current;
+      
+      // Update due date only if the prescription date has actually changed.
+      // This prevents overwriting a manual due date change.
+      if (currentPrescriptionDateString !== prevPrescriptionDateString) {
+        const newDueDate = addMonths(prescriptionDate, 6);
+        form.setValue('dueDate', newDueDate, { shouldValidate: true });
+      }
+
+      // Store the current date string for the next comparison.
+      prevPrescriptionDateRef.current = currentPrescriptionDateString;
+    }
+  }, [prescriptionDate, form]);
 
   const loadFormData = React.useCallback(async (recipeData: any) => {
     const valuesToSet = {
