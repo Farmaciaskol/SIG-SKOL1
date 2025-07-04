@@ -40,7 +40,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen w-full lg:grid lg:grid-cols-2">
       {/* Left Branding Panel */}
-      <div className="hidden lg:flex flex-col items-center justify-center p-12 text-center bg-primary text-primary-foreground">
+      <div className="hidden bg-blue-600 lg:flex lg:flex-col lg:items-center lg:justify-center lg:p-12 lg:text-center text-white">
         <div className="space-y-4 max-w-md">
           <Image
             src="https://placehold.co/150x150.png"
@@ -61,17 +61,8 @@ export default function LoginPage() {
       </div>
       
       {/* Right Form Panel */}
-      <div className="flex items-center justify-center p-4 bg-primary lg:bg-background">
+      <div className="flex items-center justify-center p-4">
         <div className="w-full max-w-sm space-y-6">
-            <Image
-                src="https://placehold.co/150x150.png"
-                data-ai-hint="logo pharmacy white"
-                alt="Skol Pharmacy Logo"
-                width={150}
-                height={150}
-                className="mx-auto lg:hidden"
-                priority
-            />
             <div className="w-full bg-card rounded-xl shadow-lg p-6 sm:p-8 space-y-6">
                 <div className="text-center sm:text-left">
                   <h1 className="text-2xl font-bold font-headline text-foreground">
@@ -123,9 +114,9 @@ export default function LoginPage() {
                   </Button>
                 </form>
             </div>
-            <p className="px-8 text-center text-sm text-primary-foreground lg:text-muted-foreground">
+            <p className="px-8 text-center text-sm text-muted-foreground">
               ¿Es usted un paciente?{' '}
-              <Link href="/patient-portal/login" className="font-semibold text-white hover:underline lg:font-medium lg:text-primary">
+              <Link href="/patient-portal/login" className="font-semibold text-primary hover:underline">
                 Ingrese al Portal de Pacientes
               </Link>
             </p>
