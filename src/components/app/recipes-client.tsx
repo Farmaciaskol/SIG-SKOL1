@@ -138,47 +138,47 @@ const StatCard = ({ title, value, icon: Icon, onClick, active = false }: { title
 );
 
 const calculateTotalCycles = (recipe: Recipe): number => {
-  if (!recipe.dueDate || !recipe.createdAt || !recipe.items?.[0]) {
-    return MAX_REPREPARATIONS + 1;
-  }
-
-  try {
-    const prescriptionLifespanInDays = differenceInDays(parseISO(recipe.dueDate), parseISO(recipe.createdAt));
-    if (prescriptionLifespanInDays <= 0) return 1;
-
-    const item = recipe.items[0];
-    const durationValue = parseInt(item.treatmentDurationValue, 10);
-    if (isNaN(durationValue)) return MAX_REPREPARATIONS + 1;
-
-    let cycleDurationInDays = 0;
-
-    switch (item.treatmentDurationUnit) {
-      case 'días':
-        cycleDurationInDays = durationValue;
-        break;
-      case 'semanas':
-        cycleDurationInDays = durationValue * 7;
-        break;
-      case 'meses':
-        cycleDurationInDays = durationValue * 30;
-        break;
-      default:
-        cycleDurationInDays = 30; // Fallback for unknown units
+    if (!recipe.dueDate || !recipe.createdAt || !recipe.items?.[0]) {
+      return MAX_REPREPARATIONS + 1;
     }
-
-    if (cycleDurationInDays <= 0) return 1;
-
-    const estimatedCyclesByDate = Math.floor(prescriptionLifespanInDays / cycleDurationInDays);
-    
-    // The number of cycles cannot be less than 1 if the prescription is valid
-    const finalEstimatedCycles = Math.max(1, estimatedCyclesByDate);
-    
-    return Math.min(finalEstimatedCycles, MAX_REPREPARATIONS + 1);
-  } catch (e) {
-    console.error("Error calculating total cycles for recipe", recipe.id, e);
-    // Fallback in case of parsing errors
-    return MAX_REPREPARATIONS + 1;
-  }
+  
+    try {
+      const prescriptionLifespanInDays = differenceInDays(parseISO(recipe.dueDate), parseISO(recipe.createdAt));
+      if (prescriptionLifespanInDays <= 0) return 1;
+  
+      const item = recipe.items[0];
+      const durationValue = parseInt(item.treatmentDurationValue, 10);
+      if (isNaN(durationValue)) return MAX_REPREPARATIONS + 1;
+  
+      let cycleDurationInDays = 0;
+  
+      switch (item.treatmentDurationUnit) {
+        case 'días':
+          cycleDurationInDays = durationValue;
+          break;
+        case 'semanas':
+          cycleDurationInDays = durationValue * 7;
+          break;
+        case 'meses':
+          cycleDurationInDays = durationValue * 30;
+          break;
+        default:
+          cycleDurationInDays = 30; // Fallback for unknown units
+      }
+  
+      if (cycleDurationInDays <= 0) return 1;
+  
+      const estimatedCyclesByDate = Math.floor(prescriptionLifespanInDays / cycleDurationInDays);
+      
+      // The number of cycles cannot be less than 1 if the prescription is valid
+      const finalEstimatedCycles = Math.max(1, estimatedCyclesByDate);
+      
+      return Math.min(finalEstimatedCycles, MAX_REPREPARATIONS + 1);
+    } catch (e) {
+      console.error("Error calculating total cycles for recipe", recipe.id, e);
+      // Fallback in case of parsing errors
+      return MAX_REPREPARATIONS + 1;
+    }
 };
 
 export const RecipesClient = ({
@@ -419,7 +419,7 @@ export const RecipesClient = ({
         setIsSubmitting(false);
         setIsDeleteBatchAlertOpen(false);
     }
-  }
+  };
 
   const handleConfirmReprepare = async () => {
     if (!recipeToReprepare) return;
@@ -1403,4 +1403,4 @@ Equipo Farmacia Skol`;
       )}
     </>
   );
-}
+};
