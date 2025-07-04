@@ -1,16 +1,16 @@
 
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { getPatients, deletePatient } from '@/lib/data';
-import type { Patient } from '@/lib/types';
-import { ProactivePatientStatus, PatientActionNeeded } from '@/lib/types';
+import { getPatients, deletePatient, getRecipes } from '@/lib/data';
+import type { Patient, Recipe } from '@/lib/types';
+import { ProactivePatientStatus, PatientActionNeeded, RecipeStatus } from '@/lib/types';
 import { runProactiveAnalysisForAllPatients } from '@/lib/actions';
-import { PlusCircle, Search, User, Heart, AlertTriangle, Pencil, Trash2, FileText, Repeat, Truck, CheckCircle2, Loader2, Wand2 } from 'lucide-react';
+import { PlusCircle, Search, User, Heart, AlertTriangle, Pencil, Trash2, FileText, Repeat, Truck, CheckCircle2, Loader2, Wand2, MoreHorizontal, FlaskConical, Package } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PatientFormDialog } from '@/components/app/patient-form-dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -24,6 +24,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
 
 const statusStyles: Record<ProactivePatientStatus, string> = {
   [ProactivePatientStatus.URGENT]: 'border-red-500 bg-red-50',
@@ -42,6 +55,7 @@ type FilterStatus = 'all' | ProactivePatientStatus;
 
 export default function PatientsPage() {
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -55,8 +69,12 @@ export default function PatientsPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const patientsData = await getPatients();
+      const [patientsData, recipesData] = await Promise.all([
+        getPatients(),
+        getRecipes(),
+      ]);
       setPatients(patientsData);
+      setRecipes(recipesData);
     } catch (error) {
       console.error("Failed to fetch patients data:", error);
     } finally {
@@ -131,7 +149,7 @@ export default function PatientsPage() {
       });
   }, [patients, searchTerm, activeFilter]);
 
-  const PatientCard = ({ patient }: { patient: Patient }) => {
+  const PatientCard = ({ patient, recipes }: { patient: Patient, recipes: Recipe[] }) => {
     const { text: buttonText, icon: ButtonIcon } = actionButtonConfig[patient.actionNeeded] || actionButtonConfig.NONE;
     
     const buttonHref = useMemo(() => {
@@ -145,6 +163,19 @@ export default function PatientsPage() {
           return `/patients/${patient.id}`;
       }
     }, [patient.actionNeeded, patient.id]);
+    
+    const patientRecipes = useMemo(() => recipes.filter(r => r.patientId === patient.id), [recipes, patient.id]);
+    const activeRecipes = useMemo(() => patientRecipes.filter(r => ![
+        RecipeStatus.Dispensed, 
+        RecipeStatus.Cancelled, 
+        RecipeStatus.Rejected, 
+        RecipeStatus.Archived
+    ].includes(r.status)), [patientRecipes]);
+
+    const recipesInPreparation = useMemo(() => activeRecipes.filter(r => r.status === RecipeStatus.Preparation || r.status === RecipeStatus.SentToExternal).length, [activeRecipes]);
+    const recipesReadyForPickup = useMemo(() => activeRecipes.filter(r => r.status === RecipeStatus.ReadyForPickup || r.status === RecipeStatus.ReceivedAtSkol).length, [activeRecipes]);
+    const expiredRecipesCount = useMemo(() => activeRecipes.filter(r => r.dueDate && new Date(r.dueDate) < new Date()).length, [activeRecipes]);
+
 
     return (
         <Card className={cn("flex flex-col justify-between transition-shadow hover:shadow-md", statusStyles[patient.proactiveStatus])}>
@@ -167,26 +198,57 @@ export default function PatientsPage() {
                     </div>
                 </div>
             </CardHeader>
-            <CardContent className="p-4">
+            <CardContent className="p-4 flex-grow">
                 <div className="flex items-start text-sm">
                     <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
                     <p className="text-foreground/90 leading-snug">{patient.proactiveMessage}</p>
                 </div>
             </CardContent>
-            <CardFooter className="flex justify-between items-center bg-muted/50 p-4 mt-2">
-                <Button asChild>
-                    <Link href={buttonHref}>
-                        <ButtonIcon className="mr-2 h-4 w-4" />
-                        {buttonText}
-                    </Link>
-                </Button>
+            <CardFooter className="flex justify-between items-center bg-muted/50 p-3">
+                <div className="flex items-center space-x-3 text-xs text-muted-foreground">
+                    {expiredRecipesCount > 0 && (
+                        <TooltipProvider><Tooltip><TooltipTrigger asChild>
+                            <div className="flex items-center gap-1.5 text-red-600 font-semibold">
+                                <AlertTriangle className="h-4 w-4" />
+                                <span>{expiredRecipesCount}</span>
+                            </div>
+                        </TooltipTrigger><TooltipContent><p>{expiredRecipesCount} Receta(s) Vencida(s)</p></TooltipContent></Tooltip></TooltipProvider>
+                    )}
+                    {recipesInPreparation > 0 && (
+                        <TooltipProvider><Tooltip><TooltipTrigger asChild>
+                            <div className="flex items-center gap-1.5">
+                                <FlaskConical className="h-4 w-4" />
+                                <span>{recipesInPreparation}</span>
+                            </div>
+                        </TooltipTrigger><TooltipContent><p>{recipesInPreparation} Receta(s) en Preparación</p></TooltipContent></Tooltip></TooltipProvider>
+                    )}
+                    {recipesReadyForPickup > 0 && (
+                        <TooltipProvider><Tooltip><TooltipTrigger asChild>
+                            <div className="flex items-center gap-1.5">
+                                <Package className="h-4 w-4" />
+                                <span>{recipesReadyForPickup}</span>
+                            </div>
+                        </TooltipTrigger><TooltipContent><p>{recipesReadyForPickup} Receta(s) para Retiro</p></TooltipContent></Tooltip></TooltipProvider>
+                    )}
+                </div>
                 <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenForm(patient)}>
-                        <Pencil className="h-4 w-4 text-muted-foreground" />
+                    <Button asChild size="sm">
+                        <Link href={buttonHref}>
+                            <ButtonIcon className="mr-2 h-4 w-4" />
+                            {buttonText}
+                        </Link>
                     </Button>
-                     <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-red-100 hover:text-red-600" onClick={() => setPatientToDelete(patient)}>
-                        <Trash2 className="h-4 w-4 text-muted-foreground hover:text-red-600" />
-                    </Button>
+                     <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleOpenForm(patient)}><Pencil className="mr-2 h-4 w-4" />Editar</DropdownMenuItem>
+                        <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => setPatientToDelete(patient)}><Trash2 className="mr-2 h-4 w-4" />Eliminar</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </CardFooter>
         </Card>
@@ -277,7 +339,7 @@ export default function PatientsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredPatients.map(patient => (
-                <PatientCard key={patient.id} patient={patient} />
+                <PatientCard key={patient.id} patient={patient} recipes={recipes} />
             ))}
         </div>
       )}
