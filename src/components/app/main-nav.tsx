@@ -231,7 +231,7 @@ export function MainNav({
     <SidebarProvider>
       <div className="flex h-screen flex-col bg-background">
         {/* === HEADER === */}
-        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between gap-4 border-b bg-card px-6">
+        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between gap-4 border-b bg-card px-6">
           {/* Header Left Side */}
           <div className="flex items-center gap-4">
             <SidebarTrigger className="md:hidden bg-primary text-primary-foreground hover:bg-primary/90" />
