@@ -5,15 +5,16 @@
 import {
   getRecipes,
   getRecipe,
-  updateRecipe
+  updateRecipe,
+  getMessagesForPatient
 } from './data';
 import type { PatientMessage, Recipe, AuditTrailEntry } from './types';
 import { RecipeStatus } from './types';
 import { simplifyMedicationInfo } from '@/ai/flows/simplify-medication-info';
-import { db, storage, auth } from './firebase';
+import { db, storage } from './firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { doc, collection, setDoc } from 'firebase/firestore';
-import { addMonths, differenceInDays, parseISO } from 'date-fns';
+import { addMonths } from 'date-fns';
 import { MAX_REPREPARATIONS } from './constants';
 
 
@@ -51,35 +52,24 @@ export async function sendMessageFromPatient(patientId: string, content: string)
     return newMessage;
 };
 
-export async function submitNewPrescription(patientId: string, imageFile: File): Promise<string> {
-    if (!db || !storage || !auth) throw new Error("Firestore, Storage or Auth is not initialized.");
+export async function submitNewPrescription(patientId: string, imageFile: File, userId: string): Promise<string> {
+    if (!db || !storage) throw new Error("Firestore o Storage no están inicializados.");
     
-    const user = auth.currentUser;
-    if (!user) {
+    if (!userId) {
         throw new Error("No se pudo obtener la sesión de autenticación. Intente recargar la página.");
     }
     
     const recipeRef = doc(collection(db, 'recipes'));
     const recipeId = recipeRef.id;
 
-    const storageRef = ref(storage, `prescriptions/${user.uid}/${recipeId}`);
+    const storageRef = ref(storage, `prescriptions/${userId}/${recipeId}`);
     
     let imageUrl: string;
     try {
-        const currentUserForLogging = auth?.currentUser;
-        console.log("Attempting upload from Patient Portal. Auth state:", { 
-            uid: currentUserForLogging?.uid, 
-            isAnonymous: currentUserForLogging?.isAnonymous,
-            email: currentUserForLogging?.email,
-            providerData: currentUserForLogging?.providerData,
-        });
         const uploadResult = await uploadBytes(storageRef, imageFile);
         imageUrl = await getDownloadURL(uploadResult.ref);
     } catch (storageError: any) {
         console.error("Firebase Storage upload failed in submitNewPrescription:", storageError);
-        const currentUser = auth?.currentUser;
-        console.log("Auth state during failed portal upload:", { email: currentUser?.email, uid: currentUser?.uid, isAnonymous: currentUser?.isAnonymous });
-        
         let userMessage = `Error de autorización: Su usuario no tiene permiso para subir archivos. Por favor, vaya a la consola de Firebase -> Storage -> Rules y asegúrese de que los usuarios autenticados pueden escribir.`;
         if (storageError.code !== 'storage/unauthorized') {
             userMessage = `Error al subir imagen. Código: ${storageError.code || 'UNKNOWN'}.`;
@@ -90,7 +80,7 @@ export async function submitNewPrescription(patientId: string, imageFile: File):
     const firstAuditEntry: AuditTrailEntry = {
         status: RecipeStatus.PendingReviewPortal,
         date: new Date().toISOString(),
-        userId: user.uid,
+        userId: userId,
         notes: 'Receta subida por el paciente desde el portal.'
     };
     
@@ -116,9 +106,7 @@ export async function submitNewPrescription(patientId: string, imageFile: File):
     return recipeId;
 };
 
-export async function requestRepreparationFromPortal(recipeId: string, patientId: string): Promise<void> {
-    if (!auth) throw new Error("Auth service is not initialized.");
-
+export async function requestRepreparationFromPortal(recipeId: string, patientId: string, userId: string): Promise<void> {
     const recipe = await getRecipe(recipeId);
     if (!recipe) throw new Error("Receta no encontrada.");
     if (recipe.patientId !== patientId) throw new Error("Acción no autorizada.");
@@ -130,13 +118,14 @@ export async function requestRepreparationFromPortal(recipeId: string, patientId
     const dispensationsCount = recipe.auditTrail?.filter(t => t.status === RecipeStatus.Dispensed).length || 0;
     if (dispensationsCount >= MAX_REPREPARATIONS + 1) throw new Error("Se ha alcanzado el límite de preparaciones para esta receta.");
 
-    const user = auth.currentUser;
-    if (!user) throw new Error("No se pudo verificar la sesión del usuario.");
+    if (!userId) {
+        throw new Error("No se pudo verificar la sesión del usuario.");
+    }
 
     const newAuditEntry: AuditTrailEntry = {
       status: RecipeStatus.PendingValidation,
       date: new Date().toISOString(),
-      userId: user.uid, 
+      userId: userId, 
       notes: "Solicitud de re-preparación recibida desde el Portal del Paciente."
     };
 

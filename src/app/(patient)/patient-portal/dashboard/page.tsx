@@ -18,6 +18,8 @@ import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import React from 'react';
 import { Separator } from '@/components/ui/separator';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '@/lib/firebase';
 
 const ProactiveActionCard = ({ patient }: { patient: Patient }) => {
     const statusConfig = {
@@ -65,7 +67,7 @@ const ActionCard = ({ title, value, icon: Icon, onClick }: { title: string; valu
   </Card>
 );
 
-const PrescriptionUploadCard = ({ patientId, onUploadSuccess }: { patientId: string; onUploadSuccess: () => void }) => {
+const PrescriptionUploadCard = ({ patientId, onUploadSuccess, userId }: { patientId: string; onUploadSuccess: () => void; userId?: string; }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -89,9 +91,13 @@ const PrescriptionUploadCard = ({ patientId, onUploadSuccess }: { patientId: str
       toast({ title: "Error", description: "Por favor, selecciona una imagen.", variant: "destructive" });
       return;
     }
+     if (!userId) {
+      toast({ title: "Error de Sesión", description: "No se pudo verificar su sesión. Por favor, recargue la página.", variant: "destructive" });
+      return;
+    }
     setIsUploading(true);
     try {
-      await submitNewPrescription(patientId, imageFile);
+      await submitNewPrescription(patientId, imageFile, userId);
       toast({
         title: "Receta Enviada",
         description: "Hemos recibido tu receta y la procesaremos pronto.",
@@ -147,6 +153,7 @@ const PrescriptionUploadCard = ({ patientId, onUploadSuccess }: { patientId: str
 
 export default function PatientPortalDashboardPage() {
     const { patient } = usePatientAuth();
+    const [user] = useAuthState(auth);
     const { toast } = useToast();
     const [dashboardData, setDashboardData] = useState<{
         readyForPickup: Recipe[];
@@ -228,7 +235,7 @@ export default function PatientPortalDashboardPage() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <ActionCard title="Preparados para Retiro" value={readyForPickup.length} icon={FileText} />
                 <ActionCard title="Mensajes Nuevos" value={unreadMessages} icon={MessageSquare} onClick={() => setIsMessagingOpen(true)} />
-                <PrescriptionUploadCard patientId={patient.id} onUploadSuccess={fetchData} />
+                <PrescriptionUploadCard patientId={patient.id} onUploadSuccess={fetchData} userId={user?.uid} />
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -317,6 +324,7 @@ export default function PatientPortalDashboardPage() {
               recipe={selectedRecipe}
               patientId={patient.id}
               onSuccess={fetchData}
+              userId={user?.uid}
             />
 
         </div>
@@ -391,7 +399,7 @@ const SecureMessagingModal = ({ patientId, initialMessages }: { patientId: strin
 };
 
 
-function RecipeManagementDialog({ isOpen, onOpenChange, recipe, patientId, onSuccess }: { isOpen: boolean; onOpenChange: (open: boolean) => void; recipe: Recipe | null; patientId: string; onSuccess: () => void; }) {
+function RecipeManagementDialog({ isOpen, onOpenChange, recipe, patientId, onSuccess, userId }: { isOpen: boolean; onOpenChange: (open: boolean) => void; recipe: Recipe | null; patientId: string; onSuccess: () => void; userId?: string; }) {
   const { toast } = useToast();
   const [isRequesting, setIsRequesting] = useState(false);
   
@@ -409,9 +417,13 @@ function RecipeManagementDialog({ isOpen, onOpenChange, recipe, patientId, onSuc
 
 
   const handleRequestRepreparation = async () => {
+    if (!userId) {
+        toast({ title: "Error de Sesión", description: "No se pudo verificar su sesión. Por favor, recargue la página.", variant: "destructive" });
+        return;
+    }
     setIsRequesting(true);
     try {
-      await requestRepreparationFromPortal(recipe.id, patientId);
+      await requestRepreparationFromPortal(recipe.id, patientId, userId);
       toast({
         title: "Solicitud Enviada",
         description: "Hemos notificado a la farmacia. Recibirás una actualización cuando tu preparado esté listo.",
