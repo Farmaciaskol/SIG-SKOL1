@@ -71,7 +71,7 @@ export default function PatientPortalLoginPage() {
                 <Image
                     src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
                     alt="Skol Pharmacy Logo"
-                    width={120}
+                    width={150}
                     height={40}
                     className="mx-auto"
                     priority
@@ -123,7 +123,14 @@ export default function PatientPortalLoginPage() {
             </Card>
              <p className="px-8 text-center text-sm text-muted-foreground">
                 ¿Olvidaste tu contraseña?{' '}
-                <Link href="#" className="font-medium text-primary hover:underline">
+                <Link 
+                    href="#" 
+                    onClick={(e) => { 
+                        e.preventDefault(); 
+                        toast({ title: "Función no disponible", description: "La recuperación de contraseña se implementará en una futura versión." }) 
+                    }} 
+                    className="font-medium text-primary hover:underline"
+                >
                     Recuperar aquí
                 </Link>
             </p>

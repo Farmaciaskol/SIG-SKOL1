@@ -227,11 +227,12 @@ export const saveRecipe = async (data: any, imageFile: File | null, userId: stri
         const q = query(collection(db, "patients"), where("rut", "==", data.newPatientRut), limit(1));
         const querySnapshot = await getDocs(q);
         if (!querySnapshot.empty) {
-            throw new Error('Ya existe un paciente con este RUT. Por favor, selecciónelo de la lista de pacientes existentes.');
+            patientId = querySnapshot.docs[0].id;
+        } else {
+             const newPatientRef = doc(collection(db, 'patients'));
+            patientId = newPatientRef.id;
+            await setDoc(newPatientRef, { name: data.newPatientName, rut: data.newPatientRut, email: '', phone: '', isChronic: false, proactiveStatus: 'OK', proactiveMessage: 'No requiere acción.', actionNeeded: 'NONE' });
         }
-        const newPatientRef = doc(collection(db, 'patients'));
-        patientId = newPatientRef.id;
-        await setDoc(newPatientRef, { name: data.newPatientName, rut: data.newPatientRut, email: '', phone: '', isChronic: false, proactiveStatus: 'OK', proactiveMessage: 'No requiere acción.', actionNeeded: 'NONE' });
     }
 
     let doctorId = data.doctorId;
@@ -239,11 +240,12 @@ export const saveRecipe = async (data: any, imageFile: File | null, userId: stri
         const q = query(collection(db, "doctors"), where("license", "==", data.newDoctorLicense), limit(1));
         const querySnapshot = await getDocs(q);
         if (!querySnapshot.empty) {
-            throw new Error('Ya existe un médico con este número de colegiatura. Por favor, selecciónelo de la lista de médicos existentes.');
+            doctorId = querySnapshot.docs[0].id;
+        } else {
+            const newDoctorRef = doc(collection(db, 'doctors'));
+            doctorId = newDoctorRef.id;
+            await setDoc(newDoctorRef, { name: data.newDoctorName, specialty: data.newDoctorSpecialty || '', license: data.newDoctorLicense, rut: data.newDoctorRut || '' });
         }
-        const newDoctorRef = doc(collection(db, 'doctors'));
-        doctorId = newDoctorRef.id;
-        await setDoc(newDoctorRef, { name: data.newDoctorName, specialty: data.newDoctorSpecialty || '', license: data.newDoctorLicense, rut: data.newDoctorRut || '' });
     }
     
     let imageUrl: string | undefined = data.prescriptionImageUrl; // Keep existing image url if any
@@ -252,23 +254,13 @@ export const saveRecipe = async (data: any, imageFile: File | null, userId: stri
     if (imageFile && storage) {
         const storageRef = ref(storage, `prescriptions/${userId}/${effectiveRecipeId}`);
         try {
-            const currentUserForLogging = auth?.currentUser;
-            console.log("Attempting upload. Auth state:", { 
-                uid: currentUserForLogging?.uid, 
-                isAnonymous: currentUserForLogging?.isAnonymous,
-                email: currentUserForLogging?.email,
-                providerData: currentUserForLogging?.providerData,
-            });
             const uploadResult = await uploadBytes(storageRef, imageFile);
             imageUrl = await getDownloadURL(uploadResult.ref);
         } catch (storageError: any) {
             console.error("Firebase Storage upload failed in saveRecipe:", storageError);
-            const currentUser = auth?.currentUser;
-            console.log("Auth state during failed recipe save:", { email: currentUser?.email, uid: currentUser?.uid, isAnonymous: currentUser?.isAnonymous });
-
-            let userMessage = `Error de autorización: Su usuario no tiene permiso para subir archivos. Por favor, vaya a la consola de Firebase -> Storage -> Rules y asegúrese de que los usuarios autenticados pueden escribir.`;
-            if (storageError.code !== 'storage/unauthorized') {
-                userMessage = `Error al subir imagen. Código: ${storageError.code || 'UNKNOWN'}.`;
+            let userMessage = `Error al subir imagen. Código: ${storageError.code || 'UNKNOWN'}.`;
+            if (storageError.code === 'storage/unauthorized') {
+                userMessage = "Error de autorización: Su usuario no tiene permiso para subir archivos. Por favor, vaya a la consola de Firebase -> Storage -> Rules y asegúrese de que los usuarios autenticados pueden escribir.";
             }
             throw new Error(userMessage);
         }
@@ -307,11 +299,12 @@ export const saveRecipe = async (data: any, imageFile: File | null, userId: stri
         await updateDoc(recipeRef, recipeDataForUpdate as any);
         return recipeId;
     } else { // Creating
-        const recipeRef = doc(db, 'recipes', effectiveRecipeId);
+        const recipeRef = doc(collection(db, 'recipes'));
+        const newId = recipeRef.id;
         const firstAuditEntry: AuditTrailEntry = { status: RecipeStatus.PendingValidation, date: new Date().toISOString(), userId: userId, notes: 'Receta creada en el sistema.' };
         const recipeDataForCreate: Omit<Recipe, 'id'> = { ...recipeDataForUpdate, status: RecipeStatus.PendingValidation, paymentStatus: 'N/A', createdAt: new Date().toISOString(), auditTrail: [firstAuditEntry] } as Omit<Recipe, 'id'>;
-        await setDoc(recipeRef, recipeDataForCreate);
-        return effectiveRecipeId;
+        await setDoc(doc(db, 'recipes', newId), recipeDataForCreate);
+        return newId;
     }
 };
 
@@ -327,6 +320,16 @@ export const addInventoryItem = async (item: Omit<InventoryItem, 'id' | 'quantit
     const itemData = { ...item, quantity: 0, lots: [] };
     const docRef = await addDoc(collection(db, 'inventory'), itemData as any);
     return docRef.id;
+};
+
+export const deleteInventoryItem = async (id: string): Promise<void> => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    
+    // In a production app, you would check for dependencies here,
+    // e.g., if the item is part of an active, non-dispensed recipe.
+    // For this prototype, we will proceed with direct deletion.
+
+    await deleteDoc(doc(db, 'inventory', id));
 };
 
 export const updateInventoryItem = async (id: string, updates: Partial<InventoryItem>): Promise<void> => {

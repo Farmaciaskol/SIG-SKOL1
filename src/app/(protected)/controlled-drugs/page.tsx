@@ -12,6 +12,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { PlusCircle, Eye, Star, Search, MoreHorizontal } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -22,6 +28,7 @@ import { es } from 'date-fns/locale';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { DirectSaleDialog } from '@/components/app/direct-sale-dialog';
+import Image from 'next/image';
 
 export default function ControlledDrugsPage() {
   const [logEntries, setLogEntries] = useState<ControlledSubstanceLogEntry[]>([]);
@@ -30,6 +37,7 @@ export default function ControlledDrugsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isDirectSaleDialogOpen, setIsDirectSaleDialogOpen] = useState(false);
+  const [viewingImage, setViewingImage] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchData = async () => {
@@ -161,7 +169,9 @@ export default function ControlledDrugsPage() {
                                 <TableCell><Badge variant={entry.controlledType === 'Estupefaciente' ? 'destructive' : 'secondary'}>{entry.controlledType}</Badge></TableCell>
                                 <TableCell className="font-mono">{entry.prescriptionFolio}</TableCell>
                                 <TableCell>
-                                    <Button variant="ghost" size="sm"><Eye className="mr-2 h-4 w-4"/> Ver Adjunto</Button>
+                                    <Button variant="ghost" size="sm" onClick={() => setViewingImage(entry.prescriptionImageUrl || null)} disabled={!entry.prescriptionImageUrl}>
+                                      <Eye className="mr-2 h-4 w-4"/> Ver Adjunto
+                                    </Button>
                                 </TableCell>
                             </TableRow>
                         ))}
@@ -188,7 +198,9 @@ export default function ControlledDrugsPage() {
                             <p><span className="font-semibold">Folio Receta:</span> <span className="font-mono">{entry.prescriptionFolio}</span></p>
                         </CardContent>
                         <CardFooter className="bg-muted/50 p-3">
-                             <Button variant="outline" size="sm" className="w-full"><Eye className="mr-2 h-4 w-4"/> Ver Adjunto</Button>
+                             <Button variant="outline" size="sm" className="w-full" onClick={() => setViewingImage(entry.prescriptionImageUrl || null)} disabled={!entry.prescriptionImageUrl}>
+                               <Eye className="mr-2 h-4 w-4"/> Ver Adjunto
+                             </Button>
                         </CardFooter>
                     </Card>
                 ))}
@@ -201,6 +213,17 @@ export default function ControlledDrugsPage() {
         onOpenChange={setIsDirectSaleDialogOpen}
         onSuccess={fetchData}
       />
+
+      <Dialog open={!!viewingImage} onOpenChange={() => setViewingImage(null)}>
+        <DialogContent className="max-w-3xl">
+            <DialogHeader>
+                <DialogTitle>Imagen de la Receta</DialogTitle>
+            </DialogHeader>
+            <div className="flex justify-center items-center py-4">
+              {viewingImage && <Image src={viewingImage} alt="Receta adjunta" width={600} height={800} className="object-contain max-h-[70vh]" />}
+            </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

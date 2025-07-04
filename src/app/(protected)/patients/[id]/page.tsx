@@ -255,7 +255,11 @@ export default function PatientDetailPage() {
             </div>
           </div>
           <div className="flex items-center gap-2 self-start md:self-center">
-            <Button variant="outline"><ShieldAlert className="mr-2 h-4 w-4"/> Reportar Evento FV</Button>
+            <Button variant="outline" asChild>
+                <Link href={`/pharmacovigilance/new?patientId=${patient.id}`}>
+                    <ShieldAlert className="mr-2 h-4 w-4"/> Reportar Evento FV
+                </Link>
+            </Button>
             <Button onClick={handleAnalyzeHistory} disabled={isAnalyzing}>
               {isAnalyzing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />} Analizar Historial (IA)
             </Button>

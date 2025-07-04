@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { addLotToInventoryItem } from '@/lib/data';
+import { addLotToInventoryItem, deleteInventoryItem } from '@/lib/data';
 import type { InventoryItem, LotDetail } from '@/lib/types';
 import { PlusCircle, Search, Edit, History, PackagePlus, Trash2, MoreVertical, DollarSign, Package, PackageX, AlertTriangle, Star, Box, ChevronDown, Loader2, Calendar as CalendarIcon, Snowflake } from 'lucide-react';
 import { format, differenceInDays, isBefore, parseISO } from 'date-fns';
@@ -21,6 +21,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import {
   Form,
   FormControl,
@@ -67,7 +77,8 @@ const StatCard = ({ title, value, icon: Icon }: { title: string; value: string |
     </Card>
 );
 
-const ProductCard = ({ item, onEdit, onManageLots }: { item: InventoryItemWithStats; onEdit: (item: InventoryItem) => void; onManageLots: (item: InventoryItemWithStats) => void; }) => {
+const ProductCard = ({ item, onEdit, onManageLots, onDelete }: { item: InventoryItemWithStats; onEdit: (item: InventoryItem) => void; onManageLots: (item: InventoryItemWithStats) => void; onDelete: (item: InventoryItem) => void; }) => {
+    const { toast } = useToast();
     const statusStyles: Record<InventoryItemWithStats['status'], { badge: string; border: string }> = {
       'OK': { badge: 'bg-green-100 text-green-800', border: 'border-transparent' },
       'Stock Bajo': { badge: 'bg-yellow-100 text-yellow-800 border-yellow-300', border: 'border-yellow-400' },
@@ -121,15 +132,15 @@ const ProductCard = ({ item, onEdit, onManageLots }: { item: InventoryItemWithSt
                             <Edit className="mr-2 h-4 w-4" />
                             <span>Editar Definición</span>
                         </DropdownMenuItem>
-                         <DropdownMenuItem>
+                         <DropdownMenuItem onSelect={() => toast({ title: 'Función no disponible', description: 'El historial de movimientos estará disponible próximamente.' })}>
                             <History className="mr-2 h-4 w-4" />
                             <span>Ver Historial</span>
                         </DropdownMenuItem>
-                         <DropdownMenuItem>
+                         <DropdownMenuItem onSelect={() => toast({ title: 'Función no disponible', description: 'El registro de devoluciones estará disponible próximamente.' })}>
                             <PackagePlus className="mr-2 h-4 w-4" />
                             <span>Registrar Devolución</span>
                         </DropdownMenuItem>
-                         <DropdownMenuItem className="text-red-600 focus:text-red-600">
+                         <DropdownMenuItem className="text-red-600 focus:text-red-600" onSelect={() => onDelete(item)}>
                             <Trash2 className="mr-2 h-4 w-4" />
                             <span>Eliminar Producto</span>
                         </DropdownMenuItem>
@@ -275,6 +286,9 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
     // Lot Management Dialog State
     const [managingLotsFor, setManagingLotsFor] = useState<InventoryItemWithStats | null>(null);
 
+    // Delete confirmation dialog
+    const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null);
+
     const inventoryWithStats = useMemo<InventoryItemWithStats[]>(() => {
         return inventory.map(item => {
             const now = new Date();
@@ -360,6 +374,19 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
         setManagingLotsFor(item);
     };
 
+    const handleDeleteItem = async () => {
+      if (!itemToDelete) return;
+      try {
+        await deleteInventoryItem(itemToDelete.id);
+        toast({ title: 'Producto Eliminado', description: `${itemToDelete.name} fue eliminado del inventario.` });
+        setItemToDelete(null);
+        router.refresh(); // This will re-fetch data on the server component and pass it down
+      } catch (error) {
+        toast({ title: 'Error', description: `No se pudo eliminar el producto. ${error instanceof Error ? error.message : ''}`, variant: 'destructive' });
+      }
+    };
+
+
     return (
         <>
             <Dialog open={isFormOpen} onOpenChange={(open) => {
@@ -387,6 +414,20 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
                     router.refresh();
                 }}
             />
+            <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
+              <AlertDialogContent>
+                  <AlertDialogHeader>
+                      <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                          Esta acción no se puede deshacer. Se eliminará permanentemente el producto <span className="font-bold">{itemToDelete?.name}</span> del inventario.
+                      </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDeleteItem} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+                  </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             
             <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
                 <div>
@@ -436,7 +477,7 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
             {filteredInventory.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {filteredInventory.map(item => (
-                        <ProductCard key={item.id} item={item} onEdit={handleEdit} onManageLots={handleManageLots} />
+                        <ProductCard key={item.id} item={item} onEdit={handleEdit} onManageLots={handleManageLots} onDelete={setItemToDelete} />
                     ))}
                 </div>
             ) : (

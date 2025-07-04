@@ -1114,7 +1114,7 @@ export const RecipesClient = ({
             <CardContent className="p-3 flex items-center justify-between gap-4">
                 <p className="text-sm font-medium">{selectedRecipes.length} receta(s) seleccionada(s)</p>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm">Exportar</Button>
+                    <Button variant="outline" size="sm" onClick={() => toast({ title: 'Función no disponible', description: 'La exportación a CSV se implementará pronto.' })}>Exportar</Button>
                     <Button variant="destructive" size="sm" onClick={() => setIsDeleteBatchAlertOpen(true)}><Trash2 className="mr-2 h-4 w-4"/>Eliminar</Button>
                 </div>
             </CardContent>
