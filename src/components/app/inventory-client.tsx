@@ -82,7 +82,7 @@ const ProductCard = ({ item, onEdit, onManageLots }: { item: InventoryItemWithSt
         <Card className={cn("flex flex-col transition-all hover:shadow-lg border-2", border)}>
             <CardHeader className="pb-4">
                  <div className="flex justify-between items-start">
-                    <h3 className="text-lg font-bold text-slate-800">{item.name}</h3>
+                    <h3 className="text-lg font-bold text-slate-800 truncate" title={item.name}>{item.name}</h3>
                     <div className="flex items-center gap-2">
                         {item.requiresRefrigeration && <Snowflake className="h-5 w-5 text-blue-500" title="Requiere Cadena de Frío" />}
                         {item.isControlled && <Star className="h-5 w-5 text-amber-500" title="Sustancia Controlada" />}

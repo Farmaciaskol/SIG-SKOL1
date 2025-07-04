@@ -227,8 +227,8 @@ export default function DoctorsPage() {
     return (
         <Card className="flex flex-col">
             <CardHeader>
-            <CardTitle className="text-lg font-bold text-slate-800">{doctor.name}</CardTitle>
-            <p className="text-sm font-medium text-primary">{doctor.specialty}</p>
+            <CardTitle className="text-lg font-bold text-slate-800 truncate" title={doctor.name}>{doctor.name}</CardTitle>
+            <p className="text-sm font-medium text-primary truncate" title={doctor.specialty}>{doctor.specialty}</p>
             </CardHeader>
             <CardContent className="flex-grow space-y-6">
             <div>

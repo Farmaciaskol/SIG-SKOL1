@@ -815,16 +815,16 @@ export const RecipesClient = ({
                                     </Link>
                                 </TableCell>
                                 <TableCell className="font-medium">{getPatientName(recipe.patientId)}</TableCell>
-                                <TableCell>
+                                <TableCell className="max-w-[300px]">
                                     {recipe.items.length > 0 ? (
                                         <div className="flex flex-col">
-                                        <span className="text-sm font-medium text-slate-800 flex items-center gap-2">
+                                        <span className="text-sm font-medium text-slate-800 flex items-center gap-2 truncate" title={`${recipe.items[0].principalActiveIngredient} ${recipe.items[0].concentrationValue}${recipe.items[0].concentrationUnit}`}>
                                             {recipe.items[0].principalActiveIngredient}{' '}
                                             {recipe.items[0].concentrationValue}
                                             {recipe.items[0].concentrationUnit}
                                             {recipe.items.some(i => i.isRefrigerated) && <Snowflake className="h-4 w-4 text-blue-500" />}
                                         </span>
-                                        <span className="text-xs text-slate-500 truncate" style={{maxWidth: '25ch'}}>
+                                        <span className="text-xs text-slate-500 truncate" title={recipe.items[0].usageInstructions}>
                                             {recipe.items[0].usageInstructions}
                                         </span>
                                         {recipe.items.length > 1 && <span className="text-xs font-bold text-slate-500 mt-1">+ {recipe.items.length - 1} más</span>}
@@ -941,16 +941,16 @@ export const RecipesClient = ({
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-2 pb-4">
-                    <p className="font-bold text-lg text-slate-800">{getPatientName(recipe.patientId)}</p>
+                    <p className="font-bold text-lg text-slate-800 truncate" title={getPatientName(recipe.patientId)}>{getPatientName(recipe.patientId)}</p>
                     {recipe.items.length > 0 ? (
                         <div>
-                        <p className="font-medium text-sm text-slate-800 flex items-center gap-2">
+                        <p className="font-medium text-sm text-slate-800 flex items-center gap-2 truncate" title={`${recipe.items[0].principalActiveIngredient} ${recipe.items[0].concentrationValue}${recipe.items[0].concentrationUnit}`}>
                             {recipe.items[0].principalActiveIngredient}{' '}
                             {recipe.items[0].concentrationValue}
                             {recipe.items[0].concentrationUnit}
                             {recipe.items.some(i => i.isRefrigerated) && <Snowflake className="h-4 w-4 text-blue-500" />}
                         </p>
-                        <p className="text-xs text-slate-500 truncate">
+                        <p className="text-xs text-slate-500 truncate" title={recipe.items[0].usageInstructions}>
                             {recipe.items[0].usageInstructions}
                         </p>
                         {recipe.items.length > 1 && (

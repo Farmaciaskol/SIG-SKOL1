@@ -151,8 +151,8 @@ export default function PatientsPage() {
             <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
                     <div>
-                        <CardTitle className="text-lg font-bold text-slate-800 hover:underline">
-                            <Link href={`/patients/${patient.id}`}>
+                        <CardTitle className="text-lg font-bold text-slate-800 hover:underline truncate">
+                            <Link href={`/patients/${patient.id}`} title={patient.name}>
                                 {patient.name}
                             </Link>
                         </CardTitle>
