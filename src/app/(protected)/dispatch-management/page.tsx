@@ -46,6 +46,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { CheckCircle, XCircle, Package, History, PackageCheck, Loader2, Truck, AlertTriangle, Check, ShieldCheck, FileWarning, Snowflake, Printer, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format, parseISO } from 'date-fns';
@@ -211,14 +213,23 @@ export default function DispatchManagementPage() {
   const [user] = useAuthState(auth);
   const [loading, setLoading] = useState(true);
   const [isDispatching, setIsDispatching] = useState(false);
-  const [updatingNoteId, setUpdatingNoteId] = useState<string | null>(null);
+  
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [externalPharmacies, setExternalPharmacies] = useState<ExternalPharmacy[]>([]);
   const [dispatchNotes, setDispatchNotes] = useState<DispatchNote[]>([]);
   const [validationState, setValidationState] = useState<ValidationState>({});
+  
+  // States for modals
   const [printingNote, setPrintingNote] = useState<DispatchNote | null>(null);
+  const [receivingNote, setReceivingNote] = useState<DispatchNote | null>(null);
+
+  // States for Reception Dialog
+  const [receptionChecklist, setReceptionChecklist] = useState<Record<string, boolean>>({});
+  const [receiverName, setReceiverName] = useState('');
+  const [isConfirmingReception, setIsConfirmingReception] = useState(false);
+
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -442,60 +453,66 @@ export default function DispatchManagementPage() {
     if (!recipe) return 'N/A';
     return patients.find(p => p.id === recipe.patientId)?.name || 'N/A';
   }
+  
+  const handleOpenReceptionDialog = (note: DispatchNote) => {
+    const initialChecklist = note.items.reduce((acc, item) => {
+        const uniqueKey = `${item.recipeId}-${item.inventoryItemId}-${item.lotNumber}`;
+        acc[uniqueKey] = false;
+        return acc;
+    }, {} as Record<string, boolean>);
+    setReceptionChecklist(initialChecklist);
+    setReceiverName('');
+    setReceivingNote(note);
+  };
+  
+  const handleReceptionCheckChange = (itemId: string, checked: boolean) => {
+    setReceptionChecklist(prev => ({ ...prev, [itemId]: checked }));
+  };
 
-  const handleMarkAsReceived = async (noteId: string) => {
-    if (!db) return;
-    setUpdatingNoteId(noteId);
+  const allItemsReceived = receivingNote ? Object.keys(receptionChecklist).length > 0 && Object.values(receptionChecklist).every(Boolean) : false;
+  const canConfirmReception = allItemsReceived && receiverName.trim() !== '';
 
-    const note = dispatchNotes.find(n => n.id === noteId);
-    if (!note) {
-      toast({ title: 'Error', description: 'Nota de despacho no encontrada.', variant: 'destructive' });
-      setUpdatingNoteId(null);
-      return;
-    }
+  const handleConfirmReception = async () => {
+    if (!db || !receivingNote || !user) return;
+    setIsConfirmingReception(true);
 
     try {
         const batch = writeBatch(db);
 
-        // 1. Update the dispatch note status
-        const noteRef = doc(db, 'dispatchNotes', noteId);
+        const noteRef = doc(db, 'dispatchNotes', receivingNote.id);
         batch.update(noteRef, {
             status: DispatchStatus.Received,
             completedAt: new Date().toISOString(),
+            receivedByName: receiverName,
         });
 
-        // 2. Find unique recipes and update their status to "In Preparation"
-        const uniqueRecipeIds = [...new Set(note.items.map(item => item.recipeId))];
-
+        const uniqueRecipeIds = [...new Set(receivingNote.items.map(item => item.recipeId))];
         for (const recipeId of uniqueRecipeIds) {
             const recipeDocRef = doc(db, "recipes", recipeId);
-            const recipeData = await getRecipe(recipeId); // Fetch current recipe data to get audit trail
+            const recipeData = await getRecipe(recipeId);
 
             if (recipeData) {
                 const newAuditEntry: AuditTrailEntry = {
                     status: RecipeStatus.Preparation,
                     date: new Date().toISOString(),
-                    userId: 'system-dispatch',
-                    notes: `Insumos recibidos en recetario. Despacho ID: ${note.id}. Iniciando preparación.`
+                    userId: user.uid,
+                    notes: `Insumos recibidos por ${receiverName}. Despacho ID: ${receivingNote.folio || receivingNote.id}. Iniciando preparación.`
                 };
-
-                const updatedAuditTrail = [...(recipeData.auditTrail || []), newAuditEntry];
-
                 batch.update(recipeDocRef, {
                     status: RecipeStatus.Preparation,
-                    auditTrail: updatedAuditTrail,
+                    auditTrail: [...(recipeData.auditTrail || []), newAuditEntry],
                     updatedAt: new Date().toISOString(),
                 });
             }
         }
 
         await batch.commit();
-
         toast({
             title: 'Despacho Recibido',
             description: `Se actualizó la nota de despacho y las recetas asociadas pasaron a "En Preparación".`,
         });
         fetchData();
+        setReceivingNote(null);
     } catch (error) {
         console.error('Failed to mark dispatch as received:', error);
         toast({
@@ -504,9 +521,10 @@ export default function DispatchManagementPage() {
             variant: 'destructive',
         });
     } finally {
-        setUpdatingNoteId(null);
+        setIsConfirmingReception(false);
     }
   };
+
 
   if (loading) {
     return (
@@ -526,6 +544,54 @@ export default function DispatchManagementPage() {
         getInventoryItem={getInventoryItem}
         getPatientName={getPatientName}
       />
+      <Dialog open={!!receivingNote} onOpenChange={(open) => !open && setReceivingNote(null)}>
+        <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+                <DialogTitle>Confirmar Recepción de Despacho</DialogTitle>
+                <DialogDescription>
+                    Verifique que todos los ítems han sido recibidos y registre quién recepciona.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4 max-h-[50vh] overflow-y-auto">
+                <h4 className="font-medium text-foreground">Ítems del Despacho</h4>
+                <div className="space-y-3">
+                    {receivingNote?.items.map(item => {
+                        const uniqueKey = `${item.recipeId}-${item.inventoryItemId}-${item.lotNumber}`;
+                        return (
+                            <div key={uniqueKey} className="flex items-center space-x-3 p-2 bg-muted/50 rounded-md">
+                                <Checkbox 
+                                    id={uniqueKey}
+                                    checked={receptionChecklist[uniqueKey] || false}
+                                    onCheckedChange={(checked) => handleReceptionCheckChange(uniqueKey, !!checked)}
+                                />
+                                <label htmlFor={uniqueKey} className="text-sm font-medium leading-none cursor-pointer">
+                                   {item.quantity} x {getInventoryItem(item.inventoryItemId)?.name || 'N/A'} (Lote: {item.lotNumber})
+                                </label>
+                            </div>
+                        )
+                    })}
+                </div>
+                <Separator />
+                <div className="space-y-2">
+                    <Label htmlFor="receiver-name" className="font-medium">Nombre de quien recibe *</Label>
+                    <Input 
+                        id="receiver-name"
+                        value={receiverName}
+                        onChange={(e) => setReceiverName(e.target.value)}
+                        placeholder="Ej: Juan Pérez"
+                    />
+                </div>
+            </div>
+            <DialogFooter>
+                <Button variant="ghost" onClick={() => setReceivingNote(null)}>Cancelar</Button>
+                <Button onClick={handleConfirmReception} disabled={!canConfirmReception || isConfirmingReception}>
+                    {isConfirmingReception && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Confirmar Recepción
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground font-headline">Gestión de Despachos</h1>
@@ -705,9 +771,8 @@ export default function DispatchManagementPage() {
                                 <Button variant="outline" size="sm" onClick={() => setPrintingNote(note)}>
                                   <Printer className="mr-2 h-4 w-4"/> Imprimir
                                 </Button>
-                                <Button onClick={() => handleMarkAsReceived(note.id)} disabled={updatingNoteId === note.id}>
-                                    {updatingNoteId === note.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    <Truck className="mr-2 h-4 w-4"/> Marcar como Recibido
+                                <Button onClick={() => handleOpenReceptionDialog(note)} disabled={isConfirmingReception}>
+                                    <Truck className="mr-2 h-4 w-4"/> Confirmar Recepción
                                 </Button>
                              </CardFooter>
                         </Card>
@@ -739,15 +804,18 @@ export default function DispatchManagementPage() {
                                   <Badge variant={note.status === 'Recibido' ? 'default' : 'destructive'}>{note.status}</Badge>
                                 </div>
                                 <CardDescription>
-                                    Enviado: {format(new Date(note.createdAt), 'dd MMM yyyy')}{note.completedAt ? `, Completado: ${format(new Date(note.completedAt), 'dd MMM yyyy')}`: ''}
+                                    Enviado: {format(new Date(note.createdAt), 'dd MMM yyyy')}{note.completedAt ? `, Recibido: ${format(new Date(note.completedAt), 'dd MMM yyyy')}`: ''}
                                 </CardDescription>
                             </CardHeader>
-                             <CardContent>
+                             <CardContent className="space-y-2">
                                 <p className="text-sm text-muted-foreground">{note.items.length} ítem(s) despachado(s) a {getPharmacyName(note.externalPharmacyId)}.</p>
+                                {note.receivedByName && (
+                                    <p className="text-sm text-muted-foreground">Recibido por: <span className="font-medium text-foreground">{note.receivedByName}</span></p>
+                                )}
                              </CardContent>
                               <CardFooter className="bg-muted/50 p-3 flex justify-end">
                                 <Button variant="outline" size="sm" onClick={() => setPrintingNote(note)}>
-                                  <Printer className="mr-2 h-4 w-4"/> Imprimir
+                                  <Printer className="mr-2 h-4 w-4"/> Reimprimir
                                 </Button>
                              </CardFooter>
                         </Card>
