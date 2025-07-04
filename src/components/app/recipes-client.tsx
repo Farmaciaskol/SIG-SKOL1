@@ -950,6 +950,7 @@ Equipo Farmacia Skol`;
                         <TableBody>
                         {paginatedRecipes.map((recipe) => {
                             const StatusIcon = statusConfig[recipe.status]?.icon || FileX;
+                            const isPaymentPending = [RecipeStatus.ReceivedAtSkol, RecipeStatus.ReadyForPickup, RecipeStatus.Dispensed].includes(recipe.status) && recipe.paymentStatus !== 'Pagado';
                             return (
                                 <TableRow key={recipe.id} className={cn("hover:bg-muted/50", selectedRecipes.includes(recipe.id) && "bg-muted/50")}>
                                 <TableCell className="p-4"><Checkbox onCheckedChange={() => toggleSelectRecipe(recipe.id)} checked={selectedRecipes.includes(recipe.id)}/></TableCell>
@@ -984,7 +985,7 @@ Equipo Farmacia Skol`;
                                         <StatusIcon className="h-3 w-3 mr-1.5" />
                                         {statusConfig[recipe.status]?.text || recipe.status}
                                     </Badge>
-                                    {recipe.paymentStatus === 'Pendiente' && (
+                                    {isPaymentPending && (
                                         <TooltipProvider>
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
@@ -1059,7 +1060,9 @@ Equipo Farmacia Skol`;
 
             {/* Mobile Card View */}
             <div className="grid grid-cols-1 gap-4 md:hidden mt-6">
-                {paginatedRecipes.map((recipe) => (
+                {paginatedRecipes.map((recipe) => {
+                    const isPaymentPending = [RecipeStatus.ReceivedAtSkol, RecipeStatus.ReadyForPickup, RecipeStatus.Dispensed].includes(recipe.status) && recipe.paymentStatus !== 'Pagado';
+                    return (
                     <Card key={recipe.id} className={cn(selectedRecipes.includes(recipe.id) && "ring-2 ring-primary")}>
                     <CardHeader className="p-4">
                         <div className="flex items-start justify-between gap-2">
@@ -1080,7 +1083,7 @@ Equipo Farmacia Skol`;
                                 </div>
                             </div>
                             <div className="flex items-center gap-1 shrink-0">
-                                {recipe.paymentStatus === 'Pendiente' && (
+                                {isPaymentPending && (
                                     <TooltipProvider><Tooltip><TooltipTrigger asChild>
                                         <span><DollarSign className="h-4 w-4 text-amber-500" /></span>
                                     </TooltipTrigger><TooltipContent><p>Pago pendiente</p></TooltipContent></Tooltip></TooltipProvider>
@@ -1122,7 +1125,7 @@ Equipo Farmacia Skol`;
                         <MobileRecipeActions recipe={recipe} setRecipeToView={setRecipeToView} />
                     </CardFooter>
                     </Card>
-                ))}
+                )})}
             </div>
              <div className="flex items-center justify-between pt-4 md:hidden">
                 <p className="text-sm text-muted-foreground">{filteredRecipes.length} resultados</p>
