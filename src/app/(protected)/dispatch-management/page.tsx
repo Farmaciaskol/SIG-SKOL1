@@ -102,27 +102,7 @@ const PrintableDispatchNote = ({ note, pharmacy, onClose, getInventoryItem, getP
     return (
         <Dialog open={!!note} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-3xl">
-                <div id="printable-area" className="printable-note bg-white text-black p-8 font-sans">
-                    <style jsx global>{`
-                        @media print {
-                            body * {
-                                visibility: hidden;
-                            }
-                            #printable-area, #printable-area * {
-                                visibility: visible;
-                            }
-                            #printable-area {
-                                position: absolute;
-                                left: 0;
-                                top: 0;
-                                width: 100%;
-                                height: 100%;
-                            }
-                            .no-print {
-                                display: none;
-                            }
-                        }
-                    `}</style>
+                <div className="printable-area bg-white text-black p-8 font-sans">
                     <header className="flex justify-between items-center border-b-2 border-black pb-4">
                         <div className="w-40 h-auto">
                             <Image
@@ -564,7 +544,7 @@ export default function DispatchManagementPage() {
                                 <Checkbox 
                                     id={uniqueKey}
                                     checked={receptionChecklist[uniqueKey] || false}
-                                    onCheckedChange={(checked) => handleReceptionCheckChange(uniqueKey, !!checked)}
+                                    onCheckedChange={(checked) => handleReceptionChecklistChange(uniqueKey, !!checked)}
                                 />
                                 <label htmlFor={uniqueKey} className="text-sm font-medium leading-none cursor-pointer">
                                    {item.quantity} x {getInventoryItem(item.inventoryItemId)?.name || 'N/A'} (Lote: {item.lotNumber})
