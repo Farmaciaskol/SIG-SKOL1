@@ -59,7 +59,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import Image from 'next/image';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
-import { Dialog, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
 
@@ -101,109 +101,111 @@ const PrintableDispatchNote = ({ note, pharmacy, onClose, getInventoryItem, getP
 
     return (
         <Dialog open={!!note} onOpenChange={onClose}>
-            <div id="printable-area" className="printable-note bg-white text-black p-8 font-sans">
-                 <style jsx global>{`
-                    @media print {
-                        body * {
-                            visibility: hidden;
+            <DialogContent className="sm:max-w-3xl">
+                <div id="printable-area" className="printable-note bg-white text-black p-8 font-sans">
+                    <style jsx global>{`
+                        @media print {
+                            body * {
+                                visibility: hidden;
+                            }
+                            #printable-area, #printable-area * {
+                                visibility: visible;
+                            }
+                            #printable-area {
+                                position: absolute;
+                                left: 0;
+                                top: 0;
+                                width: 100%;
+                                height: 100%;
+                            }
+                            .no-print {
+                                display: none;
+                            }
                         }
-                        #printable-area, #printable-area * {
-                            visibility: visible;
-                        }
-                        #printable-area {
-                            position: absolute;
-                            left: 0;
-                            top: 0;
-                            width: 100%;
-                            height: 100%;
-                        }
-                        .no-print {
-                            display: none;
-                        }
-                    }
-                `}</style>
-                <header className="flex justify-between items-center border-b-2 border-black pb-4">
-                    <div className="w-40 h-auto">
-                        <Image
-                            src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=abcdef12-3456-7890-abcd-ef1234567890"
-                            alt="Skol Pharmacy Logo"
-                            width={160}
-                            height={160}
-                            className="object-contain"
-                        />
-                    </div>
-                    <div className="text-right">
-                        <h1 className="text-3xl font-bold">NOTA DE DESPACHO</h1>
-                        <p className="font-mono text-lg mt-1">Folio: {note.folio || note.id}</p>
-                    </div>
-                </header>
+                    `}</style>
+                    <header className="flex justify-between items-center border-b-2 border-black pb-4">
+                        <div className="w-40 h-auto">
+                            <Image
+                                src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=abcdef12-3456-7890-abcd-ef1234567890"
+                                alt="Skol Pharmacy Logo"
+                                width={160}
+                                height={160}
+                                className="object-contain"
+                            />
+                        </div>
+                        <div className="text-right">
+                            <h1 className="text-3xl font-bold">NOTA DE DESPACHO</h1>
+                            <p className="font-mono text-lg mt-1">Folio: {note.folio || note.id}</p>
+                        </div>
+                    </header>
 
-                <section className="grid grid-cols-2 gap-8 my-6 text-sm">
-                    <div>
-                        <h2 className="font-bold mb-2">DE:</h2>
-                        <p className="font-semibold">FARMACIA SKOL</p>
-                        <p>Av. Apoquindo 4501, Las Condes</p>
-                        <p>Santiago, Chile</p>
-                    </div>
-                     <div>
-                        <h2 className="font-bold mb-2">PARA:</h2>
-                        <p className="font-semibold">{pharmacy.name}</p>
-                        <p>{pharmacy.address || 'Dirección no especificada'}</p>
-                    </div>
-                </section>
-                
-                 <section className="grid grid-cols-2 gap-8 my-6 text-sm">
-                    <div><span className="font-bold">Fecha de Emisión:</span> {format(parseISO(note.createdAt), "d 'de' MMMM, yyyy", { locale: es })}</div>
-                    <div><span className="font-bold">Generado por:</span> {note.dispatcherName}</div>
-                 </section>
+                    <section className="grid grid-cols-2 gap-8 my-6 text-sm">
+                        <div>
+                            <h2 className="font-bold mb-2">DE:</h2>
+                            <p className="font-semibold">FARMACIA SKOL</p>
+                            <p>Av. Apoquindo 4501, Las Condes</p>
+                            <p>Santiago, Chile</p>
+                        </div>
+                        <div>
+                            <h2 className="font-bold mb-2">PARA:</h2>
+                            <p className="font-semibold">{pharmacy.name}</p>
+                            <p>{pharmacy.address || 'Dirección no especificada'}</p>
+                        </div>
+                    </section>
+                    
+                    <section className="grid grid-cols-2 gap-8 my-6 text-sm">
+                        <div><span className="font-bold">Fecha de Emisión:</span> {format(parseISO(note.createdAt), "d 'de' MMMM, yyyy", { locale: es })}</div>
+                        <div><span className="font-bold">Generado por:</span> {note.dispatcherName}</div>
+                    </section>
 
-                <section className="my-6">
-                    <Table className="text-black">
-                        <TableHeader className="bg-gray-100">
-                            <TableRow>
-                                <TableHead className="text-black font-bold">Receta ID</TableHead>
-                                <TableHead className="text-black font-bold">Paciente</TableHead>
-                                <TableHead className="text-black font-bold">Producto (Insumo)</TableHead>
-                                <TableHead className="text-black font-bold">P. Activo</TableHead>
-                                <TableHead className="text-black font-bold">Lote</TableHead>
-                                <TableHead className="text-black font-bold text-right">Cantidad</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {note.items.map((item, index) => {
-                                const inventoryItem = getInventoryItem(item.inventoryItemId);
-                                return (
-                                <TableRow key={index} className="border-gray-300">
-                                    <TableCell className="font-mono">{item.recipeId}</TableCell>
-                                    <TableCell>{getPatientName(item.recipeId)}</TableCell>
-                                    <TableCell>{inventoryItem?.name || 'N/A'}</TableCell>
-                                    <TableCell>{inventoryItem?.activePrinciple || 'N/A'}</TableCell>
-                                    <TableCell>{item.lotNumber}</TableCell>
-                                    <TableCell className="text-right">{item.quantity}</TableCell>
+                    <section className="my-6">
+                        <Table className="text-black">
+                            <TableHeader className="bg-gray-100">
+                                <TableRow>
+                                    <TableHead className="text-black font-bold">Receta ID</TableHead>
+                                    <TableHead className="text-black font-bold">Paciente</TableHead>
+                                    <TableHead className="text-black font-bold">Producto (Insumo)</TableHead>
+                                    <TableHead className="text-black font-bold">P. Activo</TableHead>
+                                    <TableHead className="text-black font-bold">Lote</TableHead>
+                                    <TableHead className="text-black font-bold text-right">Cantidad</TableHead>
                                 </TableRow>
-                                )
-                            })}
-                        </TableBody>
-                    </Table>
-                </section>
-                
-                <footer className="mt-16 pt-8 border-t-2 border-dashed border-gray-400 grid grid-cols-2 gap-16 text-center text-sm">
-                    <div>
-                        <div className="border-b border-gray-500 w-full mb-2 h-16"></div>
-                        <p className="font-bold">DESPACHADO POR</p>
-                        <p>FARMACIA SKOL</p>
-                    </div>
-                     <div>
-                        <div className="border-b border-gray-500 w-full mb-2 h-16"></div>
-                        <p className="font-bold">RECIBIDO POR</p>
-                        <p>{pharmacy.name}</p>
-                    </div>
-                </footer>
-            </div>
-            <div className="flex justify-end gap-2 p-6 border-t no-print">
-                <Button variant="outline" onClick={onClose}>Cerrar</Button>
-                <Button onClick={handlePrint}><Printer className="mr-2 h-4 w-4"/>Imprimir</Button>
-            </div>
+                            </TableHeader>
+                            <TableBody>
+                                {note.items.map((item, index) => {
+                                    const inventoryItem = getInventoryItem(item.inventoryItemId);
+                                    return (
+                                    <TableRow key={index} className="border-gray-300">
+                                        <TableCell className="font-mono">{item.recipeId}</TableCell>
+                                        <TableCell>{getPatientName(item.recipeId)}</TableCell>
+                                        <TableCell>{inventoryItem?.name || 'N/A'}</TableCell>
+                                        <TableCell>{inventoryItem?.activePrinciple || 'N/A'}</TableCell>
+                                        <TableCell>{item.lotNumber}</TableCell>
+                                        <TableCell className="text-right">{item.quantity}</TableCell>
+                                    </TableRow>
+                                    )
+                                })}
+                            </TableBody>
+                        </Table>
+                    </section>
+                    
+                    <footer className="mt-16 pt-8 border-t-2 border-dashed border-gray-400 grid grid-cols-2 gap-16 text-center text-sm">
+                        <div>
+                            <div className="border-b border-gray-500 w-full mb-2 h-16"></div>
+                            <p className="font-bold">DESPACHADO POR</p>
+                            <p>FARMACIA SKOL</p>
+                        </div>
+                        <div>
+                            <div className="border-b border-gray-500 w-full mb-2 h-16"></div>
+                            <p className="font-bold">RECIBIDO POR</p>
+                            <p>{pharmacy.name}</p>
+                        </div>
+                    </footer>
+                </div>
+                <DialogFooter className="flex justify-end gap-2 p-6 border-t no-print">
+                    <Button variant="outline" onClick={onClose}>Cerrar</Button>
+                    <Button onClick={handlePrint}><Printer className="mr-2 h-4 w-4"/>Imprimir</Button>
+                </DialogFooter>
+            </DialogContent>
         </Dialog>
     );
 }
