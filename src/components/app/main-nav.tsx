@@ -241,7 +241,7 @@ export function MainNav({
 
   return (
     <SidebarProvider>
-      <div className="flex h-screen flex-col bg-background">
+      <div className="flex h-full w-full flex-col bg-background">
         {/* === HEADER === */}
         <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between gap-4 border-b bg-card px-6">
           {/* Header Left Side */}
