@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { getPatient, getRecipes, getDoctors, getControlledSubstanceLogForPatient, getPharmacovigilanceReportsForPatient, updatePatient, getInventory } from '@/lib/data';
 import type { Patient, Recipe, Doctor, ControlledSubstanceLogEntry, PharmacovigilanceReport, InventoryItem } from '@/lib/types';
-import { PharmacovigilanceReportStatus } from '@/lib/types';
+import { PharmacovigilanceReportStatus, RecipeStatus } from '@/lib/types';
 import { analyzePatientHistory, AnalyzePatientHistoryOutput } from '@/ai/flows/analyze-patient-history';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -119,6 +119,33 @@ export default function PatientDetailPage() {
     fetchData();
   }, [fetchData]);
 
+  const activeTreatments = useMemo(() => {
+    if (!patient) return [];
+
+    const activeMagistralRecipes = recipes
+        .filter(r => ![
+            RecipeStatus.Dispensed,
+            RecipeStatus.Cancelled,
+            RecipeStatus.Rejected,
+            RecipeStatus.Archived,
+        ].includes(r.status))
+        .map(r => ({
+            type: 'magistral' as const,
+            name: r.items[0]?.principalActiveIngredient || 'Preparado Magistral',
+            details: `Receta #${r.id.substring(0, 6)}... - ${r.status}`,
+            id: r.id
+        }));
+    
+    const activeCommercialMeds = (patient.commercialMedications || []).map((med, index) => ({
+        type: 'commercial' as const,
+        name: med,
+        details: 'Medicamento Comercial',
+        id: `comm-${index}`
+    }));
+
+    return [...activeMagistralRecipes, ...activeCommercialMeds];
+  }, [patient, recipes]);
+
   const handleAnalyzeHistory = async () => {
     if (!patient) return;
     setIsAnalyzing(true);
@@ -142,11 +169,6 @@ export default function PatientDetailPage() {
   }
 
   const patientStats = useMemo(() => {
-    const activeMedications = new Set([
-        ...(patient?.commercialMedications || []),
-        ...recipes.flatMap(r => r.items.map(i => i.principalActiveIngredient))
-    ]);
-
     const lastDispensation = recipes
         .filter(r => r.dispensationDate)
         .sort((a, b) => new Date(b.dispensationDate!).getTime() - new Date(a.dispensationDate!).getTime())[0];
@@ -155,11 +177,11 @@ export default function PatientDetailPage() {
 
     return {
         estimatedMonthlyCost: `$${monthlyCost.toLocaleString('es-CL')}`,
-        activeMedicationsCount: activeMedications.size,
+        activeMedicationsCount: activeTreatments.length,
         historicalRecipesCount: recipes.length,
         lastDispensationDate: lastDispensation?.dispensationDate && isValid(parseISO(lastDispensation.dispensationDate)) ? format(parseISO(lastDispensation.dispensationDate), 'dd-MM-yyyy') : 'N/A'
     };
-  }, [patient, recipes]);
+  }, [recipes, activeTreatments]);
 
   const handleOpenAssociateModal = () => {
     setDoctorsToAssociate(patient?.associatedDoctorIds || []);
@@ -315,22 +337,34 @@ export default function PatientDetailPage() {
               </Card>
             )}
             
-            {/* Commercial Medications */}
+            {/* Active Treatments */}
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>Tratamiento con Medicamentos Comerciales</CardTitle>
-                  <Button variant="outline" size="sm" onClick={handleOpenCommercialMedsModal}>
-                    <Pencil className="mr-2 h-4 w-4" /> Editar
-                  </Button>
+                    <CardTitle>Tratamientos Activos</CardTitle>
+                    <Button variant="outline" size="sm" onClick={handleOpenCommercialMedsModal}>
+                        <Pencil className="mr-2 h-4 w-4" /> Editar Medicamentos
+                    </Button>
                 </CardHeader>
                 <CardContent>
-                  {patient.commercialMedications && patient.commercialMedications.length > 0 ? (
-                      <ul className="space-y-1 text-sm text-muted-foreground list-disc pl-5">
-                          {patient.commercialMedications.map((med, index) => <li key={index}>{med}</li>)}
-                      </ul>
-                  ) : (
-                      <p className="text-sm text-muted-foreground">No hay medicamentos comerciales activos registrados.</p>
-                  )}
+                    {activeTreatments.length > 0 ? (
+                        <ul className="space-y-3">
+                            {activeTreatments.map((treatment) => (
+                                <li key={treatment.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                                    <div>
+                                        <p className="font-semibold text-foreground">{treatment.name}</p>
+                                        <p className="text-xs text-muted-foreground">{treatment.details}</p>
+                                    </div>
+                                    {treatment.type === 'magistral' && (
+                                        <Button variant="ghost" size="sm" asChild>
+                                            <Link href={`/recipes/${treatment.id}`}>Ver Receta</Link>
+                                        </Button>
+                                    )}
+                                </li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <p className="text-sm text-muted-foreground">No hay tratamientos activos registrados.</p>
+                    )}
                 </CardContent>
             </Card>
 
