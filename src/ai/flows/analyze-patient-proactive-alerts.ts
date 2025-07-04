@@ -66,7 +66,7 @@ const prompt = ai.definePrompt({
   input: { schema: ProactiveAnalysisInputSchema },
   output: { schema: ProactiveAnalysisOutputSchema },
   prompt: `
-You are an expert pharmaceutical assistant responsible for proactive patient management. Your task is to analyze a chronic patient's data and their associated magistral recipes to determine if any action is required.
+You are an expert pharmaceutical assistant responsible for proactive patient management. Your task is to analyze a chronic patient's data and their associated magistral recipes to determine if any action is required. Evaluate the rules in the specified order of priority.
 
 **Today's Date: {{currentDate}}**
 **Maximum Preparation Cycles per Recipe: {{maxCycles}}**
@@ -90,20 +90,31 @@ You are an expert pharmaceutical assistant responsible for proactive patient man
 - No magistral recipes found for this patient.
 {{/unless}}
 
-**Analysis Rules:**
-1.  **URGENT - CREATE_NEW_RECIPE:**
-    - If the patient has an active or recently dispensed chronic recipe, but its \`dueDate\` is less than 30 days from today's date.
-    - If the most recent active/dispensed chronic recipe has reached or exceeded the \`maxCycles\` limit in its dispensation history (count the number of "Dispensada" statuses in the audit trail).
+**Analysis Rules (Evaluate in order of priority):**
+
+1.  **URGENT - CREATE_NEW_RECIPE (Reason: Cycle Limit Reached):**
+    - If the most recent active/dispensed chronic recipe has been dispensed \`maxCycles\` or more times (count "Dispensada" in audit trail).
+    - **Message:** "Se requiere NUEVA receta. Límite de {{maxCycles}} ciclos de preparación alcanzado."
+
+2.  **URGENT - CREATE_NEW_RECIPE (Reason: Recipe Expired/Expiring Soon):**
+    - If the \`dueDate\` of the most recent active/dispensed chronic recipe is **less than 30 days** from today's date.
+    - **Message:** "Se requiere NUEVA receta. El documento está vencido o próximo a vencer."
+
+3.  **URGENT - CREATE_NEW_RECIPE (Reason: No Active Recipe):**
     - If the patient is chronic but has no active magistral recipes at all.
-    - **Message:** Clearly state that a NEW prescription is required and why (e.g., "vencida", "límite de ciclos alcanzado").
+    - **Message:** "Paciente crónico sin receta magistral activa. Es necesario gestionar una."
 
-2.  **ATTENTION - REPREPARE_CYCLE:**
-    - If the patient has an active, valid recipe (\`dueDate\` is not soon to expire, cycles are available) that was last dispensed more than 25 days ago. This indicates it's time to prepare the next cycle.
-    - **Message:** Indicate that it's time to prepare the next cycle for the patient.
+4.  **ATTENTION - CREATE_NEW_RECIPE (Preventive Alert):**
+    - If the \`dueDate\` of the most recent active/dispensed chronic recipe is **between 30 and 60 days** from today's date.
+    - **Message:** "Atención: La receta vencerá pronto. Planificar la solicitud de una nueva."
 
-3.  **OK - NONE:**
-    - If none of the above conditions are met. This means the patient has a valid, active recipe and was dispensed recently.
-    - **Message:** State that the patient is up to date and no immediate action is needed.
+5.  **ATTENTION - REPREPARE_CYCLE:**
+    - If the patient has a valid, active recipe (more than 60 days until \`dueDate\` and cycles are available) that was last dispensed more than 25 days ago.
+    - **Message:** "Es momento de preparar el siguiente ciclo de medicación para el paciente."
+
+6.  **OK - NONE:**
+    - If none of the above conditions are met.
+    - **Message:** "Paciente al día con su tratamiento. No se requiere acción inmediata."
 
 Based on these rules, analyze the provided data and determine the \`proactiveStatus\`, \`actionNeeded\`, and a concise \`proactiveMessage\` in Spanish for the pharmacist.`,
 });
