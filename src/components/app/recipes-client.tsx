@@ -1044,27 +1044,27 @@ Equipo Farmacia Skol`;
                         <div className="flex items-start justify-between gap-2">
                             <div className="flex items-center gap-3">
                                 <Checkbox onCheckedChange={() => toggleSelectRecipe(recipe.id)} checked={selectedRecipes.includes(recipe.id)} className="mt-1 shrink-0"/>
-                                <div>
+                                <div className="flex-1">
                                     <CardTitle className="text-lg leading-tight">
                                         <Link href={`/patients/${recipe.patientId}`} className="hover:underline">{getPatientName(recipe.patientId)}</Link>
                                     </CardTitle>
-                                    <CardDescription className="text-xs">
-                                        Receta <Link href={`/recipes/${recipe.id}`} className="font-mono text-primary hover:underline">{recipe.id}</Link>
-                                    </CardDescription>
+                                    <div className="flex flex-col items-start gap-1 mt-1">
+                                        <CardDescription className="text-xs">
+                                            Receta <Link href={`/recipes/${recipe.id}`} className="font-mono text-primary hover:underline">{recipe.id}</Link>
+                                        </CardDescription>
+                                         <Badge variant="outline" className={cn("font-normal text-xs text-center whitespace-nowrap", statusConfig[recipe.status]?.badge)}>
+                                            {statusConfig[recipe.status]?.text || recipe.status}
+                                        </Badge>
+                                    </div>
                                 </div>
                             </div>
-                            <div className="flex flex-col items-end gap-2">
-                                <Badge variant="outline" className={cn("font-normal text-xs text-center whitespace-nowrap", statusConfig[recipe.status]?.badge)}>
-                                    {statusConfig[recipe.status]?.text || recipe.status}
-                                </Badge>
-                                <div className="flex items-center gap-1">
-                                    {recipe.status === RecipeStatus.PendingReviewPortal && (
-                                        <TooltipProvider><Tooltip><TooltipTrigger asChild><span><UserSquare className="h-4 w-4 text-purple-500" /></span></TooltipTrigger><TooltipContent><p>Receta del Portal</p></TooltipContent></Tooltip></TooltipProvider>
-                                    )}
-                                    {recipe.items.some(item => item.requiresFractionation) && (
-                                        <TooltipProvider><Tooltip><TooltipTrigger asChild><span><Split className="h-4 w-4 text-orange-500" /></span></TooltipTrigger><TooltipContent><p>Requiere Fraccionamiento</p></TooltipContent></Tooltip></TooltipProvider>
-                                    )}
-                                </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                                {recipe.status === RecipeStatus.PendingReviewPortal && (
+                                    <TooltipProvider><Tooltip><TooltipTrigger asChild><span><UserSquare className="h-4 w-4 text-purple-500" /></span></TooltipTrigger><TooltipContent><p>Receta del Portal</p></TooltipContent></Tooltip></TooltipProvider>
+                                )}
+                                {recipe.items.some(item => item.requiresFractionation) && (
+                                    <TooltipProvider><Tooltip><TooltipTrigger asChild><span><Split className="h-4 w-4 text-orange-500" /></span></TooltipTrigger><TooltipContent><p>Requiere Fraccionamiento</p></TooltipContent></Tooltip></TooltipProvider>
+                                )}
                             </div>
                         </div>
                     </CardHeader>
