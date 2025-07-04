@@ -41,8 +41,9 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-background px-4 md:px-8">
              <Link href="/patient-portal/dashboard">
                 <Image
-                    src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/FARMACIA_SK.jpg?alt=media&token=42d10668-3e42-498c-84bc-2a07c645e998"
-                    alt="Skol Pharmacy Logo"
+                    src="https://placehold.co/60x60.png"
+                    data-ai-hint="logo pharmacy"
+                    alt="Pharmacy Logo"
                     width={60}
                     height={60}
                     className="object-contain"
