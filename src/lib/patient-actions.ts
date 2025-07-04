@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import {
@@ -63,7 +64,7 @@ export async function submitNewPrescription(patientId: string, imageFile: File):
     const recipeRef = doc(collection(db, 'recipes'));
     const recipeId = recipeRef.id;
 
-    const storageRef = ref(storage, `portal-prescriptions/${user.uid}/${recipeId}`);
+    const storageRef = ref(storage, `prescriptions/${user.uid}/${recipeId}`);
     
     let imageUrl: string;
     try {

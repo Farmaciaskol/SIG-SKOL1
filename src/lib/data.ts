@@ -459,7 +459,7 @@ export const logControlledMagistralDispensation = async (recipe: Recipe, patient
             prescriptionType: recipe.controlledRecipeType as any,
             retrievedBy_Name: patient.name,
             retrievedBy_RUT: patient.rut,
-            prescriptionImageUrl: recipe.controlledRecipeImageUrl || recipe.prescriptionImageUrl,
+            prescriptionImageUrl: recipe.prescriptionImageUrl,
         };
         batch.set(doc(logCol), newLogEntry);
     }
@@ -490,6 +490,8 @@ export const logDirectSaleDispensation = async (
 
     const inventoryRef = doc(db, 'inventory', inventoryItemId);
     const logCol = collection(db, 'controlledSubstanceLog');
+    const newLogEntryRef = doc(logCol);
+    const newLogEntryId = newLogEntryRef.id;
     const batch = writeBatch(db);
 
     const inventorySnap = await getDoc(inventoryRef);
@@ -519,7 +521,7 @@ export const logDirectSaleDispensation = async (
     
     let finalImageUrl: string | undefined;
     if (controlledRecipeFormat === 'physical' && prescriptionImageFile) {
-      const storageRef = ref(storage, `controlled-prescriptions/${user.uid}/${patientId}-${Date.now()}`);
+      const storageRef = ref(storage, `prescriptions/${user.uid}/${newLogEntryId}`);
       try {
         const currentUserForLogging = auth?.currentUser;
         console.log("Attempting upload for direct sale. Auth state:", { 
@@ -557,7 +559,7 @@ export const logDirectSaleDispensation = async (
         retrievedBy_RUT: patient.rut,
         prescriptionImageUrl: finalImageUrl,
     };
-    batch.set(doc(logCol), newLogEntry);
+    batch.set(newLogEntryRef, newLogEntry);
     
     await batch.commit();
 };

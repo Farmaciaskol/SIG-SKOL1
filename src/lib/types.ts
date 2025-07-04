@@ -154,7 +154,6 @@ export interface Recipe {
   isControlled?: boolean;
   controlledRecipeType?: string;
   controlledRecipeFolio?: string;
-  controlledRecipeImageUrl?: string;
   prescriptionImageUrl?: string;
   skolSuppliedItemsDispatchStatus?: SkolSuppliedItemsDispatchStatus;
   auditTrail?: AuditTrailEntry[];
