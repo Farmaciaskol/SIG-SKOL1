@@ -1,6 +1,6 @@
 'use server';
 /**
- * @fileOverview AI agent that extracts recipe data from an image.
+ * @fileOverview AI agent that extracts recipe data from an image and suggests matching entities.
  *
  * - extractRecipeDataFromImage - Extracts data from a prescription image.
  * - ExtractRecipeDataFromImageInput - The input type for extractRecipeDataFromImage.
@@ -9,6 +9,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { findMatchingEntity } from '@/ai/tools/find-entities';
 
 const ExtractRecipeDataFromImageInputSchema = z.object({
   photoDataUri: z
@@ -37,11 +38,16 @@ const RecipeItemSchema = z.object({
 
 const ExtractRecipeDataFromImageOutputSchema = z.object({
   patientName: z.string().describe("The full name of the patient.").optional(),
-  patientRut: z.string().describe("The RUT (national ID) of the patient, if visible.").optional(),
+  patientRut: z.string().describe("The RUT (national ID) of the patient, if visible. Must be formatted as XX.XXX.XXX-X.").optional(),
+  patientAddress: z.string().describe("The full address of the patient, if visible.").optional(),
+  suggestedPatientId: z.string().describe("The ID of an existing patient that is the best match for the extracted patient data. Omit if no close match is found.").optional(),
+  
   doctorName: z.string().describe("The full name of the prescribing doctor.").optional(),
-  doctorRut: z.string().describe("The RUT (national ID) of the doctor, if visible.").optional(),
+  doctorRut: z.string().describe("The RUT (national ID) of the doctor, if visible. Must be formatted as XX.XXX.XXX-X.").optional(),
   doctorLicense: z.string().describe("The license number (N° Colegiatura) of the prescribing doctor.").optional(),
   doctorSpecialty: z.string().describe("The specialty of the prescribing doctor.").optional(),
+  suggestedDoctorId: z.string().describe("The ID of an existing doctor that is the best match for the extracted doctor data. Omit if no close match is found.").optional(),
+
   prescriptionDate: z.string().describe("The date the prescription was issued in YYYY-MM-DD format.").optional(),
   items: z.array(RecipeItemSchema).describe('An array of prescribed medications or items found in the recipe.')
 });
@@ -55,27 +61,29 @@ const prompt = ai.definePrompt({
   name: 'extractRecipeDataFromImagePrompt',
   input: {schema: ExtractRecipeDataFromImageInputSchema},
   output: {schema: ExtractRecipeDataFromImageOutputSchema},
+  tools: [findMatchingEntity],
   prompt: `You are an expert pharmacist and data entry specialist. Your task is to extract structured information from the provided image of a medical prescription. 
   
-  Please extract the following details and return them in a JSON object:
-  - Patient's full name (patientName)
-  - Patient's RUT or national ID (patientRut), if available.
-  - Doctor's full name (doctorName)
-  - Doctor's RUT or national ID (doctorRut), if available.
-  - Doctor's license number (doctorLicense)
-  - Doctor's specialty (doctorSpecialty)
-  - Date of prescription (prescriptionDate) in YYYY-MM-DD format. If the year is not specified, assume the current year.
-  - A list of prescribed items (items), where each item includes:
-    - The main active ingredient (principalActiveIngredient).
-    - The pharmaceutical form (pharmaceuticalForm), e.g., 'Cápsulas', 'Crema'.
-    - The concentration value (concentrationValue) and unit (concentrationUnit).
-    - The dosage value (dosageValue) and unit (dosageUnit).
-    - The frequency in hours (frequency), e.g., '24' for daily, '12' for twice a day.
-    - The treatment duration value (treatmentDurationValue) and unit (treatmentDurationUnit), e.g., '30' and 'días'.
-    - The total quantity value (totalQuantityValue) and unit (totalQuantityUnit).
-    - The detailed usage instructions (usageInstructions).
+  Follow these steps:
+  1.  **Extract Raw Data:** Carefully extract all the following details from the image.
+      - Patient's full name (patientName)
+      - Patient's RUT (patientRut). Format it as XX.XXX.XXX-X.
+      - Patient's full address (patientAddress).
+      - Doctor's full name (doctorName).
+      - Doctor's RUT (doctorRut). Format it as XX.XXX.XXX-X.
+      - Doctor's professional license number (doctorLicense, also known as N° Colegiatura).
+      - Doctor's specialty (doctorSpecialty).
+      - Date of prescription (prescriptionDate) in YYYY-MM-DD format. If the year is not specified, assume the current year.
+      - A list of prescribed items (items), paying close attention to the pharmaceutical form (pharmaceuticalForm, e.g., 'Cápsulas', 'Crema').
 
-  If any piece of information is not clearly visible, omit it from the output.
+  2.  **Find Matching Entities:** After extracting the raw data, use the 'findMatchingEntity' tool to search for the patient and doctor in the system using their extracted name or RUT.
+
+  3.  **Set Suggested IDs:**
+      - If you find a clear, unambiguous match for the patient, set the 'suggestedPatientId' to the ID of that patient.
+      - If you find a clear, unambiguous match for the doctor, set the 'suggestedDoctorId' to the ID of that doctor.
+      - If there is no clear match or multiple possibilities, leave the suggested ID fields empty.
+
+  4.  **Return JSON:** Return a single JSON object with all the extracted fields and the suggested IDs. If a piece of information is not visible, omit its field from the output.
 
   Prescription Image: {{media url=photoDataUri}}`,
 });
