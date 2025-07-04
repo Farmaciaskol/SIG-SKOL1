@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db, storage, auth } from './firebase';
@@ -308,7 +309,7 @@ export const saveRecipe = async (data: any, imageFile: File | null, userId: stri
     } else { // Creating
         const recipeRef = doc(db, 'recipes', effectiveRecipeId);
         const firstAuditEntry: AuditTrailEntry = { status: RecipeStatus.PendingValidation, date: new Date().toISOString(), userId: userId, notes: 'Receta creada en el sistema.' };
-        const recipeDataForCreate: Omit<Recipe, 'id'> = { ...recipeDataForUpdate, status: RecipeStatus.PendingValidation, paymentStatus: 'Pendiente', createdAt: new Date().toISOString(), auditTrail: [firstAuditEntry] } as Omit<Recipe, 'id'>;
+        const recipeDataForCreate: Omit<Recipe, 'id'> = { ...recipeDataForUpdate, status: RecipeStatus.PendingValidation, paymentStatus: 'N/A', createdAt: new Date().toISOString(), auditTrail: [firstAuditEntry] } as Omit<Recipe, 'id'>;
         await setDoc(recipeRef, recipeDataForCreate);
         return effectiveRecipeId;
     }

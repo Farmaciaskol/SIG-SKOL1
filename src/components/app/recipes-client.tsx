@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
@@ -301,6 +302,7 @@ export const RecipesClient = ({
       };
       const updates: Partial<Recipe> = { 
         status: RecipeStatus.ReceivedAtSkol, 
+        paymentStatus: 'Pendiente',
         auditTrail: [...(recipeToReceive.auditTrail || []), newAuditEntry],
         internalPreparationLot: internalLot,
         compoundingDate: new Date().toISOString(),
@@ -385,7 +387,7 @@ export const RecipesClient = ({
 
       const updates: Partial<Recipe> = {
         status: RecipeStatus.PendingValidation,
-        paymentStatus: 'Pendiente',
+        paymentStatus: 'N/A',
         dispensationDate: undefined,
         internalPreparationLot: undefined,
         compoundingDate: undefined,
