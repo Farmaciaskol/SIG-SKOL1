@@ -168,13 +168,8 @@ const PrintableDispatchNote = ({ note, pharmacy, onClose, getInventoryItem, getP
                         </Table>
                     </section>
                     
-                    <footer className="mt-16 pt-8 border-t-2 border-dashed border-gray-400 grid grid-cols-2 gap-16 text-center text-sm">
-                        <div>
-                            <div className="border-b border-gray-500 w-full mb-2 h-16"></div>
-                            <p className="font-bold">DESPACHADO POR</p>
-                            <p>FARMACIA SKOL</p>
-                        </div>
-                        <div>
+                    <footer className="mt-16 pt-8 border-t-2 border-dashed border-gray-400 flex justify-center text-center text-sm">
+                        <div className="w-1/2">
                             <div className="border-b border-gray-500 w-full mb-2 h-16"></div>
                             <p className="font-bold">RECIBIDO POR</p>
                             <p>{pharmacy.name}</p>
