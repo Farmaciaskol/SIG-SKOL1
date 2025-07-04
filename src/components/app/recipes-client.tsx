@@ -103,6 +103,7 @@ import {
   deleteRecipe,
   updateRecipe,
   logControlledMagistralDispensation,
+  batchSendRecipesToExternal
 } from '@/lib/data';
 import type {
   Recipe,
@@ -260,6 +261,55 @@ const SendToPharmacyDialog = ({ recipe, pharmacy, patients, isOpen, onClose, onC
     );
 }
 
+const SendBatchDialog = ({ recipes: recipesToSend, isOpen, onClose, onConfirm, isSubmitting, getPharmacyName }: { 
+    recipes: Recipe[]; 
+    isOpen: boolean; 
+    onClose: () => void;
+    onConfirm: () => void;
+    isSubmitting: boolean;
+    getPharmacyName: (id?: string) => string;
+}) => {
+    const summary = useMemo(() => {
+        if (!recipesToSend.length) return {};
+        return recipesToSend.reduce((acc, recipe) => {
+            const pharmacyName = getPharmacyName(recipe.externalPharmacyId) || "Desconocido";
+            acc[pharmacyName] = (acc[pharmacyName] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+    }, [recipesToSend, getPharmacyName]);
+
+    if (!isOpen) return null;
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Confirmar Envío en Lote</DialogTitle>
+                    <DialogDescription>
+                        Se enviarán {recipesToSend.length} recetas a los siguientes recetarios. Esta acción es irreversible.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-2">
+                    <h4 className="font-semibold">Resumen de Envío:</h4>
+                    <ul className="list-disc pl-5">
+                        {Object.entries(summary).map(([name, count]) => (
+                            <li key={name}>{count} receta(s) a <strong>{name}</strong></li>
+                        ))}
+                    </ul>
+                </div>
+                <DialogFooter>
+                    <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+                    <Button onClick={onConfirm} disabled={isSubmitting}>
+                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Confirmar Envío
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
+
 // --- MAIN COMPONENT ---
 
 export const RecipesClient = ({
@@ -292,6 +342,7 @@ export const RecipesClient = ({
   const [recipeToPrint, setRecipeToPrint] = useState<Recipe | null>(null);
   const [recipeToArchive, setRecipeToArchive] = useState<Recipe | null>(null);
   const [recipeToSend, setRecipeToSend] = useState<Recipe | null>(null);
+  const [recipesToSendBatch, setRecipesToSendBatch] = useState<Recipe[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Dialogs form fields
@@ -489,6 +540,46 @@ export const RecipesClient = ({
     } finally {
         setIsSubmitting(false);
         setIsDeleteBatchAlertOpen(false);
+    }
+  };
+
+  const handleOpenBatchSendDialog = () => {
+    const toSend = recipes.filter(r => 
+        selectedRecipes.includes(r.id) &&
+        r.status === RecipeStatus.Validated &&
+        r.supplySource !== 'Insumos de Skol'
+    );
+
+    if (toSend.length === 0) {
+        toast({
+            title: "No hay recetas válidas para enviar",
+            description: "Asegúrese de que las recetas seleccionadas estén en estado 'Validada' y su origen de insumos no sea 'Insumos de Skol'.",
+            variant: "destructive"
+        });
+        return;
+    }
+    setRecipesToSendBatch(toSend);
+  };
+
+  const handleConfirmBatchSend = async () => {
+    if (!user) {
+      toast({ title: 'Error de Autenticación', variant: 'destructive' });
+      return;
+    }
+    if (recipesToSendBatch.length === 0) return;
+
+    setIsSubmitting(true);
+    try {
+      const idsToSend = recipesToSendBatch.map(r => r.id);
+      await batchSendRecipesToExternal(idsToSend, user.uid);
+      toast({ title: `${idsToSend.length} recetas enviadas`, description: 'Las recetas han sido marcadas como enviadas a sus respectivos recetarios.' });
+      setRecipesToSendBatch([]);
+      setSelectedRecipes([]);
+      router.refresh();
+    } catch (error) {
+      toast({ title: 'Error al enviar en lote', description: error instanceof Error ? error.message : 'Ocurrió un error.', variant: 'destructive' });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -1130,6 +1221,14 @@ export const RecipesClient = ({
 
       {/* DIALOGS */}
       <SendToPharmacyDialog recipe={recipeToSend} pharmacy={getPharmacy(recipeToSend?.externalPharmacyId)} patients={patients} isOpen={!!recipeToSend} onClose={() => setRecipeToSend(null)} onConfirm={handleConfirmSend} isSubmitting={isSubmitting} />
+      <SendBatchDialog
+        recipes={recipesToSendBatch}
+        isOpen={recipesToSendBatch.length > 0}
+        onClose={() => setRecipesToSendBatch([])}
+        onConfirm={handleConfirmBatchSend}
+        isSubmitting={isSubmitting}
+        getPharmacyName={(id) => getPharmacy(id)?.name || 'N/A'}
+      />
       <Dialog open={!!recipeToView} onOpenChange={(open) => !open && setRecipeToView(null)}>
         <DialogContent className="sm:max-w-2xl"><DialogHeader><DialogTitle className="text-xl font-semibold">Detalle Receta: {recipeToView?.id}</DialogTitle><DialogDescription>Información completa de la receta y su historial.</DialogDescription></DialogHeader>
             <div className="max-h-[70vh] overflow-y-auto p-1 pr-4"><div className="space-y-6">
@@ -1256,6 +1355,10 @@ export const RecipesClient = ({
             <CardContent className="p-3 flex items-center justify-between gap-4">
                 <p className="text-sm font-medium">{selectedRecipes.length} receta(s) seleccionada(s)</p>
                 <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={handleOpenBatchSendDialog}>
+                        <Send className="mr-2 h-4 w-4"/>
+                        Enviar
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => toast({ title: 'Función no disponible', description: 'La exportación a CSV se implementará pronto.' })}>Exportar</Button>
                     <Button variant="destructive" size="sm" onClick={() => setIsDeleteBatchAlertOpen(true)}><Trash2 className="mr-2 h-4 w-4"/>Eliminar</Button>
                 </div>

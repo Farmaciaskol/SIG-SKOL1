@@ -783,4 +783,34 @@ export const updateAppSettings = async (updates: Partial<AppSettings>): Promise<
     await updateDoc(settingsRef, updates);
 };
 
+export const batchSendRecipesToExternal = async (recipeIds: string[], userId: string): Promise<void> => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    if (recipeIds.length === 0) return;
+
+    const batch = writeBatch(db);
+    const now = new Date().toISOString();
+
+    const newAuditEntry: AuditTrailEntry = {
+        status: RecipeStatus.SentToExternal,
+        date: now,
+        userId: userId,
+        notes: 'Receta enviada a recetario externo en lote.'
+    };
+
+    for (const id of recipeIds) {
+        const recipeRef = doc(db, 'recipes', id);
+        const recipeSnap = await getDoc(recipeRef);
+        if (recipeSnap.exists()) {
+            const recipeData = recipeSnap.data() as Recipe;
+            batch.update(recipeRef, {
+                status: RecipeStatus.SentToExternal,
+                updatedAt: now,
+                auditTrail: [...(recipeData.auditTrail || []), newAuditEntry],
+            });
+        }
+    }
+
+    await batch.commit();
+};
+
     
