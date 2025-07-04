@@ -388,8 +388,13 @@ export const processDispatch = async (pharmacyId: string, dispatchItems: Dispatc
     if (!db) throw new Error("Firestore is not initialized.");
 
     const batch = writeBatch(db);
-    const dispatchNoteId = doc(collection(db, 'dispatchNotes')).id;
-    const dispatchNoteRef = doc(db, 'dispatchNotes', dispatchNoteId);
+    const dispatchNoteRef = doc(collection(db, 'dispatchNotes'));
+
+    // New Folio generation
+    const dispatchNotesCollection = collection(db, 'dispatchNotes');
+    const dispatchCountSnapshot = await getDocs(query(dispatchNotesCollection));
+    const newFolioNumber = dispatchCountSnapshot.size + 1;
+    const folio = `ND-${String(newFolioNumber).padStart(6, '0')}`;
 
     const recipeUpdates: { [recipeId: string]: { itemsToDispatch: number; dispatchedItems: number } } = {};
 
@@ -426,6 +431,7 @@ export const processDispatch = async (pharmacyId: string, dispatchItems: Dispatc
     }
 
     const newDispatchNote: Omit<DispatchNote, 'id'> = {
+        folio,
         externalPharmacyId: pharmacyId,
         status: DispatchStatus.Active,
         createdAt: new Date().toISOString(),
@@ -435,7 +441,7 @@ export const processDispatch = async (pharmacyId: string, dispatchItems: Dispatc
     };
     batch.set(dispatchNoteRef, newDispatchNote as any);
     await batch.commit();
-    return dispatchNoteId;
+    return dispatchNoteRef.id;
 };
 
 export const logControlledMagistralDispensation = async (recipe: Recipe, patient: Patient): Promise<void> => {

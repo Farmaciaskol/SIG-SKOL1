@@ -84,11 +84,11 @@ type ValidationState = {
   [itemId: string]: ItemValidationState;
 };
 
-const PrintableDispatchNote = ({ note, pharmacy, onClose, getInventoryItemName, getPatientName }: { 
+const PrintableDispatchNote = ({ note, pharmacy, onClose, getInventoryItem, getPatientName }: { 
     note: DispatchNote | null; 
     pharmacy: ExternalPharmacy | undefined; 
     onClose: () => void;
-    getInventoryItemName: (id: string) => string;
+    getInventoryItem: (id: string) => InventoryItem | undefined;
     getPatientName: (id: string) => string;
 }) => {
     if (!note || !pharmacy) return null;
@@ -132,7 +132,7 @@ const PrintableDispatchNote = ({ note, pharmacy, onClose, getInventoryItemName, 
                     </div>
                     <div className="text-right">
                         <h1 className="text-3xl font-bold">NOTA DE DESPACHO</h1>
-                        <p className="font-mono text-lg mt-1">Folio: {note.id}</p>
+                        <p className="font-mono text-lg mt-1">Folio: {note.folio || note.id}</p>
                     </div>
                 </header>
 
@@ -159,24 +159,28 @@ const PrintableDispatchNote = ({ note, pharmacy, onClose, getInventoryItemName, 
                     <Table className="text-black">
                         <TableHeader className="bg-gray-100">
                             <TableRow>
-                                <TableHead className="text-black font-bold">Producto Insumo</TableHead>
-                                <TableHead className="text-black font-bold">Receta ID / Paciente</TableHead>
+                                <TableHead className="text-black font-bold">Receta ID</TableHead>
+                                <TableHead className="text-black font-bold">Paciente</TableHead>
+                                <TableHead className="text-black font-bold">Producto (Insumo)</TableHead>
+                                <TableHead className="text-black font-bold">P. Activo</TableHead>
                                 <TableHead className="text-black font-bold">Lote</TableHead>
                                 <TableHead className="text-black font-bold text-right">Cantidad</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {note.items.map((item, index) => (
+                            {note.items.map((item, index) => {
+                                const inventoryItem = getInventoryItem(item.inventoryItemId);
+                                return (
                                 <TableRow key={index} className="border-gray-300">
-                                    <TableCell>{getInventoryItemName(item.inventoryItemId)}</TableCell>
-                                    <TableCell>
-                                        <p className="font-mono">{item.recipeId}</p>
-                                        <p className="text-xs">{getPatientName(item.recipeId)}</p>
-                                    </TableCell>
+                                    <TableCell className="font-mono">{item.recipeId}</TableCell>
+                                    <TableCell>{getPatientName(item.recipeId)}</TableCell>
+                                    <TableCell>{inventoryItem?.name || 'N/A'}</TableCell>
+                                    <TableCell>{inventoryItem?.activePrinciple || 'N/A'}</TableCell>
                                     <TableCell>{item.lotNumber}</TableCell>
                                     <TableCell className="text-right">{item.quantity}</TableCell>
                                 </TableRow>
-                            ))}
+                                )
+                            })}
                         </TableBody>
                     </Table>
                 </section>
@@ -432,7 +436,7 @@ export default function DispatchManagementPage() {
   };
   
   const getPharmacyName = (pharmacyId: string) => externalPharmacies.find(p => p.id === pharmacyId)?.name || 'Desconocido';
-  const getInventoryItemName = (id: string) => inventory.find(i => i.id === id)?.name || 'N/A';
+  const getInventoryItem = (id: string) => inventory.find(i => i.id === id);
   const getPatientName = (recipeId: string) => {
     const recipe = recipes.find(r => r.id === recipeId);
     if (!recipe) return 'N/A';
@@ -519,7 +523,7 @@ export default function DispatchManagementPage() {
         note={printingNote}
         pharmacy={externalPharmacies.find(p => p.id === printingNote?.externalPharmacyId)}
         onClose={() => setPrintingNote(null)}
-        getInventoryItemName={getInventoryItemName}
+        getInventoryItem={getInventoryItem}
         getPatientName={getPatientName}
       />
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
@@ -675,7 +679,7 @@ export default function DispatchManagementPage() {
                             <CardHeader>
                                 <div className="flex justify-between items-center flex-wrap gap-2">
                                   <CardTitle className="text-lg font-bold text-foreground">
-                                      Nota de Despacho: <span className="font-mono text-primary">{note.id}</span>
+                                      Nota de Despacho: <span className="font-mono text-primary">{note.folio || note.id}</span>
                                   </CardTitle>
                                   <Badge variant="secondary">{getPharmacyName(note.externalPharmacyId)}</Badge>
                                 </div>
@@ -689,7 +693,7 @@ export default function DispatchManagementPage() {
                                     {note.items.map((item, index) => (
                                         <li key={index} className="flex flex-col sm:flex-row justify-between p-2 bg-muted/50 rounded-md">
                                             <div>
-                                              <span className="font-medium text-foreground">{getInventoryItemName(item.inventoryItemId)}</span>
+                                              <span className="font-medium text-foreground">{getInventoryItem(item.inventoryItemId)?.name || 'N/A'}</span>
                                               <p className="text-xs text-muted-foreground">Receta: <Link className="font-mono text-primary hover:underline" href={`/recipes/${item.recipeId}`}>{item.recipeId}</Link></p>
                                             </div>
                                             <span className="font-mono text-xs text-muted-foreground mt-1 sm:mt-0">Lote: {item.lotNumber} | Cant: {item.quantity}</span>
@@ -730,7 +734,7 @@ export default function DispatchManagementPage() {
                             <CardHeader>
                                 <div className="flex justify-between items-center flex-wrap gap-2">
                                   <CardTitle className="text-lg font-bold text-foreground">
-                                      Nota de Despacho: <span className="font-mono text-primary">{note.id}</span>
+                                      Nota de Despacho: <span className="font-mono text-primary">{note.folio || note.id}</span>
                                   </CardTitle>
                                   <Badge variant={note.status === 'Recibido' ? 'default' : 'destructive'}>{note.status}</Badge>
                                 </div>
@@ -765,5 +769,3 @@ export default function DispatchManagementPage() {
     </>
   );
 }
-
-    

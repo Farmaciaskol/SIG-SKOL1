@@ -293,6 +293,7 @@ export interface DispatchItem {
 
 export interface DispatchNote {
     id: string;
+    folio: string;
     externalPharmacyId: string;
     status: DispatchStatus;
     createdAt: string; // ISO String
