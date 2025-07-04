@@ -157,7 +157,7 @@ export const addDoctor = async (doctor: Omit<Doctor, 'id'>): Promise<string> => 
     if (!db) throw new Error("Firestore is not initialized.");
 
     if (doctor.license) {
-        const q = query(collection(db, "doctors"), where("license", "==", doctor.license));
+        const q = query(collection(db, "doctors"), where("license", "==", doctor.license), limit(1));
         const querySnapshot = await getDocs(q);
         if (!querySnapshot.empty) {
             throw new Error('Ya existe un médico con este número de colegiatura.');
@@ -223,7 +223,7 @@ export const saveRecipe = async (data: any, imageFile: File | null, userId: stri
 
     let patientId = data.patientId;
     if (data.patientSelectionType === 'new' && data.newPatientName && data.newPatientRut) {
-        const q = query(collection(db, "patients"), where("rut", "==", data.newPatientRut));
+        const q = query(collection(db, "patients"), where("rut", "==", data.newPatientRut), limit(1));
         const querySnapshot = await getDocs(q);
         if (!querySnapshot.empty) {
             throw new Error('Ya existe un paciente con este RUT. Por favor, selecciónelo de la lista de pacientes existentes.');
@@ -235,7 +235,7 @@ export const saveRecipe = async (data: any, imageFile: File | null, userId: stri
 
     let doctorId = data.doctorId;
     if (data.doctorSelectionType === 'new' && data.newDoctorName && data.newDoctorLicense) {
-        const q = query(collection(db, "doctors"), where("license", "==", data.newDoctorLicense));
+        const q = query(collection(db, "doctors"), where("license", "==", data.newDoctorLicense), limit(1));
         const querySnapshot = await getDocs(q);
         if (!querySnapshot.empty) {
             throw new Error('Ya existe un médico con este número de colegiatura. Por favor, selecciónelo de la lista de médicos existentes.');
@@ -251,6 +251,13 @@ export const saveRecipe = async (data: any, imageFile: File | null, userId: stri
     if (imageFile && storage) {
         const storageRef = ref(storage, `prescriptions/${userId}/${effectiveRecipeId}`);
         try {
+            const currentUserForLogging = auth?.currentUser;
+            console.log("Attempting upload. Auth state:", { 
+                uid: currentUserForLogging?.uid, 
+                isAnonymous: currentUserForLogging?.isAnonymous,
+                email: currentUserForLogging?.email,
+                providerData: currentUserForLogging?.providerData,
+            });
             const uploadResult = await uploadBytes(storageRef, imageFile);
             imageUrl = await getDownloadURL(uploadResult.ref);
         } catch (storageError: any) {
@@ -310,7 +317,7 @@ export const saveRecipe = async (data: any, imageFile: File | null, userId: stri
 export const addInventoryItem = async (item: Omit<InventoryItem, 'id' | 'quantity' | 'lots'>): Promise<string> => {
     if (!db) throw new Error("Firestore is not initialized.");
     
-    const q = query(collection(db, "inventory"), where("name", "==", item.name));
+    const q = query(collection(db, "inventory"), where("name", "==", item.name), limit(1));
     const querySnapshot = await getDocs(q);
     if (!querySnapshot.empty) {
         throw new Error('Ya existe un producto de inventario con este nombre.');
@@ -488,6 +495,13 @@ export const logDirectSaleDispensation = async (
     if (controlledRecipeFormat === 'physical' && prescriptionImageFile) {
       const storageRef = ref(storage, `controlled-prescriptions/${user.uid}/${patientId}-${Date.now()}`);
       try {
+        const currentUserForLogging = auth?.currentUser;
+        console.log("Attempting upload for direct sale. Auth state:", { 
+            uid: currentUserForLogging?.uid, 
+            isAnonymous: currentUserForLogging?.isAnonymous,
+            email: currentUserForLogging?.email,
+            providerData: currentUserForLogging?.providerData,
+        });
         const uploadResult = await uploadBytes(storageRef, prescriptionImageFile);
         finalImageUrl = await getDownloadURL(uploadResult.ref);
       } catch (storageError: any) {
@@ -542,7 +556,7 @@ export const updatePatient = async (id: string, updates: Partial<Patient> & { pa
 export const addPatient = async (patient: Omit<Patient, 'id' | 'proactiveStatus' | 'proactiveMessage' | 'actionNeeded' | 'commercialMedications'> & { password?: string }): Promise<string> => {
     if (!db) throw new Error("Firestore is not initialized.");
     
-    const q = query(collection(db, "patients"), where("rut", "==", patient.rut));
+    const q = query(collection(db, "patients"), where("rut", "==", patient.rut), limit(1));
     const querySnapshot = await getDocs(q);
     if (!querySnapshot.empty) {
         throw new Error('Ya existe un paciente con este RUT.');

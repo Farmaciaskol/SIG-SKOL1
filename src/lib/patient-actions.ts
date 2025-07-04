@@ -67,6 +67,13 @@ export async function submitNewPrescription(patientId: string, imageFile: File):
     
     let imageUrl: string;
     try {
+        const currentUserForLogging = auth?.currentUser;
+        console.log("Attempting upload from Patient Portal. Auth state:", { 
+            uid: currentUserForLogging?.uid, 
+            isAnonymous: currentUserForLogging?.isAnonymous,
+            email: currentUserForLogging?.email,
+            providerData: currentUserForLogging?.providerData,
+        });
         const uploadResult = await uploadBytes(storageRef, imageFile);
         imageUrl = await getDownloadURL(uploadResult.ref);
     } catch (storageError: any) {
