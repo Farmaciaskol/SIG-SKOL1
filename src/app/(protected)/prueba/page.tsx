@@ -88,7 +88,7 @@ export default function TestPage() {
         return;
     }
     try {
-            const storageRef = ref(storage, `test-uploads/${user.uid}/${Date.now()}-${fileToUpload.name}`);
+      const storageRef = ref(storage, `test-uploads/${user.uid}/${Date.now()}-${fileToUpload.name}`);
       const uploadResult = await uploadBytes(storageRef, fileToUpload);
       const downloadUrl = await getDownloadURL(uploadResult.ref);
       
@@ -101,7 +101,7 @@ export default function TestPage() {
       if (error.code) {
         switch (error.code) {
           case 'storage/unauthorized':
-            errorMsg = "Error de autorización: No tiene permiso para subir archivos. Verifique que está autenticado y que las reglas de Firebase Storage lo permiten.";
+            errorMsg = "Error de autorización: Su usuario no tiene permiso para subir archivos. Por favor, vaya a la consola de Firebase -> Storage -> Rules y asegúrese de que los usuarios autenticados puedan escribir.";
             break;
           case 'storage/object-not-found':
           case 'storage/bucket-not-found':

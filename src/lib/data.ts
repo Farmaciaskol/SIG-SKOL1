@@ -237,11 +237,9 @@ export const saveRecipe = async (data: any, imageFile: File | null, userId: stri
             imageUrl = await getDownloadURL(uploadResult.ref);
         } catch (storageError: any) {
             console.error("Firebase Storage upload failed in saveRecipe:", storageError);
-            let userMessage = `Error al subir imagen. Verifique las reglas de Storage. Código: ${storageError.code || 'UNKNOWN'}`;
+            let userMessage = `Error al subir imagen. Código: ${storageError.code || 'UNKNOWN'}`;
             if (storageError.code === 'storage/unauthorized') {
-                userMessage = "Error de autorización: No tiene permiso para subir archivos. Verifique que está autenticado y que las reglas de Storage lo permiten.";
-            } else if (storageError.code === 'storage/object-not-found' || storageError.code === 'storage/bucket-not-found') {
-                 userMessage = "El bucket de almacenamiento no parece estar configurado correctamente en su proyecto de Firebase.";
+                userMessage = "Error de autorización: No tiene permiso para subir archivos. Vaya a la consola de Firebase -> Storage -> Rules y asegúrese de que los usuarios autenticados pueden escribir.";
             }
             throw new Error(userMessage);
         }
@@ -466,11 +464,9 @@ export const logDirectSaleDispensation = async (
         finalImageUrl = await getDownloadURL(uploadResult.ref);
       } catch (storageError: any) {
         console.error("Firebase Storage upload failed in logDirectSaleDispensation:", storageError);
-        let userMessage = `Error al subir imagen. Verifique las reglas de Storage. Código: ${storageError.code || 'UNKNOWN'}`;
+        let userMessage = `Error al subir imagen. Código: ${storageError.code || 'UNKNOWN'}`;
         if (storageError.code === 'storage/unauthorized') {
-            userMessage = "Error de autorización: No tiene permiso para subir archivos. Verifique que está autenticado y que las reglas de Storage lo permiten.";
-        } else if (storageError.code === 'storage/object-not-found' || storageError.code === 'storage/bucket-not-found') {
-             userMessage = "El bucket de almacenamiento no parece estar configurado correctamente en su proyecto de Firebase.";
+            userMessage = "Error de autorización: No tiene permiso para subir archivos. Vaya a la consola de Firebase -> Storage -> Rules y asegúrese de que los usuarios autenticados pueden escribir.";
         }
         throw new Error(userMessage);
       }
