@@ -5,25 +5,25 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%; /* White */
+    --background: 220 13% 95%; /* Light Gray from PRD #F0F2F5 */
     --foreground: 215 25% 27%;
-    --card: 0 0% 100%;
+    --card: 0 0% 100%; /* White cards */
     --card-foreground: 215 25% 27%;
     --popover: 0 0% 100%;
     --popover-foreground: 215 25% 27%;
-    --primary: 202 95% 32%; /* Darker blue based on sky-700 */
+    --primary: 202 98% 39%; /* Stronger Sky Blue */
     --primary-foreground: 0 0% 100%;
-    --secondary: 214 23% 90%;
+    --secondary: 220 14% 91%; /* Lighter gray for secondary elements */
     --secondary-foreground: 215 39% 18%;
-    --muted: 214 23% 90%;
+    --muted: 220 14% 91%;
     --muted-foreground: 216 19% 47%;
     --accent: 195 100% 50%; /* Deep Sky Blue #00BFFF */
     --accent-foreground: 0 0% 100%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border: 215 28% 84%;
-    --input: 215 28% 84%;
-    --ring: 202 95% 32%;
+    --border: 220 13% 89%;
+    --input: 220 13% 89%;
+    --ring: 202 98% 39%;
     --radius: 0.75rem;
     --chart-1: 197 71% 73%;
     --chart-2: 195 100% 50%;
@@ -39,7 +39,7 @@
     --card-foreground: 220 17% 96%;
     --popover: 220 13% 10%;
     --popover-foreground: 220 17% 96%;
-    --primary: 202 95% 32%;
+    --primary: 202 98% 39%;
     --primary-foreground: 0 0% 100%;
     --secondary: 215 25% 27%;
     --secondary-foreground: 220 17% 96%;
@@ -51,7 +51,7 @@
     --destructive-foreground: 220 17% 96%;
     --border: 215 25% 27%;
     --input: 215 25% 27%;
-    --ring: 202 95% 32%;
+    --ring: 202 98% 39%;
     --radius: 0.75rem;
     --chart-1: 197 71% 73%;
     --chart-2: 195 100% 50%;

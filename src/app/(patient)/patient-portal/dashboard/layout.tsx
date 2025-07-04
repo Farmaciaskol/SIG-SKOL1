@@ -37,8 +37,8 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   return (
-      <div className="min-h-screen bg-muted/40">
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-background px-4 md:px-8">
+      <div className="min-h-screen bg-background">
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-card px-4 md:px-8">
              <Link href="/patient-portal/dashboard">
                 <Image
                     src="https://placehold.co/60x60.png"

@@ -227,7 +227,7 @@ export default function DoctorsPage() {
     return (
         <Card className="flex flex-col">
             <CardHeader>
-            <CardTitle className="text-lg font-bold text-slate-800 truncate" title={doctor.name}>{doctor.name}</CardTitle>
+            <CardTitle className="text-lg font-bold text-foreground truncate" title={doctor.name}>{doctor.name}</CardTitle>
             <p className="text-sm font-medium text-primary truncate" title={doctor.specialty}>{doctor.specialty}</p>
             </CardHeader>
             <CardContent className="flex-grow space-y-6">
@@ -237,13 +237,13 @@ export default function DoctorsPage() {
                 {doctor.phone && (
                     <div className="flex items-center gap-3 text-sm">
                     <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-slate-700">{doctor.phone}</span>
+                    <span className="text-foreground">{doctor.phone}</span>
                     </div>
                 )}
                 {doctor.email && (
                     <div className="flex items-center gap-3 text-sm">
                     <Mail className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-slate-700">{doctor.email}</span>
+                    <span className="text-foreground">{doctor.email}</span>
                     </div>
                 )}
                 </div>
@@ -251,11 +251,11 @@ export default function DoctorsPage() {
             <div className="border-t pt-4">
                 <div className="grid grid-cols-2 gap-4 text-center">
                 <div>
-                    <p className="text-2xl font-bold text-slate-800">{doctor.patientsAssociated}</p>
+                    <p className="text-2xl font-bold text-foreground">{doctor.patientsAssociated}</p>
                     <p className="text-xs text-muted-foreground">Pacientes Asociados</p>
                 </div>
                 <div>
-                    <p className="text-2xl font-bold text-slate-800">{doctor.activeRecipes}</p>
+                    <p className="text-2xl font-bold text-foreground">{doctor.activeRecipes}</p>
                     <p className="text-xs text-muted-foreground">Recetas Activas</p>
                 </div>
                 </div>
@@ -266,8 +266,8 @@ export default function DoctorsPage() {
                 </h3>
                 <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
-                    <p className="text-slate-700">Emisión Correcta</p>
-                    <p className="font-semibold text-slate-800">{formatPercentage(doctor.correctEmissionRate)}</p>
+                    <p className="text-muted-foreground">Emisión Correcta</p>
+                    <p className="font-semibold text-foreground">{formatPercentage(doctor.correctEmissionRate)}</p>
                 </div>
                 <Progress
                     value={isNaN(doctor.correctEmissionRate) ? 0 : doctor.correctEmissionRate}
@@ -277,8 +277,8 @@ export default function DoctorsPage() {
                 </div>
                 <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
-                    <p className="text-slate-700">Cumplimiento Crónicos</p>
-                    <p className="font-semibold text-slate-800">{formatPercentage(doctor.chronicComplianceRate)}</p>
+                    <p className="text-muted-foreground">Cumplimiento Crónicos</p>
+                    <p className="font-semibold text-foreground">{formatPercentage(doctor.chronicComplianceRate)}</p>
                 </div>
                 <Progress
                     value={isNaN(doctor.chronicComplianceRate) ? 0 : doctor.chronicComplianceRate}
@@ -351,7 +351,7 @@ export default function DoctorsPage() {
     }}>
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-800 font-headline">Gestión de Médicos</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground font-headline">Gestión de Médicos</h1>
           <p className="text-sm text-muted-foreground">
             Panel de control para gestionar la relación con los prescriptores.
           </p>

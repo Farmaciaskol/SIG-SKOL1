@@ -27,11 +27,11 @@ import { es } from 'date-fns/locale';
 const StatCard = ({ title, value, icon: Icon }: { title: string; value: string | number; icon: React.ElementType }) => (
   <Card>
     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium text-slate-700">{title}</CardTitle>
+      <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
       <Icon className="h-4 w-4 text-muted-foreground" />
     </CardHeader>
     <CardContent>
-      <div className="text-2xl font-bold text-slate-800">{value}</div>
+      <div className="text-2xl font-bold text-foreground">{value}</div>
     </CardContent>
   </Card>
 );
@@ -96,7 +96,7 @@ export default function MonthlyDispensingPage() {
     return (
       <div className="flex items-center justify-center h-full">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="ml-2 text-slate-600">Cargando dispensaciones...</p>
+        <p className="ml-2 text-muted-foreground">Cargando dispensaciones...</p>
       </div>
     );
   }
@@ -105,7 +105,7 @@ export default function MonthlyDispensingPage() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-800 font-headline">Dispensación Mensual</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground font-headline">Dispensación Mensual</h1>
           <p className="text-sm text-muted-foreground">
             Gestión proactiva y centralizada de tratamientos para pacientes crónicos.
           </p>
@@ -145,7 +145,7 @@ export default function MonthlyDispensingPage() {
                 const statusInfo = statusConfig[box.status] || { text: box.status, badge: 'bg-slate-200' };
                 return (
                   <TableRow key={box.id}>
-                    <TableCell className="font-semibold text-slate-700">{format(parse(box.period, 'yyyy-MM', new Date()), 'MMMM yyyy', {locale: es})}</TableCell>
+                    <TableCell className="font-semibold text-foreground">{format(parse(box.period, 'yyyy-MM', new Date()), 'MMMM yyyy', {locale: es})}</TableCell>
                     <TableCell>{getPatientName(box.patientId)}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">

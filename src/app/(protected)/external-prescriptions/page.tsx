@@ -77,7 +77,7 @@ const PharmacyCard = ({ pharmacy, onEdit, onDelete }: { pharmacy: PharmacyWithSt
     <Card className="flex flex-col">
       <CardHeader>
         <div className="flex justify-between items-start">
-            <CardTitle className="text-lg font-bold text-slate-800">{pharmacy.name}</CardTitle>
+            <CardTitle className="text-lg font-bold text-foreground">{pharmacy.name}</CardTitle>
             <div className="flex items-center gap-1">
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(pharmacy)}>
                   <Pencil className="h-4 w-4" />
@@ -92,19 +92,19 @@ const PharmacyCard = ({ pharmacy, onEdit, onDelete }: { pharmacy: PharmacyWithSt
             {pharmacy.contactPerson && (
                 <div className="flex items-center gap-3">
                     <User className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-slate-700">{pharmacy.contactPerson}</span>
+                    <span className="text-foreground">{pharmacy.contactPerson}</span>
                 </div>
             )}
             {pharmacy.phone && (
                 <div className="flex items-center gap-3">
                     <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-slate-700">{pharmacy.phone}</span>
+                    <span className="text-foreground">{pharmacy.phone}</span>
                 </div>
             )}
             {pharmacy.email && (
                 <div className="flex items-center gap-3">
                     <Mail className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-slate-700">{pharmacy.email}</span>
+                    <span className="text-foreground">{pharmacy.email}</span>
                 </div>
             )}
         </div>
@@ -119,11 +119,11 @@ const PharmacyCard = ({ pharmacy, onEdit, onDelete }: { pharmacy: PharmacyWithSt
                 <p className="text-xs text-muted-foreground">Saldo Pendiente</p>
             </div>
              <div>
-                <p className="text-2xl font-bold text-slate-800">{pharmacy.activeRecipes}</p>
+                <p className="text-2xl font-bold text-foreground">{pharmacy.activeRecipes}</p>
                 <p className="text-xs text-muted-foreground">Recetas Activas</p>
             </div>
              <div>
-                <p className="text-2xl font-bold text-slate-800">{pharmacy.reports}</p>
+                <p className="text-2xl font-bold text-foreground">{pharmacy.reports}</p>
                 <p className="text-xs text-muted-foreground">Reportes FV</p>
             </div>
         </div>
@@ -135,8 +135,8 @@ const PharmacyCard = ({ pharmacy, onEdit, onDelete }: { pharmacy: PharmacyWithSt
             {pharmacy.standardCompliance !== undefined && (
                 <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
-                    <p className="text-slate-700">Cumplimiento Prep. Estándar</p>
-                    <p className="font-semibold text-slate-800">{formatPercentage(pharmacy.standardCompliance)}</p>
+                    <p className="text-muted-foreground">Cumplimiento Prep. Estándar</p>
+                    <p className="font-semibold text-foreground">{formatPercentage(pharmacy.standardCompliance)}</p>
                 </div>
                 <Progress
                     value={pharmacy.standardCompliance}
@@ -147,8 +147,8 @@ const PharmacyCard = ({ pharmacy, onEdit, onDelete }: { pharmacy: PharmacyWithSt
             {pharmacy.skolCompliance !== undefined && (
                 <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
-                    <p className="text-slate-700">Cumplimiento Insumo Skol</p>
-                    <p className="font-semibold text-slate-800">{formatPercentage(pharmacy.skolCompliance)}</p>
+                    <p className="text-muted-foreground">Cumplimiento Insumo Skol</p>
+                    <p className="font-semibold text-foreground">{formatPercentage(pharmacy.skolCompliance)}</p>
                 </div>
                 <Progress
                     value={pharmacy.skolCompliance}
@@ -187,11 +187,11 @@ type PharmacyFormValues = z.infer<typeof pharmacyFormSchema>;
 const StatCard = ({ title, value, icon: Icon }: { title: string; value: string | number; icon: React.ElementType }) => (
     <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <h3 className="text-sm font-medium text-slate-700">{title}</h3>
+            <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
             <Icon className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-            <div className="text-2xl font-bold text-slate-800">{value}</div>
+            <div className="text-2xl font-bold text-foreground">{value}</div>
         </CardContent>
     </Card>
 );
@@ -347,7 +347,7 @@ export default function ExternalPrescriptionsPage() {
       <>
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-800 font-headline">Gestión de Recetarios</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground font-headline">Gestión de Recetarios</h1>
             <p className="text-sm text-muted-foreground">
               Panel de control para gestionar la relación con los socios.
             </p>

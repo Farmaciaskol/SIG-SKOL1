@@ -203,7 +203,7 @@ export default function DispensationDetailPage() {
                                       return (
                                         <TableRow key={item.id}>
                                             <TableCell>
-                                                <p className="font-semibold text-slate-800">{item.name}</p>
+                                                <p className="font-semibold text-foreground">{item.name}</p>
                                                 <p className="text-xs text-muted-foreground">{item.details}</p>
                                             </TableCell>
                                             <TableCell>

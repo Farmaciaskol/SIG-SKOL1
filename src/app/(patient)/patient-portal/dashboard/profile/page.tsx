@@ -37,7 +37,7 @@ export default function PatientProfilePage() {
         </CardHeader>
         <CardContent className="space-y-6">
           <div>
-            <h3 className="font-semibold text-slate-800 mb-2">Información de Contacto</h3>
+            <h3 className="font-semibold text-foreground mb-2">Información de Contacto</h3>
             <div className="space-y-2 text-sm">
                 <div className="flex items-center gap-3"><Mail className="h-4 w-4 text-muted-foreground" /><span className="text-foreground">{patient.email}</span></div>
                 <div className="flex items-center gap-3"><Phone className="h-4 w-4 text-muted-foreground" /><span className="text-foreground">{patient.phone}</span></div>
@@ -46,7 +46,7 @@ export default function PatientProfilePage() {
           </div>
           <Separator />
            <div>
-            <h3 className="font-semibold text-slate-800 mb-2">Información Clínica</h3>
+            <h3 className="font-semibold text-foreground mb-2">Información Clínica</h3>
              <div className="space-y-2 text-sm">
                 <div className="flex items-center gap-3"><AlertTriangle className="h-4 w-4 text-muted-foreground" />Alergias Conocidas</div>
                  {patient.allergies && patient.allergies.length > 0 ? (

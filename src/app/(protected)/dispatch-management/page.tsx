@@ -364,7 +364,7 @@ export default function DispatchManagementPage() {
     return (
       <div className="flex items-center justify-center h-full">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="ml-2 text-slate-600">Cargando módulo de despachos...</p>
+        <p className="ml-2 text-muted-foreground">Cargando módulo de despachos...</p>
       </div>
     );
   }
@@ -373,7 +373,7 @@ export default function DispatchManagementPage() {
     <>
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-800 font-headline">Gestión de Despachos</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground font-headline">Gestión de Despachos</h1>
           <p className="text-sm text-muted-foreground">
             Control logístico del envío de insumos Skol a recetarios.
           </p>
@@ -402,7 +402,7 @@ export default function DispatchManagementPage() {
                         return (
                             <AccordionItem value={pharmacyId} key={pharmacyId} className="border-b-0">
                                 <Card>
-                                <AccordionTrigger className="text-xl font-semibold text-slate-700 hover:no-underline p-6">
+                                <AccordionTrigger className="text-xl font-semibold text-foreground hover:no-underline p-6">
                                     {getPharmacyName(pharmacyId)} ({totalItemsCount} ítems)
                                 </AccordionTrigger>
                                 <AccordionContent className="p-6 pt-0 space-y-4">
@@ -413,9 +413,9 @@ export default function DispatchManagementPage() {
                                                 <div className="flex items-center gap-4">
                                                     <AlertTriangle className="h-8 w-8 text-red-500 flex-shrink-0" />
                                                     <div>
-                                                        <p className="font-bold text-slate-800">{item.recipeItem.principalActiveIngredient} (Receta: {item.recipe.id})</p>
+                                                        <p className="font-bold text-foreground">{item.recipeItem.principalActiveIngredient} (Receta: {item.recipe.id})</p>
                                                         <p className="text-sm text-red-700 font-semibold">{item.error || 'Error desconocido.'}</p>
-                                                        <p className="text-xs text-slate-600 mt-1">Por favor, verifique que el producto exista en el <Link href="/inventory" className="underline font-medium">inventario</Link>, tenga lotes con stock y esté correctamente configurado.</p>
+                                                        <p className="text-xs text-muted-foreground mt-1">Por favor, verifique que el producto exista en el <Link href="/inventory" className="underline font-medium">inventario</Link>, tenga lotes con stock y esté correctamente configurado.</p>
                                                     </div>
                                                 </div>
                                             </Card>
@@ -433,7 +433,7 @@ export default function DispatchManagementPage() {
                                     )}>
                                         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
                                             <div className="md:col-span-2 space-y-1">
-                                                <p className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                                <p className="text-lg font-bold text-foreground flex items-center gap-2">
                                                     {item.inventoryItem.name}
                                                     {item.inventoryItem.requiresRefrigeration && (
                                                         <TooltipProvider>
@@ -448,13 +448,13 @@ export default function DispatchManagementPage() {
                                                         </TooltipProvider>
                                                     )}
                                                 </p>
-                                                <p className="text-sm text-slate-600">Receta: <span className="font-mono text-primary">{item.recipe.id}</span> ({item.recipeItem.principalActiveIngredient})</p>
-                                                <p className="text-sm text-slate-500">Paciente: {item.patient?.name || 'Desconocido'}</p>
-                                                <p className="text-base font-bold mt-1 text-slate-700">Despachar: {item.quantityToDispatch} {item.inventoryItem.unit}</p>
+                                                <p className="text-sm text-muted-foreground">Receta: <span className="font-mono text-primary">{item.recipe.id}</span> ({item.recipeItem.principalActiveIngredient})</p>
+                                                <p className="text-sm text-muted-foreground">Paciente: {item.patient?.name || 'Desconocido'}</p>
+                                                <p className="text-base font-bold mt-1 text-foreground">Despachar: {item.quantityToDispatch} {item.inventoryItem.unit}</p>
                                             </div>
                                             <div className="md:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
                                                <div className="space-y-1">
-                                                    <p className="text-xs font-medium text-slate-500">Lote (FEFO)</p>
+                                                    <p className="text-xs font-medium text-muted-foreground">Lote (FEFO)</p>
                                                     <Select onValueChange={(lot) => handleLotChange(itemId, lot)} disabled={validationStatus === 'valid'}>
                                                         <SelectTrigger>
                                                             <SelectValue placeholder="Seleccionar lote..." />
@@ -469,7 +469,7 @@ export default function DispatchManagementPage() {
                                                     </Select>
                                                 </div>
                                                 <div className="space-y-1">
-                                                     <p className="text-xs font-medium text-slate-500">Escanear N° de Lote *</p>
+                                                     <p className="text-xs font-medium text-muted-foreground">Escanear N° de Lote *</p>
                                                     <Input 
                                                         placeholder="Escanear o tipear lote..." 
                                                         onChange={(e) => handleBarcodeInputChange(itemId, e.target.value)} 
@@ -506,8 +506,8 @@ export default function DispatchManagementPage() {
             ) : (
                 <Card className="text-center py-16 shadow-none border-dashed">
                     <div className="flex flex-col items-center justify-center">
-                        <PackageCheck className="h-16 w-16 text-slate-400 mb-4" />
-                        <h2 className="text-xl font-semibold text-slate-700">Todo al día</h2>
+                        <PackageCheck className="h-16 w-16 text-muted-foreground mb-4" />
+                        <h2 className="text-xl font-semibold text-foreground">Todo al día</h2>
                         <p className="text-muted-foreground mt-2 max-w-sm">
                             No hay insumos pendientes de preparación para ser despachados.
                         </p>
@@ -522,11 +522,11 @@ export default function DispatchManagementPage() {
                     {activeDispatches.map(note => (
                          <Card key={note.id}>
                             <CardHeader>
-                                <CardTitle className="flex justify-between items-center flex-wrap gap-2 text-lg font-bold text-slate-800">
+                                <CardTitle className="flex justify-between items-center flex-wrap gap-2 text-lg font-bold text-foreground">
                                     <span>Nota de Despacho: <span className="font-mono text-primary">{note.id}</span></span>
                                     <Badge variant="secondary">{getPharmacyName(note.externalPharmacyId)}</Badge>
                                 </CardTitle>
-                                <p className="text-sm text-slate-500">
+                                <p className="text-sm text-muted-foreground">
                                     Enviado el: {format(new Date(note.createdAt), 'dd MMMM, yyyy HH:mm', { locale: es })}
                                 </p>
                             </CardHeader>
@@ -534,8 +534,8 @@ export default function DispatchManagementPage() {
                                 <ul className="space-y-2 text-sm">
                                     {note.items.map((item, index) => (
                                         <li key={index} className="flex flex-col sm:flex-row justify-between p-2 bg-muted/50 rounded-md">
-                                            <span className="font-medium text-slate-700">{item.recipeItemName} (Receta: {item.recipeId})</span>
-                                            <span className="font-mono text-xs text-slate-500">Lote: {item.lotNumber} | Cant: {item.quantity}</span>
+                                            <span className="font-medium text-foreground">{item.recipeItemName} (Receta: {item.recipeId})</span>
+                                            <span className="font-mono text-xs text-muted-foreground">Lote: {item.lotNumber} | Cant: {item.quantity}</span>
                                         </li>
                                     ))}
                                 </ul>
@@ -554,8 +554,8 @@ export default function DispatchManagementPage() {
              ) : (
                 <Card className="text-center py-16 shadow-none border-dashed">
                     <div className="flex flex-col items-center justify-center">
-                        <Package className="h-16 w-16 text-slate-400 mb-4" />
-                        <h2 className="text-xl font-semibold text-slate-700">Sin Despachos Activos</h2>
+                        <Package className="h-16 w-16 text-muted-foreground mb-4" />
+                        <h2 className="text-xl font-semibold text-foreground">Sin Despachos Activos</h2>
                         <p className="text-muted-foreground mt-2 max-w-sm">
                             Cuando se genere una nota de despacho, aparecerá aquí para su seguimiento.
                         </p>
@@ -570,16 +570,16 @@ export default function DispatchManagementPage() {
                     {historicalDispatches.map(note => (
                          <Card key={note.id}>
                             <CardHeader>
-                                <CardTitle className="flex justify-between items-center flex-wrap gap-2 text-lg font-bold text-slate-800">
+                                <CardTitle className="flex justify-between items-center flex-wrap gap-2 text-lg font-bold text-foreground">
                                     <span>Nota de Despacho: <span className="font-mono text-primary">{note.id}</span></span>
                                     <Badge variant={note.status === 'Recibido' ? 'default' : 'destructive'}>{note.status}</Badge>
                                 </CardTitle>
-                                 <p className="text-sm text-slate-500">
+                                 <p className="text-sm text-muted-foreground">
                                     Enviado: {format(new Date(note.createdAt), 'dd MMM yyyy')}{note.completedAt ? `, Completado: ${format(new Date(note.completedAt), 'dd MMM yyyy')}`: ''}
                                  </p>
                             </CardHeader>
                              <CardContent>
-                                <p className="text-sm text-slate-600">{note.items.length} ítem(s) despachado(s) a {getPharmacyName(note.externalPharmacyId)}.</p>
+                                <p className="text-sm text-muted-foreground">{note.items.length} ítem(s) despachado(s) a {getPharmacyName(note.externalPharmacyId)}.</p>
                              </CardContent>
                         </Card>
                     ))}
@@ -587,8 +587,8 @@ export default function DispatchManagementPage() {
              ) : (
                 <Card className="text-center py-16 shadow-none border-dashed">
                     <div className="flex flex-col items-center justify-center">
-                        <History className="h-16 w-16 text-slate-400 mb-4" />
-                        <h2 className="text-xl font-semibold text-slate-700">Sin Historial de Despachos</h2>
+                        <History className="h-16 w-16 text-muted-foreground mb-4" />
+                        <h2 className="text-xl font-semibold text-foreground">Sin Historial de Despachos</h2>
                         <p className="text-muted-foreground mt-2 max-w-sm">
                             Los despachos completados o cancelados aparecerán en esta sección.
                         </p>

@@ -151,7 +151,7 @@ export default function PatientsPage() {
             <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
                     <div>
-                        <CardTitle className="text-lg font-bold text-slate-800 hover:underline truncate">
+                        <CardTitle className="text-lg font-bold text-foreground hover:underline truncate">
                             <Link href={`/patients/${patient.id}`} title={patient.name}>
                                 {patient.name}
                             </Link>
@@ -197,7 +197,7 @@ export default function PatientsPage() {
     <>
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight font-headline text-slate-800">Gestión de Pacientes</h1>
+          <h1 className="text-3xl font-bold tracking-tight font-headline text-foreground">Gestión de Pacientes</h1>
           <p className="text-sm text-muted-foreground">
             Una visión 360° para una atención farmacéutica proactiva.
           </p>
@@ -226,7 +226,7 @@ export default function PatientsPage() {
                 />
             </div>
             <div className="flex items-center gap-4">
-                <span className="text-sm font-medium text-slate-700">Filtros de Prevención:</span>
+                <span className="text-sm font-medium text-foreground">Filtros de Prevención:</span>
                 <div className="flex items-center gap-2">
                     <Button 
                         variant={activeFilter === 'all' ? 'default' : 'link'}

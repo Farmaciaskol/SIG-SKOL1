@@ -88,7 +88,7 @@ export default function ControlledDrugsPage() {
     <>
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-slate-800 tracking-tight font-headline">Libro de Control de Sustancias</h1>
+          <h1 className="text-3xl font-bold text-foreground tracking-tight font-headline">Libro de Control de Sustancias</h1>
           <p className="text-sm text-muted-foreground">
             Registro auditable y seguro de dispensaciones de psicotrópicos y estupefacientes.
           </p>
@@ -102,19 +102,19 @@ export default function ControlledDrugsPage() {
         <Card>
             <CardContent className="p-4">
                 <p className="text-sm text-muted-foreground">Total Dispensaciones</p>
-                <p className="text-2xl font-bold text-slate-800">{logEntries.length}</p>
+                <p className="text-2xl font-bold text-foreground">{logEntries.length}</p>
             </CardContent>
         </Card>
         <Card>
              <CardContent className="p-4">
                 <p className="text-sm text-muted-foreground">Total Psicotrópicos</p>
-                <p className="text-2xl font-bold text-slate-800">{logEntries.filter(e => e.controlledType === 'Psicotrópico').length}</p>
+                <p className="text-2xl font-bold text-foreground">{logEntries.filter(e => e.controlledType === 'Psicotrópico').length}</p>
             </CardContent>
         </Card>
         <Card>
             <CardContent className="p-4">
                 <p className="text-sm text-muted-foreground">Total Estupefacientes</p>
-                <p className="text-2xl font-bold text-slate-800">{logEntries.filter(e => e.controlledType === 'Estupefaciente').length}</p>
+                <p className="text-2xl font-bold text-foreground">{logEntries.filter(e => e.controlledType === 'Estupefaciente').length}</p>
             </CardContent>
         </Card>
       </div>

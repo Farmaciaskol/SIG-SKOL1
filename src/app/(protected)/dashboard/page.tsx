@@ -40,8 +40,8 @@ const KpiCard = ({ title, value, icon: Icon, href }: KpiCardProps) => (
           <Icon className="h-6 w-6 text-primary" />
         </div>
         <div>
-          <p className="text-sm font-medium text-slate-700">{title}</p>
-          <p className="text-2xl font-bold text-slate-800">{value}</p>
+          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          <p className="text-2xl font-bold text-foreground">{value}</p>
         </div>
       </CardContent>
     </Card>
@@ -84,7 +84,7 @@ const ProactiveAlertsCard = ({ patients }: { patients: Patient[] }) => {
     <Card className="lg:col-span-1">
       <CardHeader className="flex flex-row items-center gap-3 border-b pb-4">
         <Wand2 className="h-5 w-5 text-muted-foreground" />
-        <CardTitle className="text-lg font-semibold text-slate-800">Alertas Proactivas (IA)</CardTitle>
+        <CardTitle className="text-lg font-semibold text-foreground">Alertas Proactivas (IA)</CardTitle>
       </CardHeader>
       <CardContent className="pt-4 space-y-3">
         {alerts.length > 0 ? (
@@ -109,7 +109,7 @@ const ProactiveAlertsCard = ({ patients }: { patients: Patient[] }) => {
                       Paciente: {patient.name}
                     </Link>
                   </p>
-                  <p className="text-sm text-slate-700">
+                  <p className="text-sm text-muted-foreground">
                     {patient.proactiveMessage}
                   </p>
                 </div>
@@ -122,7 +122,7 @@ const ProactiveAlertsCard = ({ patients }: { patients: Patient[] }) => {
         ) : (
           <div className="flex flex-col items-center text-center text-muted-foreground h-full justify-center py-6">
             <CheckCircle2 className="h-10 w-10 text-green-500 mb-2" />
-            <p className="font-medium text-slate-700">Todo en orden</p>
+            <p className="font-medium text-foreground">Todo en orden</p>
             <p className="text-sm">
               Ningún paciente crónico requiere atención inmediata.
             </p>
@@ -155,7 +155,7 @@ const DelayedRecipesCard = ({ recipes, patients }: { recipes: Recipe[], patients
         <Card className="lg:col-span-1">
           <CardHeader className="flex flex-row items-center gap-3 border-b pb-4">
             <Clock className="h-5 w-5 text-muted-foreground" />
-            <CardTitle className="text-lg font-semibold text-slate-800">Recetas con Retraso</CardTitle>
+            <CardTitle className="text-lg font-semibold text-foreground">Recetas con Retraso</CardTitle>
           </CardHeader>
           <CardContent className="pt-4 space-y-3">
             {delayedRecipes.length > 0 ? (
@@ -163,7 +163,7 @@ const DelayedRecipesCard = ({ recipes, patients }: { recipes: Recipe[], patients
                 <div key={recipe.id} className="flex items-center p-3 rounded-lg bg-orange-50 border-l-4 border-orange-400">
                   <div className="flex-grow">
                     <p className="font-semibold text-primary"><Link href={`/recipes/${recipe.id}`} className="hover:underline">Receta: {recipe.id}</Link></p>
-                    <p className="text-sm text-slate-700">Paciente: {recipe.patientName}</p>
+                    <p className="text-sm text-muted-foreground">Paciente: {recipe.patientName}</p>
                     <p className="text-sm text-slate-500">En estado "{recipe.status}" por {recipe.daysDelayed} días.</p>
                   </div>
                   <Button variant="ghost" size="sm" asChild>
@@ -174,7 +174,7 @@ const DelayedRecipesCard = ({ recipes, patients }: { recipes: Recipe[], patients
             ) : (
                 <div className="flex flex-col items-center text-center text-muted-foreground h-full justify-center py-6">
                     <CheckCircle2 className="h-10 w-10 text-green-500 mb-2" />
-                    <p className="font-medium text-slate-700">¡Excelente!</p>
+                    <p className="font-medium text-foreground">¡Excelente!</p>
                     <p className="text-sm">No hay recetas con retraso.</p>
                 </div>
             )}
@@ -191,7 +191,7 @@ const RecentRecipesCard = ({ recipes, patients }: { recipes: Recipe[], patients:
         <Card className="lg:col-span-1">
             <CardHeader className="flex flex-row items-center gap-3 border-b pb-4">
                 <FilePlus2 className="h-5 w-5 text-muted-foreground" />
-                <CardTitle className="text-lg font-semibold text-slate-800">Actividad Reciente</CardTitle>
+                <CardTitle className="text-lg font-semibold text-foreground">Actividad Reciente</CardTitle>
             </CardHeader>
             <CardContent className="pt-4 space-y-4">
                 {recentRecipes.length > 0 ? (
@@ -208,7 +208,7 @@ const RecentRecipesCard = ({ recipes, patients }: { recipes: Recipe[], patients:
                                             Nueva Receta: {recipe.id}
                                         </Link>
                                     </p>
-                                    <p className="text-sm text-slate-700">Paciente: {getPatientName(recipe.patientId)}</p>
+                                    <p className="text-sm text-muted-foreground">Paciente: {getPatientName(recipe.patientId)}</p>
                                     <p className="text-xs text-slate-500">{format(new Date(recipe.createdAt), "d MMMM, yyyy 'a las' HH:mm", {locale: es})}</p>
                                 </div>
                             </div>
@@ -217,7 +217,7 @@ const RecentRecipesCard = ({ recipes, patients }: { recipes: Recipe[], patients:
                 ) : (
                     <div className="flex flex-col items-center text-center text-muted-foreground h-full justify-center py-6">
                          <CheckCircle2 className="h-10 w-10 text-green-500 mb-2" />
-                        <p className="font-medium text-slate-700">Sin actividad reciente</p>
+                        <p className="font-medium text-foreground">Sin actividad reciente</p>
                         <p className="text-sm">
                             Las nuevas recetas aparecerán aquí.
                         </p>
@@ -260,7 +260,7 @@ export default async function DashboardPage() {
     <>
       <div className="flex flex-col md:flex-row md:items-center justify-between space-y-2 md:space-y-0 mb-6">
         <div>
-            <h1 className="text-3xl font-bold text-slate-800 tracking-tight font-headline">Dashboard</h1>
+            <h1 className="text-3xl font-bold text-foreground tracking-tight font-headline">Dashboard</h1>
             <p className="text-sm text-muted-foreground">{capitalizedDate}</p>
         </div>
         <div className="flex items-center space-x-2">

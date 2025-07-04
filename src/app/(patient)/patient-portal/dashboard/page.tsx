@@ -235,7 +235,7 @@ export default function PatientPortalDashboardPage() {
                       {allActiveTreatments.map((med, index) => (
                         <li key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                           <div>
-                            <p className="font-semibold text-slate-800">{med.name}</p>
+                            <p className="font-semibold text-foreground">{med.name}</p>
                             <p className="text-xs text-muted-foreground">{med.type === 'magistral' ? `Preparado Magistral ${med.details}`: 'Medicamento Comercial'}</p>
                           </div>
                           <Button variant="outline" size="sm" onClick={() => handleShowMedInfo(med.name)}>
@@ -264,7 +264,7 @@ export default function PatientPortalDashboardPage() {
                             return (
                                 <li key={recipe.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                                   <div>
-                                    <p className="font-semibold text-slate-800">{recipe.items[0]?.principalActiveIngredient || 'Receta Magistral'}</p>
+                                    <p className="font-semibold text-foreground">{recipe.items[0]?.principalActiveIngredient || 'Receta Magistral'}</p>
                                     <p className="text-xs text-muted-foreground">Vence: {format(parseISO(recipe.dueDate), 'dd-MM-yyyy')}</p>
                                   </div>
                                   <Badge>Ciclo {cycleCount + 1}/{MAX_REPREPARATIONS + 1}</Badge>
