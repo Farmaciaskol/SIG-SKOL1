@@ -162,8 +162,8 @@ export default function PatientsPage() {
                         </div>
                     </div>
                      <div className="flex items-center gap-2">
-                        {patient.isChronic && <Heart className="h-5 w-5 text-pink-500" title="Paciente Crónico" />}
-                        {patient.allergies && patient.allergies.length > 0 && <AlertTriangle className="h-5 w-5 text-amber-600" title={`Alergias: ${patient.allergies.join(', ')}`} />}
+                        {patient.isChronic && <Heart className="h-5 w-5 text-red-500" fill="currentColor" title="Paciente Crónico" />}
+                        {patient.allergies && patient.allergies.length > 0 && <AlertTriangle className="h-5 w-5 text-amber-500" strokeWidth={2.5} title={`Alergias: ${patient.allergies.join(', ')}`} />}
                     </div>
                 </div>
             </CardHeader>
@@ -197,7 +197,7 @@ export default function PatientsPage() {
     <>
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight font-headline text-foreground">Gestión de Pacientes</h1>
+          <h1 className="text-3xl font-bold tracking-tight font-headline text-primary">Gestión de Pacientes</h1>
           <p className="text-sm text-muted-foreground">
             Una visión 360° para una atención farmacéutica proactiva.
           </p>
