@@ -312,8 +312,8 @@ export function MainNav({
           </SidebarFooter>
         </Sidebar>
         <main className="flex-1 w-full overflow-y-auto">
-          <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b bg-card px-6">
-            <div className="flex items-center gap-4">
+          <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b bg-card">
+            <div className="flex items-center gap-4 pl-6">
                 <SidebarTrigger className="md:hidden bg-primary text-primary-foreground hover:bg-primary/90" />
                 <Link href="/dashboard" className="md:hidden">
                     <div className="h-9 w-9 bg-primary rounded-md flex items-center justify-center p-1">
@@ -329,7 +329,7 @@ export function MainNav({
                 </Link>
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 pr-6">
                 <AlertsBell 
                   portalInboxCount={portalInboxCount} 
                   itemsToDispatchCount={itemsToDispatchCount} 
