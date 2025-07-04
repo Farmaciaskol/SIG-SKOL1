@@ -34,7 +34,7 @@ import { RecipeStatus } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { addMonths, format, isValid, parseISO } from 'date-fns';
-import { Bot, Calendar as CalendarIcon, Image as ImageIcon, Loader2, PlusCircle, Trash2, Wand2, ZoomIn, X as XIcon, Check } from 'lucide-react';
+import { Bot, Calendar as CalendarIcon, Image as ImageIcon, Loader2, PlusCircle, Trash2, Wand2, ZoomIn, X as XIcon, Check, ZoomOut } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -880,10 +880,23 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
                         <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*,application/pdf" className="hidden" />
                         {previewImage ? (
                           <>
-                            <Image src={previewImage} alt="Vista previa de receta" fill className="object-contain" />
+                            <Image 
+                                src={previewImage} 
+                                alt="Vista previa de receta" 
+                                fill 
+                                className={cn(
+                                    "object-contain transition-transform duration-300 ease-in-out cursor-pointer",
+                                    isZoomed ? "scale-[2.5]" : "scale-100"
+                                )}
+                                onClick={()=> setIsZoomed(prev => !prev)}
+                            />
                             <div className="absolute top-2 right-2 flex flex-col gap-2 z-10">
-                              <Button type="button" variant="secondary" size="icon" className="h-8 w-8 bg-black/50 hover:bg-black/70 text-white rounded-full" onClick={()=> setIsZoomed(true)}><ZoomIn className="h-4 w-4" /></Button>
-                              <Button type="button" variant="secondary" size="icon" className="h-8 w-8 bg-black/50 hover:bg-black/70 text-white rounded-full" onClick={() => { setPreviewImage(null); setImageFile(null); if(fileInputRef.current) fileInputRef.current.value = ""; }}><XIcon className="h-4 w-4" /></Button>
+                              <Button type="button" variant="secondary" size="icon" className="h-8 w-8 bg-black/50 hover:bg-black/70 text-white rounded-full" onClick={()=> setIsZoomed(prev => !prev)}>
+                                {isZoomed ? <ZoomOut className="h-4 w-4" /> : <ZoomIn className="h-4 w-4" />}
+                              </Button>
+                              <Button type="button" variant="secondary" size="icon" className="h-8 w-8 bg-black/50 hover:bg-black/70 text-white rounded-full" onClick={() => { setPreviewImage(null); setImageFile(null); if(fileInputRef.current) fileInputRef.current.value = ""; setIsZoomed(false); }}>
+                                <XIcon className="h-4 w-4" />
+                              </Button>
                             </div>
                           </>
                         ) : (
@@ -972,18 +985,6 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
             </div>
         </form>
       </Form>
-       <Dialog open={isZoomed} onOpenChange={setIsZoomed}>
-        <DialogContent className="max-w-4xl h-[90vh]">
-          <DialogHeader>
-            <DialogTitle>Vista Ampliada de la Receta</DialogTitle>
-          </DialogHeader>
-          <div className="relative w-full h-full">
-            {previewImage && (
-              <Image src={previewImage} alt="Receta ampliada" fill className="object-contain" />
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
