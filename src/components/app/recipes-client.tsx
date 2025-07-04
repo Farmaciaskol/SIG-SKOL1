@@ -62,6 +62,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import {
   Tooltip,
@@ -261,47 +267,93 @@ const SendToPharmacyDialog = ({ recipe, pharmacy, patients, isOpen, onClose, onC
     );
 }
 
-const SendBatchDialog = ({ recipes: recipesToSend, isOpen, onClose, onConfirm, isSubmitting, getPharmacyName }: { 
+const SendBatchDialog = ({ recipes: recipesToSend, isOpen, onClose, onConfirm, isSubmitting, getPharmacy, getPatientName }: { 
     recipes: Recipe[]; 
     isOpen: boolean; 
     onClose: () => void;
     onConfirm: () => void;
     isSubmitting: boolean;
-    getPharmacyName: (id?: string) => string;
+    getPharmacy: (id?: string) => ExternalPharmacy | undefined;
+    getPatientName: (id: string) => string;
 }) => {
-    const summary = useMemo(() => {
-        if (!recipesToSend.length) return {};
-        return recipesToSend.reduce((acc, recipe) => {
-            const pharmacyName = getPharmacyName(recipe.externalPharmacyId) || "Desconocido";
-            acc[pharmacyName] = (acc[pharmacyName] || 0) + 1;
-            return acc;
-        }, {} as Record<string, number>);
-    }, [recipesToSend, getPharmacyName]);
+    const { toast } = useToast();
+
+    const copyToClipboard = (text: string, subject: string) => {
+        navigator.clipboard.writeText(text);
+        toast({ title: "Copiado", description: `El ${subject} se ha copiado al portapapeles.` });
+    };
+
+    const groupedRecipes = useMemo(() => {
+        if (!recipesToSend.length) return [];
+        const groups: Record<string, Recipe[]> = {};
+        for (const recipe of recipesToSend) {
+            const id = recipe.externalPharmacyId || 'unknown';
+            if (!groups[id]) {
+                groups[id] = [];
+            }
+            groups[id].push(recipe);
+        }
+        return Object.entries(groups);
+    }, [recipesToSend]);
 
     if (!isOpen) return null;
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent>
+            <DialogContent className="sm:max-w-3xl">
                 <DialogHeader>
-                    <DialogTitle>Confirmar Envío en Lote</DialogTitle>
+                    <DialogTitle>Generar Correos para Envío en Lote</DialogTitle>
                     <DialogDescription>
-                        Se enviarán {recipesToSend.length} recetas a los siguientes recetarios. Esta acción es irreversible.
+                        Se generará un correo por cada recetario. Copie la información y envíela. Luego, confirme para actualizar el estado de las recetas.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="py-4 space-y-2">
-                    <h4 className="font-semibold">Resumen de Envío:</h4>
-                    <ul className="list-disc pl-5">
-                        {Object.entries(summary).map(([name, count]) => (
-                            <li key={name}>{count} receta(s) a <strong>{name}</strong></li>
-                        ))}
-                    </ul>
+                <div className="py-4 space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                    <Accordion type="multiple" defaultValue={groupedRecipes.map(([id]) => id)} className="w-full">
+                        {groupedRecipes.map(([pharmacyId, recipes]) => {
+                            const pharmacy = getPharmacy(pharmacyId);
+                            const pharmacyName = pharmacy?.name || "Recetario Desconocido";
+                            const subject = `Solicitud de Preparados Magistrales - Lote ${format(new Date(), 'dd-MM-yyyy')}`;
+                            const body = `Estimados ${pharmacyName},\n\nAdjuntamos las siguientes recetas para su preparación:\n\n${recipes.map(r => `- Receta ID: ${r.id} | Paciente: ${getPatientName(r.patientId)}`).join('\n')}\n\nPor favor, encontrar las recetas adjuntas en sus respectivos correos o sistema.\n\nSaludos cordiales,\nEquipo Farmacia Skol`;
+                            
+                            return (
+                                <AccordionItem value={pharmacyId} key={pharmacyId}>
+                                    <AccordionTrigger>
+                                        <div className="flex justify-between w-full pr-4">
+                                            <span>Para: {pharmacyName}</span>
+                                            <Badge>{recipes.length} receta(s)</Badge>
+                                        </div>
+                                    </AccordionTrigger>
+                                    <AccordionContent className="pt-2 space-y-4">
+                                        <div className="space-y-1">
+                                            <Label>Destinatario</Label>
+                                            <Input readOnly value={pharmacy?.email || 'No disponible'} />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label>Asunto</Label>
+                                            <div className="flex items-center gap-2">
+                                                <Input readOnly value={subject} />
+                                                <Button variant="outline" size="icon" onClick={() => copyToClipboard(subject, 'asunto')}><ClipboardCopy className="h-4 w-4" /></Button>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label>Cuerpo del Correo</Label>
+                                            <div className="relative">
+                                                <Textarea readOnly value={body} className="h-48" />
+                                                <Button variant="outline" size="icon" className="absolute top-2 right-2" onClick={() => copyToClipboard(body, 'cuerpo del correo')}><ClipboardCopy className="h-4 w-4" /></Button>
+                                            </div>
+                                        </div>
+                                         <p className="text-xs text-muted-foreground">Recuerde adjuntar las imágenes de las recetas manualmente en su gestor de correo.</p>
+                                    </AccordionContent>
+                                </AccordionItem>
+                            );
+                        })}
+                    </Accordion>
                 </div>
                 <DialogFooter>
                     <Button variant="ghost" onClick={onClose}>Cancelar</Button>
                     <Button onClick={onConfirm} disabled={isSubmitting}>
                         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Confirmar Envío
+                        Marcar todo como Enviado
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -1227,7 +1279,8 @@ export const RecipesClient = ({
         onClose={() => setRecipesToSendBatch([])}
         onConfirm={handleConfirmBatchSend}
         isSubmitting={isSubmitting}
-        getPharmacyName={(id) => getPharmacy(id)?.name || 'N/A'}
+        getPharmacy={getPharmacy}
+        getPatientName={getPatientName}
       />
       <Dialog open={!!recipeToView} onOpenChange={(open) => !open && setRecipeToView(null)}>
         <DialogContent className="sm:max-w-2xl"><DialogHeader><DialogTitle className="text-xl font-semibold">Detalle Receta: {recipeToView?.id}</DialogTitle><DialogDescription>Información completa de la receta y su historial.</DialogDescription></DialogHeader>
