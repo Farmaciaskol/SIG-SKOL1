@@ -178,6 +178,7 @@ const RecipeItemCard = ({
     setValue
   } = form;
 
+  const dosageValue = useWatch({ control, name: `items.${index}.dosageValue` });
   const frequency = useWatch({ control, name: `items.${index}.frequency` });
   const treatmentDurationValue = useWatch({ control, name: `items.${index}.treatmentDurationValue` });
   const treatmentDurationUnit = useWatch({ control, name: `items.${index}.treatmentDurationUnit` });
@@ -187,11 +188,12 @@ const RecipeItemCard = ({
   const requiresFractionationValue = useWatch({ control, name: `items.${index}.requiresFractionation` });
 
   React.useEffect(() => {
+    const dose = parseInt(dosageValue, 10);
     const freq = parseInt(frequency, 10);
     const duration = parseInt(treatmentDurationValue, 10);
     const safetyDays = parseInt(String(safetyStockDays), 10) || 0;
 
-    if (!isNaN(freq) && freq > 0 && !isNaN(duration)) {
+    if (!isNaN(freq) && freq > 0 && !isNaN(duration) && !isNaN(dose) && dose > 0) {
       let durationInDays = duration;
       if (treatmentDurationUnit === 'semanas') {
         durationInDays = duration * 7;
@@ -201,7 +203,7 @@ const RecipeItemCard = ({
 
       const totalDurationInDays = durationInDays + safetyDays;
       const administrationsPerDay = 24 / freq;
-      const totalQuantity = Math.ceil(administrationsPerDay * totalDurationInDays);
+      const totalQuantity = Math.ceil(administrationsPerDay * totalDurationInDays * dose);
 
       const currentTotalVal = getValues(`items.${index}.totalQuantityValue`);
       if (String(totalQuantity) !== currentTotalVal) {
@@ -210,7 +212,7 @@ const RecipeItemCard = ({
         });
       }
     }
-  }, [frequency, treatmentDurationValue, treatmentDurationUnit, safetyStockDays, index, setValue, getValues]);
+  }, [dosageValue, frequency, treatmentDurationValue, treatmentDurationUnit, safetyStockDays, index, setValue, getValues]);
 
 
   const filteredInventoryForPA = React.useMemo(() => {
