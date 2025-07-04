@@ -437,6 +437,18 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
     name: 'items',
   });
 
+  const watchedPatientId = form.watch('patientId');
+  const patientSelectionType = form.watch('patientSelectionType');
+
+  React.useEffect(() => {
+    if (patientSelectionType === 'existing' && watchedPatientId) {
+      const selectedPatient = patients.find(p => p.id === watchedPatientId);
+      if (selectedPatient?.address) {
+        form.setValue('dispatchAddress', selectedPatient.address, { shouldValidate: true });
+      }
+    }
+  }, [watchedPatientId, patientSelectionType, patients, form]);
+
   const loadFormData = React.useCallback(async (recipeData: any) => {
     const valuesToSet = {
       ...recipeData,
@@ -957,3 +969,5 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
     </>
   );
 }
+
+    

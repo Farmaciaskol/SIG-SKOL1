@@ -236,9 +236,9 @@ export const saveRecipe = async (data: any, imageFile: File | null, userId: stri
             imageUrl = await getDownloadURL(uploadResult.ref);
         } catch (storageError: any) {
             console.error("Firebase Storage upload failed in saveRecipe:", storageError);
-            let userMessage = `Error al subir imagen. Código: ${storageError.code || 'UNKNOWN'}`;
-            if (storageError.code === 'storage/unauthorized') {
-                userMessage = "Error de autorización: No tiene permiso para subir archivos. Vaya a la consola de Firebase -> Storage -> Rules y asegúrese de que los usuarios autenticados pueden escribir.";
+            let userMessage = `Error de autorización: Su usuario no tiene permiso para subir archivos. Por favor, vaya a la consola de Firebase -> Storage -> Rules y asegúrese de que los usuarios autenticados pueden escribir.`;
+            if (storageError.code !== 'storage/unauthorized') {
+                userMessage = `Error al subir imagen. Código: ${storageError.code || 'UNKNOWN'}.`;
             }
             throw new Error(userMessage);
         }
@@ -277,7 +277,7 @@ export const saveRecipe = async (data: any, imageFile: File | null, userId: stri
         await updateDoc(recipeRef, recipeDataForUpdate as any);
         return recipeId;
     } else { // Creating
-        const recipeRef = doc(db, 'recipes', effectiveRecipeId);
+        const recipeRef = doc(collection(db, 'recipes', effectiveRecipeId));
         const firstAuditEntry: AuditTrailEntry = { status: RecipeStatus.PendingValidation, date: new Date().toISOString(), userId: userId, notes: 'Receta creada en el sistema.' };
         const recipeDataForCreate: Omit<Recipe, 'id'> = { ...recipeDataForUpdate, status: RecipeStatus.PendingValidation, paymentStatus: 'Pendiente', createdAt: new Date().toISOString(), auditTrail: [firstAuditEntry] } as Omit<Recipe, 'id'>;
         await setDoc(recipeRef, recipeDataForCreate);
@@ -696,3 +696,5 @@ export const updateAppSettings = async (updates: Partial<AppSettings>): Promise<
     const settingsRef = doc(db, 'appSettings', 'global');
     await updateDoc(settingsRef, updates);
 };
+
+    
