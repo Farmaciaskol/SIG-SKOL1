@@ -95,6 +95,7 @@ import {
   Inbox,
   Snowflake,
   Archive,
+  ClipboardCopy
 } from 'lucide-react';
 import {
   getRecipes,
@@ -167,6 +168,7 @@ export const RecipesClient = ({
   const [recipeToReceive, setRecipeToReceive] = useState<Recipe | null>(null);
   const [recipeToPrint, setRecipeToPrint] = useState<Recipe | null>(null);
   const [recipeToArchive, setRecipeToArchive] = useState<Recipe | null>(null);
+  const [recipeToSend, setRecipeToSend] = useState<Recipe | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Dialogs form fields
@@ -198,6 +200,7 @@ export const RecipesClient = ({
   const ITEMS_PER_PAGE = 10;
   
   const getPatientName = (patientId: string) => patients.find((p) => p.id === patientId)?.name || 'N/A';
+  const getPharmacy = (pharmacyId?: string) => externalPharmacies.find((p) => p.id === pharmacyId);
 
   const handleUpdateStatus = async (recipe: Recipe, newStatus: RecipeStatus, notes?: string) => {
     if (!user) {
@@ -540,7 +543,7 @@ export const RecipesClient = ({
                     </TooltipTrigger><TooltipContent><p>Ir a Despachos</p></TooltipContent></Tooltip></TooltipProvider>
                 ) : (
                     <TooltipProvider><Tooltip><TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleUpdateStatus(recipe, RecipeStatus.SentToExternal)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setRecipeToSend(recipe)}>
                             <Send className="h-4 w-4 text-cyan-500" />
                         </Button>
                     </TooltipTrigger><TooltipContent><p>Enviar a Recetario</p></TooltipContent></Tooltip></TooltipProvider>
@@ -615,7 +618,7 @@ export const RecipesClient = ({
         case RecipeStatus.Validated:
           return recipe.supplySource === 'Insumos de Skol' 
             ? <Button size="sm" asChild><Link href="/dispatch-management"><Truck className="mr-2 h-4 w-4" />Ir a Despacho</Link></Button>
-            : <Button size="sm" onClick={() => handleUpdateStatus(recipe, RecipeStatus.SentToExternal)}><Send className="mr-2 h-4 w-4" />Enviar</Button>;
+            : <Button size="sm" onClick={() => setRecipeToSend(recipe)}><Send className="mr-2 h-4 w-4" />Enviar</Button>;
         case RecipeStatus.SentToExternal:
           return <Button size="sm" onClick={() => setRecipeToReceive(recipe)}><PackageCheck className="mr-2 h-4 w-4" />Recepcionar</Button>;
         case RecipeStatus.ReceivedAtSkol:
@@ -682,6 +685,90 @@ export const RecipesClient = ({
       </div>
     );
   }
+
+  const SendToPharmacyDialog = () => {
+    const pharmacy = getPharmacy(recipeToSend?.externalPharmacyId);
+
+    const emailBody = useMemo(() => {
+        if (!recipeToSend || !pharmacy) return '';
+        const patient = patients.find(p => p.id === recipeToSend.patientId);
+        const item = recipeToSend.items[0];
+        
+        return `Estimados ${pharmacy.name},
+
+Solicitamos la preparación del siguiente preparado magistral:
+
+- Paciente: ${patient?.name || 'N/A'}
+- Receta ID: ${recipeToSend.id}
+- Preparado: ${item.principalActiveIngredient} ${item.concentrationValue}${item.concentrationUnit}
+- Posología: ${item.usageInstructions}
+- Cantidad a preparar: ${item.totalQuantityValue} ${item.totalQuantityUnit}
+
+Por favor, encontrar la receta adjunta.
+
+Saludos cordiales,
+Equipo Farmacia Skol`;
+    }, [recipeToSend, pharmacy]);
+
+    const handleConfirmSend = async () => {
+        if (!recipeToSend) return;
+        await handleUpdateStatus(recipeToSend, RecipeStatus.SentToExternal, 'Receta enviada a recetario externo para preparación.');
+        setRecipeToSend(null);
+    };
+
+    const copyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text);
+        toast({ title: "Copiado", description: "El texto se ha copiado al portapapeles." });
+    };
+
+    if (!recipeToSend || !pharmacy) return null;
+
+    return (
+        <Dialog open={!!recipeToSend} onOpenChange={() => setRecipeToSend(null)}>
+            <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Generar Correo para Recetario</DialogTitle>
+                    <DialogDescription>
+                        Copie esta información y envíela por correo a <span className="font-semibold text-primary">{pharmacy.email || 'la farmacia'}</span>.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label>Asunto</Label>
+                        <div className="flex items-center gap-2">
+                            <Input readOnly value={`Solicitud de Preparado Magistral - Receta ${recipeToSend.id}`} />
+                            <Button variant="outline" size="icon" onClick={() => copyToClipboard(`Solicitud de Preparado Magistral - Receta ${recipeToSend.id}`)}><ClipboardCopy /></Button>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Cuerpo del Correo</Label>
+                        <div className="relative">
+                            <Textarea readOnly value={emailBody} className="h-64" />
+                            <Button variant="outline" size="icon" className="absolute top-2 right-2" onClick={() => copyToClipboard(emailBody)}><ClipboardCopy /></Button>
+                        </div>
+                    </div>
+                    {recipeToSend.prescriptionImageUrl && (
+                        <div className="space-y-2">
+                            <Label>Adjunto</Label>
+                            <Button variant="link" asChild className="p-0 h-auto justify-start">
+                                <a href={recipeToSend.prescriptionImageUrl} target="_blank" rel="noopener noreferrer" download>
+                                    Descargar Imagen de la Receta
+                                </a>
+                            </Button>
+                        </div>
+                    )}
+                </div>
+                <DialogFooter>
+                    <Button variant="ghost" onClick={() => setRecipeToSend(null)}>Cancelar</Button>
+                    <Button onClick={handleConfirmSend} disabled={isSubmitting}>
+                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Marcar como Enviado
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+  };
 
   return (
     <>
@@ -1024,6 +1111,7 @@ export const RecipesClient = ({
       )}
 
       {/* --- DIALOGS --- */}
+      <SendToPharmacyDialog />
       <Dialog open={!!recipeToView} onOpenChange={(open) => !open && setRecipeToView(null)}>
         <DialogContent className="sm:max-w-2xl"><DialogHeader><DialogTitle className="text-xl font-semibold">Detalle Receta: {recipeToView?.id}</DialogTitle><DialogDescription>Información completa de la receta y su historial.</DialogDescription></DialogHeader>
             <div className="max-h-[70vh] overflow-y-auto p-1 pr-4"><div className="space-y-6">

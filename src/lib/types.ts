@@ -181,8 +181,8 @@ export interface Patient {
   id: string;
   name: string;
   rut: string;
-  email: string;
-  phone: string;
+  email?: string;
+  phone?: string;
   address?: string;
   gender?: 'Masculino' | 'Femenino' | 'Otro';
   isChronic: boolean;
