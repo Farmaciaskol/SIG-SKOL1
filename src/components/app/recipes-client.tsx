@@ -313,7 +313,23 @@ const SendBatchDialog = ({ recipes: recipesToSend, isOpen, onClose, onConfirm, i
                             const pharmacy = getPharmacy(pharmacyId);
                             const pharmacyName = pharmacy?.name || "Recetario Desconocido";
                             const subject = `Solicitud de Preparados Magistrales - Lote ${format(new Date(), 'dd-MM-yyyy')}`;
-                            const body = `Estimados ${pharmacyName},\n\nAdjuntamos las siguientes recetas para su preparación:\n\n${recipes.map(r => `- Receta ID: ${r.id} | Paciente: ${getPatientName(r.patientId)}`).join('\n')}\n\nPor favor, encontrar las recetas adjuntas en sus respectivos correos o sistema.\n\nSaludos cordiales,\nEquipo Farmacia Skol`;
+                            
+                            const recipeDetails = recipes.map(r => {
+                                const item = r.items[0];
+                                const details = item ? `${item.principalActiveIngredient} ${item.concentrationValue}${item.concentrationUnit}` : 'Preparado sin detalles';
+                                return `- Receta ID: ${r.id} | Paciente: ${getPatientName(r.patientId)} | Preparado: ${details}`;
+                            }).join('\n');
+
+                            const downloadLinks = recipes
+                                .filter(r => r.prescriptionImageUrl)
+                                .map(r => `- Descargar Receta ${r.id}: ${r.prescriptionImageUrl}`)
+                                .join('\n');
+                            
+                            const downloadSection = downloadLinks 
+                                ? `\n\nPuede descargar las imágenes de las recetas desde los siguientes enlaces:\n${downloadLinks}` 
+                                : '\n\nPor favor, encontrar las recetas adjuntas en sus respectivos correos o sistema.';
+                            
+                            const body = `Estimados ${pharmacyName},\n\nSolicitamos la preparación de las siguientes recetas:\n\n${recipeDetails}${downloadSection}\n\nSaludos cordiales,\nEquipo Farmacia Skol`;
                             
                             return (
                                 <AccordionItem value={pharmacyId} key={pharmacyId}>
@@ -342,7 +358,6 @@ const SendBatchDialog = ({ recipes: recipesToSend, isOpen, onClose, onConfirm, i
                                                 <Button variant="outline" size="icon" className="absolute top-2 right-2" onClick={() => copyToClipboard(body, 'cuerpo del correo')}><ClipboardCopy className="h-4 w-4" /></Button>
                                             </div>
                                         </div>
-                                         <p className="text-xs text-muted-foreground">Recuerde adjuntar las imágenes de las recetas manualmente en su gestor de correo.</p>
                                     </AccordionContent>
                                 </AccordionItem>
                             );
@@ -927,7 +942,7 @@ export const RecipesClient = ({
         default:
           return <Button size="sm" onClick={() => setRecipeToView(recipe)}><Eye className="mr-2 h-4 w-4" />Ver Detalle</Button>;
       }
-    }
+    };
 
     return (
       <div className="flex justify-end items-center w-full gap-2">
@@ -981,7 +996,7 @@ export const RecipesClient = ({
         </DropdownMenu>
       </div>
     );
-  }
+  };
 
   return (
     <>
@@ -1421,3 +1436,5 @@ export const RecipesClient = ({
     </>
   );
 };
+
+    
