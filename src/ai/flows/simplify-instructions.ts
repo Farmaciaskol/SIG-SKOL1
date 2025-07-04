@@ -24,7 +24,8 @@ export async function simplifyInstructions(input: SimplifyInstructionsInput): Pr
 const prompt = ai.definePrompt({
   name: 'simplifyInstructionsPrompt',
   input: {schema: SimplifyInstructionsInputSchema},
-  output: {schema: SimplifyInstructionsOutputSchema},
+  // Allow the model to return null without throwing an error at this stage.
+  output: {schema: z.string().nullable()},
   prompt: `You are a helpful pharmacist. Simplify the following medical instructions into plain language that is easy for patients to understand:\n\nInstructions: {{{$input}}}`,
 });
 
@@ -32,10 +33,12 @@ const simplifyInstructionsFlow = ai.defineFlow(
   {
     name: 'simplifyInstructionsFlow',
     inputSchema: SimplifyInstructionsInputSchema,
+    // The flow itself still guarantees a non-null string output.
     outputSchema: SimplifyInstructionsOutputSchema,
   },
   async input => {
     const {output} = await prompt(input);
+    // If the model returns null, we default to an empty string.
     return output || '';
   }
 );
