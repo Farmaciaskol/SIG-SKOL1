@@ -1,6 +1,4 @@
 
-
-
 'use client';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
@@ -214,11 +212,11 @@ export default function DispatchManagementPage() {
     const itemId = `${item.recipe.id}-${item.inventoryItem.id}`;
     const state = validationState[itemId];
     if (!state?.barcodeInput || !state?.lotNumber) {
-        toast({ title: "Información Faltante", description: "Seleccione un lote y escanee el código de barras del lote.", variant: "destructive" });
+        toast({ title: "Información Faltante", description: "Seleccione un lote y escanee el código de barras del producto.", variant: "destructive" });
         return;
     }
 
-    if (state.barcodeInput === state.lotNumber) {
+    if (state.barcodeInput === item.inventoryItem.barcode) {
         setValidationState(prev => ({
             ...prev,
             [itemId]: { ...prev[itemId], isValidated: 'valid' }
@@ -229,7 +227,7 @@ export default function DispatchManagementPage() {
             ...prev,
             [itemId]: { ...prev[itemId], isValidated: 'invalid' }
         }));
-        toast({ title: "Error de Validación", description: `El Lote Escaneado no coincide con el Lote seleccionado para ${item.inventoryItem.name}.`, variant: "destructive" });
+        toast({ title: "Error de Validación", description: `El código de barras escaneado no coincide con el producto ${item.inventoryItem.name}.`, variant: "destructive" });
     }
   };
 
@@ -469,9 +467,9 @@ export default function DispatchManagementPage() {
                                                     </Select>
                                                 </div>
                                                 <div className="space-y-1">
-                                                     <p className="text-xs font-medium text-muted-foreground">Escanear N° de Lote *</p>
+                                                     <p className="text-xs font-medium text-muted-foreground">Escanear Código de Barras *</p>
                                                     <Input 
-                                                        placeholder="Escanear o tipear lote..." 
+                                                        placeholder="Escanear o tipear código..." 
                                                         onChange={(e) => handleBarcodeInputChange(itemId, e.target.value)} 
                                                         disabled={validationStatus === 'valid'}
                                                         value={validationState[itemId]?.barcodeInput || ''}
@@ -600,3 +598,5 @@ export default function DispatchManagementPage() {
     </>
   );
 }
+
+    
