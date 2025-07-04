@@ -18,6 +18,8 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import Link from 'next/link';
 import { ProactivePatientStatus } from '@/lib/types';
+import { getAvatar } from '@/components/app/predefined-avatars';
+
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { patient, loading, logout } = usePatientAuth();
@@ -39,6 +41,11 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   
   const hasAlerts = patient.proactiveStatus === ProactivePatientStatus.URGENT || patient.proactiveStatus === ProactivePatientStatus.ATTENTION;
 
+  const DisplayAvatar = patient.avatar
+    ? getAvatar(patient.avatar)
+    : (
+        <AvatarFallback>{patient.name.charAt(0)}</AvatarFallback>
+      );
 
   return (
       <div className="min-h-screen bg-background">
@@ -86,9 +93,9 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="secondary" size="icon" className="rounded-full">
-                      <Avatar>
-                        <AvatarFallback>{patient.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
+                       <Avatar className="h-9 w-9">
+                          {DisplayAvatar}
+                        </Avatar>
                       <span className="sr-only">Toggle user menu</span>
                     </Button>
                   </DropdownMenuTrigger>

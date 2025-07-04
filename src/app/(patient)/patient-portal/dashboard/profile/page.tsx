@@ -1,22 +1,32 @@
+
 'use client';
 
 import { usePatientAuth } from '@/components/app/patient-auth-provider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Mail, Phone, MapPin, AlertTriangle, ChevronLeft, User, Heart, ShieldAlert, Pill, Stethoscope, Loader2 } from 'lucide-react';
+import { Mail, Phone, MapPin, AlertTriangle, ChevronLeft, User, Heart, ShieldAlert, Pill, Stethoscope, Loader2, Palette, Save } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useEffect, useState } from 'react';
 import { Doctor } from '@/lib/types';
-import { getDoctor } from '@/lib/data';
+import { getDoctor, updatePatient } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
+import { Avatar } from '@/components/ui/avatar';
+import { PREDEFINED_AVATARS, getAvatar } from '@/components/app/predefined-avatars';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
+
 
 export default function PatientProfilePage() {
-  const { patient } = usePatientAuth();
+  const { patient, refreshPatient } = usePatientAuth();
   const { toast } = useToast();
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loadingDoctors, setLoadingDoctors] = useState(true);
+  
+  const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
+  const [selectedAvatar, setSelectedAvatar] = useState<string | undefined>(patient?.avatar);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const fetchDoctors = async () => {
@@ -38,8 +48,25 @@ export default function PatientProfilePage() {
     };
     if (patient) {
       fetchDoctors();
+      setSelectedAvatar(patient.avatar);
     }
   }, [patient, toast]);
+  
+  const handleSaveAvatar = async () => {
+    if (!patient || selectedAvatar === undefined) return;
+    setIsSaving(true);
+    try {
+        await updatePatient(patient.id, { avatar: selectedAvatar });
+        toast({ title: 'Avatar Actualizado', description: 'Tu nuevo avatar ha sido guardado.' });
+        setIsAvatarDialogOpen(false);
+        await refreshPatient(patient.id);
+    } catch(error) {
+        toast({ title: 'Error', description: 'No se pudo guardar el avatar.', variant: 'destructive' });
+    } finally {
+        setIsSaving(false);
+    }
+  };
+
 
   if (!patient) {
     return null; 
@@ -48,6 +75,9 @@ export default function PatientProfilePage() {
   const hasClinicalInfo = (patient.allergies && patient.allergies.length > 0) ||
                           (patient.adverseReactions && patient.adverseReactions.length > 0) ||
                           (patient.commercialMedications && patient.commercialMedications.length > 0);
+  
+  const DisplayAvatar = patient.avatar ? getAvatar(patient.avatar) : (<span className="text-5xl font-bold">{patient.name.charAt(0)}</span>);
+
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -64,7 +94,47 @@ export default function PatientProfilePage() {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="items-center text-center">
+            <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
+                <div className="relative group">
+                    <Avatar className="w-24 h-24 text-3xl mb-4 border-2 border-primary/20">
+                        {DisplayAvatar}
+                    </Avatar>
+                    <DialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="absolute bottom-4 -right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Palette className="mr-2 h-4 w-4"/> Cambiar
+                        </Button>
+                    </DialogTrigger>
+                </div>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Elige tu Avatar</DialogTitle>
+                        <DialogDescription>Selecciona una imagen de la lista para personalizar tu perfil.</DialogDescription>
+                    </DialogHeader>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 py-4">
+                        {Object.entries(PREDEFINED_AVATARS).map(([id, svg]) => (
+                            <div
+                                key={id}
+                                onClick={() => setSelectedAvatar(id)}
+                                className={cn(
+                                    "p-2 border-2 rounded-lg cursor-pointer transition-all",
+                                    selectedAvatar === id ? "border-primary ring-2 ring-primary" : "border-transparent hover:border-muted-foreground/50"
+                                )}
+                            >
+                            <div className="aspect-square">{svg}</div>
+                            </div>
+                        ))}
+                    </div>
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setIsAvatarDialogOpen(false)}>Cancelar</Button>
+                        <Button onClick={handleSaveAvatar} disabled={isSaving}>
+                            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                            <Save className="mr-2 h-4 w-4"/>
+                            Guardar Avatar
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
           <CardTitle className="text-2xl">{patient.name}</CardTitle>
           <CardDescription>RUT: {patient.rut}</CardDescription>
         </CardHeader>

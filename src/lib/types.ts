@@ -196,6 +196,7 @@ export interface Patient {
   proactiveStatus: ProactivePatientStatus;
   proactiveMessage: string;
   actionNeeded: PatientActionNeeded;
+  avatar?: string;
 }
 
 export interface Doctor {

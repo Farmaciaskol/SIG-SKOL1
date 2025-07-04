@@ -12,6 +12,7 @@ interface PatientAuthContextType {
   loading: boolean;
   setPatient: (patient: Patient | null) => void;
   logout: () => void;
+  refreshPatient: (patientId: string) => Promise<void>;
 }
 
 const PatientAuthContext = createContext<PatientAuthContextType | undefined>(undefined);
@@ -71,12 +72,25 @@ export function PatientAuthProvider({ children }: { children: React.ReactNode })
       }
     }
   }, []);
+  
+  const refreshPatient = useCallback(async (patientId: string) => {
+    try {
+      const { getPatient } = await import('@/lib/data');
+      const updatedPatient = await getPatient(patientId);
+      if (updatedPatient) {
+        setPatient(updatedPatient);
+      }
+    } catch (error) {
+      console.error("Failed to refresh patient data", error);
+    }
+  }, [setPatient]);
+
 
   const logout = useCallback(() => {
     setPatient(null);
   }, [setPatient]);
 
-  const value = { patient, loading, setPatient, logout };
+  const value = { patient, loading, setPatient, logout, refreshPatient };
 
   return (
     <PatientAuthContext.Provider value={value}>
