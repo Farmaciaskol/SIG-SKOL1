@@ -125,7 +125,7 @@ import { Separator } from '@/components/ui/separator';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
 
-const StatCard = ({ title, value, icon: Icon, onClick, active = false }: { title: string; value: string | number; icon: React.ElementType; onClick: () => void; active?: boolean }) => (
+const StatCard = ({ title, value, icon: Icon, onClick, active = false }: { title: string, value: string | number, icon: React.ElementType, onClick: () => void, active?: boolean }) => (
   <Card className={cn("hover:shadow-md transition-shadow cursor-pointer", active && "ring-2 ring-primary")} onClick={onClick}>
     <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 pb-2">
       <CardTitle className="text-sm font-medium">{title}</CardTitle>
@@ -798,20 +798,7 @@ export const RecipesClient = ({
             ? `\n- Incluye dosis de seguridad para ${item.safetyStockDays} día(s) adicional(es).`
             : '';
         
-        return `Estimados ${pharmacy.name},
-
-Solicitamos la preparación del siguiente preparado magistral:
-
-- Paciente: ${patient?.name || 'N/A'}
-- Receta ID: ${recipeToSend.id}
-- Preparado: ${item.principalActiveIngredient} ${item.concentrationValue}${item.concentrationUnit}
-- Posología: ${item.usageInstructions}
-- Cantidad a preparar: ${item.totalQuantityValue} ${item.totalQuantityUnit}${safetyStockLine}
-
-Por favor, encontrar la receta adjunta.
-
-Saludos cordiales,
-Equipo Farmacia Skol`;
+        return `Estimados ${pharmacy.name},\n\nSolicitamos la preparación del siguiente preparado magistral:\n\n- Paciente: ${patient?.name || 'N/A'}\n- Receta ID: ${recipeToSend.id}\n- Preparado: ${item.principalActiveIngredient} ${item.concentrationValue}${item.concentrationUnit}\n- Posología: ${item.usageInstructions}\n- Cantidad a preparar: ${item.totalQuantityValue} ${item.totalQuantityUnit}${safetyStockLine}\n\nPor favor, encontrar la receta adjunta.\n\nSaludos cordiales,\nEquipo Farmacia Skol`;
     }, [recipeToSend, pharmacy, patients]);
 
     const copyToClipboard = (text: string) => {
@@ -866,8 +853,8 @@ Equipo Farmacia Skol`;
             </DialogContent>
         </Dialog>
     );
-  };
-  
+  }
+
   return (
     <>
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
