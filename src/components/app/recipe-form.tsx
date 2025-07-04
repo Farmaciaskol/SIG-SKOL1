@@ -33,7 +33,7 @@ import {
 import { RecipeStatus } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { addMonths, format, parseISO } from 'date-fns';
+import { addMonths, format, isValid, parseISO } from 'date-fns';
 import { Bot, Calendar as CalendarIcon, Image as ImageIcon, Loader2, PlusCircle, Trash2, Wand2, ZoomIn, X as XIcon } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -594,47 +594,57 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
 
   const handleExtractWithAI = async () => {
     if (!previewImage) {
-        toast({ title: 'Error', description: 'Por favor, selecciona un archivo primero.', variant: 'destructive' });
-        return;
+      toast({ title: 'Error', description: 'Por favor, selecciona un archivo primero.', variant: 'destructive' });
+      return;
     }
 
     setIsAiExtracting(true);
     try {
-        const result = await extractRecipeDataFromImage({ photoDataUri: previewImage });
+      const result = await extractRecipeDataFromImage({ photoDataUri: previewImage });
 
-        const { patientName, patientRut, doctorName, doctorLicense, doctorSpecialty, ...rest } = result;
-
-        if (patientName) {
-            form.setValue('patientSelectionType', 'new');
-            form.setValue('newPatientName', patientName);
-            form.setValue('newPatientRut', patientRut || '');
+      // Use setValue for a more controlled update, avoiding a full form reset
+      if (result.patientName) {
+        form.setValue('patientSelectionType', 'new');
+        form.setValue('newPatientName', result.patientName);
+        form.setValue('newPatientRut', result.patientRut || '');
+      }
+      if (result.doctorName) {
+        form.setValue('doctorSelectionType', 'new');
+        form.setValue('newDoctorName', result.doctorName);
+        form.setValue('newDoctorLicense', result.doctorLicense || '');
+        form.setValue('newDoctorSpecialty', result.doctorSpecialty || '');
+      }
+      if (result.patientAddress) {
+        form.setValue('dispatchAddress', result.patientAddress);
+      }
+      if (result.prescriptionDate) {
+        try {
+            const parsedDate = parseISO(result.prescriptionDate);
+            if (isValid(parsedDate)) {
+                 form.setValue('prescriptionDate', parsedDate);
+            }
+        } catch (e) {
+            console.warn("Could not parse AI extracted date:", result.prescriptionDate);
         }
+      }
 
-        if (doctorName) {
-            form.setValue('doctorSelectionType', 'new');
-            form.setValue('newDoctorName', doctorName);
-            form.setValue('newDoctorLicense', doctorLicense || '');
-            form.setValue('newDoctorSpecialty', doctorSpecialty || '');
-        }
-        
-        if (rest.patientAddress) form.setValue('dispatchAddress', rest.patientAddress);
-        if (rest.prescriptionDate) form.setValue('prescriptionDate', parseISO(rest.prescriptionDate));
-        
-        if (rest.items && rest.items.length > 0) {
-            remove(); // Remove all existing items
-            const filledItems = rest.items.map(item => ({ ...defaultItem, ...item }));
-            append(filledItems);
-        }
+      if (result.items && result.items.length > 0) {
+        // Replace existing items with extracted ones
+        remove(); // Clear all items first
+        const filledItems = result.items.map(item => ({ ...defaultItem, ...item }));
+        append(filledItems);
+      }
 
-        toast({ title: 'Extracción Completada', description: 'Los campos del formulario se han rellenado. Por favor, verifique.' });
+      toast({ title: 'Extracción Completada', description: 'Los campos del formulario se han rellenado. Por favor, verifique.' });
 
     } catch (error) {
-        console.error('AI extraction failed:', error);
-        toast({ title: 'Error de IA', description: 'No se pudo extraer la información de la imagen.', variant: 'destructive' });
+      console.error('AI extraction failed:', error);
+      toast({ title: 'Error de IA', description: 'No se pudo extraer la información de la imagen.', variant: 'destructive' });
     } finally {
-        setIsAiExtracting(false);
+      setIsAiExtracting(false);
     }
   };
+
 
   const handleSimplifyInstructions = async (index: number) => {
     const instructions = form.getValues(`items.${index}.usageInstructions`);
@@ -987,5 +997,3 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
     </>
   );
 }
-
-    
