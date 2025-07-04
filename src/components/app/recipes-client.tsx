@@ -870,7 +870,7 @@ export const RecipesClient = ({
             </Link>
         </Button>
       </div>
-      
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mt-6">
         <StatCard 
           title="Bandeja de Entrada Portal" 
