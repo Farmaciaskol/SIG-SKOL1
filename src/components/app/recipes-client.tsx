@@ -265,7 +265,7 @@ const SendToPharmacyDialog = ({ recipe, pharmacy, patients, isOpen, onClose, onC
             </DialogContent>
         </Dialog>
     );
-}
+};
 
 const SendBatchDialog = ({ recipes: recipesToSend, isOpen, onClose, onConfirm, isSubmitting, getPharmacy, getPatientName }: { 
     recipes: Recipe[]; 
@@ -278,9 +278,49 @@ const SendBatchDialog = ({ recipes: recipesToSend, isOpen, onClose, onConfirm, i
 }) => {
     const { toast } = useToast();
 
-    const copyToClipboard = (text: string, subject: string) => {
-        navigator.clipboard.writeText(text);
-        toast({ title: "Copiado", description: `El ${subject} se ha copiado al portapapeles.` });
+    const handleCopyHtml = (pharmacyName: string, recipes: Recipe[]) => {
+        const getEmailHtml = () => {
+            const tableRows = recipes.map(r => {
+                const item = r.items[0];
+                const details = item ? `${item.principalActiveIngredient} ${item.concentrationValue}${item.concentrationUnit}` : 'Preparado sin detalles';
+                return `<tr><td style="padding: 5px; border: 1px solid #ddd;">${r.id}</td><td style="padding: 5px; border: 1px solid #ddd;">${getPatientName(r.patientId)}</td><td style="padding: 5px; border: 1px solid #ddd;">${details}</td></tr>`;
+            }).join('');
+    
+            const table = `<table style="width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 14px;"><thead><tr><th style="padding: 8px; border: 1px solid #ddd; text-align: left; background-color: #f2f2f2;">Receta ID</th><th style="padding: 8px; border: 1px solid #ddd; text-align: left; background-color: #f2f2f2;">Paciente</th><th style="padding: 8px; border: 1px solid #ddd; text-align: left; background-color: #f2f2f2;">Preparado</th></tr></thead><tbody>${tableRows}</tbody></table>`;
+    
+            const hasAttachments = recipes.some(r => r.prescriptionImageUrl);
+            const attachmentLinks = hasAttachments ? recipes.filter(r => r.prescriptionImageUrl).map(r => `<li><a href="${r.prescriptionImageUrl}">Receta ID: ${r.id}</a></li>`).join('') : '';
+            const attachmentSection = hasAttachments ? `<br><p><strong>Adjuntos:</strong></p><ul>${attachmentLinks}</ul>` : '';
+    
+            return `
+                <p>Estimados ${pharmacyName},</p>
+                <p>Solicitamos la preparación de las siguientes recetas:</p>
+                ${table}
+                ${attachmentSection}
+                <br>
+                <p>Saludos cordiales,<br/>Equipo Farmacia Skol</p>
+            `;
+        };
+    
+        const html = getEmailHtml();
+        
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        const plainText = tempDiv.innerText;
+    
+        try {
+            const blob = new Blob([html], { type: 'text/html' });
+            const plainBlob = new Blob([plainText], { type: 'text/plain' });
+            const item = new ClipboardItem({ 'text/html': blob, 'text/plain': plainBlob });
+            navigator.clipboard.write([item]).then(() => {
+                toast({ title: "Contenido del correo copiado", description: "Puede pegarlo en su cliente de correo." });
+            });
+        } catch (e) {
+            console.error('Failed to copy rich text, falling back to plain text.', e);
+            navigator.clipboard.writeText(plainText).then(() => {
+                toast({ title: "Contenido del correo copiado (texto plano)", description: "Puede pegarlo en su cliente de correo." });
+            });
+        }
     };
 
     const groupedRecipes = useMemo(() => {
@@ -313,23 +353,7 @@ const SendBatchDialog = ({ recipes: recipesToSend, isOpen, onClose, onConfirm, i
                             const pharmacy = getPharmacy(pharmacyId);
                             const pharmacyName = pharmacy?.name || "Recetario Desconocido";
                             const subject = `Solicitud de Preparados Magistrales - Lote ${format(new Date(), 'dd-MM-yyyy')}`;
-                            
-                            const recipeDetails = recipes.map(r => {
-                                const item = r.items[0];
-                                const details = item ? `${item.principalActiveIngredient} ${item.concentrationValue}${item.concentrationUnit}` : 'Preparado sin detalles';
-                                return `- Receta ID: ${r.id} | Paciente: ${getPatientName(r.patientId)} | Preparado: ${details}`;
-                            }).join('\n');
-
-                            const downloadLinks = recipes
-                                .filter(r => r.prescriptionImageUrl)
-                                .map(r => `- Descargar Receta ${r.id}: ${r.prescriptionImageUrl}`)
-                                .join('\n');
-                            
-                            const downloadSection = downloadLinks 
-                                ? `\n\nPuede descargar las imágenes de las recetas desde los siguientes enlaces:\n${downloadLinks}` 
-                                : '\n\nPor favor, encontrar las recetas adjuntas en sus respectivos correos o sistema.';
-                            
-                            const body = `Estimados ${pharmacyName},\n\nSolicitamos la preparación de las siguientes recetas:\n\n${recipeDetails}${downloadSection}\n\nSaludos cordiales,\nEquipo Farmacia Skol`;
+                            const hasAttachments = recipes.some(r => r.prescriptionImageUrl);
                             
                             return (
                                 <AccordionItem value={pharmacyId} key={pharmacyId}>
@@ -346,17 +370,59 @@ const SendBatchDialog = ({ recipes: recipesToSend, isOpen, onClose, onConfirm, i
                                         </div>
                                         <div className="space-y-1">
                                             <Label>Asunto</Label>
-                                            <div className="flex items-center gap-2">
-                                                <Input readOnly value={subject} />
-                                                <Button variant="outline" size="icon" onClick={() => copyToClipboard(subject, 'asunto')}><ClipboardCopy className="h-4 w-4" /></Button>
-                                            </div>
+                                            <Input readOnly value={subject} />
                                         </div>
                                         <div className="space-y-1">
-                                            <Label>Cuerpo del Correo</Label>
-                                            <div className="relative">
-                                                <Textarea readOnly value={body} className="h-48" />
-                                                <Button variant="outline" size="icon" className="absolute top-2 right-2" onClick={() => copyToClipboard(body, 'cuerpo del correo')}><ClipboardCopy className="h-4 w-4" /></Button>
+                                            <Label>Contenido del Correo</Label>
+                                            <div className="p-4 border rounded-md bg-muted/30 space-y-4">
+                                                <p className="text-sm">Estimados {pharmacyName},</p>
+                                                <p className="text-sm">Solicitamos la preparación de las siguientes recetas:</p>
+                                                
+                                                <div className="border rounded-md overflow-hidden bg-background">
+                                                    <Table>
+                                                        <TableHeader>
+                                                            <TableRow>
+                                                                <TableHead>Receta ID</TableHead>
+                                                                <TableHead>Paciente</TableHead>
+                                                                <TableHead>Preparado</TableHead>
+                                                            </TableRow>
+                                                        </TableHeader>
+                                                        <TableBody>
+                                                            {recipes.map(r => {
+                                                                const item = r.items[0];
+                                                                const details = item ? `${item.principalActiveIngredient} ${item.concentrationValue}${item.concentrationUnit}` : 'Preparado sin detalles';
+                                                                return (
+                                                                    <TableRow key={r.id}>
+                                                                        <TableCell className="font-mono">{r.id}</TableCell>
+                                                                        <TableCell>{getPatientName(r.patientId)}</TableCell>
+                                                                        <TableCell>{details}</TableCell>
+                                                                    </TableRow>
+                                                                );
+                                                            })}
+                                                        </TableBody>
+                                                    </Table>
+                                                </div>
+
+                                                {hasAttachments && (
+                                                    <div className="space-y-2">
+                                                        <p className="text-sm font-semibold">Adjuntos:</p>
+                                                        <ul className="list-disc list-inside text-sm space-y-1">
+                                                            {recipes.filter(r => r.prescriptionImageUrl).map(r => (
+                                                                <li key={r.id}>
+                                                                    <a href={r.prescriptionImageUrl} target="_blank" rel="noopener noreferrer" download={`receta_${r.id}.jpg`} className="text-primary hover:underline">
+                                                                        Receta ID: {r.id}
+                                                                    </a>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
+                                                <p className="text-sm">Saludos cordiales,<br/>Equipo Farmacia Skol</p>
                                             </div>
+                                            <Button variant="outline" className="w-full mt-2" onClick={() => handleCopyHtml(pharmacyName, recipes)}>
+                                                <ClipboardCopy className="mr-2 h-4 w-4" />
+                                                Copiar Correo Completo
+                                            </Button>
                                         </div>
                                     </AccordionContent>
                                 </AccordionItem>
@@ -1436,5 +1502,3 @@ export const RecipesClient = ({
     </>
   );
 };
-
-    
