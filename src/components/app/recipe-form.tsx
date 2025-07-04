@@ -85,7 +85,6 @@ const recipeFormSchema = z.object({
   externalPharmacyId: z.string().min(1, 'Debe seleccionar un recetario.'),
   supplySource: z.string().min(1, 'Debe seleccionar un origen de insumos.'),
   preparationCost: z.coerce.number().min(0, 'El costo de preparación debe ser un número positivo.'),
-  transportCost: z.coerce.number().min(0, 'El costo de despacho debe ser un número positivo.').optional(),
   isControlled: z.boolean().default(false).optional(),
   controlledRecipeType: z.string().optional(),
   controlledRecipeFolio: z.string().optional(),
@@ -396,7 +395,7 @@ const STEPS = [
   { id: 1, name: "Paciente y Médico", fields: ['patientSelectionType', 'patientId', 'newPatientName', 'newPatientRut', 'dispatchAddress', 'doctorSelectionType', 'doctorId', 'newDoctorName', 'newDoctorLicense', 'newDoctorRut', 'newDoctorSpecialty'] },
   { id: 2, name: "Detalles de la Receta", fields: ['prescriptionDate', 'dueDate', 'isControlled', 'controlledRecipeType', 'controlledRecipeFolio'] },
   { id: 3, name: "Items del Preparado", fields: ['items'] },
-  { id: 4, name: "Costos y Revisión", fields: ['externalPharmacyId', 'supplySource', 'preparationCost', 'transportCost'] },
+  { id: 4, name: "Costos y Revisión", fields: ['externalPharmacyId', 'supplySource', 'preparationCost'] },
 ];
 
 export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps) {
@@ -440,7 +439,6 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
       externalPharmacyId: '',
       supplySource: '',
       preparationCost: 0,
-      transportCost: 0,
       isControlled: false,
       controlledRecipeType: '',
       controlledRecipeFolio: '',
@@ -505,7 +503,6 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
       externalPharmacyId: recipeData.externalPharmacyId ?? '',
       supplySource: recipeData.supplySource ?? '',
       preparationCost: recipeData.preparationCost ?? 0,
-      transportCost: recipeData.transportCost ?? 0,
       isControlled: recipeData.isControlled ?? false,
       controlledRecipeType: recipeData.controlledRecipeType ?? '',
       controlledRecipeFolio: recipeData.controlledRecipeFolio ?? '',
@@ -597,17 +594,7 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
     fetchData();
   }, [recipeId, copyFromId, patientId, toast, router, form, loadFormData]);
 
-  const selectedPharmacyId = form.watch('externalPharmacyId');
   const supplySource = form.watch('supplySource');
-
-  React.useEffect(() => {
-    if (selectedPharmacyId) {
-      const selectedPharmacy = externalPharmacies.find(p => p.id === selectedPharmacyId);
-      if (selectedPharmacy && selectedPharmacy.transportCost) {
-        form.setValue('transportCost', selectedPharmacy.transportCost);
-      }
-    }
-  }, [selectedPharmacyId, externalPharmacies, form]);
 
   React.useEffect(() => {
     const isSkolSource = supplySource === 'Insumos de Skol';
@@ -948,19 +935,11 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
                       </Select><FormMessage />
                     </FormItem>
                   )} />
-                  <div className="md:col-span-1">
+                  <div className="md:col-span-2">
                     <FormField control={form.control} name="preparationCost" render={({ field }) => (
                       <FormItem><FormLabel>Costo Preparación (CLP) *</FormLabel>
                         <FormControl><Input type="number" placeholder="Ej: 15000" {...field} /></FormControl>
                         <FormDescription className="text-xs text-muted-foreground">Costo que Skol pagará al recetario.</FormDescription><FormMessage />
-                      </FormItem>
-                    )} />
-                  </div>
-                  <div className="md:col-span-1">
-                    <FormField control={form.control} name="transportCost" render={({ field }) => (
-                      <FormItem><FormLabel>Costo de Despacho (CLP)</FormLabel>
-                        <FormControl><Input type="number" placeholder="Ej: 3500" {...field} /></FormControl>
-                        <FormDescription className="text-xs text-muted-foreground">Se llena por defecto al elegir el recetario.</FormDescription><FormMessage />
                       </FormItem>
                     )} />
                   </div>

@@ -96,7 +96,8 @@ import {
   Inbox,
   Snowflake,
   Archive,
-  ClipboardCopy
+  ClipboardCopy,
+  DollarSign
 } from 'lucide-react';
 import {
   getRecipes,
@@ -177,6 +178,7 @@ export const RecipesClient = ({
   const [controlledFolio, setControlledFolio] = useState('');
   const [internalLot, setInternalLot] = useState('');
   const [preparationExpiry, setPreparationExpiry] = useState<Date>();
+  const [transportCost, setTransportCost] = useState('0');
   const [receptionChecklist, setReceptionChecklist] = useState({
     etiqueta: false,
     vencimiento: false,
@@ -313,6 +315,7 @@ export const RecipesClient = ({
         internalPreparationLot: internalLot,
         compoundingDate: new Date().toISOString(),
         preparationExpiryDate: preparationExpiry.toISOString(),
+        transportCost: Number(transportCost) || 0,
       };
        await updateRecipe(recipeToReceive.id, updates);
        toast({ title: 'Preparado Recepcionado', description: `La receta ${recipeToReceive.id} ha sido actualizada.` });
@@ -730,12 +733,6 @@ Saludos cordiales,
 Equipo Farmacia Skol`;
     }, [recipeToSend, pharmacy, patients]);
 
-    const handleConfirmSend = async () => {
-        if (!recipeToSend) return;
-        await handleUpdateStatus(recipeToSend, RecipeStatus.SentToExternal, 'Receta enviada a recetario externo para preparación.');
-        setRecipeToSend(null);
-    };
-
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
         toast({ title: "Copiado", description: "El texto se ha copiado al portapapeles." });
@@ -975,6 +972,18 @@ Equipo Farmacia Skol`;
                                         <StatusIcon className="h-3 w-3 mr-1.5" />
                                         {statusConfig[recipe.status]?.text || recipe.status}
                                     </Badge>
+                                    {recipe.paymentStatus === 'Pendiente' && (
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <span><DollarSign className="h-5 w-5 text-amber-500" /></span>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Pago pendiente para esta receta.</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    )}
                                     {recipe.status === RecipeStatus.PendingReviewPortal && (
                                         <TooltipProvider>
                                             <Tooltip>
@@ -1143,7 +1152,7 @@ Equipo Farmacia Skol`;
       <Dialog open={!!recipeToReject} onOpenChange={(open) => {if (!open) {setRecipeToReject(null); setReason('');}}}><DialogContent><DialogHeader><DialogTitle className="text-xl font-semibold">Rechazar Receta: {recipeToReject?.id}</DialogTitle><DialogDescription>Por favor, ingrese el motivo del rechazo. Este quedará registrado en el historial de la receta.</DialogDescription></DialogHeader><div className="grid gap-4 py-4"><Label htmlFor="reason-textarea" className="text-sm font-medium text-foreground">Motivo del Rechazo *</Label><Textarea id="reason-textarea" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ej: Dosis inconsistente con la indicación."/></div><DialogFooter><Button variant="ghost" onClick={() => {setRecipeToReject(null); setReason('');}}>Cancelar</Button><Button variant="destructive" onClick={handleConfirmReject} disabled={!reason.trim() || isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Confirmar Rechazo</Button></DialogFooter></DialogContent></Dialog>
       <Dialog open={!!recipeToCancel} onOpenChange={(open) => {if (!open) {setRecipeToCancel(null); setReason('');}}}><DialogContent><DialogHeader><DialogTitle className="text-xl font-semibold">Anular Receta: {recipeToCancel?.id}</DialogTitle><DialogDescription>Por favor, ingrese el motivo de la anulación. Esta acción es irreversible.</DialogDescription></DialogHeader><div className="grid gap-4 py-4"><Label htmlFor="reason-textarea" className="text-sm font-medium text-foreground">Motivo de la Anulación *</Label><Textarea id="reason-textarea" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ej: Solicitado por el paciente."/></div><DialogFooter><Button variant="ghost" onClick={() => {setRecipeToCancel(null); setReason('');}}>Cancelar</Button><Button variant="destructive" onClick={handleConfirmCancel} disabled={!reason.trim() || isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Confirmar Anulación</Button></DialogFooter></DialogContent></Dialog>
       <Dialog open={!!recipeToReprepare} onOpenChange={(open) => { if (!open) { setRecipeToReprepare(null); setControlledFolio(''); } }}><DialogContent><DialogHeader><DialogTitle className="text-xl font-semibold">Re-preparar Receta: {recipeToReprepare?.id}</DialogTitle></DialogHeader>{recipeToReprepare?.isControlled ? (<div className="space-y-4"><DialogDescription>Esta es una receta controlada. Para re-preparar, debe ingresar el folio de la nueva receta física/electrónica.</DialogDescription><div className="grid gap-2 py-2"><Label htmlFor="controlled-folio" className="mb-1 text-sm font-medium text-foreground">Nuevo Folio de Receta Controlada *</Label><Input id="controlled-folio" value={controlledFolio} onChange={(e) => setControlledFolio(e.target.value)} placeholder="Ej: A12345678"/></div></div>) : (<DialogDescription>¿Está seguro que desea iniciar un nuevo ciclo para esta receta? La receta volverá al estado 'Pendiente Validación'.</DialogDescription>)}<DialogFooter><Button variant="ghost" onClick={() => setRecipeToReprepare(null)}>Cancelar</Button><Button onClick={handleConfirmReprepare} disabled={isSubmitting || (recipeToReprepare?.isControlled && !controlledFolio.trim())}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Confirmar Re-preparación</Button></DialogFooter></DialogContent></Dialog>
-      <Dialog open={!!recipeToReceive} onOpenChange={(open) => {if (!open) { setRecipeToReceive(null); setInternalLot(''); setPreparationExpiry(undefined); setReceptionChecklist({ etiqueta: false, vencimiento: false, aspecto: false, cadenaFrio: false }); }}}>
+      <Dialog open={!!recipeToReceive} onOpenChange={(open) => {if (!open) { setRecipeToReceive(null); setInternalLot(''); setPreparationExpiry(undefined); setReceptionChecklist({ etiqueta: false, vencimiento: false, aspecto: false, cadenaFrio: false }); setTransportCost('0'); }}}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold">Recepcionar Preparado: {recipeToReceive?.id}</DialogTitle>
@@ -1168,6 +1177,13 @@ Equipo Farmacia Skol`;
                             <Calendar mode="single" selected={preparationExpiry} onSelect={setPreparationExpiry} initialFocus/>
                         </PopoverContent>
                     </Popover>
+                </div>
+                <div className="md:col-span-2 space-y-2">
+                  <Label htmlFor="transport-cost" className="text-sm font-medium">Costo de Despacho (CLP)</Label>
+                  <Input id="transport-cost" type="number" value={transportCost} onChange={(e) => setTransportCost(e.target.value)} placeholder="0"/>
+                  <p className="text-xs text-muted-foreground mt-1">
+                      Ingrese este costo solo para el <strong>primer</strong> preparado de una entrega consolidada. Deje en 0 para los demás.
+                  </p>
                 </div>
             </div>
 

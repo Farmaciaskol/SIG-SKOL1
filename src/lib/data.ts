@@ -293,7 +293,6 @@ export const saveRecipe = async (data: any, imageFile: File | null, userId: stri
         prescriptionDate: data.prescriptionDate, dueDate: data.dueDate, updatedAt: new Date().toISOString(),
         externalPharmacyId: data.externalPharmacyId, supplySource: data.supplySource, 
         preparationCost: Number(data.preparationCost),
-        transportCost: Number(data.transportCost) || 0,
         isControlled: data.isControlled, controlledRecipeType: data.controlledRecipeType, controlledRecipeFolio: data.controlledRecipeFolio,
         prescriptionImageUrl: imageUrl,
     };
