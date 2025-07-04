@@ -3,13 +3,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { usePatientAuth } from '@/components/app/patient-auth-provider';
-import { getDashboardData, getMedicationInfo, sendMessageFromPatient, submitNewPrescription } from '@/lib/patient-actions';
+import { getDashboardData, getMedicationInfo, sendMessageFromPatient, submitNewPrescription, requestRepreparationFromPortal } from '@/lib/patient-actions';
 import { Patient, Recipe, PatientMessage, ProactivePatientStatus } from '@/lib/types';
-import { Loader2, AlertTriangle, CheckCircle, Clock, FileText, Bot, Send, MessageSquare, Upload, X, FileUp } from 'lucide-react';
+import { Loader2, AlertTriangle, CheckCircle, Clock, FileText, Bot, Send, MessageSquare, Upload, X, FileUp, Repeat } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { MAX_REPREPARATIONS } from '@/lib/constants';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import React from 'react';
+import { Separator } from '@/components/ui/separator';
 
 const ProactiveActionCard = ({ patient }: { patient: Patient }) => {
     const statusConfig = {
@@ -156,7 +157,9 @@ export default function PatientPortalDashboardPage() {
 
     const [isMedInfoOpen, setIsMedInfoOpen] = useState(false);
     const [isMessagingOpen, setIsMessagingOpen] = useState(false);
+    const [isRecipeManagerOpen, setIsRecipeManagerOpen] = useState(false);
     const [selectedMed, setSelectedMed] = useState({ name: '', info: '' });
+    const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
     const [isFetchingMedInfo, setIsFetchingMedInfo] = useState(false);
 
     const fetchData = useCallback(async () => {
@@ -191,6 +194,11 @@ export default function PatientPortalDashboardPage() {
         }
     };
     
+    const handleManageRecipe = (recipe: Recipe) => {
+      setSelectedRecipe(recipe);
+      setIsRecipeManagerOpen(true);
+    };
+
     if (loading || !patient || !dashboardData) {
         return (
             <div className="flex h-full items-center justify-center">
@@ -203,8 +211,8 @@ export default function PatientPortalDashboardPage() {
     const unreadMessages = messages.filter(m => m.sender === 'pharmacist' && !m.read).length;
     const activeCommercialMeds = patient.commercialMedications || [];
     const allActiveTreatments = [
-      ...activeMagistralRecipes.map(r => ({ type: 'magistral', name: r.items[0]?.principalActiveIngredient || 'Preparado Magistral', details: r.items[0] ? `${r.items[0].concentrationValue}${r.items[0].concentrationUnit}` : '' })),
-      ...activeCommercialMeds.map(name => ({ type: 'commercial', name, details: '' }))
+      ...activeMagistralRecipes.map(r => ({ type: 'magistral' as const, name: r.items[0]?.principalActiveIngredient || 'Preparado Magistral', details: r.items[0] ? `${r.items[0].concentrationValue}${r.items[0].concentrationUnit}` : '', recipe: r })),
+      ...activeCommercialMeds.map(name => ({ type: 'commercial' as const, name, details: '', recipe: null }))
     ];
 
 
@@ -254,20 +262,19 @@ export default function PatientPortalDashboardPage() {
               <Card>
                 <CardHeader className="p-4">
                   <CardTitle>Mis Recetas Magistrales</CardTitle>
-                  <CardDescription>Aquí puedes ver la vigencia de tus recetas originales.</CardDescription>
+                  <CardDescription>Gestiona la re-preparación de tus recetas vigentes.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-4">
                   {activeMagistralRecipes.length > 0 ? (
                     <ul className="space-y-3">
                         {activeMagistralRecipes.map(recipe => {
-                            const cycleCount = recipe.auditTrail?.filter(t => t.status === 'Dispensada').length || 0;
                             return (
                                 <li key={recipe.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                                   <div>
                                     <p className="font-semibold text-foreground">{recipe.items[0]?.principalActiveIngredient || 'Receta Magistral'}</p>
                                     <p className="text-xs text-muted-foreground">Vence: {format(parseISO(recipe.dueDate), 'dd-MM-yyyy')}</p>
                                   </div>
-                                  <Badge>Ciclo {cycleCount + 1}/{MAX_REPREPARATIONS + 1}</Badge>
+                                  <Button variant="outline" size="sm" onClick={() => handleManageRecipe(recipe)}>Gestionar</Button>
                                 </li>
                             )
                         })}
@@ -303,6 +310,14 @@ export default function PatientPortalDashboardPage() {
                   <SecureMessagingModal patientId={patient.id} initialMessages={messages} />
                 </DialogContent>
             </Dialog>
+
+            <RecipeManagementDialog
+              isOpen={isRecipeManagerOpen}
+              onOpenChange={setIsRecipeManagerOpen}
+              recipe={selectedRecipe}
+              patientId={patient.id}
+              onSuccess={fetchData}
+            />
 
         </div>
     );
@@ -374,3 +389,81 @@ const SecureMessagingModal = ({ patientId, initialMessages }: { patientId: strin
         </div>
     );
 };
+
+
+function RecipeManagementDialog({ isOpen, onOpenChange, recipe, patientId, onSuccess }: { isOpen: boolean; onOpenChange: (open: boolean) => void; recipe: Recipe | null; patientId: string; onSuccess: () => void; }) {
+  const { toast } = useToast();
+  const [isRequesting, setIsRequesting] = useState(false);
+  
+  if (!recipe) return null;
+
+  const cycleCount = recipe.auditTrail?.filter(t => t.status === 'Dispensada').length || 0;
+  const isExpired = new Date(recipe.dueDate) < new Date();
+  const cycleLimitReached = cycleCount >= (MAX_REPREPARATIONS + 1);
+  const canRequest = recipe.status === 'Dispensada' && !isExpired && !cycleLimitReached;
+
+  let disabledMessage = '';
+  if (isExpired) disabledMessage = 'Esta receta ha vencido. Por favor, cargue una nueva.';
+  else if (cycleLimitReached) disabledMessage = 'Ha alcanzado el límite de preparaciones para esta receta.';
+  else if (recipe.status !== 'Dispensada') disabledMessage = 'Ya hay una preparación en curso o pendiente para esta receta.';
+
+
+  const handleRequestRepreparation = async () => {
+    setIsRequesting(true);
+    try {
+      await requestRepreparationFromPortal(recipe.id, patientId);
+      toast({
+        title: "Solicitud Enviada",
+        description: "Hemos notificado a la farmacia. Recibirás una actualización cuando tu preparado esté listo.",
+      });
+      onSuccess();
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Failed to request repreparation:", error);
+      toast({ title: "Error en la Solicitud", description: error instanceof Error ? error.message : "Ocurrió un error inesperado.", variant: "destructive" });
+    } finally {
+      setIsRequesting(false);
+    }
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Gestionar Receta</DialogTitle>
+          <DialogDescription>
+            Detalles de tu receta de {recipe.items[0]?.principalActiveIngredient || 'Preparado Magistral'}.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-4 space-y-4">
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-muted-foreground">Estado Actual:</span>
+            <Badge variant="secondary">{recipe.status}</Badge>
+          </div>
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-muted-foreground">Vencimiento Receta Original:</span>
+            <span className="font-medium">{format(parseISO(recipe.dueDate), 'dd MMMM, yyyy', { locale: es })}</span>
+          </div>
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-muted-foreground">Ciclos de Preparación Usados:</span>
+            <span className="font-medium">{cycleCount} de {MAX_REPREPARATIONS + 1}</span>
+          </div>
+          <Separator />
+          <div className="space-y-2">
+            <h4 className="font-semibold text-foreground">Acciones</h4>
+            <Button className="w-full" onClick={handleRequestRepreparation} disabled={!canRequest || isRequesting}>
+              {isRequesting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Repeat className="mr-2 h-4 w-4" />}
+              Solicitar Preparación de Ciclo
+            </Button>
+            {disabledMessage && (
+              <p className="text-xs text-center text-destructive">{disabledMessage}</p>
+            )}
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cerrar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

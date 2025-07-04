@@ -5,16 +5,18 @@
 import {
   getRecipesReadyForPickup,
   getMessagesForPatient,
-  getRecipes
+  getRecipes,
+  getRecipe,
+  updateRecipe
 } from './data';
-import type { PatientMessage, Recipe } from './types';
+import type { PatientMessage, Recipe, AuditTrailEntry } from './types';
 import { RecipeStatus } from './types';
 import { simplifyMedicationInfo } from '@/ai/flows/simplify-medication-info';
 import { db, storage, auth } from './firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { doc, collection, setDoc } from 'firebase/firestore';
-import { addMonths } from 'date-fns';
-import type { AuditTrailEntry } from './types';
+import { addMonths, differenceInDays, parseISO } from 'date-fns';
+import { MAX_REPREPARATIONS } from './constants';
 
 
 // --- PATIENT PORTAL ACTIONS ---
@@ -25,7 +27,7 @@ export async function getDashboardData(patientId: string) {
         getRecipes(patientId),
         getMessagesForPatient(patientId)
     ]);
-    const activeMagistralRecipes = allPatientRecipes.filter(r => r.status !== 'Dispensada' && r.status !== 'Anulada' && r.status !== 'Rechazada');
+    const activeMagistralRecipes = allPatientRecipes.filter(r => r.status !== 'Dispensada' && r.status !== 'Anulada' && r.status !== 'Rechazada' && r.status !== 'Archivada');
     return { readyForPickup, activeMagistralRecipes, messages };
 }
 
@@ -117,3 +119,41 @@ export async function submitNewPrescription(patientId: string, imageFile: File):
 
     return recipeId;
 };
+
+export async function requestRepreparationFromPortal(recipeId: string, patientId: string): Promise<void> {
+    if (!auth) throw new Error("Auth service is not initialized.");
+
+    const recipe = await getRecipe(recipeId);
+    if (!recipe) throw new Error("Receta no encontrada.");
+    if (recipe.patientId !== patientId) throw new Error("Acción no autorizada.");
+    if (recipe.status !== RecipeStatus.Dispensed) throw new Error("No se puede solicitar una re-preparación para esta receta en su estado actual.");
+
+    const isExpired = new Date(recipe.dueDate) < new Date();
+    if (isExpired) throw new Error("La receta original ha vencido y no puede ser re-preparada.");
+    
+    const dispensationsCount = recipe.auditTrail?.filter(t => t.status === RecipeStatus.Dispensed).length || 0;
+    if (dispensationsCount >= MAX_REPREPARATIONS + 1) throw new Error("Se ha alcanzado el límite de preparaciones para esta receta.");
+
+    const user = auth.currentUser;
+    if (!user) throw new Error("No se pudo verificar la sesión del usuario.");
+
+    const newAuditEntry: AuditTrailEntry = {
+      status: RecipeStatus.PendingValidation,
+      date: new Date().toISOString(),
+      userId: user.uid, 
+      notes: "Solicitud de re-preparación recibida desde el Portal del Paciente."
+    };
+
+    const updates: Partial<Recipe> = {
+        status: RecipeStatus.PendingValidation,
+        auditTrail: [...(recipe.auditTrail || []), newAuditEntry],
+        paymentStatus: 'N/A',
+        dispensationDate: undefined,
+        internalPreparationLot: undefined,
+        compoundingDate: undefined,
+        preparationExpiryDate: undefined,
+        rejectionReason: undefined,
+    };
+
+    await updateRecipe(recipeId, updates);
+}
