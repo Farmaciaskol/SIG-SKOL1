@@ -121,6 +121,7 @@ export interface RecipeItem {
   totalQuantityValue: string;
   totalQuantityUnit: string;
   usageInstructions: string;
+  safetyStockDays?: number;
   requiresFractionation?: boolean;
   isRefrigerated?: boolean;
   sourceInventoryItemId?: string;

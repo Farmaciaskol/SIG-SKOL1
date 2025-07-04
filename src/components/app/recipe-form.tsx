@@ -58,6 +58,7 @@ const recipeItemSchema = z.object({
   frequency: z.string().min(1, "La Frecuencia es requerida."),
   treatmentDurationValue: z.string().min(1, "El valor de la Duración del Tratamiento es requerido."),
   treatmentDurationUnit: z.string().min(1, "La unidad de la Duración del Tratamiento es requerida."),
+  safetyStockDays: z.coerce.number().optional(),
   totalQuantityValue: z.string().min(1, "El valor de la Cantidad Total es requerido."),
   totalQuantityUnit: z.string().min(1, "La unidad de la Cantidad Total es requerida."),
   usageInstructions: z.string().min(1, "Las Instrucciones de Uso son requeridas."),
@@ -143,6 +144,7 @@ const defaultItem = {
   frequency: '',
   treatmentDurationValue: '30',
   treatmentDurationUnit: 'días',
+  safetyStockDays: 0,
   totalQuantityValue: '',
   totalQuantityUnit: '',
   usageInstructions: '',
@@ -180,6 +182,7 @@ const RecipeItemCard = ({
   const frequency = useWatch({ control, name: `items.${index}.frequency` });
   const treatmentDurationValue = useWatch({ control, name: `items.${index}.treatmentDurationValue` });
   const treatmentDurationUnit = useWatch({ control, name: `items.${index}.treatmentDurationUnit` });
+  const safetyStockDays = useWatch({ control, name: `items.${index}.safetyStockDays` });
   const principalActiveIngredientValue = useWatch({ control, name: `items.${index}.principalActiveIngredient` });
   const supplySource = useWatch({ control, name: 'supplySource' });
   const requiresFractionationValue = useWatch({ control, name: `items.${index}.requiresFractionation` });
@@ -187,6 +190,7 @@ const RecipeItemCard = ({
   React.useEffect(() => {
     const freq = parseInt(frequency, 10);
     const duration = parseInt(treatmentDurationValue, 10);
+    const safetyDays = parseInt(String(safetyStockDays), 10) || 0;
 
     if (!isNaN(freq) && freq > 0 && !isNaN(duration)) {
       let durationInDays = duration;
@@ -196,8 +200,9 @@ const RecipeItemCard = ({
         durationInDays = duration * 30; // Approximation
       }
 
+      const totalDurationInDays = durationInDays + safetyDays;
       const administrationsPerDay = 24 / freq;
-      const totalQuantity = Math.ceil(administrationsPerDay * durationInDays);
+      const totalQuantity = Math.ceil(administrationsPerDay * totalDurationInDays);
 
       const currentTotalVal = getValues(`items.${index}.totalQuantityValue`);
       if (String(totalQuantity) !== currentTotalVal) {
@@ -206,7 +211,7 @@ const RecipeItemCard = ({
         });
       }
     }
-  }, [frequency, treatmentDurationValue, treatmentDurationUnit, index, setValue, getValues]);
+  }, [frequency, treatmentDurationValue, treatmentDurationUnit, safetyStockDays, index, setValue, getValues]);
 
 
   const filteredInventoryForPA = React.useMemo(() => {
@@ -233,13 +238,13 @@ const RecipeItemCard = ({
           </Button>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <FormField control={control} name={`items.${index}.principalActiveIngredient`} render={({ field }) => (
-            <FormItem className="md:col-span-4"><FormLabel>Principio Activo Principal *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+            <FormItem className="md:col-span-3"><FormLabel>Principio Activo Principal *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
           )} />
 
           <FormField control={control} name={`items.${index}.pharmaceuticalForm`} render={({ field }) => (
-            <FormItem className="md:col-span-2">
+            <FormItem>
               <FormLabel>Forma Farmacéutica *</FormLabel>
               <Select onValueChange={(value) => {
                 field.onChange(value);
@@ -284,14 +289,14 @@ const RecipeItemCard = ({
               <FormMessage />
             </FormItem>
           )} />
-
-          <FormField control={control} name={`items.${index}.frequency`} render={({ field }) => (
-            <FormItem className="md:col-span-2">
+           <FormField control={control} name={`items.${index}.frequency`} render={({ field }) => (
+            <FormItem>
               <FormLabel>Frecuencia(horas) *</FormLabel>
               <FormControl><Input placeholder="Ej: 8, 12, 24" {...field} /></FormControl>
               <FormMessage />
             </FormItem>
           )} />
+
 
           <FormField control={control} name={`items.${index}.treatmentDurationValue`} render={({ field }) => (
             <FormItem><FormLabel>Duración Trat.(Valor) *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
@@ -306,12 +311,15 @@ const RecipeItemCard = ({
               <FormMessage />
             </FormItem>
           )} />
+          <FormField control={control} name={`items.${index}.safetyStockDays`} render={({ field }) => (
+            <FormItem><FormLabel>Días de Seguridad</FormLabel><FormControl><Input type="number" placeholder="Ej: 5" {...field} /></FormControl><FormMessage /></FormItem>
+          )} />
 
           <FormField control={control} name={`items.${index}.totalQuantityValue`} render={({ field }) => (
             <FormItem><FormLabel>Cant. Total (Valor) *</FormLabel><FormControl><Input {...field} readOnly className="bg-muted/70 cursor-default" /></FormControl><FormMessage /></FormItem>
           )} />
           <FormField control={control} name={`items.${index}.totalQuantityUnit`} render={({ field }) => (
-            <FormItem>
+            <FormItem className="md:col-span-2">
               <FormLabel>Cant. Total (Unidad) *</FormLabel>
               <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl><SelectTrigger><SelectValue placeholder="Unidad..." /></SelectTrigger></FormControl>
@@ -322,7 +330,7 @@ const RecipeItemCard = ({
           )} />
 
           <FormField control={control} name={`items.${index}.usageInstructions`} render={({ field }) => (
-            <FormItem className="md:col-span-4">
+            <FormItem className="md:col-span-3">
               <FormLabel>Instrucciones de Uso *</FormLabel>
               <FormControl><Textarea placeholder="Instrucciones de uso para el paciente..." {...field} /></FormControl>
               <FormMessage />
@@ -640,7 +648,7 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
       if (result.items && result.items.length > 0) {
         // Replace existing items with extracted ones
         remove(); // Clear all items first
-        const filledItems = result.items.map(item => ({ ...defaultItem, ...item }));
+        const filledItems = result.items.map(item => ({ ...defaultItem, ...item, safetyStockDays: item.safetyStockDays || 0 }));
         append(filledItems);
       }
 

@@ -21,16 +21,17 @@ export type ExtractRecipeDataFromImageInput = z.infer<typeof ExtractRecipeDataFr
 
 const RecipeItemSchema = z.object({
   principalActiveIngredient: z.string().describe("The main active ingredient of the preparation."),
-  pharmaceuticalForm: z.string().describe("The pharmaceutical form (e.g., 'Cápsulas', 'Crema', 'Solución').").optional(),
+  pharmaceuticalForm: z.string().describe("The pharmaceutical form (e.g., 'Cápsulas', 'Crema', 'Solución', 'Papelillos').").optional(),
   concentrationValue: z.string().describe("The numerical value of the concentration (e.g., '5').").optional(),
   concentrationUnit: z.string().describe("The unit for the concentration (e.g., '%', 'mg/ml').").optional(),
   dosageValue: z.string().describe("The numerical value of the dose (e.g., '10').").optional(),
-  dosageUnit: z.string().describe("The unit for the dose (e.g., 'mg', 'ml').").optional(),
+  dosageUnit: z.string().describe("The unit for the dose (e.g., 'mg', 'ml', 'cápsula(s)', 'papelillo(s)').").optional(),
   frequency: z.string().describe("The frequency of administration in hours (e.g., '24' for daily).").optional(),
   treatmentDurationValue: z.string().describe("The numerical value of the treatment duration (e.g., '30').").optional(),
   treatmentDurationUnit: z.string().describe("The unit for the treatment duration (e.g., 'días', 'meses').").optional(),
+  safetyStockDays: z.number().optional().describe("Number of extra days for a safety stock, if mentioned (e.g., '5 días de seguridad')."),
   totalQuantityValue: z.string().describe("The numerical value of the total quantity to prepare (e.g., '30').").optional(),
-  totalQuantityUnit: z.string().describe("The unit for the total quantity (e.g., 'cápsulas', 'gramos').").optional(),
+  totalQuantityUnit: z.string().describe("The unit for the total quantity (e.g., 'cápsulas', 'gramos', 'papelillos').").optional(),
   usageInstructions: z.string().describe("The detailed usage instructions for the patient."),
 });
 
@@ -69,7 +70,8 @@ const prompt = ai.definePrompt({
   - Doctor's professional license number (doctorLicense, also known as N° Colegiatura).
   - Doctor's specialty (doctorSpecialty).
   - Date of prescription (prescriptionDate) in YYYY-MM-DD format. If the year is not specified, assume the current year.
-  - A list of prescribed items (items), paying close attention to the pharmaceutical form (pharmaceuticalForm, e.g., 'Cápsulas', 'Crema').
+  - A list of prescribed items (items), paying close attention to the pharmaceutical form (pharmaceuticalForm, e.g., 'Cápsulas', 'Crema', 'Papelillos').
+  - If the prescription mentions a safety stock ('dosis de seguridad', 'dosis de emergencia', 'días extra'), extract the number of days into the 'safetyStockDays' field for the corresponding item.
 
   Return a single JSON object with all the extracted fields. If a piece of information is not visible, omit its field from the output.
 
