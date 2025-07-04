@@ -1,11 +1,11 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { usePatientAuth } from '@/components/app/patient-auth-provider';
 import { getDashboardData, getMedicationInfo, sendMessageFromPatient, submitNewPrescription, requestRepreparationFromPortal } from '@/lib/patient-actions';
 import { Patient, Recipe, PatientMessage, ProactivePatientStatus } from '@/lib/types';
-import { Loader2, AlertTriangle, CheckCircle, Clock, FileText, Bot, Send, MessageSquare, Upload, X, FileUp, Repeat } from 'lucide-react';
+import { Loader2, AlertTriangle, CheckCircle, Clock, FileText, Bot, Send, MessageSquare, Upload, X, Repeat, CreditCard, ChevronRight, Package, FileUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -17,57 +17,96 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import React from 'react';
-import { Separator } from '@/components/ui/separator';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
+import { cn } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
 
-const ProactiveActionCard = ({ patient }: { patient: Patient }) => {
-    const statusConfig = {
-        [ProactivePatientStatus.URGENT]: {
-            icon: AlertTriangle,
-            color: 'text-red-600 bg-red-50 border-red-500',
-            title: 'Acción Urgente Requerida'
-        },
-        [ProactivePatientStatus.ATTENTION]: {
-            icon: Clock,
-            color: 'text-yellow-600 bg-yellow-50 border-yellow-500',
-            title: 'Atención Requerida'
-        },
-        [ProactivePatientStatus.OK]: {
-            icon: CheckCircle,
-            color: 'text-green-600 bg-green-50 border-green-500',
-            title: 'Todo en Orden'
-        }
-    };
+const StatusOverviewCard = ({ patient, recipes, readyForPickupCount }: { patient: Patient, recipes: Recipe[], readyForPickupCount: number }) => {
+    const mainTreatment = useMemo(() => {
+        const activeMagistrals = recipes.filter(r => r.status !== 'Dispensada' && r.status !== 'Anulada' && r.status !== 'Rechazada');
+        return activeMagistrals.sort((a,b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0];
+    }, [recipes]);
 
-    const config = statusConfig[patient.proactiveStatus] || statusConfig[ProactivePatientStatus.OK];
+    const nextDueDate = useMemo(() => {
+        const dueDates = recipes
+            .filter(r => r.status !== 'Dispensada' && r.dueDate && r.status !== 'Archivada' && r.status !== 'Anulada' && r.status !== 'Rechazada')
+            .map(r => parseISO(r.dueDate))
+            .sort((a, b) => a.getTime() - b.getTime());
+        return dueDates[0];
+    }, [recipes]);
 
+    const items = [
+        { icon: FileText, title: "Tratamiento Principal", value: mainTreatment?.items[0]?.principalActiveIngredient || "Ninguno", },
+        { icon: Package, title: "Preparados para Retiro", value: `${readyForPickupCount} listo(s)`, },
+        { icon: Clock, title: "Próximo Vencimiento Receta", value: nextDueDate ? format(nextDueDate, 'dd MMMM, yyyy', {locale: es}) : 'N/A', },
+    ];
+    
+    const hasImportantAlert = patient.proactiveStatus === ProactivePatientStatus.URGENT || patient.proactiveStatus === ProactivePatientStatus.ATTENTION;
+    
     return (
-        <Card className={`border-l-4 ${config.color}`}>
-            <CardHeader className="flex flex-row items-center gap-4 space-y-0 p-4">
-                <config.icon className={`h-8 w-8 ${config.color.split(' ')[0]}`} />
-                <div>
-                    <CardTitle>{config.title}</CardTitle>
-                    <CardDescription className="text-base">{patient.proactiveMessage}</CardDescription>
-                </div>
+        <Card className="w-full">
+            <CardHeader>
+                <CardTitle>Resumen de tu Estado</CardTitle>
             </CardHeader>
+            <CardContent className="space-y-4">
+                {hasImportantAlert && (
+                    <div className={cn(
+                        "p-3 rounded-lg border-l-4",
+                        patient.proactiveStatus === ProactivePatientStatus.URGENT ? "bg-red-50 border-red-500 text-red-800" : "bg-yellow-50 border-yellow-500 text-yellow-800"
+                    )}>
+                        <div className="flex items-start gap-3">
+                            <AlertTriangle className="h-5 w-5 mt-0.5"/>
+                            <div>
+                                <p className="font-bold">Alerta Importante</p>
+                                <p className="text-sm">{patient.proactiveMessage}</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                <ul className="divide-y">
+                    {items.map((item, index) => (
+                        <li key={index} className="flex items-center justify-between py-3">
+                            <div className="flex items-center gap-4">
+                                <div className="p-2 bg-muted rounded-full">
+                                   <item.icon className="h-5 w-5 text-muted-foreground"/>
+                                </div>
+                                <div>
+                                    <p className="font-medium text-foreground">{item.title}</p>
+                                    <p className="text-sm text-muted-foreground">{item.value}</p>
+                                </div>
+                            </div>
+                        </li>
+                    ))}
+                </ul>
+            </CardContent>
         </Card>
     );
 };
 
-const ActionCard = ({ title, value, icon: Icon, onClick }: { title: string; value: string | number; icon: React.ElementType; onClick?: () => void }) => (
-  <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={onClick}>
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 pb-2">
-      <CardTitle className="text-sm font-medium">{title}</CardTitle>
-      <Icon className="h-4 w-4 text-muted-foreground" />
-    </CardHeader>
-    <CardContent className="p-4 pt-0">
-      <div className="text-2xl font-bold">{value}</div>
-    </CardContent>
-  </Card>
+const QuickAccessListItem = ({ icon: Icon, title, description, onClick, disabled = false }: { icon: React.ElementType, title: string, description: string, onClick?: () => void, disabled?: boolean }) => (
+    <li
+        onClick={!disabled ? onClick : undefined}
+        className={cn(
+            "flex items-center justify-between py-4",
+            !disabled && "cursor-pointer hover:bg-muted/50 -mx-6 px-6",
+            disabled && "opacity-50"
+        )}
+    >
+        <div className="flex items-center gap-4">
+            <div className="p-2 bg-muted rounded-full">
+                <Icon className="h-5 w-5 text-muted-foreground"/>
+            </div>
+            <div>
+                <p className="font-medium">{title}</p>
+                <p className="text-sm text-muted-foreground">{description}</p>
+            </div>
+        </div>
+        {!disabled && <ChevronRight className="h-5 w-5 text-muted-foreground" />}
+    </li>
 );
 
-const PrescriptionUploadCard = ({ patientId, onUploadSuccess, userId }: { patientId: string; onUploadSuccess: () => void; userId?: string; }) => {
+const PrescriptionUploadDialog = ({ isOpen, onOpenChange, patientId, onUploadSuccess, userId }: { isOpen: boolean; onOpenChange: (open: boolean) => void; patientId: string; onUploadSuccess: () => void; userId?: string; }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -102,9 +141,7 @@ const PrescriptionUploadCard = ({ patientId, onUploadSuccess, userId }: { patien
         title: "Receta Enviada",
         description: "Hemos recibido tu receta y la procesaremos pronto.",
       });
-      setPreviewImage(null);
-      setImageFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      onOpenChange(false);
       onUploadSuccess();
     } catch (error) {
         console.error("Upload failed:", error);
@@ -114,39 +151,52 @@ const PrescriptionUploadCard = ({ patientId, onUploadSuccess, userId }: { patien
       setIsUploading(false);
     }
   };
+  
+  useEffect(() => {
+    if(!isOpen) {
+        setPreviewImage(null);
+        setImageFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }, [isOpen]);
 
   return (
-    <Card className="col-span-1 lg:col-span-2">
-      <CardHeader className="p-4">
-        <CardTitle>Cargar Nueva Receta</CardTitle>
-        <CardDescription>Sube una foto clara de tu receta médica para que la procesemos.</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col md:flex-row items-center gap-4 p-4">
-        <div
-          className="flex-1 w-full flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary relative"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*,application/pdf" className="hidden" />
-          {previewImage ? (
-            <>
-              <Image src={previewImage} alt="Vista previa" width={150} height={100} className="rounded-md object-contain max-h-24" />
-              <Button variant="ghost" size="icon" className="absolute top-1 right-1 bg-background/50 rounded-full h-7 w-7" onClick={(e) => { e.stopPropagation(); setPreviewImage(null); setImageFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}>
-                <X className="h-4 w-4" />
-              </Button>
-            </>
-          ) : (
-            <div className="text-center">
-              <FileUp className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">Clic o arrastra para subir</p>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Cargar Nueva Receta</DialogTitle>
+          <DialogDescription>Sube una foto clara de tu receta médica para que la procesemos.</DialogDescription>
+        </DialogHeader>
+        <div className="py-4 space-y-4">
+            <div
+            className="flex-1 w-full flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary relative"
+            onClick={() => fileInputRef.current?.click()}
+            >
+            <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*,application/pdf" className="hidden" />
+            {previewImage ? (
+                <>
+                <Image src={previewImage} alt="Vista previa" width={200} height={150} className="rounded-md object-contain max-h-32" />
+                <Button variant="ghost" size="icon" className="absolute top-1 right-1 bg-background/50 rounded-full h-7 w-7" onClick={(e) => { e.stopPropagation(); setPreviewImage(null); setImageFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}>
+                    <X className="h-4 w-4" />
+                </Button>
+                </>
+            ) : (
+                <div className="text-center">
+                <FileUp className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">Clic o arrastra para subir</p>
+                </div>
+            )}
             </div>
-          )}
         </div>
-        <Button onClick={handleUpload} disabled={isUploading || !imageFile} className="w-full md:w-auto">
-          {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-          {isUploading ? 'Enviando...' : 'Enviar Receta'}
-        </Button>
-      </CardContent>
-    </Card>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button onClick={handleUpload} disabled={isUploading || !imageFile}>
+            {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+            {isUploading ? 'Enviando...' : 'Enviar Receta'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 
@@ -165,6 +215,7 @@ export default function PatientPortalDashboardPage() {
     const [isMedInfoOpen, setIsMedInfoOpen] = useState(false);
     const [isMessagingOpen, setIsMessagingOpen] = useState(false);
     const [isRecipeManagerOpen, setIsRecipeManagerOpen] = useState(false);
+    const [isUploadOpen, setIsUploadOpen] = useState(false);
     const [selectedMed, setSelectedMed] = useState({ name: '', info: '' });
     const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
     const [isFetchingMedInfo, setIsFetchingMedInfo] = useState(false);
@@ -185,21 +236,6 @@ export default function PatientPortalDashboardPage() {
     useEffect(() => {
         fetchData();
     }, [fetchData]);
-
-    const handleShowMedInfo = async (medName: string) => {
-        setSelectedMed({ name: medName, info: '' });
-        setIsMedInfoOpen(true);
-        setIsFetchingMedInfo(true);
-        try {
-            const result = await getMedicationInfo(medName);
-            setSelectedMed({ name: medName, info: result });
-        } catch (error) {
-             toast({ title: "Error de IA", description: "No se pudo obtener la información.", variant: "destructive" });
-             setSelectedMed({ name: medName, info: 'No se pudo cargar la información en este momento.' });
-        } finally {
-            setIsFetchingMedInfo(false);
-        }
-    };
     
     const handleManageRecipe = (recipe: Recipe) => {
       setSelectedRecipe(recipe);
@@ -213,57 +249,28 @@ export default function PatientPortalDashboardPage() {
             </div>
         );
     }
-
-    const { readyForPickup, activeMagistralRecipes, messages } = dashboardData;
-    const unreadMessages = messages.filter(m => m.sender === 'pharmacist' && !m.read).length;
-    const activeCommercialMeds = patient.commercialMedications || [];
-    const allActiveTreatments = [
-      ...activeMagistralRecipes.map(r => ({ type: 'magistral' as const, name: r.items[0]?.principalActiveIngredient || 'Preparado Magistral', details: r.items[0] ? `${r.items[0].concentrationValue}${r.items[0].concentrationUnit}` : '', recipe: r })),
-      ...activeCommercialMeds.map(name => ({ type: 'commercial' as const, name, details: '', recipe: null }))
-    ];
-
-
+    
     return (
-        <div className="space-y-8">
+        <div className="space-y-6">
             <div>
-                <h1 className="text-3xl font-bold font-headline">Bienvenido, {patient.name}</h1>
-                <p className="text-muted-foreground">Este es tu portal personal para gestionar tus tratamientos con Farmacia Skol.</p>
+                <h1 className="text-3xl font-bold tracking-tight">Bienvenido al Portal</h1>
+                <p className="text-lg text-muted-foreground">Hola, {patient.name}</p>
             </div>
             
-            <ProactiveActionCard patient={patient} />
+            <StatusOverviewCard patient={patient} recipes={dashboardData.activeMagistralRecipes} readyForPickupCount={dashboardData.readyForPickup.length} />
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <ActionCard title="Preparados para Retiro" value={readyForPickup.length} icon={FileText} />
-                <ActionCard title="Mensajes Nuevos" value={unreadMessages} icon={MessageSquare} onClick={() => setIsMessagingOpen(true)} />
-                <PrescriptionUploadCard patientId={patient.id} onUploadSuccess={fetchData} userId={user?.uid} />
-            </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Mis Tratamientos */}
-              <Card>
-                <CardHeader className="p-4">
-                  <CardTitle>Mis Tratamientos Activos</CardTitle>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Acceso Rápido</CardTitle>
                 </CardHeader>
-                <CardContent className="p-4">
-                  {allActiveTreatments.length > 0 ? (
-                    <ul className="space-y-3">
-                      {allActiveTreatments.map((med, index) => (
-                        <li key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                          <div>
-                            <p className="font-semibold text-foreground">{med.name}</p>
-                            <p className="text-xs text-muted-foreground">{med.type === 'magistral' ? `Preparado Magistral ${med.details}`: 'Medicamento Comercial'}</p>
-                          </div>
-                          <Button variant="outline" size="sm" onClick={() => handleShowMedInfo(med.name)}>
-                              <Bot className="mr-2 h-4 w-4"/> Más Info
-                          </Button>
-                        </li>
-                      ))}
+                <CardContent>
+                    <ul className="divide-y">
+                        <QuickAccessListItem icon={Upload} title="Cargar Nueva Receta" description="Sube una foto de tu nueva receta médica." onClick={() => setIsUploadOpen(true)} />
+                        <QuickAccessListItem icon={MessageSquare} title="Acceso a Chat con Soporte" description="Comunícate con nuestro equipo." onClick={() => setIsMessagingOpen(true)} />
+                        <QuickAccessListItem icon={CreditCard} title="Consultar Saldos y Pagos" description="Esta función estará disponible próximamente." disabled={true} />
                     </ul>
-                  ) : (
-                    <p className="text-muted-foreground">No tienes tratamientos activos registrados.</p>
-                  )}
                 </CardContent>
-              </Card>
+            </Card>
 
               {/* Mis Recetas */}
               <Card>
@@ -271,27 +278,26 @@ export default function PatientPortalDashboardPage() {
                   <CardTitle>Mis Recetas Magistrales</CardTitle>
                   <CardDescription>Gestiona la re-preparación de tus recetas vigentes.</CardDescription>
                 </CardHeader>
-                <CardContent className="p-4">
-                  {activeMagistralRecipes.length > 0 ? (
-                    <ul className="space-y-3">
-                        {activeMagistralRecipes.map(recipe => {
+                <CardContent className="p-0">
+                  {dashboardData.activeMagistralRecipes.length > 0 ? (
+                    <ul className="divide-y">
+                        {dashboardData.activeMagistralRecipes.map(recipe => {
                             return (
-                                <li key={recipe.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                                <li key={recipe.id} className="flex items-center justify-between p-4">
                                   <div>
                                     <p className="font-semibold text-foreground">{recipe.items[0]?.principalActiveIngredient || 'Receta Magistral'}</p>
                                     <p className="text-xs text-muted-foreground">Vence: {format(parseISO(recipe.dueDate), 'dd-MM-yyyy')}</p>
                                   </div>
-                                  <Button variant="outline" size="sm" onClick={() => handleManageRecipe(recipe)}>Gestionar</Button>
+                                  <Button variant="outline" size="sm" onClick={() => handleManageRecipe(recipe)}>Gestionar <ChevronRight className="h-4 w-4 ml-1"/></Button>
                                 </li>
                             )
                         })}
                     </ul>
                   ) : (
-                     <p className="text-muted-foreground">No tienes recetas magistrales activas.</p>
+                     <p className="p-4 text-sm text-muted-foreground">No tienes recetas magistrales activas.</p>
                   )}
                 </CardContent>
               </Card>
-            </div>
             
             <Dialog open={isMedInfoOpen} onOpenChange={setIsMedInfoOpen}>
                 <DialogContent>
@@ -314,7 +320,7 @@ export default function PatientPortalDashboardPage() {
                     <DialogTitle>Mensajería Segura</DialogTitle>
                     <DialogDescription>Comunícate con nuestro equipo para dudas no urgentes.</DialogDescription>
                   </DialogHeader>
-                  <SecureMessagingModal patientId={patient.id} initialMessages={messages} />
+                  <SecureMessagingModal patientId={patient.id} initialMessages={dashboardData.messages} />
                 </DialogContent>
             </Dialog>
 
@@ -325,6 +331,14 @@ export default function PatientPortalDashboardPage() {
               patientId={patient.id}
               onSuccess={fetchData}
               userId={user?.uid}
+            />
+
+            <PrescriptionUploadDialog
+                isOpen={isUploadOpen}
+                onOpenChange={setIsUploadOpen}
+                patientId={patient.id}
+                userId={user?.uid}
+                onUploadSuccess={fetchData}
             />
 
         </div>
