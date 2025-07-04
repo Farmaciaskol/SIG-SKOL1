@@ -224,7 +224,7 @@ export function MainNav({
     <SidebarProvider>
       <div className="flex min-h-screen bg-background">
         <Sidebar className="border-r bg-card">
-          <SidebarHeader className="p-4 justify-center">
+          <SidebarHeader className="p-4 group-data-[collapsible=icon]:p-2 justify-center transition-all duration-200">
             <div className="w-full px-4 group-data-[collapsible=icon]:hidden">
               <Image
                 src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
@@ -235,14 +235,16 @@ export function MainNav({
                 priority
               />
             </div>
-            <Image
-              src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
-              alt="Skol Pharmacy Logo"
-              width={32}
-              height={32}
-              className="hidden group-data-[collapsible=icon]:block"
-              priority
-            />
+            <div className="hidden group-data-[collapsible=icon]:block">
+              <Image
+                src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
+                alt="Skol Pharmacy Logo"
+                width={32}
+                height={32}
+                className="mx-auto"
+                priority
+              />
+            </div>
           </SidebarHeader>
           <SidebarContent className="p-0 flex-1">
             <Accordion type="multiple" value={openItems} onValueChange={setOpenItems} className="w-full px-4">
