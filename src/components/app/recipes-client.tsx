@@ -105,6 +105,7 @@ import {
   ClipboardCopy,
   DollarSign,
   FlaskConical,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   deleteRecipe,
@@ -770,12 +771,30 @@ export const RecipesClient = ({
   };
   
   const stats = useMemo(() => {
-    const relevantRecipes = initialRecipes.filter(r => r.status !== RecipeStatus.Archived);
+    const now = new Date();
+    const thirtyDaysFromNow = new Date();
+    thirtyDaysFromNow.setDate(now.getDate() + 30);
+
+    const activeRecipes = initialRecipes.filter(r => 
+        ![RecipeStatus.Dispensed, RecipeStatus.Cancelled, RecipeStatus.Rejected, RecipeStatus.Archived].includes(r.status)
+    );
+    
+    const expiringOrExpiredCount = activeRecipes.filter(r => {
+        if (!r.dueDate) return false;
+        try {
+            const dueDate = parseISO(r.dueDate);
+            return dueDate < thirtyDaysFromNow;
+        } catch (e) {
+            return false;
+        }
+    }).length;
+
     return {
-      pendingValidation: relevantRecipes.filter(r => r.status === RecipeStatus.PendingValidation).length,
-      inPreparation: relevantRecipes.filter(r => r.status === RecipeStatus.Preparation || r.status === RecipeStatus.SentToExternal).length,
-      readyForPickup: relevantRecipes.filter(r => r.status === RecipeStatus.ReadyForPickup || r.status === RecipeStatus.ReceivedAtSkol).length,
-      rejected: relevantRecipes.filter(r => r.status === RecipeStatus.Rejected).length,
+      pendingValidation: initialRecipes.filter(r => r.status === RecipeStatus.PendingValidation).length,
+      inPreparation: initialRecipes.filter(r => r.status === RecipeStatus.Preparation || r.status === RecipeStatus.SentToExternal).length,
+      readyForPickup: initialRecipes.filter(r => r.status === RecipeStatus.ReadyForPickup || r.status === RecipeStatus.ReceivedAtSkol).length,
+      rejected: initialRecipes.filter(r => r.status === RecipeStatus.Rejected).length,
+      expiringOrExpired: expiringOrExpiredCount,
     }
   }, [initialRecipes]);
 
@@ -796,6 +815,22 @@ export const RecipesClient = ({
       let statusMatch = true;
       if (statusFilter === 'all') {
           statusMatch = recipe.status !== RecipeStatus.Archived;
+      } else if (statusFilter === 'expiring') {
+          const now = new Date();
+          const thirtyDaysFromNow = new Date();
+          thirtyDaysFromNow.setDate(now.getDate() + 30);
+          const isActive = ![RecipeStatus.Dispensed, RecipeStatus.Cancelled, RecipeStatus.Rejected, RecipeStatus.Archived].includes(recipe.status);
+          
+          if (!isActive || !recipe.dueDate) {
+              statusMatch = false;
+          } else {
+              try {
+                const dueDate = parseISO(recipe.dueDate);
+                statusMatch = dueDate < thirtyDaysFromNow;
+              } catch (e) {
+                statusMatch = false;
+              }
+          }
       } else if (statusFilter === RecipeStatus.ReadyForPickup) {
           statusMatch = [RecipeStatus.ReadyForPickup, RecipeStatus.ReceivedAtSkol].includes(recipe.status)
       } else if (statusFilter === RecipeStatus.Preparation) {
@@ -1081,7 +1116,7 @@ export const RecipesClient = ({
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mt-6">
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5 mt-6">
         <StatCard 
           title="Pend. Validación" 
           value={stats.pendingValidation} 
@@ -1102,6 +1137,13 @@ export const RecipesClient = ({
           icon={Package}
           onClick={() => setStatusFilter(RecipeStatus.ReadyForPickup)}
           active={statusFilter === RecipeStatus.ReadyForPickup}
+        />
+        <StatCard 
+          title="Próximas a Vencer" 
+          value={stats.expiringOrExpired} 
+          icon={AlertTriangle}
+          onClick={() => setStatusFilter('expiring')}
+          active={statusFilter === 'expiring'}
         />
         <StatCard 
           title="Rechazadas" 
@@ -1136,6 +1178,7 @@ export const RecipesClient = ({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos los estados</SelectItem>
+                    <SelectItem value="expiring">Próximas a Vencer</SelectItem>
                     {Object.values(RecipeStatus).filter(s => s !== RecipeStatus.PendingReviewPortal).map((status) => (
                       <SelectItem key={status} value={status}>
                         {statusConfig[status]?.text || status}
