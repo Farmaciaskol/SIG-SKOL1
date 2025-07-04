@@ -31,8 +31,8 @@ const StatCard = ({ title, value, icon: Icon }: { title: string; value: string |
           <Icon className="h-6 w-6 text-primary" />
         </div>
         <div>
-          <p className="text-sm font-medium text-slate-700">{title}</p>
-          <p className="text-2xl font-bold text-slate-800">{value}</p>
+          <p className="text-sm font-medium text-foreground">{title}</p>
+          <p className="text-2xl font-bold text-foreground">{value}</p>
         </div>
       </CardContent>
   </Card>
@@ -305,8 +305,8 @@ export default function PatientDetailPage() {
                       <div className="flex items-start gap-3">
                         <CheckCircle2 className="h-5 w-5 text-primary mt-1" />
                         <div>
-                          <h4 className="font-bold text-slate-800">Análisis Completo</h4>
-                          <p className="text-sm text-slate-700">{analysisResult.analysis}</p>
+                          <h4 className="font-bold text-foreground">Análisis Completo</h4>
+                          <p className="text-sm text-foreground/90">{analysisResult.analysis}</p>
                         </div>
                       </div>
                     </div>
