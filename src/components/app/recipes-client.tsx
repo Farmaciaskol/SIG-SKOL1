@@ -772,7 +772,6 @@ export const RecipesClient = ({
   const stats = useMemo(() => {
     const relevantRecipes = initialRecipes.filter(r => r.status !== RecipeStatus.Archived);
     return {
-      pendingPortal: initialRecipes.filter(r => r.status === RecipeStatus.PendingReviewPortal).length,
       pendingValidation: relevantRecipes.filter(r => r.status === RecipeStatus.PendingValidation).length,
       inPreparation: relevantRecipes.filter(r => r.status === RecipeStatus.Preparation || r.status === RecipeStatus.SentToExternal).length,
       readyForPickup: relevantRecipes.filter(r => r.status === RecipeStatus.ReadyForPickup || r.status === RecipeStatus.ReceivedAtSkol).length,
@@ -1082,13 +1081,7 @@ export const RecipesClient = ({
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5 mt-6">
-        <StatCard 
-          title="Bandeja Portal" 
-          value={stats.pendingPortal} 
-          icon={Inbox}
-          onClick={() => router.push('/portal-inbox')}
-        />
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mt-6">
         <StatCard 
           title="Pend. Validación" 
           value={stats.pendingValidation} 
