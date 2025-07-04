@@ -88,7 +88,7 @@ export default function TestPage() {
         return;
     }
     try {
-      const storageRef = ref(storage, `test-uploads/${user.uid}/${Date.now()}-${fileToUpload.name}`);
+            const storageRef = ref(storage, `test-uploads/${user.uid}/${Date.now()}-${fileToUpload.name}`);
       const uploadResult = await uploadBytes(storageRef, fileToUpload);
       const downloadUrl = await getDownloadURL(uploadResult.ref);
       
@@ -107,6 +107,9 @@ export default function TestPage() {
           case 'storage/bucket-not-found':
             errorMsg = "Error de configuración: El bucket de almacenamiento no parece estar configurado correctamente en su proyecto de Firebase.";
             break;
+          case 'storage/unknown':
+             errorMsg = "Error de red. Esto usualmente indica un problema de CORS. Por favor, verifique que la configuración CORS de su bucket de Storage es correcta y permite el origen de su aplicación.";
+             break;
           case 'storage/quota-exceeded':
             errorMsg = "Ha excedido su cuota de almacenamiento de Firebase.";
             break;
