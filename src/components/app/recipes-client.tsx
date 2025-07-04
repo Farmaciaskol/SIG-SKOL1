@@ -204,6 +204,8 @@ export const RecipesClient = ({
   
   const getPatientName = (patientId: string) => patients.find((p) => p.id === patientId)?.name || 'N/A';
   const getPharmacy = (pharmacyId?: string) => externalPharmacies.find((p) => p.id === pharmacyId);
+  const getDoctorName = (doctorId: string) => doctors.find((d) => d.id === doctorId)?.name || 'N/A';
+
 
   const handleUpdateStatus = async (recipe: Recipe, newStatus: RecipeStatus, notes?: string) => {
     if (!user) {
@@ -335,6 +337,12 @@ export const RecipesClient = ({
         setIsSubmitting(false);
     }
   }
+  
+  const handleConfirmSend = async () => {
+    if (!recipeToSend) return;
+    await handleUpdateStatus(recipeToSend, RecipeStatus.SentToExternal, "Receta enviada al recetario externo para preparación.");
+    setRecipeToSend(null);
+  };
 
   const handleConfirmDelete = async () => {
     if (!recipeToDelete) return;
@@ -438,12 +446,12 @@ export const RecipesClient = ({
   
   const stats = useMemo(() => {
     return {
-      pendingPortal: recipes.filter(r => r.status === RecipeStatus.PendingReviewPortal).length,
+      pendingPortal: initialRecipes.filter(r => r.status === RecipeStatus.PendingReviewPortal).length,
       pendingValidation: recipes.filter(r => r.status === RecipeStatus.PendingValidation).length,
-      inPreparation: recipes.filter(r => r.status === RecipeStatus.Preparation).length,
-      readyForPickup: recipes.filter(r => r.status === RecipeStatus.ReadyForPickup).length,
+      inPreparation: recipes.filter(r => r.status === RecipeStatus.Preparation || r.status === RecipeStatus.SentToExternal).length,
+      readyForPickup: recipes.filter(r => r.status === RecipeStatus.ReadyForPickup || r.status === RecipeStatus.ReceivedAtSkol).length,
     }
-  }, [recipes]);
+  }, [recipes, initialRecipes]);
 
   const filteredRecipes = useMemo(() => {
     return recipes
@@ -463,6 +471,10 @@ export const RecipesClient = ({
       let statusMatch = true;
       if (statusFilter === 'all') {
           statusMatch = recipe.status !== RecipeStatus.Archived;
+      } else if (statusFilter === RecipeStatus.ReadyForPickup) {
+          statusMatch = [RecipeStatus.ReadyForPickup, RecipeStatus.ReceivedAtSkol].includes(recipe.status)
+      } else if (statusFilter === RecipeStatus.Preparation) {
+          statusMatch = [RecipeStatus.Preparation, RecipeStatus.SentToExternal].includes(recipe.status)
       } else {
           statusMatch = recipe.status === statusFilter;
       }
@@ -858,7 +870,7 @@ Equipo Farmacia Skol`;
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos los estados</SelectItem>
-                    {Object.values(RecipeStatus).map((status) => (
+                    {Object.values(RecipeStatus).filter(s => s !== RecipeStatus.PendingReviewPortal).map((status) => (
                       <SelectItem key={status} value={status}>
                         {statusConfig[status]?.text || status}
                       </SelectItem>
@@ -1068,6 +1080,11 @@ Equipo Farmacia Skol`;
                                 </div>
                             </div>
                             <div className="flex items-center gap-1 shrink-0">
+                                {recipe.paymentStatus === 'Pendiente' && (
+                                    <TooltipProvider><Tooltip><TooltipTrigger asChild>
+                                        <span><DollarSign className="h-4 w-4 text-amber-500" /></span>
+                                    </TooltipTrigger><TooltipContent><p>Pago pendiente</p></TooltipContent></Tooltip></TooltipProvider>
+                                )}
                                 {recipe.status === RecipeStatus.PendingReviewPortal && (
                                     <TooltipProvider><Tooltip><TooltipTrigger asChild><span><UserSquare className="h-4 w-4 text-purple-500" /></span></TooltipTrigger><TooltipContent><p>Receta del Portal</p></TooltipContent></Tooltip></TooltipProvider>
                                 )}
@@ -1139,8 +1156,12 @@ Equipo Farmacia Skol`;
       <Dialog open={!!recipeToView} onOpenChange={(open) => !open && setRecipeToView(null)}>
         <DialogContent className="sm:max-w-2xl"><DialogHeader><DialogTitle className="text-xl font-semibold">Detalle Receta: {recipeToView?.id}</DialogTitle><DialogDescription>Información completa de la receta y su historial.</DialogDescription></DialogHeader>
             <div className="max-h-[70vh] overflow-y-auto p-1 pr-4"><div className="space-y-6">
-                <div className="space-y-1"><h3 className="text-sm font-semibold text-foreground">Paciente:</h3><p className="text-muted-foreground">{getPatientName(recipeToView?.patientId || '')}</p></div>
-                <div className="space-y-1"><h3 className="text-sm font-semibold text-foreground">Estado Actual:</h3>{recipeToView && <Badge>{statusConfig[recipeToView.status]?.text || recipeToView.status}</Badge>}</div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="space-y-1"><h3 className="text-sm font-semibold text-foreground">Paciente:</h3><p className="text-muted-foreground">{getPatientName(recipeToView?.patientId || '')}</p></div>
+                    <div className="space-y-1"><h3 className="text-sm font-semibold text-foreground">Médico:</h3><p className="text-muted-foreground">{getDoctorName(recipeToView?.doctorId || '')}</p></div>
+                    <div className="space-y-1"><h3 className="text-sm font-semibold text-foreground">Recetario:</h3><p className="text-muted-foreground">{getPharmacy(recipeToView?.externalPharmacyId)?.name || 'N/A'}</p></div>
+                    <div className="space-y-1"><h3 className="text-sm font-semibold text-foreground">Estado Actual:</h3>{recipeToView && <Badge>{statusConfig[recipeToView.status]?.text || recipeToView.status}</Badge>}</div>
+                </div>
                 <div className="space-y-2"><h3 className="text-sm font-semibold text-foreground">Items:</h3>{recipeToView?.items.map((item, index) => ( <div key={index} className="text-sm p-3 border rounded-md bg-muted/50"><p className="font-medium text-foreground flex items-center gap-2">{item.principalActiveIngredient} {item.concentrationValue}{item.concentrationUnit} {item.isRefrigerated && <Snowflake className="h-4 w-4 text-blue-500" />}</p><p className="text-muted-foreground">{item.usageInstructions}</p></div>))}</div>
                 <div className="space-y-2"><h3 className="text-sm font-semibold text-foreground">Historial de Auditoría:</h3><Table><TableHeader><TableRow><TableHead>Fecha</TableHead><TableHead>Estado</TableHead><TableHead>Notas</TableHead></TableRow></TableHeader><TableBody>{recipeToView?.auditTrail?.slice().reverse().map((entry, index) => (<TableRow key={index}><TableCell>{format(parseISO(entry.date), 'dd-MM-yy HH:mm')}</TableCell><TableCell>{statusConfig[entry.status]?.text || entry.status}</TableCell><TableCell>{entry.notes}</TableCell></TableRow>))}</TableBody></Table></div>
             </div></div><DialogFooter><Button variant="outline" onClick={() => setRecipeToView(null)}>Cerrar</Button></DialogFooter>
