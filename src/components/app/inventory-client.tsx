@@ -289,6 +289,10 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
     // Delete confirmation dialog
     const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null);
 
+    useEffect(() => {
+        setInventory(initialInventory);
+    }, [initialInventory]);
+
     const inventoryWithStats = useMemo<InventoryItemWithStats[]>(() => {
         return inventory.map(item => {
             const now = new Date();

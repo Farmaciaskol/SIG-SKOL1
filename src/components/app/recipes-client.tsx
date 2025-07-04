@@ -100,10 +100,6 @@ import {
   DollarSign
 } from 'lucide-react';
 import {
-  getRecipes,
-  getPatients,
-  getDoctors,
-  getExternalPharmacies,
   deleteRecipe,
   updateRecipe,
   logControlledMagistralDispensation,
@@ -170,7 +166,7 @@ const calculateTotalCycles = (recipe: Recipe): number => {
         cycleDurationInDays = 30; // Fallback for unknown units
     }
 
-    if (cycleDurationInDays <= 0) return MAX_REPREPARATIONS + 1;
+    if (cycleDurationInDays <= 0) return 1;
 
     const estimatedCyclesByDate = Math.floor(prescriptionLifespanInDays / cycleDurationInDays);
     
@@ -250,6 +246,21 @@ export const RecipesClient = ({
   const getPharmacy = (pharmacyId?: string) => externalPharmacies.find((p) => p.id === pharmacyId);
   const getDoctorName = (doctorId: string) => doctors.find((d) => d.id === doctorId)?.name || 'N/A';
 
+  useEffect(() => {
+    setRecipes(initialRecipes);
+  }, [initialRecipes]);
+
+  useEffect(() => {
+    setPatients(initialPatients);
+  }, [initialPatients]);
+
+  useEffect(() => {
+    setDoctors(initialDoctors);
+  }, [initialDoctors]);
+
+  useEffect(() => {
+    setExternalPharmacies(initialExternalPharmacies);
+  }, [initialExternalPharmacies]);
 
   const handleUpdateStatus = async (recipe: Recipe, newStatus: RecipeStatus, notes?: string) => {
     if (!user) {
@@ -290,14 +301,7 @@ export const RecipesClient = ({
       await updateRecipe(recipe.id, updates);
 
       toast({ title: 'Estado Actualizado', description: `La receta ${recipe.id} ahora está en estado "${statusConfig[newStatus].text}".` });
-      
-      setRecipes(prevRecipes => 
-        prevRecipes.map(r => 
-          r.id === recipe.id 
-            ? { ...r, ...updates, updatedAt: new Date().toISOString() } 
-            : r
-        )
-      );
+      router.refresh();
     } catch (error) {
        toast({ title: 'Error', description: `No se pudo actualizar el estado. ${error instanceof Error ? error.message : ''}`, variant: 'destructive' });
     } finally {
@@ -365,16 +369,8 @@ export const RecipesClient = ({
       };
        await updateRecipe(recipeToReceive.id, updates);
        toast({ title: 'Preparado Recepcionado', description: `La receta ${recipeToReceive.id} ha sido actualizada.` });
-       
-       setRecipes(prevRecipes =>
-         prevRecipes.map(r =>
-           r.id === recipeToReceive.id
-             ? { ...r, ...updates, updatedAt: new Date().toISOString() }
-             : r
-         )
-       );
-
        setRecipeToReceive(null);
+       router.refresh();
     } catch (error) {
        toast({ title: 'Error', description: 'No se pudo recepcionar el preparado.', variant: 'destructive' });
     } finally {
@@ -392,12 +388,10 @@ export const RecipesClient = ({
     if (!recipeToDelete) return;
     setIsSubmitting(true);
     try {
-        const deletedId = recipeToDelete.id;
-        await deleteRecipe(deletedId);
-        toast({ title: 'Receta Eliminada', description: `La receta ${deletedId} ha sido eliminada.` });
-        
-        setRecipes(prevRecipes => prevRecipes.filter(r => r.id !== deletedId));
+        await deleteRecipe(recipeToDelete.id);
+        toast({ title: 'Receta Eliminada', description: `La receta ${recipeToDelete.id} ha sido eliminada.` });
         setRecipeToDelete(null);
+        router.refresh();
     } catch (error) {
         toast({ title: 'Error', description: 'No se pudo eliminar la receta.', variant: 'destructive' });
     } finally {
@@ -417,9 +411,8 @@ export const RecipesClient = ({
         const idsToDelete = [...selectedRecipes];
         await Promise.all(idsToDelete.map(id => deleteRecipe(id)));
         toast({ title: `${idsToDelete.length} Recetas Eliminadas`, description: 'Las recetas seleccionadas han sido eliminadas.' });
-        
-        setRecipes(prevRecipes => prevRecipes.filter(r => !idsToDelete.includes(r.id)));
         setSelectedRecipes([]);
+        router.refresh();
     } catch (error) {
          toast({ title: 'Error', description: 'No se pudieron eliminar todas las recetas seleccionadas.', variant: 'destructive' });
     } finally {
@@ -470,17 +463,9 @@ export const RecipesClient = ({
       await updateRecipe(recipeToReprepare.id, updates);
       
       toast({ title: 'Nuevo Ciclo Iniciado', description: `La receta ${recipeToReprepare.id} está lista para un nuevo ciclo.` });
-      
-      setRecipes(prevRecipes =>
-        prevRecipes.map(r => 
-          r.id === recipeToReprepare.id
-            ? { ...r, ...updates, updatedAt: new Date().toISOString() }
-            : r
-        )
-      );
-
       setRecipeToReprepare(null);
       setControlledFolio('');
+      router.refresh();
     } catch (error) {
       toast({ title: 'Error', description: 'No se pudo iniciar el nuevo ciclo.', variant: 'destructive' });
     } finally {
@@ -882,7 +867,7 @@ Equipo Farmacia Skol`;
         </Dialog>
     );
   };
-
+  
   return (
     <>
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
@@ -898,7 +883,7 @@ Equipo Farmacia Skol`;
             </Link>
         </Button>
       </div>
-
+      
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mt-6">
         <StatCard 
           title="Bandeja de Entrada Portal" 
@@ -1165,7 +1150,7 @@ Equipo Farmacia Skol`;
                     const totalCycles = calculateTotalCycles(recipe);
                     const dispensedCount = recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0;
                     const showCycleCount = ![RecipeStatus.Archived, RecipeStatus.Rejected, RecipeStatus.Cancelled].includes(recipe.status);
-                    const currentCycle = Math.min(dispensedCount + 1, totalCycles);
+                    const currentCycle = Math.min(dispensedCount, totalCycles);
                     return (
                     <Card key={recipe.id} className={cn(selectedRecipes.includes(recipe.id) && "ring-2 ring-primary")}>
                     <CardHeader className="p-4">
@@ -1195,13 +1180,13 @@ Equipo Farmacia Skol`;
                                 {isPaymentPending && (
                                     <TooltipProvider><Tooltip><TooltipTrigger asChild>
                                         <span><DollarSign className="h-4 w-4 text-amber-500" /></span>
-                                    </TooltipTrigger><TooltipContent><p>Pago pendiente</p></TooltipContent></Tooltip></TooltipProvider>
+                                    </TooltipTrigger><TooltipContent><p>Pago pendiente</p></TooltipContent></TooltipProvider>
                                 )}
                                 {recipe.status === RecipeStatus.PendingReviewPortal && (
-                                    <TooltipProvider><Tooltip><TooltipTrigger asChild><span><UserSquare className="h-4 w-4 text-purple-500" /></span></TooltipTrigger><TooltipContent><p>Receta del Portal</p></TooltipContent></Tooltip></TooltipProvider>
+                                    <TooltipProvider><Tooltip><TooltipTrigger asChild><span><UserSquare className="h-4 w-4 text-purple-500" /></span></TooltipTrigger><TooltipContent><p>Receta del Portal</p></TooltipContent></TooltipProvider>
                                 )}
                                 {recipe.items.some(item => item.requiresFractionation) && (
-                                    <TooltipProvider><Tooltip><TooltipTrigger asChild><span><Split className="h-4 w-4 text-orange-500" /></span></TooltipTrigger><TooltipContent><p>Requiere Fraccionamiento</p></TooltipContent></Tooltip></TooltipProvider>
+                                    <TooltipProvider><Tooltip><TooltipTrigger asChild><span><Split className="h-4 w-4 text-orange-500" /></span></TooltipTrigger><TooltipContent><p>Requiere Fraccionamiento</p></TooltipContent></TooltipProvider>
                                 )}
                             </div>
                         </div>
