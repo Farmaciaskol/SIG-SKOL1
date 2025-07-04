@@ -40,7 +40,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen w-full lg:grid lg:grid-cols-2">
       {/* Left Branding Panel */}
-      <div className="hidden lg:flex flex-col items-center justify-center p-12 text-center bg-sky-800">
+      <div className="hidden lg:flex flex-col items-center justify-center p-12 text-center bg-primary text-primary-foreground">
         <div className="space-y-4 max-w-md">
           <Image
             src="https://placehold.co/150x150.png"
@@ -51,18 +51,18 @@ export default function LoginPage() {
             className="mx-auto"
             priority
           />
-          <h1 className="text-4xl font-bold text-white font-headline mt-6">
+          <h1 className="text-4xl font-bold font-headline mt-6">
             Sistema Integral de Gestión Skol
           </h1>
-          <p className="text-white/90">
+          <p className="opacity-90">
             Optimizando el ciclo de vida de las recetas magistrales con precisión y eficiencia.
           </p>
         </div>
       </div>
       
-      {/* Right Form Panel - Apply blue background on mobile, white on large screens */}
-      <div className="flex items-center justify-center py-12 px-4 bg-sky-800 lg:bg-background">
-        <div className="w-full max-w-sm space-y-8">
+      {/* Right Form Panel */}
+      <div className="flex items-center justify-center p-4 bg-primary lg:bg-background">
+        <div className="w-full max-w-sm space-y-6">
             <Image
                 src="https://placehold.co/150x150.png"
                 data-ai-hint="logo pharmacy white"
@@ -72,8 +72,8 @@ export default function LoginPage() {
                 className="mx-auto lg:hidden"
                 priority
             />
-            <div className="w-full bg-card rounded-xl shadow-xl p-8 space-y-6">
-                <div className="text-left">
+            <div className="w-full bg-card rounded-xl shadow-lg p-6 sm:p-8 space-y-6">
+                <div className="text-center sm:text-left">
                   <h1 className="text-2xl font-bold font-headline text-foreground">
                     Acceso de Administrador
                   </h1>
@@ -123,7 +123,7 @@ export default function LoginPage() {
                   </Button>
                 </form>
             </div>
-            <p className="px-8 text-center text-sm text-white/90 lg:text-muted-foreground">
+            <p className="px-8 text-center text-sm text-primary-foreground lg:text-muted-foreground">
               ¿Es usted un paciente?{' '}
               <Link href="/patient-portal/login" className="font-semibold text-white hover:underline lg:font-medium lg:text-primary">
                 Ingrese al Portal de Pacientes
