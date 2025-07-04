@@ -445,11 +445,12 @@ export const RecipesClient = ({
   };
   
   const stats = useMemo(() => {
+    const relevantRecipes = initialRecipes.filter(r => r.status !== RecipeStatus.Archived);
     return {
       pendingPortal: initialRecipes.filter(r => r.status === RecipeStatus.PendingReviewPortal).length,
-      pendingValidation: recipes.filter(r => r.status === RecipeStatus.PendingValidation).length,
-      inPreparation: recipes.filter(r => r.status === RecipeStatus.Preparation || r.status === RecipeStatus.SentToExternal).length,
-      readyForPickup: recipes.filter(r => r.status === RecipeStatus.ReadyForPickup || r.status === RecipeStatus.ReceivedAtSkol).length,
+      pendingValidation: relevantRecipes.filter(r => r.status === RecipeStatus.PendingValidation).length,
+      inPreparation: relevantRecipes.filter(r => r.status === RecipeStatus.Preparation || r.status === RecipeStatus.SentToExternal).length,
+      readyForPickup: relevantRecipes.filter(r => r.status === RecipeStatus.ReadyForPickup || r.status === RecipeStatus.ReceivedAtSkol).length,
     }
   }, [recipes, initialRecipes]);
 
@@ -601,7 +602,23 @@ export const RecipesClient = ({
                         <DropdownMenuItem onClick={() => setRecipeToPrint(recipe)}><Printer className="mr-2 h-4 w-4" />Imprimir Etiqueta</DropdownMenuItem>
                     )}
                     {recipe.status === RecipeStatus.Dispensed && (
-                         <DropdownMenuItem disabled={!canReprepare} onSelect={() => canReprepare && setRecipeToReprepare(recipe)}><Copy className="mr-2 h-4 w-4" /><span>Re-preparar</span></DropdownMenuItem>
+                         <DropdownMenuItem disabled={!canReprepare} onSelect={() => canReprepare && setRecipeToReprepare(recipe)}>
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <div className="flex items-center w-full">
+                                            <Copy className="mr-2 h-4 w-4" />
+                                            <span>Re-preparar</span>
+                                        </div>
+                                    </TooltipTrigger>
+                                    {!canReprepare && disabledReprepareTooltip && (
+                                    <TooltipContent>
+                                        <p>{disabledReprepareTooltip}</p>
+                                    </TooltipContent>
+                                    )}
+                                </Tooltip>
+                            </TooltipProvider>
+                         </DropdownMenuItem>
                     )}
                     <DropdownMenuSeparator />
                     {isArchivable && (
@@ -624,6 +641,10 @@ export const RecipesClient = ({
     const isExpired = recipe.dueDate ? new Date(recipe.dueDate) < new Date() : false;
     const cycleLimitReached = dispensedCount >= MAX_REPREPARATIONS + 1;
     const canReprepare = recipe.status === RecipeStatus.Dispensed && !isExpired && !cycleLimitReached;
+    let disabledReprepareTooltip = '';
+    if (isExpired) disabledReprepareTooltip = 'El documento de la receta ha vencido.';
+    else if (cycleLimitReached) disabledReprepareTooltip = `Límite de ${MAX_REPREPARATIONS + 1} ciclos alcanzado.`;
+
     const canEdit = recipe.status !== RecipeStatus.Dispensed && recipe.status !== RecipeStatus.Cancelled;
     const isArchivable = [RecipeStatus.Rejected, RecipeStatus.Cancelled, RecipeStatus.Dispensed].includes(recipe.status) || isExpired;
 
@@ -642,7 +663,24 @@ export const RecipesClient = ({
         case RecipeStatus.ReadyForPickup:
           return <Button size="sm" onClick={() => handleUpdateStatus(recipe, RecipeStatus.Dispensed)}><CheckCheck className="mr-2 h-4 w-4" />Dispensar</Button>;
         case RecipeStatus.Dispensed:
-          return <Button size="sm" onClick={() => setRecipeToReprepare(recipe)} disabled={!canReprepare}><Copy className="mr-2 h-4 w-4" />Re-preparar</Button>;
+          return (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span tabIndex={0}>
+                    <Button size="sm" onClick={() => setRecipeToReprepare(recipe)} disabled={!canReprepare}>
+                      <Copy className="mr-2 h-4 w-4" />Re-preparar
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                {!canReprepare && disabledReprepareTooltip && (
+                  <TooltipContent>
+                    <p>{disabledReprepareTooltip}</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
+          );
         default:
           return <Button size="sm" onClick={() => setRecipeToView(recipe)}><Eye className="mr-2 h-4 w-4" />Ver Detalle</Button>;
       }
