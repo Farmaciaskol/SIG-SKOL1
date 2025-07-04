@@ -106,11 +106,10 @@ const PrintableDispatchNote = ({ note, pharmacy, onClose, getInventoryItem, getP
                     <header className="flex justify-between items-center border-b-2 border-black pb-4">
                         <div className="w-40 h-auto">
                             <Image
-                                src="https://placehold.co/160x160.png"
-                                data-ai-hint="logo pharmacy"
+                                src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
                                 alt="Skol Pharmacy Logo"
                                 width={160}
-                                height={160}
+                                height={44}
                                 className="object-contain"
                             />
                         </div>
@@ -443,7 +442,7 @@ export default function DispatchManagementPage() {
     setReceivingNote(note);
   };
   
-  const handleReceptionCheckChange = (itemId: string, checked: boolean) => {
+  const handleReceptionChecklistChange = (itemId: string, checked: boolean) => {
     setReceptionChecklist(prev => ({ ...prev, [itemId]: checked }));
   };
 

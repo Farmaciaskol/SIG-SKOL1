@@ -248,14 +248,13 @@ export function MainNav({
           <div className="flex items-center gap-4">
             <SidebarTrigger className="md:hidden bg-primary text-primary-foreground hover:bg-primary/90" />
             <Link href="/dashboard" className="md:hidden">
-              <div className="h-9 w-9 bg-primary rounded-md flex items-center justify-center p-1">
+              <div className="h-9 w-auto">
                 <Image
-                  src="https://placehold.co/28x28.png"
-                  data-ai-hint="logo pharmacy white"
+                  src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
                   alt="Skol Pharmacy Logo"
-                  width={28}
-                  height={28}
-                  className="object-contain"
+                  width={100}
+                  height={27}
+                  className="object-contain h-full"
                   priority
                 />
               </div>
@@ -312,23 +311,21 @@ export function MainNav({
             <SidebarHeader className="p-4 group-data-[collapsible=icon]:p-2 justify-center transition-all duration-200">
               <div className="w-full px-4 group-data-[collapsible=icon]:hidden">
                 <Image
-                  src="https://placehold.co/120x120.png"
-                  data-ai-hint="logo pharmacy"
+                  src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
                   alt="Skol Pharmacy Logo"
-                  width={120}
-                  height={120}
-                  className="mx-auto"
+                  width={160}
+                  height={44}
+                  className="mx-auto object-contain"
                   priority
                 />
               </div>
               <div className="hidden group-data-[collapsible=icon]:block">
                 <Image
-                  src="https://placehold.co/32x32.png"
-                  data-ai-hint="logo pharmacy"
+                  src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
                   alt="Skol Pharmacy Logo"
                   width={32}
                   height={32}
-                  className="mx-auto"
+                  className="mx-auto object-contain"
                   priority
                 />
               </div>

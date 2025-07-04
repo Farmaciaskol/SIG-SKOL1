@@ -43,11 +43,10 @@ export default function LoginPage() {
       <div className="hidden bg-blue-600 lg:flex lg:flex-col lg:items-center lg:justify-center lg:p-12 lg:text-center text-white">
         <div className="space-y-4 max-w-md">
           <Image
-            src="https://placehold.co/150x150.png"
-            data-ai-hint="logo pharmacy white"
+            src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
             alt="Skol Pharmacy Logo"
-            width={150}
-            height={150}
+            width={250}
+            height={69}
             className="mx-auto"
             priority
           />
@@ -64,11 +63,11 @@ export default function LoginPage() {
       <div className="bg-blue-600 lg:bg-background flex flex-col items-center justify-center p-6 lg:p-4 min-h-screen">
         <div className="lg:hidden mb-8">
             <Image
-                src="https://placehold.co/180x60.png"
-                data-ai-hint="logo pharmacy white"
-                alt="Farmacia Skol Logo"
-                width={180}
-                height={60}
+                src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
+                alt="Skol Pharmacy Logo"
+                width={200}
+                height={55}
+                className="mx-auto"
                 priority
             />
         </div>

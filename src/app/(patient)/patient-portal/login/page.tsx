@@ -69,11 +69,10 @@ export default function PatientPortalLoginPage() {
         <div className="w-full max-w-sm space-y-6">
             <Link href="/" className="mx-auto block">
                 <Image
-                    src="https://placehold.co/120x120.png"
-                    data-ai-hint="logo pharmacy"
-                    alt="Pharmacy Logo"
-                    width={120}
-                    height={120}
+                    src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
+                    alt="Skol Pharmacy Logo"
+                    width={200}
+                    height={55}
                     className="mx-auto"
                     priority
                 />

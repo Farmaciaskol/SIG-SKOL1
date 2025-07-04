@@ -41,11 +41,10 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-card px-4 md:px-8">
              <Link href="/patient-portal/dashboard">
                 <Image
-                    src="https://placehold.co/60x60.png"
-                    data-ai-hint="logo pharmacy"
-                    alt="Pharmacy Logo"
-                    width={60}
-                    height={60}
+                    src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
+                    alt="Skol Pharmacy Logo"
+                    width={120}
+                    height={33}
                     className="object-contain"
                     priority
                 />
