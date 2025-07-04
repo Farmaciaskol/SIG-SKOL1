@@ -46,13 +46,14 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '../ui/button';
 import React from 'react';
-import { Separator } from '../ui/separator';
 
 const menuGroups = [
     {
@@ -194,37 +195,40 @@ export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElemen
                     </SidebarMenuItem>
                 ))}
             </SidebarMenu>
-            <Separator className="bg-border/60" />
-             {user && (
-                <div className="flex items-center gap-3">
-                    <Avatar className="h-9 w-9">
-                        <AvatarFallback>{user.email?.charAt(0).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 group-data-[collapsible=icon]:hidden">
-                        <p className="text-sm font-semibold text-foreground truncate">{user.displayName || user.email}</p>
-                        <p className="text-xs text-muted-foreground">Administrador</p>
-                    </div>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 group-data-[collapsible=icon]:hidden">
-                                <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-48" align="end" side="top">
-                            <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
-                            <LogOut className="mr-2 h-4 w-4" />
-                            <span>Cerrar Sesión</span>
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-            )}
           </SidebarFooter>
         </Sidebar>
         <main className="flex-1 w-full overflow-y-auto">
-          <header className="md:hidden flex h-14 items-center gap-4 bg-background px-6 sticky top-0 z-10">
-            <SidebarTrigger />
-            <div className="flex-1" />
+          <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b bg-background px-6">
+            <div className="flex items-center gap-4">
+                <SidebarTrigger className="md:hidden bg-primary text-primary-foreground hover:bg-primary/90" />
+            </div>
+            
+            {user && (
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                            <Avatar className="h-9 w-9">
+                                <AvatarFallback>{user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase()}</AvatarFallback>
+                            </Avatar>
+                          </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56" align="end" forceMount>
+                        <DropdownMenuLabel className="font-normal">
+                          <div className="flex flex-col space-y-1">
+                            <p className="text-sm font-medium leading-none">{user.displayName || "Usuario"}</p>
+                            <p className="text-xs leading-none text-muted-foreground">
+                              {user.email}
+                            </p>
+                          </div>
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                            <LogOut className="mr-2 h-4 w-4" />
+                            <span>Cerrar Sesión</span>
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            )}
           </header>
           <div className="w-full px-6 md:px-8 py-8">
             {props.children}
