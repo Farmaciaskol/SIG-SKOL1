@@ -306,7 +306,7 @@ export const saveRecipe = async (data: any, imageFile: File | null, userId: stri
         await updateDoc(recipeRef, recipeDataForUpdate as any);
         return recipeId;
     } else { // Creating
-        const recipeRef = doc(collection(db, 'recipes', effectiveRecipeId));
+        const recipeRef = doc(db, 'recipes', effectiveRecipeId);
         const firstAuditEntry: AuditTrailEntry = { status: RecipeStatus.PendingValidation, date: new Date().toISOString(), userId: userId, notes: 'Receta creada en el sistema.' };
         const recipeDataForCreate: Omit<Recipe, 'id'> = { ...recipeDataForUpdate, status: RecipeStatus.PendingValidation, paymentStatus: 'Pendiente', createdAt: new Date().toISOString(), auditTrail: [firstAuditEntry] } as Omit<Recipe, 'id'>;
         await setDoc(recipeRef, recipeDataForCreate);
