@@ -689,6 +689,21 @@ export const RecipesClient = ({
   const SendToPharmacyDialog = () => {
     const pharmacy = getPharmacy(recipeToSend?.externalPharmacyId);
 
+    const descriptiveFilename = useMemo(() => {
+        if (!recipeToSend) return 'receta.jpg';
+    
+        const sanitize = (str: string) => str.replace(/ /g, '_').replace(/[^\w-.]/g, '');
+    
+        const patientName = sanitize(getPatientName(recipeToSend.patientId));
+        const activeIngredient = sanitize(recipeToSend.items[0]?.principalActiveIngredient || 'preparado');
+        
+        const url = recipeToSend.prescriptionImageUrl || '';
+        const extensionMatch = url.match(/\.(jpg|jpeg|png|pdf|webp)/i);
+        const extension = extensionMatch ? extensionMatch[1] : 'jpg';
+    
+        return `${patientName}_${activeIngredient}.${extension}`;
+    }, [recipeToSend]);
+
     const emailBody = useMemo(() => {
         if (!recipeToSend || !pharmacy) return '';
         const patient = patients.find(p => p.id === recipeToSend.patientId);
@@ -755,7 +770,7 @@ Equipo Farmacia Skol`;
                         <div className="space-y-2">
                             <Label>Adjunto</Label>
                             <Button variant="link" asChild className="p-0 h-auto justify-start">
-                                <a href={recipeToSend.prescriptionImageUrl} target="_blank" rel="noopener noreferrer" download>
+                                <a href={recipeToSend.prescriptionImageUrl} target="_blank" rel="noopener noreferrer" download={descriptiveFilename}>
                                     Descargar Imagen de la Receta
                                 </a>
                             </Button>
