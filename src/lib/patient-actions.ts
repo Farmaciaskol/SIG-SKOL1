@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import {
@@ -115,7 +114,7 @@ export async function requestRepreparationFromPortal(recipeId: string, patientId
     const isExpired = new Date(recipe.dueDate) < new Date();
     if (isExpired) throw new Error("La receta original ha vencido y no puede ser re-preparada.");
     
-    const dispensationsCount = recipe.auditTrail?.filter(t => t.status === RecipeStatus.Dispensed).length || 0;
+    const dispensationsCount = recipe.auditTrail?.filter(t => t.status === 'Dispensada').length || 0;
     if (dispensationsCount >= MAX_REPREPARATIONS + 1) throw new Error("Se ha alcanzado el límite de preparaciones para esta receta.");
 
     if (!userId) {
