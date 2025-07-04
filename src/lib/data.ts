@@ -569,14 +569,11 @@ export const addPatient = async (patient: Omit<Patient, 'id' | 'proactiveStatus'
     const { password, ...patientData } = patient;
 
     // --- Firebase Auth User Creation (Simulated) ---
-    // In a real application, you would use a secure backend function (e.g., Firebase Function)
-    // to call the Firebase Admin SDK and create a user with the provided email and password.
-    // Never handle user creation with sensitive data directly on the client.
-    if (password && patientData.email) {
-        // Example: await createUserInBackend({ email: patientData.email, password });
+    if (password) {
+        if (!patientData.email) {
+            throw new Error("El email es requerido si se ingresa una contraseña para el portal.");
+        }
         console.log(`(Simulado) Creando usuario de Firebase Auth para ${patientData.email}`);
-    } else if (!patientData.email) {
-        throw new Error("El email es requerido para crear un paciente con acceso al portal.");
     }
     
     const dataToSave: Omit<Patient, 'id'> = {

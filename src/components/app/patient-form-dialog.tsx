@@ -41,13 +41,19 @@ import { Separator } from '../ui/separator';
 const patientFormSchema = z.object({
   name: z.string().min(1, { message: 'El nombre es requerido.' }),
   rut: z.string().min(1, { message: 'El RUT es requerido.' }),
-  email: z.string().email('Email inválido.').min(1, { message: 'El email es requerido para el acceso al portal.' }),
+  email: z.string().email({ message: 'Email inválido.' }).optional().or(z.literal('')),
   phone: z.string().optional(),
   address: z.string().optional(),
   gender: z.enum(['Masculino', 'Femenino', 'Otro']),
   isChronic: z.boolean().default(false),
   allergies: z.string().optional(),
   password: z.string().min(6, { message: 'La contraseña debe tener al menos 6 caracteres.' }).optional().or(z.literal('')),
+}).refine(data => {
+    // If a password is provided, an email must also be provided.
+    return !data.password || (!!data.password && !!data.email);
+}, {
+    message: "El email es requerido si se ingresa una contraseña.",
+    path: ["email"], // Show error on email field
 });
 
 type PatientFormValues = z.infer<typeof patientFormSchema>;
@@ -175,11 +181,11 @@ export function PatientFormDialog({ patient, isOpen, onOpenChange, onSuccess }: 
                         <div>
                             <h3 className="text-lg font-medium mb-1">Credenciales de Acceso al Portal</h3>
                             <p className="text-sm text-muted-foreground mb-4">
-                                El email será el usuario. Deje la contraseña en blanco para no modificarla.
+                                Estas credenciales son opcionales. Si ingresa una contraseña, el email es obligatorio.
                             </p>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <FormField control={form.control} name="email" render={({ field }) => (
-                                    <FormItem><FormLabel>Email (Usuario) *</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
+                                    <FormItem><FormLabel>Email (Usuario)</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
                                 )}/>
                                 <FormField control={form.control} name="password" render={({ field }) => (
                                     <FormItem><FormLabel>Nueva Contraseña</FormLabel><FormControl><Input type="password" {...field} /></FormControl><FormMessage /></FormItem>
