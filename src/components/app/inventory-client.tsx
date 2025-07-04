@@ -68,11 +68,11 @@ type FilterStatus = 'all' | 'OK' | 'Stock Bajo' | 'Agotado' | 'Próximo a Vencer
 const StatCard = ({ title, value, icon: Icon }: { title: string; value: string | number; icon: React.ElementType }) => (
     <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <h3 className="text-sm font-medium text-slate-700">{title}</h3>
-            <Icon className="h-4 w-4 text-slate-500" />
+            <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
+            <Icon className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-            <div className="text-2xl font-bold text-slate-800">{value}</div>
+            <div className="text-2xl font-bold text-foreground">{value}</div>
         </CardContent>
     </Card>
 );
@@ -93,25 +93,25 @@ const ProductCard = ({ item, onEdit, onManageLots, onDelete }: { item: Inventory
         <Card className={cn("flex flex-col transition-all hover:shadow-lg border-2", border)}>
             <CardHeader className="pb-4">
                  <div className="flex justify-between items-start">
-                    <h3 className="text-lg font-bold text-slate-800 truncate" title={item.name}>{item.name}</h3>
+                    <h3 className="text-lg font-bold text-primary truncate" title={item.name}>{item.name}</h3>
                     <div className="flex items-center gap-2">
                         {item.requiresRefrigeration && <Snowflake className="h-5 w-5 text-blue-500" title="Requiere Cadena de Frío" />}
                         {item.isControlled && <Star className="h-5 w-5 text-amber-500" title="Sustancia Controlada" />}
                     </div>
                  </div>
-                 <p className="text-xs text-slate-500">SKU: {item.sku || 'N/A'}</p>
+                 <p className="text-xs text-muted-foreground">SKU: {item.sku || 'N/A'}</p>
             </CardHeader>
             <CardContent className="flex-grow space-y-4">
                 <div className="flex justify-between items-baseline">
                     <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-bold text-slate-800">{item.quantity}</span>
-                        <span className="text-slate-500">{item.unit}</span>
+                        <span className="text-3xl font-bold text-foreground">{item.quantity}</span>
+                        <span className="text-muted-foreground">{item.unit}</span>
                     </div>
                     <Badge className={cn("font-semibold", badge)}>{item.status}</Badge>
                 </div>
                 <div className="text-sm">
-                    <p className="text-slate-500">Próximo Vencimiento:</p>
-                    <p className="font-medium text-slate-700">
+                    <p className="text-muted-foreground">Próximo Vencimiento:</p>
+                    <p className="font-medium text-foreground">
                         {item.nextExpiryDate && !isNaN(parseISO(item.nextExpiryDate).getTime()) ? format(parseISO(item.nextExpiryDate), 'dd-MMMM-yyyy', {locale: es}) : 'N/A'}
                     </p>
                 </div>
@@ -201,7 +201,7 @@ function LotManagementDialog({ item, isOpen, onOpenChange, onSuccess }: { item: 
         </DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4 max-h-[60vh] overflow-y-auto pr-4">
           <div className="space-y-4">
-            <h3 className="font-semibold text-lg">Lotes Actuales</h3>
+            <h3 className="font-semibold text-lg text-primary">Lotes Actuales</h3>
             <Card>
               <CardContent className="p-0">
                 <div className="max-h-80 overflow-y-auto">
@@ -232,7 +232,7 @@ function LotManagementDialog({ item, isOpen, onOpenChange, onSuccess }: { item: 
             </Card>
           </div>
           <div className="space-y-4">
-            <h3 className="font-semibold text-lg">Añadir Nuevo Lote</h3>
+            <h3 className="font-semibold text-lg text-primary">Añadir Nuevo Lote</h3>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4 border rounded-lg bg-muted/30">
                 <FormField control={form.control} name="lotNumber" render={({ field }) => (
@@ -397,7 +397,7 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
             }}>
                 <DialogContent className="sm:max-w-3xl">
                     <DialogHeader>
-                        <DialogTitle className="text-2xl font-semibold">{editingItem ? 'Editar Producto de Inventario' : 'Crear Producto'}</DialogTitle>
+                        <DialogTitle className="text-2xl font-semibold text-primary">{editingItem ? 'Editar Producto de Inventario' : 'Crear Producto'}</DialogTitle>
                         <DialogDescription className="text-muted-foreground">
                             {editingItem ? 'Actualice la configuración del producto.' : 'Configure un nuevo producto para la gestión de stock, lotes y su uso en recetas.'}
                         </DialogDescription>
@@ -431,7 +431,7 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
             
             <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight font-headline text-slate-800">Gestión de Inventario</h1>
+                    <h1 className="text-3xl font-bold tracking-tight font-headline text-primary">Gestión de Inventario</h1>
                     <p className="text-sm text-muted-foreground">
                         Control logístico y trazabilidad de los insumos de la farmacia.
                     </p>
@@ -451,7 +451,7 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
             <Card className="mb-6">
                 <CardContent className="p-4 flex flex-col sm:flex-row gap-4">
                     <div className="relative flex-1">
-                        <Search className="absolute left-2.5 top-3 h-4 w-4 text-slate-500" />
+                        <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
                         <Input
                             placeholder="Buscar por nombre o SKU..."
                             className="pl-8"
@@ -483,9 +483,9 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
             ) : (
                 <Card className="text-center py-16 mt-8 shadow-none border-dashed">
                     <div className="flex flex-col items-center justify-center">
-                        <Package className="h-16 w-16 text-slate-400 mb-4" />
-                        <h2 className="text-xl font-semibold text-slate-700">No se encontraron productos</h2>
-                        <p className="text-slate-500 mt-2 max-w-sm">
+                        <Package className="h-16 w-16 text-muted-foreground mb-4" />
+                        <h2 className="text-xl font-semibold text-foreground">No se encontraron productos</h2>
+                        <p className="text-muted-foreground mt-2 max-w-sm">
                             Intenta ajustar tu búsqueda o define un nuevo producto para empezar.
                         </p>
                         <Button className="mt-6" onClick={handleAddNew}>

@@ -55,7 +55,7 @@ export default function SimplifyInstructionsPage() {
     <>
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-800 font-headline">Simplificador de Indicaciones</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-primary font-headline">Simplificador de Indicaciones</h1>
           <p className="text-sm text-muted-foreground">
             Herramienta con IA para convertir instrucciones médicas complejas en un lenguaje fácil de entender.
           </p>
@@ -67,7 +67,7 @@ export default function SimplifyInstructionsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Input Column */}
             <div className="space-y-4">
-               <h2 className="text-xl font-semibold text-slate-700">Texto Original</h2>
+               <h2 className="text-xl font-semibold text-primary">Texto Original</h2>
                <p className="text-sm text-muted-foreground">Pegue aquí las instrucciones médicas que desea simplificar.</p>
                <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -97,7 +97,7 @@ export default function SimplifyInstructionsPage() {
 
             {/* Output Column */}
             <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-slate-700">Texto Simplificado</h2>
+                <h2 className="text-xl font-semibold text-primary">Texto Simplificado</h2>
                 <p className="text-sm text-muted-foreground">La versión para el paciente aparecerá aquí.</p>
                 <div className="min-h-[250px] w-full rounded-md border bg-muted/50 p-4">
                     {isSimplifying ? (

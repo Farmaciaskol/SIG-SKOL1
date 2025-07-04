@@ -84,7 +84,7 @@ const ProactiveAlertsCard = ({ patients }: { patients: Patient[] }) => {
     <Card className="lg:col-span-1">
       <CardHeader className="flex flex-row items-center gap-3 border-b pb-4">
         <Wand2 className="h-5 w-5 text-muted-foreground" />
-        <CardTitle className="text-lg font-semibold text-foreground">Alertas Proactivas (IA)</CardTitle>
+        <CardTitle className="text-lg font-semibold text-primary">Alertas Proactivas (IA)</CardTitle>
       </CardHeader>
       <CardContent className="pt-4 space-y-3">
         {alerts.length > 0 ? (
@@ -155,7 +155,7 @@ const DelayedRecipesCard = ({ recipes, patients }: { recipes: Recipe[], patients
         <Card className="lg:col-span-1">
           <CardHeader className="flex flex-row items-center gap-3 border-b pb-4">
             <Clock className="h-5 w-5 text-muted-foreground" />
-            <CardTitle className="text-lg font-semibold text-foreground">Recetas con Retraso</CardTitle>
+            <CardTitle className="text-lg font-semibold text-primary">Recetas con Retraso</CardTitle>
           </CardHeader>
           <CardContent className="pt-4 space-y-3">
             {delayedRecipes.length > 0 ? (
@@ -164,7 +164,7 @@ const DelayedRecipesCard = ({ recipes, patients }: { recipes: Recipe[], patients
                   <div className="flex-grow">
                     <p className="font-semibold text-primary"><Link href={`/recipes/${recipe.id}`} className="hover:underline">Receta: {recipe.id}</Link></p>
                     <p className="text-sm text-muted-foreground">Paciente: {recipe.patientName}</p>
-                    <p className="text-sm text-slate-500">En estado "{recipe.status}" por {recipe.daysDelayed} días.</p>
+                    <p className="text-sm text-muted-foreground">En estado "{recipe.status}" por {recipe.daysDelayed} días.</p>
                   </div>
                   <Button variant="ghost" size="sm" asChild>
                     <Link href={`/recipes/${recipe.id}`}>Revisar</Link>
@@ -191,7 +191,7 @@ const RecentRecipesCard = ({ recipes, patients }: { recipes: Recipe[], patients:
         <Card className="lg:col-span-1">
             <CardHeader className="flex flex-row items-center gap-3 border-b pb-4">
                 <FilePlus2 className="h-5 w-5 text-muted-foreground" />
-                <CardTitle className="text-lg font-semibold text-foreground">Actividad Reciente</CardTitle>
+                <CardTitle className="text-lg font-semibold text-primary">Actividad Reciente</CardTitle>
             </CardHeader>
             <CardContent className="pt-4 space-y-4">
                 {recentRecipes.length > 0 ? (
@@ -209,7 +209,7 @@ const RecentRecipesCard = ({ recipes, patients }: { recipes: Recipe[], patients:
                                         </Link>
                                     </p>
                                     <p className="text-sm text-muted-foreground">Paciente: {getPatientName(recipe.patientId)}</p>
-                                    <p className="text-xs text-slate-500">{format(new Date(recipe.createdAt), "d MMMM, yyyy 'a las' HH:mm", {locale: es})}</p>
+                                    <p className="text-xs text-muted-foreground">{format(new Date(recipe.createdAt), "d MMMM, yyyy 'a las' HH:mm", {locale: es})}</p>
                                 </div>
                             </div>
                         )
@@ -260,7 +260,7 @@ export default async function DashboardPage() {
     <>
       <div className="flex flex-col md:flex-row md:items-center justify-between space-y-2 md:space-y-0 mb-6">
         <div>
-            <h1 className="text-3xl font-bold text-foreground tracking-tight font-headline">Dashboard</h1>
+            <h1 className="text-3xl font-bold text-primary tracking-tight font-headline">Dashboard</h1>
             <p className="text-sm text-muted-foreground">{capitalizedDate}</p>
         </div>
         <div className="flex items-center space-x-2">

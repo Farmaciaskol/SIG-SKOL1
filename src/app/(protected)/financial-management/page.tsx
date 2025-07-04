@@ -53,11 +53,11 @@ import Link from 'next/link';
 const StatCard = ({ title, value, icon: Icon }: { title: string; value: string | number; icon: React.ElementType }) => (
   <Card>
     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium text-slate-700">{title}</CardTitle>
+      <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
       <Icon className="h-4 w-4 text-muted-foreground" />
     </CardHeader>
     <CardContent>
-      <div className="text-2xl font-bold text-slate-800">{value}</div>
+      <div className="text-2xl font-bold text-foreground">{value}</div>
     </CardContent>
   </Card>
 );
@@ -172,7 +172,7 @@ export default function FinancialManagementPage() {
     return (
       <div className="flex items-center justify-center h-full">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="ml-2 text-slate-600">Cargando datos financieros...</p>
+        <p className="ml-2 text-muted-foreground">Cargando datos financieros...</p>
       </div>
     );
   }
@@ -182,7 +182,7 @@ export default function FinancialManagementPage() {
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-800 font-headline">Gestión Financiera</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-primary font-headline">Gestión Financiera</h1>
             <p className="text-sm text-muted-foreground">
               Control de cuentas por pagar (a recetarios) y por cobrar.
             </p>
@@ -204,7 +204,7 @@ export default function FinancialManagementPage() {
             <TabsContent value="cuentas-por-pagar" className="mt-4">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Pagos Pendientes a Recetarios</CardTitle>
+                        <CardTitle className="text-primary">Pagos Pendientes a Recetarios</CardTitle>
                         <CardDescription>
                             Detalle de los montos adeudados a cada recetario socio por preparaciones y despachos.
                         </CardDescription>
@@ -214,7 +214,7 @@ export default function FinancialManagementPage() {
                         <Accordion type="single" collapsible className="w-full space-y-4">
                             {financialDataByPharmacy.filter(p => p.pendingBalance > 0).map(data => (
                             <AccordionItem value={data.pharmacyId} key={data.pharmacyId} className="border rounded-lg overflow-hidden">
-                                <AccordionTrigger className="text-lg font-semibold text-slate-700 hover:no-underline px-6 py-4 bg-muted/50 data-[state=open]:border-b">
+                                <AccordionTrigger className="text-lg font-semibold text-foreground hover:no-underline px-6 py-4 bg-muted/50 data-[state=open]:border-b">
                                     <div className="flex justify-between items-center w-full pr-4">
                                         <span>{data.pharmacyName}</span>
                                         <Badge variant={data.pendingBalance > 0 ? "destructive" : "default"}>
@@ -236,7 +236,7 @@ export default function FinancialManagementPage() {
                                             </TableRow>
                                             ))}
                                         </TableBody>
-                                        <UiTableFooter><TableRow><TableCell colSpan={3} className="font-bold text-right text-slate-700">TOTALES</TableCell><TableCell className="font-bold text-right text-slate-700">${data.totalPreparationCost.toLocaleString('es-CL')}</TableCell><TableCell className="font-bold text-right text-slate-700">${data.totalTransportCost.toLocaleString('es-CL')}</TableCell></TableRow></UiTableFooter>
+                                        <UiTableFooter><TableRow><TableCell colSpan={3} className="font-bold text-right text-foreground">TOTALES</TableCell><TableCell className="font-bold text-right text-foreground">${data.totalPreparationCost.toLocaleString('es-CL')}</TableCell><TableCell className="font-bold text-right text-foreground">${data.totalTransportCost.toLocaleString('es-CL')}</TableCell></TableRow></UiTableFooter>
                                     </Table>
                                     <div className="flex justify-end pt-4">
                                         <Button onClick={() => setPharmacyToPay(data)} disabled={data.pendingRecipes.length === 0 || isPaying}>
@@ -251,7 +251,7 @@ export default function FinancialManagementPage() {
                         ) : (
                         <div className="text-center py-16 border-2 border-dashed rounded-lg">
                             <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-4" />
-                            <h3 className="text-xl font-semibold text-slate-700">¡Todo al día!</h3>
+                            <h3 className="text-xl font-semibold text-foreground">¡Todo al día!</h3>
                             <p className="text-muted-foreground mt-2">
                                 No hay saldos pendientes de pago con ningún recetario.
                             </p>
@@ -263,15 +263,15 @@ export default function FinancialManagementPage() {
             <TabsContent value="cuentas-por-cobrar" className="mt-4">
                  <Card>
                     <CardHeader>
-                        <CardTitle>Cuentas por Cobrar a Pacientes/Entidades</CardTitle>
+                        <CardTitle className="text-primary">Cuentas por Cobrar a Pacientes/Entidades</CardTitle>
                         <CardDescription>
                             Este módulo gestionará las deudas de pacientes o entidades hacia la farmacia.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="text-center py-16 border-2 border-dashed rounded-lg">
-                            <Banknote className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-                            <h3 className="text-xl font-semibold text-slate-700">Módulo en Desarrollo</h3>
+                            <Banknote className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                            <h3 className="text-xl font-semibold text-foreground">Módulo en Desarrollo</h3>
                             <p className="text-muted-foreground mt-2 max-w-md mx-auto">
                                 La funcionalidad para gestionar las cuentas por cobrar estará disponible en una futura actualización.
                             </p>

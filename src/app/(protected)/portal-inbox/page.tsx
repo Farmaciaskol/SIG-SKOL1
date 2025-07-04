@@ -99,7 +99,7 @@ export default function PortalInboxPage() {
         return (
             <div className="flex items-center justify-center h-full">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="ml-2 text-slate-600">Cargando bandeja de entrada...</p>
+                <p className="ml-2 text-muted-foreground">Cargando bandeja de entrada...</p>
             </div>
         );
     }
@@ -108,7 +108,7 @@ export default function PortalInboxPage() {
         <>
             <div className="space-y-6">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight font-headline text-slate-800">Bandeja de Entrada del Portal</h1>
+                    <h1 className="text-3xl font-bold tracking-tight font-headline text-primary">Bandeja de Entrada del Portal</h1>
                     <p className="text-sm text-muted-foreground">
                         Revise, procese o rechace las recetas enviadas por los pacientes desde su portal.
                     </p>
@@ -119,7 +119,7 @@ export default function PortalInboxPage() {
                         {pendingRecipes.map(recipe => (
                             <Card key={recipe.id} className="flex flex-col">
                                 <CardHeader>
-                                    <CardTitle className="text-lg">{getPatientName(recipe.patientId)}</CardTitle>
+                                    <CardTitle className="text-lg text-primary">{getPatientName(recipe.patientId)}</CardTitle>
                                     <CardDescription>
                                         Enviada el {format(parseISO(recipe.createdAt), 'dd MMMM, yyyy', { locale: es })}
                                     </CardDescription>
@@ -155,8 +155,8 @@ export default function PortalInboxPage() {
                 ) : (
                     <Card className="text-center py-16 shadow-none border-dashed">
                         <div className="flex flex-col items-center justify-center">
-                            <Inbox className="h-16 w-16 text-slate-400 mb-4" />
-                            <h2 className="text-xl font-semibold text-slate-700">Bandeja de Entrada Vacía</h2>
+                            <Inbox className="h-16 w-16 text-muted-foreground mb-4" />
+                            <h2 className="text-xl font-semibold text-foreground">Bandeja de Entrada Vacía</h2>
                             <p className="text-muted-foreground mt-2 max-w-sm">
                                 No hay nuevas recetas del portal pendientes de revisión.
                             </p>

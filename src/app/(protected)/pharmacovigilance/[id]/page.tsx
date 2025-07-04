@@ -132,7 +132,7 @@ export default function PharmacovigilanceReportPage() {
           <Link href="/pharmacovigilance"><ChevronLeft className="h-5 w-5"/></Link>
         </Button>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight font-headline">Reporte FV: {report.id}</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-primary font-headline">Reporte FV: {report.id}</h1>
           <p className="text-sm text-muted-foreground">Gestión y seguimiento de eventos adversos y de calidad.</p>
         </div>
       </div>
@@ -142,7 +142,7 @@ export default function PharmacovigilanceReportPage() {
         <div className="lg:col-span-2 space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
+                    <CardTitle className="flex items-center justify-between text-primary">
                         Información del Reporte
                         <Badge className={statusStyles[report.status]?.badge || 'bg-slate-200 text-slate-800'}>
                             {statusStyles[report.status]?.text || report.status}
@@ -166,19 +166,19 @@ export default function PharmacovigilanceReportPage() {
                      </div>
                      <Separator />
                      <div className="space-y-2">
-                        <h4 className="font-semibold text-slate-800">Medicamentos Involucrados</h4>
-                        <p className="text-sm text-slate-700">{report.involvedMedications}</p>
+                        <h4 className="font-semibold text-foreground">Medicamentos Involucrados</h4>
+                        <p className="text-sm text-foreground/90">{report.involvedMedications}</p>
                      </div>
                       <Separator />
                      <div className="space-y-2">
-                        <h4 className="font-semibold text-slate-800">Descripción del Problema</h4>
-                        <p className="text-sm text-slate-700 whitespace-pre-wrap">{report.problemDescription}</p>
+                        <h4 className="font-semibold text-foreground">Descripción del Problema</h4>
+                        <p className="text-sm text-foreground/90 whitespace-pre-wrap">{report.problemDescription}</p>
                      </div>
                 </CardContent>
             </Card>
 
             <Card>
-                <CardHeader><CardTitle>Gestión del Caso</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="text-primary">Gestión del Caso</CardTitle></CardHeader>
                 <CardContent className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
@@ -221,7 +221,7 @@ export default function PharmacovigilanceReportPage() {
         <div className="lg:col-span-1 space-y-6">
             {patient && (
                 <Card>
-                    <CardHeader><CardTitle className="flex items-center gap-2"><User /> Paciente</CardTitle></CardHeader>
+                    <CardHeader><CardTitle className="flex items-center gap-2 text-primary"><User /> Paciente</CardTitle></CardHeader>
                     <CardContent className="text-sm space-y-2">
                         <p className="font-bold text-lg text-primary">{patient.name}</p>
                         <p className="text-muted-foreground">{patient.rut}</p>
@@ -233,7 +233,7 @@ export default function PharmacovigilanceReportPage() {
             )}
              {recipe && (
                 <Card>
-                    <CardHeader><CardTitle className="flex items-center gap-2"><FileText /> Receta Asociada</CardTitle></CardHeader>
+                    <CardHeader><CardTitle className="flex items-center gap-2 text-primary"><FileText /> Receta Asociada</CardTitle></CardHeader>
                     <CardContent className="text-sm space-y-2">
                         <p className="font-bold text-lg font-mono text-primary">{recipe.id}</p>
                         <p className="text-muted-foreground">

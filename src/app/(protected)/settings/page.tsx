@@ -47,7 +47,7 @@ const SettingsListEditor = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{title}</CardTitle>
+        <CardTitle className="text-primary">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="flex flex-wrap gap-2 mb-4">
@@ -127,7 +127,7 @@ export default function SettingsPage() {
     return (
       <div className="flex items-center justify-center h-full">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="ml-2 text-slate-600">Cargando configuraciones...</p>
+        <p className="ml-2 text-muted-foreground">Cargando configuraciones...</p>
       </div>
     );
   }
@@ -136,7 +136,7 @@ export default function SettingsPage() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-800 font-headline">Configuración del Sistema</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-primary font-headline">Configuración del Sistema</h1>
             <p className="text-sm text-muted-foreground">
               Personalice los valores de los formularios de la aplicación.
             </p>

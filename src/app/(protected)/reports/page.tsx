@@ -22,11 +22,11 @@ import React from 'react';
 const StatCard = ({ title, value, icon: Icon }: { title: string; value: string | number; icon: React.ElementType }) => (
   <Card>
     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium text-slate-700">{title}</CardTitle>
+      <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
       <Icon className="h-4 w-4 text-muted-foreground" />
     </CardHeader>
     <CardContent>
-      <div className="text-2xl font-bold text-slate-800">{value}</div>
+      <div className="text-2xl font-bold text-foreground">{value}</div>
     </CardContent>
   </Card>
 );
@@ -38,7 +38,7 @@ const ReportCard = ({ title, description, icon: Icon, actionText, onAction, disa
                 <Icon className="h-6 w-6 text-primary" />
             </div>
             <div>
-                <CardTitle className="text-lg font-bold text-slate-800">{title}</CardTitle>
+                <CardTitle className="text-lg font-bold text-primary">{title}</CardTitle>
                 <CardDescription className="mt-1 text-sm">{description}</CardDescription>
             </div>
         </CardHeader>
@@ -176,7 +176,7 @@ export default function ReportsPage() {
     return (
       <div className="flex items-center justify-center h-full">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="ml-2 text-slate-600">Cargando central de reportes...</p>
+        <p className="ml-2 text-muted-foreground">Cargando central de reportes...</p>
       </div>
     );
   }
@@ -184,7 +184,7 @@ export default function ReportsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-800 font-headline">Central de Reportes</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-primary font-headline">Central de Reportes</h1>
         <p className="text-sm text-muted-foreground">
           Genere informes y analice datos clave de la operación.
         </p>
@@ -198,7 +198,7 @@ export default function ReportsPage() {
       </div>
       
       <div>
-        <h2 className="text-2xl font-semibold tracking-tight text-slate-800 font-headline mb-4">Informes Disponibles</h2>
+        <h2 className="text-2xl font-semibold tracking-tight text-primary font-headline mb-4">Informes Disponibles</h2>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             <ReportCard 
                 title="Informe de Inventario"
