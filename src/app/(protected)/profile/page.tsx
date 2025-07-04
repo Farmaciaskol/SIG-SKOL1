@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
@@ -64,6 +65,7 @@ export default function ProfilePage() {
         toast({ title: 'Avatar Actualizado', description: 'Tu nuevo avatar ha sido guardado.' });
         setIsAvatarDialogOpen(false);
         await fetchUserData(); // Refresh user data to show new avatar everywhere
+        window.dispatchEvent(new CustomEvent('userProfileUpdated'));
     } catch(error) {
         toast({ title: 'Error', description: 'No se pudo guardar el avatar.', variant: 'destructive' });
     } finally {

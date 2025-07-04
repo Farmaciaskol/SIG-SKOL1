@@ -182,16 +182,27 @@ export function MainNav({
   const defaultOpenGroup = menuGroups.find(group => group.items.some(item => pathname.startsWith(item.href)))?.title || 'Principal';
   const [openItems, setOpenItems] = React.useState([defaultOpenGroup]);
 
-  React.useEffect(() => {
-    async function fetchAppUser() {
-      if (user?.email) {
-        const allUsers = await getUsers();
-        const foundUser = allUsers.find(u => u.email === user.email);
-        setAppUser(foundUser || null);
-      }
+  const fetchAppUser = React.useCallback(async () => {
+    if (user?.email) {
+      const allUsers = await getUsers();
+      const foundUser = allUsers.find(u => u.email === user.email);
+      setAppUser(foundUser || null);
     }
-    fetchAppUser();
   }, [user]);
+
+  React.useEffect(() => {
+    fetchAppUser();
+
+    const handleProfileUpdate = () => {
+      fetchAppUser();
+    };
+
+    window.addEventListener('userProfileUpdated', handleProfileUpdate);
+
+    return () => {
+      window.removeEventListener('userProfileUpdated', handleProfileUpdate);
+    };
+  }, [fetchAppUser]);
 
   const handleLogout = async () => {
     await signOut(auth);
