@@ -580,7 +580,7 @@ export const RecipesClient = ({
     );
 };
 
-  const MobileRecipeActions = ({ recipe }: { recipe: Recipe }) => {
+  const MobileRecipeActions = ({ recipe, setRecipeToView }: { recipe: Recipe, setRecipeToView: (recipe: Recipe | null) => void }) => {
     const dispensedCount = recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0;
     const isExpired = recipe.dueDate ? new Date(recipe.dueDate) < new Date() : false;
     const cycleLimitReached = dispensedCount >= MAX_REPREPARATIONS + 1;
@@ -604,7 +604,7 @@ export const RecipesClient = ({
         case RecipeStatus.Dispensed:
           return <Button size="sm" onClick={() => setRecipeToReprepare(recipe)} disabled={!canReprepare}><Copy className="mr-2 h-4 w-4" />Re-preparar</Button>;
         default:
-          return <Button size="sm" asChild><Link href={`/recipes/${recipe.id}`}><Eye className="mr-2 h-4 w-4" />Ver Detalle</Link></Button>;
+          return <Button size="sm" onClick={() => setRecipeToView(recipe)}><Eye className="mr-2 h-4 w-4" />Ver Detalle</Button>;
       }
     }
 
@@ -635,7 +635,7 @@ export const RecipesClient = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => router.push(`/recipes/${recipe.id}`)}><Eye className="mr-2 h-4 w-4" />Ver Detalle</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setRecipeToView(recipe)}><Eye className="mr-2 h-4 w-4" />Ver Detalle</DropdownMenuItem>
             <DropdownMenuItem disabled={!canEdit} onSelect={() => canEdit && router.push(`/recipes/${recipe.id}`)}><Pencil className="mr-2 h-4 w-4" />Editar</DropdownMenuItem>
             {(recipe.status === RecipeStatus.ReceivedAtSkol || recipe.status === RecipeStatus.ReadyForPickup) && (
               <DropdownMenuItem onClick={() => setRecipeToPrint(recipe)}><Printer className="mr-2 h-4 w-4" />Imprimir Etiqueta</DropdownMenuItem>
@@ -966,7 +966,7 @@ export const RecipesClient = ({
                     )}
                      <p className="text-xs text-slate-500 pt-1">Creada: {format(new Date(recipe.createdAt), "d MMM yyyy", { locale: es })}</p>
                   </CardContent>
-                  <CardFooter className="p-3 bg-muted/50"><MobileRecipeActions recipe={recipe} /></CardFooter>
+                  <CardFooter className="p-3 bg-muted/50"><MobileRecipeActions recipe={recipe} setRecipeToView={setRecipeToView} /></CardFooter>
                 </Card>
             ))}
             </div>
