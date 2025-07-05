@@ -87,6 +87,21 @@ const PlaceholderUserIcon = ({ className }: { className?: string }) => (
     </svg>
 );
 
+const PERMISSION_GROUP_TRANSLATIONS: Record<string, string> = {
+  RECIPES: 'Recetas',
+  PATIENTS: 'Pacientes',
+  USERS: 'Usuarios',
+  SETTINGS: 'Configuración',
+};
+
+const PERMISSION_ACTION_TRANSLATIONS: Record<string, string> = {
+  CREATE: 'Crear',
+  READ: 'Leer / Ver',
+  UPDATE: 'Actualizar / Editar',
+  DELETE: 'Eliminar',
+  VALIDATE: 'Validar',
+};
+
 const RoleManagerDialog = ({ roles, isOpen, onOpenChange, onSuccess }: {
     roles: Role[];
     isOpen: boolean;
@@ -206,7 +221,7 @@ const RoleManagerDialog = ({ roles, isOpen, onOpenChange, onSuccess }: {
                             <h4 className="font-medium text-foreground">Permisos</h4>
                             {Object.entries(PERMISSIONS).map(([group, permissions]) => (
                                 <div key={group}>
-                                    <h5 className="capitalize font-semibold mb-2 text-primary">{group.toLowerCase()}</h5>
+                                    <h5 className="capitalize font-semibold mb-2 text-primary">{PERMISSION_GROUP_TRANSLATIONS[group] || group.toLowerCase()}</h5>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-3">
                                         {Object.entries(permissions).map(([name, id]) => (
                                             <div key={id} className="flex items-center space-x-2">
@@ -215,7 +230,9 @@ const RoleManagerDialog = ({ roles, isOpen, onOpenChange, onSuccess }: {
                                                     checked={currentPermissions.includes(id)}
                                                     onCheckedChange={(checked) => handlePermissionChange(id, !!checked)}
                                                 />
-                                                <label htmlFor={id} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 capitalize">{name.toLowerCase().replace(/_/g, ' ')}</label>
+                                                <label htmlFor={id} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 capitalize">
+                                                    {PERMISSION_ACTION_TRANSLATIONS[name] || name.toLowerCase().replace(/_/g, ' ')}
+                                                </label>
                                             </div>
                                         ))}
                                     </div>
@@ -342,7 +359,7 @@ export default function UserManagementPage() {
         <DropdownMenuTrigger asChild>
         <Button aria-haspopup="true" size="icon" variant="ghost">
             <MoreHorizontal className="h-4 w-4" />
-            <span className="sr-only">Toggle menu</span>
+            <span className="sr-only">Menú</span>
         </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
