@@ -307,7 +307,7 @@ export default function PatientDetailPage() {
         
         {/* Clinical Alerts */}
         {hasAlerts && (
-          <Alert variant="destructive" className="bg-orange-50 border-orange-300 text-orange-900 [&>svg]:text-orange-600">
+          <Alert variant="warning">
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle className="font-bold">Alertas Clínicas Críticas</AlertTitle>
               <AlertDescription>

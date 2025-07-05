@@ -104,7 +104,7 @@ export const MAX_REPREPARATIONS = 4;
 
 export const statusConfig: Record<RecipeStatus, { text: string; badge: string; icon: LucideIcon }> = {
   [RecipeStatus.PendingReviewPortal]: { text: 'Pendiente Revisión - Portal', badge: 'bg-purple-100 text-purple-800 border-purple-200', icon: FileSearch },
-  [RecipeStatus.PendingValidation]: { text: 'Pendiente Validación', badge: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: FileClock },
+  [RecipeStatus.PendingValidation]: { text: 'Pendiente Validación', badge: 'bg-amber-100 text-amber-800 border-amber-200', icon: FileClock },
   [RecipeStatus.Validated]: { text: 'Validada', badge: 'bg-sky-100 text-sky-800 border-sky-200', icon: ShieldCheck },
   [RecipeStatus.SentToExternal]: { text: 'Enviada a Recetario', badge: 'bg-cyan-100 text-cyan-800 border-cyan-200', icon: Send },
   [RecipeStatus.Preparation]: { text: 'En Preparación', badge: 'bg-pink-100 text-pink-800 border-pink-200', icon: FlaskConical },

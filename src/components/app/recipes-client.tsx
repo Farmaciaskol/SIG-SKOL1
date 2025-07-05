@@ -899,12 +899,12 @@ export const RecipesClient = ({
                 <>
                     <TooltipProvider><Tooltip><TooltipTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleUpdateStatus(recipe, RecipeStatus.Validated, 'Receta validada por farmacéutico.')}>
-                            <ShieldCheck className="h-4 w-4 text-green-500" />
+                            <ShieldCheck className="h-4 w-4 text-green-600" />
                         </Button>
                     </TooltipTrigger><TooltipContent><p>Validar</p></TooltipContent></Tooltip></TooltipProvider>
                     <TooltipProvider><Tooltip><TooltipTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setRecipeToReject(recipe)}>
-                            <XCircle className="h-4 w-4 text-red-500" />
+                            <XCircle className="h-4 w-4 text-red-600" />
                         </Button>
                     </TooltipTrigger><TooltipContent><p>Rechazar</p></TooltipContent></Tooltip></TooltipProvider>
                 </>
@@ -914,13 +914,13 @@ export const RecipesClient = ({
                 recipe.supplySource === 'Insumos de Skol' ? (
                      <TooltipProvider><Tooltip><TooltipTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                            <Link href={`/dispatch-management`}><Truck className="h-4 w-4 text-blue-500" /></Link>
+                            <Link href={`/dispatch-management`}><Truck className="h-4 w-4 text-blue-600" /></Link>
                         </Button>
                     </TooltipTrigger><TooltipContent><p>Ir a Despachos</p></TooltipContent></Tooltip></TooltipProvider>
                 ) : (
                     <TooltipProvider><Tooltip><TooltipTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setRecipeToSend(recipe)}>
-                            <Send className="h-4 w-4 text-cyan-500" />
+                            <Send className="h-4 w-4 text-cyan-600" />
                         </Button>
                     </TooltipTrigger><TooltipContent><p>Enviar a Recetario</p></TooltipContent></Tooltip></TooltipProvider>
                 )
@@ -929,7 +929,7 @@ export const RecipesClient = ({
             {recipe.status === RecipeStatus.SentToExternal && (
                 <TooltipProvider><Tooltip><TooltipTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setRecipeToReceive(recipe)}>
-                        <PackageCheck className="h-4 w-4 text-indigo-500" />
+                        <PackageCheck className="h-4 w-4 text-indigo-600" />
                     </Button>
                 </TooltipTrigger><TooltipContent><p>Recepcionar Preparado</p></TooltipContent></Tooltip></TooltipProvider>
             )}
@@ -937,7 +937,7 @@ export const RecipesClient = ({
              {recipe.status === RecipeStatus.ReceivedAtSkol && (
                 <TooltipProvider><Tooltip><TooltipTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleUpdateStatus(recipe, RecipeStatus.ReadyForPickup)}>
-                        <Package className="h-4 w-4 text-orange-500" />
+                        <Package className="h-4 w-4 text-orange-600" />
                     </Button>
                 </TooltipTrigger><TooltipContent><p>Marcar para Retiro</p></TooltipContent></Tooltip></TooltipProvider>
             )}
@@ -945,7 +945,7 @@ export const RecipesClient = ({
             {recipe.status === RecipeStatus.ReadyForPickup && (
                 <TooltipProvider><Tooltip><TooltipTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleUpdateStatus(recipe, RecipeStatus.Dispensed)}>
-                        <CheckCheck className="h-4 w-4 text-green-500" />
+                        <CheckCheck className="h-4 w-4 text-green-600" />
                     </Button>
                 </TooltipTrigger><TooltipContent><p>Dispensar</p></TooltipContent></Tooltip></TooltipProvider>
             )}
@@ -1303,19 +1303,19 @@ export const RecipesClient = ({
                                     )}
                                     {isPaymentPending && (
                                         <TooltipProvider><Tooltip>
-                                            <TooltipTrigger asChild><span><DollarSign className="h-5 w-5 text-amber-500" /></span></TooltipTrigger>
+                                            <TooltipTrigger asChild><span><DollarSign className="h-5 w-5 text-amber-600" /></span></TooltipTrigger>
                                             <TooltipContent><p>Pago pendiente para esta receta.</p></TooltipContent>
                                         </Tooltip></TooltipProvider>
                                     )}
                                     {recipe.status === RecipeStatus.PendingReviewPortal && (
                                         <TooltipProvider><Tooltip>
-                                            <TooltipTrigger asChild><span><UserSquare className="h-5 w-5 text-purple-500" /></span></TooltipTrigger>
+                                            <TooltipTrigger asChild><span><UserSquare className="h-5 w-5 text-purple-600" /></span></TooltipTrigger>
                                             <TooltipContent><p>Receta subida desde el Portal de Pacientes</p></TooltipContent>
                                         </Tooltip></TooltipProvider>
                                     )}
                                     {recipe.items.some(item => item.requiresFractionation) && (
                                         <TooltipProvider><Tooltip>
-                                            <TooltipTrigger asChild><span><Split className="h-5 w-5 text-orange-500" /></span></TooltipTrigger>
+                                            <TooltipTrigger asChild><span><Split className="h-5 w-5 text-orange-600" /></span></TooltipTrigger>
                                             <TooltipContent><p>Requiere Fraccionamiento</p></TooltipContent>
                                         </Tooltip></TooltipProvider>
                                     )}
