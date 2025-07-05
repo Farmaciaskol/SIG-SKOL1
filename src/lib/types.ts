@@ -162,6 +162,7 @@ export interface Recipe {
   compoundingDate?: string; // ISO String
   preparationExpiryDate?: string; // ISO String
   requiresFractionation?: boolean; // Legacy support
+  isUrgentRepreparation?: boolean;
 }
 
 export interface AdverseReaction {

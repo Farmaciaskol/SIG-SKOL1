@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
@@ -210,13 +209,20 @@ const SendToPharmacyDialog = ({ recipe, pharmacy, patients, isOpen, onClose, onC
         const extension = extensionMatch ? extensionMatch[1] : 'jpg';
         return `${patientName}_${activeIngredient}.${extension}`;
     }, [recipe, patients]);
+    
+    const subject = useMemo(() => {
+        if (!recipe) return '';
+        const urgencyPrefix = recipe.isUrgentRepreparation ? '[URGENTE] ' : '';
+        return `${urgencyPrefix}Solicitud de Preparado Magistral - Receta ${recipe.id}`;
+    }, [recipe]);
 
     const emailBody = useMemo(() => {
         if (!recipe || !pharmacy) return '';
         const patient = patients.find(p => p.id === recipe.patientId);
         const item = recipe.items[0];
         const safetyStockLine = item.safetyStockDays && item.safetyStockDays > 0 ? `\n- Incluye dosis de seguridad para ${item.safetyStockDays} día(s) adicional(es).` : '';
-        return `Estimados ${pharmacy.name},\n\nSolicitamos la preparación del siguiente preparado magistral:\n\n- Paciente: ${patient?.name || 'N/A'}\n- Receta ID: ${recipe.id}\n- Preparado: ${item.principalActiveIngredient} ${item.concentrationValue}${item.concentrationUnit}\n- Posología: ${item.usageInstructions}\n- Cantidad a preparar: ${item.totalQuantityValue} ${item.totalQuantityUnit}${safetyStockLine}\n\nPor favor, encontrar la receta adjunta.\n\nSaludos cordiales,\nEquipo Farmacia Skol`;
+        const urgencyLine = recipe.isUrgentRepreparation ? `\n\n**NOTA URGENTE: Por favor, priorizar esta preparación. El tiempo de entrega límite es de 48 horas.**` : '';
+        return `Estimados ${pharmacy.name},\n\nSolicitamos la preparación del siguiente preparado magistral:\n\n- Paciente: ${patient?.name || 'N/A'}\n- Receta ID: ${recipe.id}\n- Preparado: ${item.principalActiveIngredient} ${item.concentrationValue}${item.concentrationUnit}\n- Posología: ${item.usageInstructions}\n- Cantidad a preparar: ${item.totalQuantityValue} ${item.totalQuantityUnit}${safetyStockLine}${urgencyLine}\n\nPor favor, encontrar la receta adjunta.\n\nSaludos cordiales,\nEquipo Farmacia Skol`;
     }, [recipe, pharmacy, patients]);
 
     const copyToClipboard = (text: string) => {
@@ -237,8 +243,8 @@ const SendToPharmacyDialog = ({ recipe, pharmacy, patients, isOpen, onClose, onC
                     <div className="space-y-2">
                         <Label>Asunto</Label>
                         <div className="flex items-center gap-2">
-                            <Input readOnly value={`Solicitud de Preparado Magistral - Receta ${recipe.id}`} />
-                            <Button variant="outline" size="icon" onClick={() => copyToClipboard(`Solicitud de Preparado Magistral - Receta ${recipe.id}`)}><ClipboardCopy /></Button>
+                            <Input readOnly value={subject} />
+                            <Button variant="outline" size="icon" onClick={() => copyToClipboard(subject)}><ClipboardCopy /></Button>
                         </div>
                     </div>
                     <div className="space-y-2">
@@ -492,6 +498,10 @@ export const RecipesClient = ({
     aspecto: false,
     cadenaFrio: false,
   });
+  
+  // Reprepare dialog state
+  const [daysSinceDispensation, setDaysSinceDispensation] = useState<number | null>(null);
+  const [urgencyStatus, setUrgencyStatus] = useState<'early' | 'normal' | 'urgent'>('normal');
 
   // Filtering state
   const [searchTerm, setSearchTerm] = useState('');
@@ -512,6 +522,23 @@ export const RecipesClient = ({
   const getPatientName = (patientId: string) => patients.find((p) => p.id === patientId)?.name || 'N/A';
   const getPharmacy = (pharmacyId?: string) => externalPharmacies.find((p) => p.id === pharmacyId);
   const getDoctorName = (doctorId: string) => doctors.find((d) => d.id === doctorId)?.name || 'N/A';
+  
+  useEffect(() => {
+    if (recipeToReprepare) {
+      const lastDispensation = recipeToReprepare.auditTrail?.slice().reverse().find(t => t.status === RecipeStatus.Dispensed);
+      if (lastDispensation?.date) {
+        const days = differenceInDays(new Date(), parseISO(lastDispensation.date));
+        setDaysSinceDispensation(days);
+        if (days < 23) setUrgencyStatus('early');
+        else if (days >= 23 && days <= 26) setUrgencyStatus('normal');
+        else setUrgencyStatus('urgent');
+      } else {
+        setDaysSinceDispensation(null);
+        setUrgencyStatus('normal');
+      }
+    }
+  }, [recipeToReprepare]);
+
 
   useEffect(() => {
     setRecipes(initialRecipes);
@@ -719,22 +746,22 @@ export const RecipesClient = ({
   };
 
   const handleConfirmReprepare = async () => {
-    if (!recipeToReprepare) return;
-    
-    if (!user) {
-        toast({ title: 'Error de Autenticación', description: 'Debe iniciar sesión para realizar esta acción.', variant: 'destructive' });
+    if (!recipeToReprepare || !user) {
+        toast({ title: 'Error', description: 'No se ha seleccionado una receta o falta la autenticación del usuario.', variant: 'destructive' });
         return;
     }
-    
     setIsSubmitting(true);
-    
+
     if (recipeToReprepare.isControlled && !controlledFolio.trim()) {
       toast({ title: "Error de Validación", description: "El nuevo folio es requerido para recetas controladas.", variant: "destructive" });
       setIsSubmitting(false);
       return;
     }
-
+    
     try {
+      const lastDispensation = recipeToReprepare.auditTrail?.slice().reverse().find(t => t.status === RecipeStatus.Dispensed);
+      const isUrgent = lastDispensation?.date ? differenceInDays(new Date(), parseISO(lastDispensation.date)) > 26 : false;
+
       const reprepareAuditEntry: AuditTrailEntry = {
         status: RecipeStatus.PendingValidation,
         date: new Date().toISOString(),
@@ -750,7 +777,8 @@ export const RecipesClient = ({
         compoundingDate: undefined,
         preparationExpiryDate: undefined,
         rejectionReason: undefined,
-        auditTrail: [...(recipeToReprepare.auditTrail || []), reprepareAuditEntry]
+        auditTrail: [...(recipeToReprepare.auditTrail || []), reprepareAuditEntry],
+        isUrgentRepreparation: isUrgent,
       };
 
       if (recipeToReprepare.isControlled) {
@@ -1099,6 +1127,22 @@ export const RecipesClient = ({
       </div>
     );
   };
+  
+  const ReprepareMessage = () => {
+    if (daysSinceDispensation === null) {
+      return <DialogDescription>¿Está seguro que desea iniciar un nuevo ciclo para esta receta? La receta volverá al estado 'Pendiente Validación'.</DialogDescription>
+    }
+    if (urgencyStatus === 'early') {
+      return <p className="text-amber-600 font-semibold">Alerta: Han pasado solo {daysSinceDispensation} día(s) desde la última dispensación. ¿Continuar de todas formas?</p>
+    }
+    if (urgencyStatus === 'normal') {
+      return <p className="text-green-600 font-semibold">Han pasado {daysSinceDispensation} día(s). Es un buen momento para preparar el siguiente ciclo. ¿Desea continuar?</p>
+    }
+    if (urgencyStatus === 'urgent') {
+      return <p className="text-red-600 font-semibold">Urgente: Han pasado {daysSinceDispensation} día(s) desde la última dispensación. Esta solicitud se marcará como urgente.</p>
+    }
+    return null;
+  }
 
   return (
     <>
@@ -1426,7 +1470,25 @@ export const RecipesClient = ({
       </AlertDialog>
       <Dialog open={!!recipeToReject} onOpenChange={(open) => {if (!open) {setRecipeToReject(null); setReason('');}}}><DialogContent><DialogHeader><DialogTitle className="text-xl font-semibold">Rechazar Receta: {recipeToReject?.id}</DialogTitle><DialogDescription>Por favor, ingrese el motivo del rechazo. Este quedará registrado en el historial de la receta.</DialogDescription></DialogHeader><div className="grid gap-4 py-4"><Label htmlFor="reason-textarea" className="text-sm font-medium text-foreground">Motivo del Rechazo *</Label><Textarea id="reason-textarea" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ej: Dosis inconsistente con la indicación."/></div><DialogFooter><Button variant="ghost" onClick={() => {setRecipeToReject(null); setReason('');}}>Cancelar</Button><Button variant="destructive" onClick={handleConfirmReject} disabled={!reason.trim() || isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Confirmar Rechazo</Button></DialogFooter></DialogContent></Dialog>
       <Dialog open={!!recipeToCancel} onOpenChange={(open) => {if (!open) {setRecipeToCancel(null); setReason('');}}}><DialogContent><DialogHeader><DialogTitle className="text-xl font-semibold">Anular Receta: {recipeToCancel?.id}</DialogTitle><DialogDescription>Por favor, ingrese el motivo de la anulación. Esta acción es irreversible.</DialogDescription></DialogHeader><div className="grid gap-4 py-4"><Label htmlFor="reason-textarea" className="text-sm font-medium text-foreground">Motivo de la Anulación *</Label><Textarea id="reason-textarea" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ej: Solicitado por el paciente."/></div><DialogFooter><Button variant="ghost" onClick={() => {setRecipeToCancel(null); setReason('');}}>Cancelar</Button><Button variant="destructive" onClick={handleConfirmCancel} disabled={!reason.trim() || isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Confirmar Anulación</Button></DialogFooter></DialogContent></Dialog>
-      <Dialog open={!!recipeToReprepare} onOpenChange={(open) => { if (!open) { setRecipeToReprepare(null); setControlledFolio(''); } }}><DialogContent><DialogHeader><DialogTitle className="text-xl font-semibold">Re-preparar Receta: {recipeToReprepare?.id}</DialogTitle></DialogHeader>{recipeToReprepare?.isControlled ? (<div className="space-y-4"><DialogDescription>Esta es una receta controlada. Para re-preparar, debe ingresar el folio de la nueva receta física/electrónica.</DialogDescription><div className="grid gap-2 py-2"><Label htmlFor="controlled-folio" className="mb-1 text-sm font-medium text-foreground">Nuevo Folio de Receta Controlada *</Label><Input id="controlled-folio" value={controlledFolio} onChange={(e) => setControlledFolio(e.target.value)} placeholder="Ej: A12345678"/></div></div>) : (<DialogDescription>¿Está seguro que desea iniciar un nuevo ciclo para esta receta? La receta volverá al estado 'Pendiente Validación'.</DialogDescription>)}<DialogFooter><Button variant="ghost" onClick={() => setRecipeToReprepare(null)}>Cancelar</Button><Button onClick={handleConfirmReprepare} disabled={isSubmitting || (recipeToReprepare?.isControlled && !controlledFolio.trim())}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Confirmar Re-preparación</Button></DialogFooter></DialogContent></Dialog>
+      <Dialog open={!!recipeToReprepare} onOpenChange={(open) => { if (!open) { setRecipeToReprepare(null); setControlledFolio(''); setDaysSinceDispensation(null); } }}><DialogContent>
+          <DialogHeader><DialogTitle className="text-xl font-semibold">Re-preparar Receta: {recipeToReprepare?.id}</DialogTitle></DialogHeader>
+          <div className="py-2">
+            <ReprepareMessage />
+          </div>
+          {recipeToReprepare?.isControlled && (
+            <div className="grid gap-2 py-2">
+                <Label htmlFor="controlled-folio" className="mb-1 text-sm font-medium text-foreground">Nuevo Folio de Receta Controlada *</Label>
+                <Input id="controlled-folio" value={controlledFolio} onChange={(e) => setControlledFolio(e.target.value)} placeholder="Ej: A12345678"/>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setRecipeToReprepare(null)}>Cancelar</Button>
+            <Button onClick={handleConfirmReprepare} disabled={isSubmitting || (recipeToReprepare?.isControlled && !controlledFolio.trim())}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Confirmar Re-preparación
+            </Button>
+          </DialogFooter>
+      </DialogContent></Dialog>
       <Dialog open={!!recipeToReceive} onOpenChange={(open) => {if (!open) { setRecipeToReceive(null); setInternalLot(''); setPreparationExpiry(undefined); setReceptionChecklist({ etiqueta: false, vencimiento: false, aspecto: false, cadenaFrio: false }); setTransportCost('0'); }}}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
