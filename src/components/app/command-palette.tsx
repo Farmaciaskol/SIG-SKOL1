@@ -68,10 +68,10 @@ export function CommandPalette() {
     }
   }, [open]);
 
-  const runCommand = React.useCallback((command: () => unknown) => {
+  const handleSelect = (url: string) => {
+    router.push(url);
     setOpen(false);
-    command();
-  }, []);
+  };
   
   const getPatientName = (patientId: string) => {
     return patients.find(p => p.id === patientId)?.name || 'N/A';
@@ -118,9 +118,7 @@ export function CommandPalette() {
               <CommandItem
                 key={recipe.id}
                 value={`receta ${recipe.id} ${getPatientName(recipe.patientId)} ${recipe.items[0]?.principalActiveIngredient}`}
-                onSelect={() => {
-                  runCommand(() => router.push(`/recipes/${recipe.id}`));
-                }}
+                onSelect={() => handleSelect(`/recipes/${recipe.id}`)}
               >
                 <FileText className="mr-2 h-4 w-4" />
                 <span>Receta: {recipe.id.substring(0,8)}...</span>
@@ -134,9 +132,7 @@ export function CommandPalette() {
               <CommandItem
                 key={patient.id}
                 value={`paciente ${patient.name} ${patient.rut}`}
-                onSelect={() => {
-                  runCommand(() => router.push(`/patients/${patient.id}`));
-                }}
+                onSelect={() => handleSelect(`/patients/${patient.id}`)}
               >
                 <Users className="mr-2 h-4 w-4" />
                 <span>{patient.name}</span>
@@ -150,9 +146,7 @@ export function CommandPalette() {
               <CommandItem
                 key={doctor.id}
                 value={`doctor ${doctor.name} ${doctor.specialty}`}
-                onSelect={() => {
-                  runCommand(() => router.push(`/doctors/${doctor.id}`));
-                }}
+                onSelect={() => handleSelect(`/doctors/${doctor.id}`)}
               >
                 <Stethoscope className="mr-2 h-4 w-4" />
                 <span>{doctor.name}</span>
@@ -168,9 +162,7 @@ export function CommandPalette() {
                <CommandItem
                 key={page.href}
                 value={page.label}
-                onSelect={() => {
-                  runCommand(() => router.push(page.href));
-                }}
+                onSelect={() => handleSelect(page.href)}
               >
                 <page.icon className="mr-2 h-4 w-4" />
                 <span>{page.label}</span>
