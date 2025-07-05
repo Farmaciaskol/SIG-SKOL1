@@ -615,24 +615,13 @@ export const logDirectSaleDispensation = async (
     await batch.commit();
 };
 
-export const updatePatient = async (id: string, updates: Partial<Patient> & { password?: string }): Promise<void> => {
+export const updatePatient = async (id: string, updates: Partial<Patient>): Promise<void> => {
     if (!db) throw new Error("Firestore is not initialized.");
-    
-    const { password, ...patientUpdates } = updates;
-
-    // --- Firebase Auth Password Update (Simulated) ---
-    // In a real application, a secure backend function (e.g., Firebase Function)
-    // would handle updating the user's password securely in Firebase Authentication.
-    if (password) {
-        // Example: await updateAuthUserPassword(id, password);
-        console.log(`(Simulado) Se ha solicitado un cambio de contraseña para el paciente ${id}.`);
-    }
-
-    await updateDoc(doc(db, 'patients', id), patientUpdates as any);
+    await updateDoc(doc(db, 'patients', id), updates as any);
 };
 
 
-export const addPatient = async (patient: Omit<Patient, 'id' | 'proactiveStatus' | 'proactiveMessage' | 'actionNeeded' | 'commercialMedications'> & { password?: string }): Promise<string> => {
+export const addPatient = async (patient: Omit<Patient, 'id' | 'proactiveStatus' | 'proactiveMessage' | 'actionNeeded' | 'commercialMedications'>): Promise<string> => {
     if (!db) throw new Error("Firestore is not initialized.");
     
     const q = query(collection(db, "patients"), where("rut", "==", patient.rut), limit(1));
@@ -641,18 +630,15 @@ export const addPatient = async (patient: Omit<Patient, 'id' | 'proactiveStatus'
         throw new Error('Ya existe un paciente con este RUT.');
     }
 
-    const { password, ...patientData } = patient;
-
-    // --- Firebase Auth User Creation (Simulated) ---
-    if (password) {
-        if (!patientData.email) {
-            throw new Error("El email es requerido si se ingresa una contraseña para el portal.");
-        }
-        console.log(`(Simulado) Creando usuario de Firebase Auth para ${patientData.email}`);
+    if (!patient.email) {
+        throw new Error("El email es requerido para crear un nuevo paciente y su acceso al portal.");
     }
     
+    // In a real application, you would trigger a Firebase Function here to create the Firebase Auth user.
+    console.log(`(Simulado) Se enviaría una invitación o se crearía un usuario de Firebase Auth para ${patient.email}`);
+    
     const dataToSave: Omit<Patient, 'id'> = {
-        ...patientData,
+        ...patient,
         proactiveStatus: ProactivePatientStatus.OK,
         proactiveMessage: 'No requiere acción.',
         actionNeeded: PatientActionNeeded.NONE,
@@ -660,7 +646,7 @@ export const addPatient = async (patient: Omit<Patient, 'id' | 'proactiveStatus'
     };
     const docRef = await addDoc(collection(db, 'patients'), dataToSave as any);
     return docRef.id;
-}
+};
 
 
 export const deletePatient = async (id: string): Promise<void> => {

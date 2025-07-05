@@ -1,14 +1,14 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Patient } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { auth } from '@/lib/firebase';
-import { signInAnonymously, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
 
 interface PatientAuthContextType {
   patient: Patient | null;
+  firebaseUser: FirebaseUser | null;
   loading: boolean;
   setPatient: (patient: Patient | null) => void;
   logout: () => void;
@@ -16,10 +16,11 @@ interface PatientAuthContextType {
 }
 
 const PatientAuthContext = createContext<PatientAuthContextType | undefined>(undefined);
-const PATIENT_SESSION_KEY = 'patient-session-data';
+const PATIENT_DATA_KEY = 'skol_patient_data';
 
 export function PatientAuthProvider({ children }: { children: React.ReactNode }) {
   const [patient, setPatientState] = useState<Patient | null>(null);
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,46 +31,39 @@ export function PatientAuthProvider({ children }: { children: React.ReactNode })
     }
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setFirebaseUser(user);
       if (user) {
-        // User is authenticated (either real or anonymous)
-        // Now we can safely load the patient data
-        try {
-          const storedPatient = sessionStorage.getItem(PATIENT_SESSION_KEY);
-          if (storedPatient) {
-            setPatientState(JSON.parse(storedPatient));
+        // User is authenticated. We'll load patient data if it exists in session storage.
+        // The login page is responsible for fetching and setting the initial patient data.
+        const storedPatient = sessionStorage.getItem(PATIENT_DATA_KEY);
+        if (storedPatient) {
+          const parsedPatient = JSON.parse(storedPatient);
+          // Make sure the logged-in user matches the stored patient data
+          if (parsedPatient.email === user.email) {
+            setPatientState(parsedPatient);
+          } else {
+             // Mismatch, clear stale data
+             sessionStorage.removeItem(PATIENT_DATA_KEY);
+             setPatientState(null);
           }
-        } catch (error) {
-          console.error("Failed to load patient from session storage", error);
-        } finally {
-          setLoading(false);
         }
       } else {
-        // No user, sign in anonymously. onAuthStateChanged will run again once signed in.
-        signInAnonymously(auth).catch(error => {
-            console.error("Anonymous sign-in failed", error);
-            // If sign-in fails, we should stop loading to avoid an infinite loop
-            setLoading(false); 
-        });
+        // User is not authenticated, clear patient data.
+        sessionStorage.removeItem(PATIENT_DATA_KEY);
+        setPatientState(null);
       }
+      setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []); // Run only once on mount
+  }, []);
 
   const setPatient = useCallback((newPatient: Patient | null) => {
     setPatientState(newPatient);
     if (newPatient) {
-      try {
-        sessionStorage.setItem(PATIENT_SESSION_KEY, JSON.stringify(newPatient));
-      } catch (e) {
-          console.error("Failed to save patient data to sessionStorage", e);
-      }
+      sessionStorage.setItem(PATIENT_DATA_KEY, JSON.stringify(newPatient));
     } else {
-      try {
-        sessionStorage.removeItem(PATIENT_SESSION_KEY);
-      } catch (e) {
-        console.error("Failed to remove patient data from sessionStorage", e);
-      }
+      sessionStorage.removeItem(PATIENT_DATA_KEY);
     }
   }, []);
   
@@ -85,12 +79,14 @@ export function PatientAuthProvider({ children }: { children: React.ReactNode })
     }
   }, [setPatient]);
 
-
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
     setPatient(null);
+    if (auth) {
+      await signOut(auth);
+    }
   }, [setPatient]);
 
-  const value = { patient, loading, setPatient, logout, refreshPatient };
+  const value = { patient, firebaseUser, loading, setPatient, logout, refreshPatient };
 
   return (
     <PatientAuthContext.Provider value={value}>

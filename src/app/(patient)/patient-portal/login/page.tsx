@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -13,6 +12,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 export default function PatientPortalLoginPage() {
   const router = useRouter();
@@ -22,10 +23,9 @@ export default function PatientPortalLoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // This is a MOCK login. In a real app, you would use Firebase Auth's signInWithEmailAndPassword.
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
+    if (!email || !password || !auth) {
       toast({
         title: 'Campos requeridos',
         description: 'Por favor ingrese su email y contraseña.',
@@ -36,28 +36,32 @@ export default function PatientPortalLoginPage() {
     setLoading(true);
 
     try {
-      // In a real app, this would be a single, secure call to Firebase Auth.
-      // Here, we simulate by fetching all patients and finding one by email.
-      // This is insecure and not performant for production.
-      const allPatients = await getPatients();
-      const foundPatient = allPatients.find(p => p.email && p.email.toLowerCase() === email.toLowerCase());
+      // Step 1: Sign in with Firebase Auth
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
 
-      if (foundPatient) {
-        // We are NOT checking the password. This is a prototype limitation.
-        setPatient(foundPatient);
-        router.push('/patient-portal/dashboard');
-      } else {
-        toast({
-          title: 'Acceso Denegado',
-          description: 'El email o la contraseña son incorrectos.',
-          variant: 'destructive',
-        });
-        setLoading(false);
+      if (firebaseUser) {
+        // Step 2: Fetch patient profile from Firestore using the email
+        const allPatients = await getPatients();
+        const foundPatient = allPatients.find(p => p.email && p.email.toLowerCase() === email.toLowerCase());
+
+        if (foundPatient) {
+          // Step 3: Set patient data in context and redirect
+          setPatient(foundPatient);
+          router.push('/patient-portal/dashboard');
+        } else {
+          toast({
+            title: 'Perfil no encontrado',
+            description: 'Sus credenciales son correctas, pero no encontramos un perfil de paciente asociado a este email.',
+            variant: 'destructive',
+          });
+          setLoading(false);
+        }
       }
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Ocurrió un error al intentar acceder al portal.',
+        title: 'Acceso Denegado',
+        description: 'El email o la contraseña son incorrectos.',
         variant: 'destructive',
       });
       setLoading(false);

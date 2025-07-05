@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -47,13 +46,6 @@ const patientFormSchema = z.object({
   gender: z.enum(['Masculino', 'Femenino', 'Otro']),
   isChronic: z.boolean().default(false),
   allergies: z.string().optional(),
-  password: z.string().min(6, { message: 'La contraseña debe tener al menos 6 caracteres.' }).optional().or(z.literal('')),
-}).refine(data => {
-    // If a password is provided, an email must also be provided.
-    return !data.password || (!!data.password && !!data.email);
-}, {
-    message: "El email es requerido si se ingresa una contraseña.",
-    path: ["email"], // Show error on email field
 });
 
 type PatientFormValues = z.infer<typeof patientFormSchema>;
@@ -74,7 +66,7 @@ export function PatientFormDialog({ patient, isOpen, onOpenChange, onSuccess }: 
         resolver: zodResolver(patientFormSchema),
         defaultValues: {
             name: '', rut: '', email: '', phone: '', address: '',
-            gender: 'Masculino', isChronic: false, allergies: '', password: ''
+            gender: 'Masculino', isChronic: false, allergies: ''
         },
     });
 
@@ -89,12 +81,11 @@ export function PatientFormDialog({ patient, isOpen, onOpenChange, onSuccess }: 
                 gender: patient.gender || 'Masculino',
                 isChronic: patient.isChronic || false,
                 allergies: patient.allergies?.join(', ') || '',
-                password: '',
             });
         } else if (isOpen && !patient) {
             form.reset({
                 name: '', rut: '', email: '', phone: '', address: '',
-                gender: 'Masculino', isChronic: false, allergies: '', password: ''
+                gender: 'Masculino', isChronic: false, allergies: ''
             });
         }
     }, [isOpen, patient, form]);
@@ -111,6 +102,11 @@ export function PatientFormDialog({ patient, isOpen, onOpenChange, onSuccess }: 
                 await updatePatient(patient.id, dataToSave);
                 toast({ title: 'Paciente Actualizado', description: 'Los datos del paciente se han guardado.' });
             } else {
+                if (!dataToSave.email) {
+                    toast({ title: "Email requerido", description: "El email es necesario para crear un nuevo paciente y su acceso al portal.", variant: "destructive" });
+                    setIsSubmitting(false);
+                    return;
+                }
                 await addPatient(dataToSave as any);
                 toast({ title: 'Paciente Creado', description: 'El nuevo paciente ha sido registrado.' });
             }
@@ -130,7 +126,7 @@ export function PatientFormDialog({ patient, isOpen, onOpenChange, onSuccess }: 
                 <DialogHeader>
                     <DialogTitle>{isEditMode ? 'Editar Paciente' : 'Nuevo Paciente'}</DialogTitle>
                     <DialogDescription>
-                        {isEditMode ? 'Actualice los datos del paciente.' : 'Complete el formulario para registrar un nuevo paciente.'}
+                        {isEditMode ? 'Actualice los datos del paciente.' : 'Complete el formulario para registrar un nuevo paciente. El email es requerido para el acceso al portal.'}
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -181,16 +177,11 @@ export function PatientFormDialog({ patient, isOpen, onOpenChange, onSuccess }: 
                         <div>
                             <h3 className="text-lg font-medium mb-1">Credenciales de Acceso al Portal</h3>
                             <p className="text-sm text-muted-foreground mb-4">
-                                Estas credenciales son opcionales. Si ingresa una contraseña, el email es obligatorio.
+                                El email servirá como nombre de usuario del paciente. El paciente deberá usar la función "Olvidé mi contraseña" para establecerla por primera vez.
                             </p>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <FormField control={form.control} name="email" render={({ field }) => (
-                                    <FormItem><FormLabel>Email (Usuario)</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
-                                )}/>
-                                <FormField control={form.control} name="password" render={({ field }) => (
-                                    <FormItem><FormLabel>Nueva Contraseña</FormLabel><FormControl><Input type="password" {...field} /></FormControl><FormMessage /></FormItem>
-                                )}/>
-                            </div>
+                            <FormField control={form.control} name="email" render={({ field }) => (
+                                <FormItem><FormLabel>Email (Usuario) {isEditMode ? '' : '*'}</FormLabel><FormControl><Input type="email" {...field} disabled={isEditMode} /></FormControl><FormMessage /></FormItem>
+                            )}/>
                         </div>
 
                         <DialogFooter className="pt-4 sticky bottom-0 bg-background">
