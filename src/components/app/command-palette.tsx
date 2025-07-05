@@ -68,9 +68,12 @@ export function CommandPalette() {
     }
   }, [open]);
 
+  // This is the key change: a function that returns the event handler.
   const handleSelect = (url: string) => {
-    router.push(url);
-    setOpen(false);
+    return () => {
+      router.push(url);
+      setOpen(false);
+    }
   };
   
   const getPatientName = (patientId: string) => {
@@ -100,7 +103,7 @@ export function CommandPalette() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="text-sm text-muted-foreground w-full h-9 px-3 bg-muted rounded-md flex items-center justify-start shadow-none"
+        className="text-sm text-muted-foreground w-full h-9 px-3 bg-card rounded-md flex items-center justify-start shadow-none border hover:bg-accent"
       >
         <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
         <span className="truncate">Buscar...</span>
@@ -118,7 +121,7 @@ export function CommandPalette() {
               <CommandItem
                 key={recipe.id}
                 value={`receta ${recipe.id} ${getPatientName(recipe.patientId)} ${recipe.items[0]?.principalActiveIngredient}`}
-                onSelect={() => handleSelect(`/recipes/${recipe.id}`)}
+                onSelect={handleSelect(`/recipes/${recipe.id}`)}
               >
                 <FileText className="mr-2 h-4 w-4" />
                 <span>Receta: {recipe.id.substring(0,8)}...</span>
@@ -132,7 +135,7 @@ export function CommandPalette() {
               <CommandItem
                 key={patient.id}
                 value={`paciente ${patient.name} ${patient.rut}`}
-                onSelect={() => handleSelect(`/patients/${patient.id}`)}
+                onSelect={handleSelect(`/patients/${patient.id}`)}
               >
                 <Users className="mr-2 h-4 w-4" />
                 <span>{patient.name}</span>
@@ -146,7 +149,7 @@ export function CommandPalette() {
               <CommandItem
                 key={doctor.id}
                 value={`doctor ${doctor.name} ${doctor.specialty}`}
-                onSelect={() => handleSelect(`/doctors/${doctor.id}`)}
+                onSelect={handleSelect(`/doctors/${doctor.id}`)}
               >
                 <Stethoscope className="mr-2 h-4 w-4" />
                 <span>{doctor.name}</span>
@@ -162,7 +165,7 @@ export function CommandPalette() {
                <CommandItem
                 key={page.href}
                 value={page.label}
-                onSelect={() => handleSelect(page.href)}
+                onSelect={handleSelect(page.href)}
               >
                 <page.icon className="mr-2 h-4 w-4" />
                 <span>{page.label}</span>
