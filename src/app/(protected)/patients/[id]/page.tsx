@@ -4,9 +4,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { getPatient, getRecipes, getDoctors, getControlledSubstanceLogForPatient, getPharmacovigilanceReportsForPatient, updatePatient, getInventory } from '@/lib/data';
+import { getPatient, getRecipes, getDoctors, getControlledSubstanceLogForPatient, getPharmacovigilanceReportsForPatient, updatePatient, getInventory, addPharmacovigilanceReport } from '@/lib/data';
 import type { Patient, Recipe, Doctor, ControlledSubstanceLogEntry, PharmacovigilanceReport, InventoryItem } from '@/lib/types';
-import { PharmacovigilanceReportStatus, RecipeStatus } from '@/lib/types';
+import { PharmacovigilanceReportStatus, RecipeStatus, PharmacovigilanceSeverity, PharmacovigilanceOutcome } from '@/lib/types';
 import { analyzePatientHistory, AnalyzePatientHistoryOutput } from '@/ai/flows/analyze-patient-history';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, User, Mail, Phone, MapPin, AlertTriangle, Pencil, Clock, Wand2, FlaskConical, FileText, CheckCircle2, BriefcaseMedical, DollarSign, Calendar, Lock, ShieldAlert, Eye, PlusCircle, Search, X, ChevronLeft } from 'lucide-react';
+import { Loader2, User, Mail, Phone, MapPin, AlertTriangle, Pencil, Clock, Wand2, FlaskConical, FileText, CheckCircle2, BriefcaseMedical, DollarSign, Calendar, Lock, ShieldAlert, Eye, PlusCircle, Search, X, ChevronLeft, Calendar as CalendarIcon, Save } from 'lucide-react';
 import { format, parseISO, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { PatientFormDialog } from '@/components/app/patient-form-dialog';
@@ -24,6 +24,22 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '@/lib/firebase';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Textarea } from '@/components/ui/textarea';
+
+type ActiveTreatment = {
+  type: 'magistral';
+  recipe: Recipe;
+} | {
+  type: 'commercial';
+  inventoryItem: InventoryItem | { name: string; id: string };
+};
 
 const StatCard = ({ title, value, icon: Icon }: { title: string; value: string | number; icon: React.ElementType }) => (
   <Card>
@@ -46,6 +62,145 @@ const statusStyles: Record<PharmacovigilanceReportStatus, string> = {
   [PharmacovigilanceReportStatus.Resolved]: 'bg-green-100 text-green-800',
   [PharmacovigilanceReportStatus.Closed]: 'bg-slate-200 text-slate-800',
 };
+
+const reportSchema = z.object({
+  severity: z.nativeEnum(PharmacovigilanceSeverity, { required_error: 'La gravedad es requerida.'}),
+  outcome: z.nativeEnum(PharmacovigilanceOutcome, { required_error: 'El desenlace es requerido.'}),
+  reactionStartDate: z.date({ required_error: 'La fecha de inicio de la reacción es requerida.'}),
+  problemDescription: z.string().min(10, 'La descripción debe tener al menos 10 caracteres.'),
+  concomitantMedications: z.string().optional(),
+});
+
+type ReportFormValues = z.infer<typeof reportSchema>;
+
+const PharmacovigilanceDialog = ({ 
+  isOpen, 
+  onOpenChange, 
+  patient, 
+  treatment, 
+  onSuccess 
+} : {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  patient: Patient | null;
+  treatment: ActiveTreatment | null;
+  onSuccess: () => void;
+}) => {
+  const { toast } = useToast();
+  const [user] = useAuthState(auth);
+
+  const form = useForm<ReportFormValues>({
+    resolver: zodResolver(reportSchema),
+    defaultValues: {
+      concomitantMedications: '',
+    },
+  });
+
+  useEffect(() => {
+    if (!isOpen) {
+      form.reset({
+        concomitantMedications: '',
+        problemDescription: '',
+        severity: undefined,
+        outcome: undefined,
+        reactionStartDate: undefined,
+      });
+    }
+  }, [isOpen, form]);
+  
+  const onSubmit = async (data: ReportFormValues) => {
+    if (!patient || !treatment || !user) {
+        toast({ title: "Error", description: "Faltan datos para crear el reporte.", variant: "destructive" });
+        return;
+    }
+    
+    let age;
+    if (patient.rut) {
+        try {
+            const rutYear = parseInt(patient.rut.split('-')[0].slice(-2));
+            const currentYear = new Date().getFullYear() % 100;
+            let birthYear = (rutYear > currentYear) ? 1900 + rutYear : 2000 + rutYear;
+            age = new Date().getFullYear() - birthYear;
+        } catch(e) { /* ignore */ }
+    }
+
+    const reportData = {
+        ...data,
+        reporterName: user.displayName || user.email || 'Sistema',
+        patientId: patient.id,
+        isMagistral: treatment.type === 'magistral',
+        recipeId: treatment.type === 'magistral' ? treatment.recipe.id : undefined,
+        suspectedMedicationName: treatment.type === 'magistral' ? (treatment.recipe.items[0]?.principalActiveIngredient || 'N/A') : treatment.inventoryItem.name,
+        dose: treatment.type === 'magistral' ? `${treatment.recipe.items[0]?.concentrationValue || ''}${treatment.recipe.items[0]?.concentrationUnit || ''}` : `${(treatment.inventoryItem as InventoryItem).doseValue || ''} ${(treatment.inventoryItem as InventoryItem).doseUnit || ''}`,
+        pharmaceuticalForm: treatment.type === 'magistral' ? treatment.recipe.items[0]?.pharmaceuticalForm : (treatment.inventoryItem as InventoryItem).pharmaceuticalForm,
+        lotNumber: treatment.type === 'magistral' ? treatment.recipe.internalPreparationLot : undefined,
+        patientInfoSnapshot: {
+            name: patient.name,
+            rut: patient.rut,
+            gender: patient.gender || 'Otro',
+            age: age,
+        },
+        reactionStartDate: data.reactionStartDate.toISOString(),
+    };
+    
+    try {
+        await addPharmacovigilanceReport(reportData);
+        toast({ title: 'Reporte de FV Creado', description: 'El nuevo reporte se ha guardado exitosamente.' });
+        onSuccess();
+    } catch(error) {
+        console.error("Failed to create FV report:", error);
+        toast({ title: "Error al Crear Reporte", description: error instanceof Error ? error.message : "Ocurrió un error inesperado.", variant: "destructive" });
+    }
+  };
+
+  const { isSubmitting } = form.formState;
+  
+  if (!treatment || !patient) return null;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Reportar Evento Adverso</DialogTitle>
+          <DialogDescription>
+            Reporte de evento para el medicamento <span className="font-bold text-primary">{treatment.type === 'magistral' ? (treatment.recipe.items[0]?.principalActiveIngredient || 'N/A') : treatment.inventoryItem.name}</span>
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-2 max-h-[70vh] overflow-y-auto pr-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <FormField control={form.control} name="reactionStartDate" render={({ field }) => (
+                        <FormItem className="flex flex-col"><FormLabel>Fecha Inicio Reacción *</FormLabel>
+                        <Popover><PopoverTrigger asChild><FormControl><Button variant="outline" className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? format(field.value, "PPP", { locale: es }) : <span>Seleccionar fecha</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent></Popover>
+                        <FormMessage />
+                        </FormItem>
+                    )} />
+                    <FormField control={form.control} name="severity" render={({ field }) => (
+                        <FormItem><FormLabel>Gravedad *</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Seleccione..."/></SelectTrigger></FormControl><SelectContent>{Object.values(PharmacovigilanceSeverity).map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem>
+                    )}/>
+                    <FormField control={form.control} name="outcome" render={({ field }) => (
+                        <FormItem><FormLabel>Desenlace *</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Seleccione..."/></SelectTrigger></FormControl><SelectContent>{Object.values(PharmacovigilanceOutcome).map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem>
+                    )}/>
+                </div>
+                <FormField control={form.control} name="problemDescription" render={({ field }) => (
+                    <FormItem><FormLabel>Descripción Detallada de la Reacción *</FormLabel><FormControl><Textarea rows={5} placeholder="Describa la reacción, cuándo ocurrió, qué medidas se tomaron, etc." {...field} /></FormControl><FormMessage /></FormItem>
+                )}/>
+                <FormField control={form.control} name="concomitantMedications" render={({ field }) => (
+                    <FormItem><FormLabel>Otros Medicamentos en Uso (Concomitantes)</FormLabel><FormControl><Textarea placeholder="Liste otros medicamentos que el paciente estaba tomando, separados por comas." {...field} /></FormControl><FormMessage /></FormItem>
+                )}/>
+                <DialogFooter className="pt-4">
+                    <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
+                    <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Enviar Reporte
+                    </Button>
+                </DialogFooter>
+            </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 
 export default function PatientDetailPage() {
@@ -76,6 +231,9 @@ export default function PatientDetailPage() {
   const [isSavingMeds, setIsSavingMeds] = useState(false);
   const [currentMeds, setCurrentMeds] = useState<string[]>([]);
   const [medToAdd, setMedToAdd] = useState('');
+
+  // FV Dialog State
+  const [reportingTreatment, setReportingTreatment] = useState<ActiveTreatment | null>(null);
 
 
   const fetchData = useCallback(async () => {
@@ -120,52 +278,26 @@ export default function PatientDetailPage() {
     fetchData();
   }, [fetchData]);
 
-  const activeTreatments = useMemo(() => {
+  const activeTreatments = useMemo<ActiveTreatment[]>(() => {
     if (!patient || !inventory) return [];
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Compare dates only
-
-    const activeMagistralRecipes = recipes
+  
+    const activeMagistralRecipes: ActiveTreatment[] = recipes
         .filter(r => ![
             RecipeStatus.Dispensed,
             RecipeStatus.Cancelled,
             RecipeStatus.Rejected,
             RecipeStatus.Archived,
         ].includes(r.status))
-        .map(r => {
-            let isExpired = false;
-            if (r.dueDate) {
-                const dueDate = parseISO(r.dueDate);
-                if (isValid(dueDate)) {
-                    dueDate.setHours(0, 0, 0, 0);
-                    isExpired = dueDate < today;
-                }
-            }
-            const item = r.items[0];
-            return {
-                type: 'magistral' as const,
-                name: item?.principalActiveIngredient || 'Preparado Magistral',
-                details: `Receta #${r.id.substring(0, 6)}... - ${r.status}`,
-                id: r.id,
-                isExpired,
-                dose: item ? `${item.concentrationValue}${item.concentrationUnit}` : 'N/A',
-                quantity: item ? `${item.totalQuantityValue} ${item.totalQuantityUnit}` : 'N/A',
-                price: r.preparationCost ? `$${r.preparationCost.toLocaleString('es-CL')}` : 'N/A',
-            }
-        });
+        .map(r => ({
+            type: 'magistral',
+            recipe: r,
+        }));
     
-    const activeCommercialMeds = (patient.commercialMedications || []).map((med, index) => {
+    const activeCommercialMeds: ActiveTreatment[] = (patient.commercialMedications || []).map((med, index) => {
         const inventoryItem = inventory.find(i => i.name.toLowerCase() === med.toLowerCase());
         return {
-            type: 'commercial' as const,
-            name: med,
-            details: 'Medicamento Comercial',
-            id: `comm-${index}`,
-            isExpired: false,
-            dose: inventoryItem ? `${inventoryItem.doseValue} ${inventoryItem.doseUnit}` : 'N/A',
-            quantity: inventoryItem ? `${inventoryItem.itemsPerBaseUnit} ${inventoryItem.pharmaceuticalForm}/envase` : 'N/A',
-            price: inventoryItem?.salePrice ? `$${inventoryItem.salePrice.toLocaleString('es-CL')}` : 'N/A',
+            type: 'commercial',
+            inventoryItem: inventoryItem || { name: med, id: `comm-${index}` },
         }
     });
 
@@ -303,12 +435,7 @@ export default function PatientDetailPage() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2 w-full justify-start md:w-auto md:justify-end">
-            <Button variant="outline" asChild>
-                <Link href={`/pharmacovigilance/new?patientId=${patient.id}`}>
-                    <ShieldAlert className="mr-2 h-4 w-4"/> Reportar Evento FV
-                </Link>
-            </Button>
-            <Button onClick={handleAnalyzeHistory} disabled={isAnalyzing}>
+            <Button variant="outline" onClick={handleAnalyzeHistory} disabled={isAnalyzing}>
               {isAnalyzing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />} Analizar Historial (IA)
             </Button>
             <Button onClick={() => setIsEditModalOpen(true)}><Pencil className="mr-2 h-4 w-4"/> Editar Paciente</Button>
@@ -374,20 +501,45 @@ export default function PatientDetailPage() {
                 <CardContent>
                     {activeTreatments.length > 0 ? (
                         <ul className="space-y-3">
-                            {activeTreatments.map((treatment) => (
-                                <li key={treatment.id} className={cn("p-4 bg-muted/50 rounded-lg", treatment.isExpired && "bg-red-50 border-l-4 border-red-400")}>
+                            {activeTreatments.map((treatment) => {
+                                let key, name, details, isExpired = false, dose = 'N/A', quantity = 'N/A', price = 'N/A';
+                                if (treatment.type === 'magistral') {
+                                    const r = treatment.recipe;
+                                    const item = r.items[0];
+                                    key = r.id;
+                                    name = item?.principalActiveIngredient || 'Preparado Magistral';
+                                    details = `Receta #${r.id.substring(0, 6)}... - ${r.status}`;
+                                    if (r.dueDate) {
+                                        const dueDate = parseISO(r.dueDate);
+                                        if (isValid(dueDate)) { isExpired = dueDate < new Date(); }
+                                    }
+                                    dose = item ? `${item.concentrationValue}${item.concentrationUnit}` : 'N/A';
+                                    quantity = item ? `${item.totalQuantityValue} ${item.totalQuantityUnit}` : 'N/A';
+                                    price = r.preparationCost ? `$${r.preparationCost.toLocaleString('es-CL')}` : 'N/A';
+                                } else {
+                                    key = treatment.inventoryItem.id;
+                                    name = treatment.inventoryItem.name;
+                                    details = 'Medicamento Comercial';
+                                    const invItem = treatment.inventoryItem as InventoryItem;
+                                    dose = invItem.doseValue ? `${invItem.doseValue} ${invItem.doseUnit}` : 'N/A';
+                                    quantity = invItem.itemsPerBaseUnit ? `${invItem.itemsPerBaseUnit} ${invItem.pharmaceuticalForm}/envase` : 'N/A';
+                                    price = invItem.salePrice ? `$${invItem.salePrice.toLocaleString('es-CL')}` : 'N/A';
+                                }
+
+                                return (
+                                <li key={key} className={cn("p-4 bg-muted/50 rounded-lg", isExpired && "bg-red-50 border-l-4 border-red-400")}>
                                     <div className="flex items-start justify-between">
                                         <div>
-                                            <p className={cn("font-semibold text-foreground text-base", treatment.isExpired && "text-red-800")}>{treatment.name}</p>
-                                            <p className="text-xs text-muted-foreground">{treatment.details}</p>
+                                            <p className={cn("font-semibold text-foreground text-base", isExpired && "text-red-800")}>{name}</p>
+                                            <p className="text-xs text-muted-foreground">{details}</p>
                                         </div>
                                         {treatment.type === 'magistral' && (
                                             <Button variant="ghost" size="sm" asChild>
-                                                <Link href={`/recipes/${treatment.id}`}>Ver Receta</Link>
+                                                <Link href={`/recipes/${treatment.recipe.id}`}>Ver Receta</Link>
                                             </Button>
                                         )}
                                     </div>
-                                    {treatment.isExpired && (
+                                    {isExpired && (
                                         <div className="flex items-center gap-1.5 mt-2 text-red-600">
                                             <AlertTriangle className="h-4 w-4" />
                                             <p className="text-sm font-semibold">Receta Vencida</p>
@@ -396,19 +548,25 @@ export default function PatientDetailPage() {
                                     <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-muted-foreground/10 text-xs">
                                         <div>
                                             <p className="text-muted-foreground">Dosis/Conc.</p>
-                                            <p className="font-medium text-foreground">{treatment.dose}</p>
+                                            <p className="font-medium text-foreground">{dose}</p>
                                         </div>
                                         <div>
                                             <p className="text-muted-foreground">Cantidad</p>
-                                            <p className="font-medium text-foreground">{treatment.quantity}</p>
+                                            <p className="font-medium text-foreground">{quantity}</p>
                                         </div>
                                         <div>
                                             <p className="text-muted-foreground">Precio/Costo</p>
-                                            <p className="font-medium text-foreground">{treatment.price}</p>
+                                            <p className="font-medium text-foreground">{price}</p>
                                         </div>
                                     </div>
+                                    <div className="flex justify-end mt-3 pt-3 border-t border-muted-foreground/10">
+                                        <Button variant="ghost" size="sm" onClick={() => setReportingTreatment(treatment)} className="text-amber-600 hover:text-amber-700 hover:bg-amber-50">
+                                            <ShieldAlert className="mr-2 h-4 w-4" />
+                                            Reportar Evento FV
+                                        </Button>
+                                    </div>
                                 </li>
-                            ))}
+                            )})}
                         </ul>
                     ) : (
                         <p className="text-sm text-muted-foreground">No hay tratamientos activos registrados.</p>
@@ -438,7 +596,7 @@ export default function PatientDetailPage() {
                                                   <Badge variant="secondary">{recipe.status}</Badge>
                                               </div>
                                               <p className="text-sm text-muted-foreground">Fecha: {isValid(parseISO(recipe.prescriptionDate)) ? format(parseISO(recipe.prescriptionDate), 'dd-MM-yyyy') : 'Fecha inválida'}</p>
-                                              <p className="text-sm font-medium mt-2">{recipe.items[0].principalActiveIngredient}</p>
+                                              <p className="text-sm font-medium mt-2">{recipe.items[0]?.principalActiveIngredient}</p>
                                           </div>
                                       ))}
                                   </div>
@@ -556,6 +714,17 @@ export default function PatientDetailPage() {
         isOpen={isEditModalOpen}
         onOpenChange={setIsEditModalOpen}
         onSuccess={fetchData}
+      />
+      
+      <PharmacovigilanceDialog
+        isOpen={!!reportingTreatment}
+        onOpenChange={() => setReportingTreatment(null)}
+        patient={patient}
+        treatment={reportingTreatment}
+        onSuccess={() => {
+            setReportingTreatment(null);
+            fetchData();
+        }}
       />
 
       <Dialog open={isAssociateDoctorModalOpen} onOpenChange={setIsAssociateDoctorModalOpen}>
