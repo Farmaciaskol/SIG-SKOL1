@@ -143,37 +143,48 @@ export default function PharmacovigilanceReportPage() {
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center justify-between text-primary">
-                        Información del Reporte
+                        <span>Información del Reporte</span>
                         <Badge className={statusStyles[report.status]?.badge || 'bg-slate-200 text-slate-800'}>
                             {statusStyles[report.status]?.text || report.status}
                         </Badge>
                     </CardTitle>
+                    <CardDescription>Resumen del evento adverso o problema de calidad notificado.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <CardContent className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
                         <div className="space-y-1">
                             <p className="text-muted-foreground font-medium">Reportado por</p>
-                            <p className="font-semibold">{report.reporterName}</p>
+                            <p className="font-semibold text-lg">{report.reporterName}</p>
                         </div>
                         <div className="space-y-1">
                             <p className="text-muted-foreground font-medium">Fecha Reporte</p>
-                            <p>{format(parseISO(report.reportedAt), 'dd-MM-yyyy')}</p>
+                            <p className="font-semibold text-lg">{format(parseISO(report.reportedAt), 'dd MMMM, yyyy', { locale: es })}</p>
                         </div>
-                         <div className="space-y-1">
+                        <div className="space-y-1">
                             <p className="text-muted-foreground font-medium">Última Actualización</p>
-                            <p>{format(parseISO(report.updatedAt), 'dd-MM-yyyy HH:mm')}</p>
+                            <p className="font-semibold text-lg">{format(parseISO(report.updatedAt), 'dd MMMM, yyyy HH:mm', { locale: es })}</p>
                         </div>
-                     </div>
-                     <Separator />
-                     <div className="space-y-2">
-                        <h4 className="font-semibold text-foreground">Medicamentos Involucrados</h4>
-                        <p className="text-sm text-foreground/90">{report.involvedMedications}</p>
-                     </div>
-                      <Separator />
-                     <div className="space-y-2">
+                    </div>
+                    
+                    <Separator />
+                    
+                    <div className="space-y-3">
+                        <h4 className="font-semibold text-foreground">Medicamento(s) Involucrado(s)</h4>
+                        <div className="flex flex-wrap gap-2">
+                            {report.involvedMedications.split(',').map((med, index) => (
+                                <Badge key={index} variant="secondary">{med.trim()}</Badge>
+                            ))}
+                        </div>
+                    </div>
+
+                    <Separator />
+
+                    <div className="space-y-3">
                         <h4 className="font-semibold text-foreground">Descripción del Problema</h4>
-                        <p className="text-sm text-foreground/90 whitespace-pre-wrap">{report.problemDescription}</p>
-                     </div>
+                        <div className="p-4 border rounded-md bg-muted/50">
+                            <p className="text-sm text-foreground/90 whitespace-pre-wrap">{report.problemDescription}</p>
+                        </div>
+                    </div>
                 </CardContent>
             </Card>
 
