@@ -15,7 +15,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, User, Mail, Phone, MapPin, AlertTriangle, Pencil, Clock, Wand2, FlaskConical, FileText, CheckCircle2, BriefcaseMedical, DollarSign, Calendar, Lock, ShieldAlert, Eye, PlusCircle, Search, X } from 'lucide-react';
+import { Loader2, User, Mail, Phone, MapPin, AlertTriangle, Pencil, Clock, Wand2, FlaskConical, FileText, CheckCircle2, BriefcaseMedical, DollarSign, Calendar, Lock, ShieldAlert, Eye, PlusCircle, Search, X, ChevronLeft } from 'lucide-react';
 import { format, parseISO, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { PatientFormDialog } from '@/components/app/patient-form-dialog';
@@ -292,17 +292,17 @@ export default function PatientDetailPage() {
     <>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center gap-4">
-             <Button variant="outline" size="icon" className="h-10 w-10 hidden md:flex" asChild>
-                <Link href="/patients"><User className="h-5 w-5"/></Link>
+             <Button variant="outline" size="icon" className="h-10 w-10 flex-shrink-0" asChild>
+                <Link href="/patients"><ChevronLeft className="h-5 w-5"/></Link>
              </Button>
             <div>
               <h1 className="text-3xl font-bold tracking-tight font-headline">{patient.name}</h1>
               <p className="text-muted-foreground">{patient.rut} | {patient.gender}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 self-start md:self-center">
+          <div className="flex flex-wrap items-center gap-2 w-full justify-start md:w-auto md:justify-end">
             <Button variant="outline" asChild>
                 <Link href={`/pharmacovigilance/new?patientId=${patient.id}`}>
                     <ShieldAlert className="mr-2 h-4 w-4"/> Reportar Evento FV
