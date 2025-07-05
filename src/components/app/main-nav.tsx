@@ -330,23 +330,26 @@ export function MainNav({
             <SidebarContent className="p-0 flex-1">
               {/* Logo Section */}
               <div className="flex h-16 items-center justify-center border-b px-2">
-                <Link href="/dashboard">
+                <Link
+                  href="/dashboard"
+                  className="relative flex h-9 w-[120px] items-center justify-center"
+                >
                   {/* Expanded Logo */}
                   <Image
                     src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
                     alt="Skol Pharmacy Logo"
                     width={120}
                     height={33}
-                    className="object-contain transition-opacity duration-300 group-data-[state=collapsed]:opacity-0 group-data-[state=collapsed]:hidden"
+                    className="object-contain transition-opacity duration-300 ease-in-out group-data-[state=collapsed]:opacity-0"
                     priority
                   />
                   {/* Collapsed Logo (Imagotipo) */}
-                   <Image
+                  <Image
                     src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/IMAGOTIPO_IMAGOTIPO%20FONDO%20-04_IMAGOTIPO%20BLANCO_IMAGOTIPO%20AZUL.png?alt=media&token=746abbd3-b1d7-4abc-80c4-d8125cf78fa2"
                     alt="Skol Pharmacy Imagotipo"
                     width={36}
                     height={36}
-                    className="object-contain transition-opacity duration-300 group-data-[state=expanded]:opacity-0 group-data-[state=expanded]:hidden"
+                    className="absolute inset-0 m-auto object-contain opacity-0 transition-opacity duration-300 ease-in-out group-data-[state=collapsed]:opacity-100"
                     priority
                   />
                 </Link>
