@@ -838,7 +838,7 @@ export const batchSendRecipesToExternal = async (recipeIds: string[], userId: st
 
     await batch.commit();
 };
-
+    
 export async function sendMessageFromPharmacist(patientId: string, content: string): Promise<PatientMessage> {
     if (!db) throw new Error("Firestore is not initialized.");
     

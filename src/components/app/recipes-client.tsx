@@ -1148,7 +1148,7 @@ export const RecipesClient = ({
     <>
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-primary tracking-tight font-headline">Gestión de Recetas</h1>
+          <h1 className="text-3xl font-bold tracking-tight font-headline">Gestión de Recetas</h1>
           <p className="text-sm text-muted-foreground">
             Visualiza, filtra y gestiona todas las recetas del sistema.
           </p>
