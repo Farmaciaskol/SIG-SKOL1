@@ -278,23 +278,17 @@ export function MainNav({
             </Link>
           </div>
           
-          <div className="flex flex-1 justify-center px-4">
-            <div className="w-full max-w-md">
-              <form>
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="search"
-                    placeholder="Buscar recetas, pacientes..."
-                    className="w-full appearance-none bg-muted pl-8 shadow-none h-9"
-                  />
-                </div>
-              </form>
-            </div>
-          </div>
-
           {/* Header Right Side */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
+             <form className="relative hidden md:block">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Buscar recetas, pacientes..."
+                  className="w-full appearance-none bg-muted pl-8 shadow-none h-9 md:w-[200px] lg:w-[300px]"
+                />
+              </form>
+
             <Button asChild variant="ghost" size="icon" className="relative h-9 w-9">
               <Link href="/messaging">
                 <MessageSquare className="h-5 w-5" />
