@@ -744,7 +744,7 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
             
             {/* --- Left Column: Image Viewer --- */}
             <div className="lg:col-span-2 space-y-4 lg:sticky lg:top-24">
-              <h2 className="text-xl font-semibold text-foreground">Imagen de la Receta</h2>
+              <h2 className="text-xl font-semibold text-foreground lg:mt-20">Imagen de la Receta</h2>
               <div className="w-full aspect-[4/5] flex items-center justify-center border-2 border-dashed rounded-lg overflow-hidden bg-muted/50 relative">
                   <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*,application/pdf" className="hidden" />
                   {previewImage ? (
