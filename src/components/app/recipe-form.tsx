@@ -635,24 +635,32 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
     }
 
     setIsAiExtracting(true);
+    const currentValues = form.getValues();
+
     try {
       const result = await extractRecipeDataFromImage({ photoDataUri: previewImage });
-
-      // Use setValue for a more controlled update, avoiding a full form reset
-      if (result.patientName) {
+      
+      // Conditionally set patient info
+      if (result.patientName && !currentValues.newPatientName && !currentValues.patientId) {
         form.setValue('patientSelectionType', 'new');
         form.setValue('newPatientName', result.patientName);
         form.setValue('newPatientRut', result.patientRut || '');
       }
-      if (result.doctorName) {
+
+      // Conditionally set doctor info
+      if (result.doctorName && !currentValues.newDoctorName && !currentValues.doctorId) {
         form.setValue('doctorSelectionType', 'new');
         form.setValue('newDoctorName', result.doctorName);
         form.setValue('newDoctorLicense', result.doctorLicense || '');
         form.setValue('newDoctorSpecialty', result.doctorSpecialty || '');
       }
-      if (result.patientAddress) {
+
+      // Conditionally set dispatch address
+      if (result.patientAddress && !currentValues.dispatchAddress) {
         form.setValue('dispatchAddress', result.patientAddress);
       }
+
+      // Always set date and items, as that's the primary purpose of the extraction
       if (result.prescriptionDate) {
         try {
             const parsedDate = parseISO(result.prescriptionDate);
@@ -665,7 +673,6 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
       }
 
       if (result.items && result.items.length > 0) {
-        // Replace existing items with extracted ones
         remove(); // Clear all items first
         const filledItems = result.items.map(item => ({ ...defaultItem, ...item, safetyStockDays: item.safetyStockDays || 0 }));
         append(filledItems);
