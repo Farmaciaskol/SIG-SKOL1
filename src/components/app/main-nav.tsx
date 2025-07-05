@@ -182,7 +182,7 @@ const SidebarToggle = () => {
   const { state, toggleSidebar } = useSidebar();
 
   return (
-    <div className="flex w-full items-center p-2 group-data-[collapsible=icon]:justify-center">
+    <div className="flex w-full items-center justify-center p-2">
       <Button
         variant="ghost"
         size="icon"
@@ -279,15 +279,15 @@ export function MainNav({
           </div>
           
           {/* Header Right Side */}
-          <div className="flex items-center gap-4">
-             <form className="relative hidden md:block">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Buscar recetas, pacientes..."
-                  className="w-full appearance-none bg-muted pl-8 shadow-none h-9 md:w-[200px] lg:w-[300px]"
-                />
-              </form>
+          <div className="flex flex-1 items-center justify-end gap-2 md:gap-4">
+            <form className="relative w-full max-w-sm">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Buscar..."
+                className="w-full appearance-none bg-muted pl-8 shadow-none h-9"
+              />
+            </form>
 
             <Button asChild variant="ghost" size="icon" className="relative h-9 w-9">
               <Link href="/messaging">
@@ -396,7 +396,7 @@ export function MainNav({
                 ))}
               </Accordion>
             </SidebarContent>
-             <SidebarFooter className="mt-auto border-t p-0">
+             <SidebarFooter className="mt-auto border-t p-2">
                 <SidebarToggle />
              </SidebarFooter>
           </Sidebar>
