@@ -27,12 +27,12 @@ import {
   Bell,
   User,
   MessageSquare,
+  Search,
 } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
@@ -58,6 +58,7 @@ import { Badge } from '../ui/badge';
 import { getAvatar } from '@/components/app/predefined-avatars';
 import { getUsers } from '@/lib/data';
 import { User as AppUser } from '@/lib/types';
+import { Input } from '../ui/input';
 
 
 const menuGroups = [
@@ -234,22 +235,36 @@ export function MainNav({
     <SidebarProvider>
       <div className="flex h-full w-full flex-col bg-background">
         {/* === HEADER === */}
-        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between gap-4 border-b bg-card px-6">
+        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-4 border-b bg-card px-4 sm:px-6">
           {/* Header Left Side */}
-          <div className="flex items-center gap-4">
-            <SidebarTrigger className="md:hidden bg-primary text-primary-foreground hover:bg-primary/90" />
-            <Link href="/dashboard" className="md:hidden">
-              <div className="h-9 w-auto">
-                <Image
-                  src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
-                  alt="Skol Pharmacy Logo"
-                  width={100}
-                  height={27}
-                  className="object-contain h-full"
-                  priority
-                />
-              </div>
+          <div className="flex items-center gap-2">
+            <SidebarTrigger className="bg-primary text-primary-foreground hover:bg-primary/90" />
+            <Link href="/dashboard" className="hidden lg:block">
+              <Image
+                src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
+                alt="Skol Pharmacy Logo"
+                width={120}
+                height={33}
+                className="object-contain"
+                priority
+              />
             </Link>
+          </div>
+          
+          {/* Header Middle (Search) */}
+          <div className="flex flex-1 items-center justify-center">
+             <div className="w-full max-w-sm">
+              <form>
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="search"
+                    placeholder="Buscar recetas, pacientes..."
+                    className="w-full appearance-none bg-background pl-8 shadow-none"
+                  />
+                </div>
+              </form>
+            </div>
           </div>
           
           {/* Header Right Side */}
@@ -308,29 +323,7 @@ export function MainNav({
         {/* === MAIN CONTAINER (SIDEBAR + CONTENT) === */}
         <div className="flex flex-1 overflow-hidden">
           {/* Sidebar */}
-          <Sidebar className="border-r bg-card">
-            <SidebarHeader className="p-4 group-data-[collapsible=icon]:p-2 justify-center transition-all duration-200">
-              <div className="w-full px-4 group-data-[collapsible=icon]:hidden">
-                <Image
-                  src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
-                  alt="Skol Pharmacy Logo"
-                  width={160}
-                  height={44}
-                  className="mx-auto object-contain"
-                  priority
-                />
-              </div>
-              <div className="hidden group-data-[collapsible=icon]:block">
-                <Image
-                  src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
-                  alt="Skol Pharmacy Logo"
-                  width={32}
-                  height={32}
-                  className="mx-auto object-contain"
-                  priority
-                />
-              </div>
-            </SidebarHeader>
+          <Sidebar className="border-r bg-card" collapsible="icon">
             <SidebarContent className="p-0 flex-1">
               <Accordion type="multiple" value={openItems} onValueChange={setOpenItems} className="w-full px-4">
                 {menuGroups.map((group) => (
