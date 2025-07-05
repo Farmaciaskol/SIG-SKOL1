@@ -1014,14 +1014,14 @@ export const RecipesClient = ({
           return null;
         case RecipeStatus.Validated:
           return recipe.supplySource === 'Insumos de Skol' 
-            ? <Button size="sm" asChild><Link href="/dispatch-management"><Truck className="mr-2 h-4 w-4" />Ir a Despacho</Link></Button>
-            : <Button size="sm" onClick={() => setRecipeToSend(recipe)}><Send className="mr-2 h-4 w-4" />Enviar</Button>;
+            ? <Button size="sm" asChild><Link href="/dispatch-management"><Truck className="mr-2 h-4 w-4 text-blue-600" />Ir a Despacho</Link></Button>
+            : <Button size="sm" onClick={() => setRecipeToSend(recipe)}><Send className="mr-2 h-4 w-4 text-cyan-600" />Enviar</Button>;
         case RecipeStatus.SentToExternal:
-          return <Button size="sm" onClick={() => setRecipeToReceive(recipe)}><PackageCheck className="mr-2 h-4 w-4" />Recepcionar</Button>;
+          return <Button size="sm" onClick={() => setRecipeToReceive(recipe)}><PackageCheck className="mr-2 h-4 w-4 text-indigo-600" />Recepcionar</Button>;
         case RecipeStatus.ReceivedAtSkol:
-          return <Button size="sm" onClick={() => handleUpdateStatus(recipe, RecipeStatus.ReadyForPickup)}><Package className="mr-2 h-4 w-4" />Marcar Retiro</Button>;
+          return <Button size="sm" onClick={() => handleUpdateStatus(recipe, RecipeStatus.ReadyForPickup)}><Package className="mr-2 h-4 w-4 text-orange-600" />Marcar Retiro</Button>;
         case RecipeStatus.ReadyForPickup:
-          return <Button size="sm" onClick={() => handleUpdateStatus(recipe, RecipeStatus.Dispensed)}><CheckCheck className="mr-2 h-4 w-4" />Dispensar</Button>;
+          return <Button size="sm" onClick={() => handleUpdateStatus(recipe, RecipeStatus.Dispensed)}><CheckCheck className="mr-2 h-4 w-4 text-green-600" />Dispensar</Button>;
         case RecipeStatus.Dispensed:
           return (
             <TooltipProvider>
@@ -1055,7 +1055,7 @@ export const RecipesClient = ({
               Rechazar
             </Button>
             <Button size="sm" className="flex-1" onClick={() => handleUpdateStatus(recipe, RecipeStatus.Validated, 'Receta validada por farmacéutico.')}>
-              <ShieldCheck className="mr-2 h-4 w-4" />
+              <ShieldCheck className="mr-2 h-4 w-4 text-green-600" />
               Validar
             </Button>
           </>
