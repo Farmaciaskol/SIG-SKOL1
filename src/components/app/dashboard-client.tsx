@@ -34,11 +34,12 @@ import { Calendar } from '@/components/ui/calendar';
 type CalendarEvent = {
   date: Date;
   title: string;
-  type: 'received' | 'ready' | 'dispensed';
+  type: 'created' | 'received' | 'ready' | 'dispensed';
 };
 
 const eventConfig = {
-    received: { icon: PackageCheck, color: 'bg-indigo-500', label: 'Recepcionado' },
+    created: { icon: FileText, color: 'bg-blue-500', label: 'Receta Creada' },
+    received: { icon: PackageCheck, color: 'bg-indigo-500', label: 'Recepcionado en Skol' },
     ready: { icon: Package, color: 'bg-orange-500', label: 'Listo para Retiro' },
     dispensed: { icon: CheckCircle2, color: 'bg-green-500', label: 'Dispensado' },
 };

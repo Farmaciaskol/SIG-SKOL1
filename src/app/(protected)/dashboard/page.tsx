@@ -7,7 +7,7 @@ import { isValid, parseISO } from 'date-fns';
 type CalendarEvent = {
     date: Date;
     title: string;
-    type: 'received' | 'ready' | 'dispensed';
+    type: 'created' | 'received' | 'ready' | 'dispensed';
 };
 
 export default async function DashboardPage() {
@@ -20,6 +20,14 @@ export default async function DashboardPage() {
   const calendarEvents = recipesData
     .flatMap(recipe => {
       const events: CalendarEvent[] = [];
+
+      if (recipe.createdAt && isValid(parseISO(recipe.createdAt))) {
+        events.push({
+          date: parseISO(recipe.createdAt),
+          title: `Creada: Receta ${recipe.id.substring(0, 6)}...`,
+          type: 'created'
+        });
+      }
       
       if (recipe.status === RecipeStatus.Dispensed && recipe.dispensationDate && isValid(parseISO(recipe.dispensationDate))) {
         events.push({
@@ -34,7 +42,7 @@ export default async function DashboardPage() {
         if (receivedEvent && isValid(parseISO(receivedEvent.date))) {
           events.push({
             date: parseISO(receivedEvent.date),
-            title: `Recepcionada: Receta ${recipe.id.substring(0, 6)}...`,
+            title: `Recepcionado: Receta ${recipe.id.substring(0, 6)}...`,
             type: 'received'
           });
         }
