@@ -59,21 +59,28 @@ const prompt = ai.definePrompt({
   name: 'extractRecipeDataFromImagePrompt',
   input: {schema: ExtractRecipeDataFromImageInputSchema},
   output: {schema: ExtractRecipeDataFromImageOutputSchema},
-  prompt: `You are an expert pharmacist and data entry specialist. Your task is to extract structured information from the provided image of a medical prescription. 
-  
-  Carefully extract all the following details from the image.
-  - Patient's full name (patientName)
-  - Patient's RUT (patientRut). Format it as XX.XXX.XXX-X.
-  - Patient's full address (patientAddress).
-  - Doctor's full name (doctorName).
-  - Doctor's RUT (doctorRut). Format it as XX.XXX.XXX-X.
-  - Doctor's professional license number (doctorLicense, also known as N° Colegiatura).
-  - Doctor's specialty (doctorSpecialty).
-  - Date of prescription (prescriptionDate) in YYYY-MM-DD format. If the year is not specified, assume the current year.
-  - A list of prescribed items (items), paying close attention to the pharmaceutical form (pharmaceuticalForm, e.g., 'Cápsulas', 'Crema', 'Papelillos').
-  - If the prescription mentions a safety stock ('dosis de seguridad', 'dosis de emergencia', 'días extra'), extract the number of days into the 'safetyStockDays' field for the corresponding item.
+  prompt: `You are an expert pharmacist and data entry specialist. Your task is to extract structured information from the provided image of a medical prescription.
 
-  Return a single JSON object with all the extracted fields. If a piece of information is not visible, omit its field from the output.
+  **Extraction Instructions:**
+  - **Capitalization:** For all text fields (like names, addresses, specialties), format them with proper case (e.g., 'Juan Pérez' instead of 'JUAN PÉREZ').
+  - **RUT Formatting:** Ensure all RUTs (patient and doctor) are formatted as XX.XXX.XXX-X.
+  - **Date Formatting:** The prescription date must be in YYYY-MM-DD format. If the year isn't specified, assume the current year.
+  - **Omissions:** If a piece of information is not visible on the prescription, omit its corresponding field from the JSON output.
+
+  **Fields to Extract:**
+  - Patient's full name (patientName)
+  - Patient's RUT (patientRut)
+  - Patient's full address (patientAddress)
+  - Doctor's full name (doctorName)
+  - Doctor's RUT (doctorRut)
+  - Doctor's professional license number (doctorLicense, also known as N° Colegiatura)
+  - Doctor's specialty (doctorSpecialty)
+  - Date of prescription (prescriptionDate)
+  - A list of prescribed items (items), paying close attention to:
+    - The pharmaceutical form (pharmaceuticalForm, e.g., 'Cápsulas', 'Crema', 'Papelillos').
+    - If a safety stock is mentioned ('dosis de seguridad', 'días extra'), extract the number of days into the 'safetyStockDays' field for the corresponding item.
+
+  Return a single JSON object with all the extracted fields.
 
   Prescription Image: {{media url=photoDataUri}}`,
 });
