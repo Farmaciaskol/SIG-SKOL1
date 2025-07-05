@@ -11,7 +11,7 @@ import { z } from 'zod';
 // Simulated Vademecum data. In a real application, this would be an API call.
 const VADEMECUM_DATA = [
     {
-        canonicalName: "Minoxidil",
+        canonicalName: "Minoxidilo",
         aliases: ["minoxidil"],
         interactions: ["Puede causar hipotensión si se combina con otros vasodilatadores."],
         contraindications: ["Hipersensibilidad al minoxidil.", "Feocromocitoma."],
@@ -46,8 +46,8 @@ const VADEMECUM_DATA = [
         standardDosage: "Depende de la formulación, usualmente en concentraciones de 1-5% para uso tópico."
     },
     {
-        canonicalName: "Finasteride",
-        aliases: ["finasterida"],
+        canonicalName: "Finasterida",
+        aliases: ["finasterida", "finasteride"],
         interactions: [],
         contraindications: ["Mujeres embarazadas o que puedan quedar embarazadas.", "Niños."],
         standardDosage: "1 mg por día para la alopecia androgenética."
