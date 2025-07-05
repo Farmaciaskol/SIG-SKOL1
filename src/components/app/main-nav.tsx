@@ -241,7 +241,7 @@ export function MainNav({
     <SidebarProvider>
       <div className="flex h-full w-full flex-col bg-background">
         {/* === HEADER === */}
-        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-4 border-b bg-card px-4 sm:px-6">
+        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b bg-card px-4 sm:px-6">
           {/* Header Left Side */}
           <div className="flex items-center gap-2">
             <SidebarTrigger className="bg-primary text-primary-foreground hover:bg-primary/90 md:hidden" />
@@ -257,22 +257,8 @@ export function MainNav({
             </Link>
           </div>
           
-          {/* Header Middle */}
-          <div className="flex flex-1 items-center justify-center">
-            <div className="w-full max-w-sm">
-              <form>
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="search"
-                    placeholder="Buscar recetas, pacientes..."
-                    className="w-full appearance-none bg-background pl-8 shadow-none"
-                  />
-                </div>
-              </form>
-            </div>
-          </div>
-          
+          <div className="flex-1" />
+
           {/* Header Right Side */}
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost" size="icon" className="relative h-9 w-9">
@@ -348,6 +334,18 @@ export function MainNav({
                     priority
                   />
                 </Link>
+              </div>
+              <div className="p-2 group-data-[collapsible=icon]:hidden">
+                <form>
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="search"
+                      placeholder="Buscar recetas, pacientes..."
+                      className="w-full appearance-none bg-muted pl-8 shadow-none h-9"
+                    />
+                  </div>
+                </form>
               </div>
               <Accordion type="multiple" value={openItems} onValueChange={setOpenItems} className="w-full px-2">
                 {menuGroups.map((group) => (
