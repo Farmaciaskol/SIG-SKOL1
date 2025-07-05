@@ -3,7 +3,7 @@
 'use server';
 
 import { db, storage, auth } from './firebase';
-import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc, deleteDoc, writeBatch, query, where, limit } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc, deleteDoc, writeBatch, query, where, limit,getCountFromServer } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, ControlledLogEntryType, ProactivePatientStatus, PatientActionNeeded, MonthlyDispensationBoxStatus, DispensationItemStatus, PharmacovigilanceReportStatus, type Recipe, type Doctor, type InventoryItem, type User, type Role, type ExternalPharmacy, type Patient, type PharmacovigilanceReport, type AppData, type AuditTrailEntry, type DispatchNote, type DispatchItem, type ControlledSubstanceLogEntry, type LotDetail, type AppSettings, type MonthlyDispensationBox, type PatientMessage } from './types';
 import { MAX_REPREPARATIONS } from './constants';
@@ -173,6 +173,32 @@ export const getExternalPharmacy = async (id: string): Promise<ExternalPharmacy 
 export const getPharmacovigilanceReport = async (id: string): Promise<PharmacovigilanceReport | null> => getDocument<PharmacovigilanceReport>('pharmacovigilanceReports', id);
 export const getMonthlyDispensationBox = async (id: string): Promise<MonthlyDispensationBox | null> => getDocument<MonthlyDispensationBox>('monthlyDispensations', id);
 
+// Optimized Count Functions
+export const getRecipesCountByStatus = async (status: RecipeStatus): Promise<number> => {
+    if (!db) return 0;
+    const q = query(collection(db, "recipes"), where("status", "==", status));
+    const snapshot = await getCountFromServer(q);
+    return snapshot.data().count;
+};
+
+export const getItemsToDispatchCount = async (): Promise<number> => {
+    if (!db) return 0;
+    const q = query(collection(db, "recipes"), where("status", "==", RecipeStatus.Validated), where("supplySource", "==", "Insumos de Skol"));
+    const snapshot = await getCountFromServer(q);
+    return snapshot.data().count;
+};
+
+export const getLowStockInventoryCount = async (): Promise<number> => {
+    const allItems = await getInventory(); // Firestore doesn't support inequality filters on different fields easily.
+    return allItems.filter(item => item.quantity < item.lowStockThreshold).length;
+};
+
+export const getUnreadPatientMessagesCount = async (): Promise<number> => {
+    if (!db) return 0;
+    const q = query(collection(db, "patientMessages"), where("sender", "==", "patient"), where("read", "==", false));
+    const snapshot = await getCountFromServer(q);
+    return snapshot.data().count;
+};
 
 export const deleteRecipe = async (id: string): Promise<void> => {
     if (!db) throw new Error("Firestore is not initialized.");
