@@ -113,7 +113,7 @@ const recipeFormSchema = z.object({
     }
   }
   data.items.forEach((item, index) => {
-    if (data.supplySource === 'Insumos de Skol' && item.requiresFractionation && !item.sourceInventoryItemId) {
+    if (data.supplySource === 'Insumos de Skol' && !item.sourceInventoryItemId) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Debe seleccionar el insumo base del inventario.",
@@ -180,7 +180,6 @@ const RecipeItemCard = ({
   const safetyStockDays = useWatch({ control, name: `items.${index}.safetyStockDays` });
   const principalActiveIngredientValue = useWatch({ control, name: `items.${index}.principalActiveIngredient` });
   const supplySource = useWatch({ control, name: 'supplySource' });
-  const requiresFractionationValue = useWatch({ control, name: `items.${index}.requiresFractionation` });
 
   React.useEffect(() => {
     const dose = parseInt(dosageValue, 10);
@@ -334,16 +333,7 @@ const RecipeItemCard = ({
           )} />
         </div>
         <div className="space-y-4 pt-4">
-          <FormField control={control} name={`items.${index}.requiresFractionation`} render={({ field }) => (
-            <FormItem className="flex flex-row items-center space-x-2 pt-2">
-              <FormControl>
-                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-              </FormControl>
-              <FormLabel className="!mt-0 font-normal text-sm text-foreground">Insumo provisto por Skol (para fraccionamiento)</FormLabel>
-            </FormItem>
-          )} />
-
-          {supplySource === 'Insumos de Skol' && requiresFractionationValue && (
+          {supplySource === 'Insumos de Skol' && (
             <FormField control={control} name={`items.${index}.sourceInventoryItemId`} render={({ field }) => (
               <FormItem className="md:col-span-4">
                 <FormLabel>Insumo Base de Inventario Skol *</FormLabel>
@@ -444,6 +434,7 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
 
   const watchedPatientId = form.watch('patientId');
   const patientSelectionType = form.watch('patientSelectionType');
+  const supplySource = form.watch('supplySource');
 
   React.useEffect(() => {
     if (patientSelectionType === 'existing' && watchedPatientId) {
@@ -462,14 +453,11 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
       const currentPrescriptionDateString = prescriptionDate.toISOString();
       const prevPrescriptionDateString = prevPrescriptionDateRef.current;
       
-      // Update due date only if the prescription date has actually changed.
-      // This prevents overwriting a manual due date change.
       if (currentPrescriptionDateString !== prevPrescriptionDateString) {
         const newDueDate = addMonths(prescriptionDate, 6);
         form.setValue('dueDate', newDueDate, { shouldValidate: true });
       }
 
-      // Store the current date string for the next comparison.
       prevPrescriptionDateRef.current = currentPrescriptionDateString;
     }
   }, [prescriptionDate, form]);
@@ -606,15 +594,6 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
     fetchData();
   }, [recipeId, copyFromId, patientId, toast, router, form, loadFormData]);
 
-  const supplySource = form.watch('supplySource');
-
-  React.useEffect(() => {
-    const isSkolSource = supplySource === 'Insumos de Skol';
-    fields.forEach((_item, index) => {
-      form.setValue(`items.${index}.requiresFractionation`, isSkolSource, { shouldValidate: true });
-    });
-  }, [supplySource, fields, form]);
-
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -640,14 +619,12 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
     try {
       const result = await extractRecipeDataFromImage({ photoDataUri: previewImage });
       
-      // Conditionally set patient info
       if (result.patientName && !currentValues.newPatientName && !currentValues.patientId) {
         form.setValue('patientSelectionType', 'new');
         form.setValue('newPatientName', result.patientName);
         form.setValue('newPatientRut', result.patientRut || '');
       }
 
-      // Conditionally set doctor info
       if (result.doctorName && !currentValues.newDoctorName && !currentValues.doctorId) {
         form.setValue('doctorSelectionType', 'new');
         form.setValue('newDoctorName', result.doctorName);
@@ -655,12 +632,10 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
         form.setValue('newDoctorSpecialty', result.doctorSpecialty || '');
       }
 
-      // Conditionally set dispatch address
       if (result.patientAddress && !currentValues.dispatchAddress) {
         form.setValue('dispatchAddress', result.patientAddress);
       }
 
-      // Always set date and items, as that's the primary purpose of the extraction
       if (result.prescriptionDate) {
         try {
             const parsedDate = parseISO(result.prescriptionDate);
@@ -751,7 +726,7 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
             
             {/* --- Left Column: Image Viewer --- */}
             <div className="lg:col-span-2 space-y-4 lg:sticky lg:top-24">
-              <h2 className="text-xl font-semibold text-foreground lg:mt-20">Imagen de la Receta</h2>
+              <h2 className="text-xl font-semibold text-foreground mt-1">Imagen de la Receta</h2>
               <div className="w-full aspect-[4/5] flex items-center justify-center border-2 border-dashed rounded-lg overflow-hidden bg-muted/50 relative">
                   <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*,application/pdf" className="hidden" />
                   {previewImage ? (
@@ -935,7 +910,10 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
                       <FormItem><FormLabel>Origen de Insumos *</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un origen..." /></SelectTrigger></FormControl>
-                          <SelectContent><SelectItem value="Stock del Recetario">Stock del Recetario</SelectItem><SelectItem value="Insumos de Skol">Insumos de Skol</SelectItem></SelectContent>
+                          <SelectContent>
+                            <SelectItem value="Stock del Recetario">Stock del Recetario</SelectItem>
+                            <SelectItem value="Insumos de Skol">Insumos de Skol</SelectItem>
+                          </SelectContent>
                         </Select><FormMessage />
                       </FormItem>
                     )} />
