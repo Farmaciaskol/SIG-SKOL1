@@ -227,7 +227,17 @@ export const deleteUser = async (id: string): Promise<void> => {
 
 export const addExternalPharmacy = async (pharmacy: Omit<ExternalPharmacy, 'id'>): Promise<string> => {
     if (!db) throw new Error("Firestore is not initialized.");
-    const pharmacyData = { ...pharmacy, contactPerson: pharmacy.contactPerson || '', email: pharmacy.email || '', phone: pharmacy.phone || '', address: pharmacy.address || '', paymentDetails: pharmacy.paymentDetails || '', transportCost: pharmacy.transportCost || 0 };
+    const pharmacyData = { 
+        ...pharmacy, 
+        contactPerson: pharmacy.contactPerson || '', 
+        email: pharmacy.email || '', 
+        phone: pharmacy.phone || '', 
+        address: pharmacy.address || '', 
+        paymentDetails: pharmacy.paymentDetails || '', 
+        transportCost: pharmacy.transportCost || 0,
+        standardPreparationTime: pharmacy.standardPreparationTime || undefined,
+        skolSuppliedPreparationTime: pharmacy.skolSuppliedPreparationTime || undefined,
+    };
     const docRef = await addDoc(collection(db, 'externalPharmacies'), pharmacyData);
     return docRef.id;
 };

@@ -134,22 +134,40 @@ export default function ExternalPharmacyDetailPage() {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Información de Contacto</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-          {pharmacy.contactPerson && (
-            <div className="flex items-center gap-3"><User className="h-4 w-4 text-muted-foreground" /> <span className="font-medium">Contacto:</span> {pharmacy.contactPerson}</div>
-          )}
-          {pharmacy.phone && (
-             <div className="flex items-center gap-3"><Phone className="h-4 w-4 text-muted-foreground" /> <span className="font-medium">Teléfono:</span> {pharmacy.phone}</div>
-          )}
-          {pharmacy.email && (
-             <div className="flex items-center gap-3"><Mail className="h-4 w-4 text-muted-foreground" /> <span className="font-medium">Email:</span> {pharmacy.email}</div>
-          )}
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+            <CardHeader>
+            <CardTitle>Información de Contacto</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+            {pharmacy.contactPerson && (
+                <div className="flex items-center gap-3"><User className="h-4 w-4 text-muted-foreground" /> <span className="font-medium">Contacto:</span> {pharmacy.contactPerson}</div>
+            )}
+            {pharmacy.phone && (
+                <div className="flex items-center gap-3"><Phone className="h-4 w-4 text-muted-foreground" /> <span className="font-medium">Teléfono:</span> {pharmacy.phone}</div>
+            )}
+            {pharmacy.email && (
+                <div className="flex items-center gap-3"><Mail className="h-4 w-4 text-muted-foreground" /> <span className="font-medium">Email:</span> {pharmacy.email}</div>
+            )}
+            </CardContent>
+        </Card>
+        <Card>
+            <CardHeader>
+            <CardTitle>Tiempos de Compromiso (Días)</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-4 text-sm">
+            <div className="flex flex-col items-center justify-center p-4 rounded-lg bg-muted">
+                <p className="text-3xl font-bold">{pharmacy.standardPreparationTime ?? 'N/A'}</p>
+                <p className="text-muted-foreground mt-1 text-center">Preparación Estándar</p>
+            </div>
+            <div className="flex flex-col items-center justify-center p-4 rounded-lg bg-muted">
+                <p className="text-3xl font-bold">{pharmacy.skolSuppliedPreparationTime ?? 'N/A'}</p>
+                <p className="text-muted-foreground mt-1 text-center">Preparación Insumo Skol</p>
+            </div>
+            </CardContent>
+        </Card>
+      </div>
+
 
       <div className="grid gap-6 md:grid-cols-3">
         <StatCard title="Saldo Pendiente" value={`$${stats.balance.toLocaleString('es-CL')}`} icon={DollarSign} />

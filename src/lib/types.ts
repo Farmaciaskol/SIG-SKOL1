@@ -219,6 +219,8 @@ export interface ExternalPharmacy {
   paymentDetails?: string; // e.g., bank account info
   defaultPaymentModel?: 'Por Receta' | 'Factura Mensual';
   transportCost?: number;
+  standardPreparationTime?: number; // Time in days for their own supplies
+  skolSuppliedPreparationTime?: number; // Time in days for Skol supplies
 }
 
 export interface LotDetail {

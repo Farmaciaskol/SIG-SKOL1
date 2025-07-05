@@ -6,9 +6,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Progress } from '@/components/ui/progress';
 import { getExternalPharmacies, addExternalPharmacy, getRecipes, updateExternalPharmacy, deleteExternalPharmacy } from '@/lib/data';
 import type { ExternalPharmacy, Recipe } from '@/lib/types';
 import { RecipeStatus } from '@/lib/types';
@@ -37,6 +36,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -51,28 +51,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Separator } from '@/components/ui/separator';
 
 type PharmacyWithStats = ExternalPharmacy & {
   activeRecipes: number;
   balance: number;
   reports: number;
-  standardCompliance?: number;
-  skolCompliance?: number;
 };
 
 const PharmacyCard = ({ pharmacy, onEdit, onDelete }: { pharmacy: PharmacyWithStats, onEdit: (p: PharmacyWithStats) => void, onDelete: (p: PharmacyWithStats) => void }) => {
-  const getProgressColor = (value?: number) => {
-    if (value === undefined) return 'bg-gray-300';
-    if (value >= 95) return 'bg-green-500';
-    if (value >= 80) return 'bg-yellow-400';
-    return 'bg-red-500';
-  };
-  
-  const formatPercentage = (value?: number) => {
-    if (value === undefined) return 'N/A';
-    return `${Math.round(value)}%`;
-  }
-
   return (
     <Card className="flex flex-col">
       <CardHeader className="p-4">
@@ -128,37 +115,20 @@ const PharmacyCard = ({ pharmacy, onEdit, onDelete }: { pharmacy: PharmacyWithSt
             </div>
         </div>
 
-        <div className="border-t pt-4 space-y-4">
+        <div className="border-t pt-4 space-y-2">
             <h3 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
-              Rendimiento Operativo
+                Tiempos de Compromiso
             </h3>
-            {pharmacy.standardCompliance !== undefined && (
-                <div className="space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                    <p className="text-muted-foreground">Cumplimiento Prep. Estándar</p>
-                    <p className="font-semibold text-foreground">{formatPercentage(pharmacy.standardCompliance)}</p>
+            <div className="flex justify-around text-center text-sm">
+                <div>
+                    <p className="font-bold">{pharmacy.standardPreparationTime || 'N/A'}{pharmacy.standardPreparationTime ? ' días' : ''}</p>
+                    <p className="text-xs text-muted-foreground">Prep. Estándar</p>
                 </div>
-                <Progress
-                    value={pharmacy.standardCompliance}
-                    indicatorClassName={getProgressColor(pharmacy.standardCompliance)}
-                />
+                <div>
+                    <p className="font-bold">{pharmacy.skolSuppliedPreparationTime || 'N/A'}{pharmacy.skolSuppliedPreparationTime ? ' días' : ''}</p>
+                    <p className="text-xs text-muted-foreground">Prep. Insumo Skol</p>
                 </div>
-            )}
-            {pharmacy.skolCompliance !== undefined && (
-                <div className="space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                    <p className="text-muted-foreground">Cumplimiento Insumo Skol</p>
-                    <p className="font-semibold text-foreground">{formatPercentage(pharmacy.skolCompliance)}</p>
-                </div>
-                <Progress
-                    value={pharmacy.skolCompliance}
-                    indicatorClassName={getProgressColor(pharmacy.skolCompliance)}
-                />
-                </div>
-            )}
-            {pharmacy.standardCompliance === undefined && pharmacy.skolCompliance === undefined && (
-                <p className="text-sm text-muted-foreground text-center">No hay datos de rendimiento disponibles.</p>
-            )}
+            </div>
         </div>
       </CardContent>
       <CardFooter className="bg-muted/50 p-3">
@@ -180,6 +150,8 @@ const pharmacyFormSchema = z.object({
   paymentDetails: z.string().optional(),
   defaultPaymentModel: z.string().min(1, { message: 'El modelo de pago es requerido.' }),
   transportCost: z.coerce.number().optional(),
+  standardPreparationTime: z.coerce.number().optional(),
+  skolSuppliedPreparationTime: z.coerce.number().optional(),
 });
 
 type PharmacyFormValues = z.infer<typeof pharmacyFormSchema>;
@@ -217,6 +189,8 @@ export default function ExternalPrescriptionsPage() {
       paymentDetails: '',
       defaultPaymentModel: 'Por Receta',
       transportCost: 0,
+      standardPreparationTime: 0,
+      skolSuppliedPreparationTime: 0,
     },
   });
 
@@ -253,6 +227,7 @@ export default function ExternalPrescriptionsPage() {
       form.reset({
         name: '', contactPerson: '', email: '', phone: '', address: '',
         paymentDetails: '', defaultPaymentModel: 'Por Receta', transportCost: 0,
+        standardPreparationTime: 0, skolSuppliedPreparationTime: 0,
       });
     }
     setIsFormOpen(true);
@@ -465,6 +440,36 @@ export default function ExternalPrescriptionsPage() {
                         )}
                     />
                 </div>
+                
+                <Separator className="my-4" />
+                <h4 className="font-medium text-foreground mb-2">Tiempos de Entrega (Compromiso)</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="standardPreparationTime"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Preparación Estándar (días)</FormLabel>
+                            <FormControl><Input type="number" placeholder="Ej: 2" {...field} /></FormControl>
+                            <FormDescription className="text-xs">Para insumos propios del recetario.</FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="skolSuppliedPreparationTime"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Preparación Insumo Skol (días)</FormLabel>
+                            <FormControl><Input type="number" placeholder="Ej: 3" {...field} /></FormControl>
+                            <FormDescription className="text-xs">Para insumos que Skol despacha.</FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                </div>
+                
                  <FormField control={form.control} name="paymentDetails" render={({ field }) => (
                     <FormItem><FormLabel>Detalles de Pago</FormLabel><FormControl><Textarea placeholder="Ej: Cuenta Corriente Banco XYZ, N° 123-456-789, a nombre de..." {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
