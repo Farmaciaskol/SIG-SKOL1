@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { getUsers, getRoles, addUser, updateUser, deleteUser } from '@/lib/data';
 import type { User, Role } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Loader2, Pencil, Trash2 } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Loader2, Pencil, Trash2, Search, Users, Shield } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,6 +54,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
+import { getAvatar } from '@/components/app/predefined-avatars';
 
 const userFormSchema = z.object({
   name: z.string().min(1, { message: 'El nombre es requerido.' }),
@@ -62,6 +63,26 @@ const userFormSchema = z.object({
 });
 type UserFormValues = z.infer<typeof userFormSchema>;
 
+
+const StatCard = ({ title, value, icon: Icon }: { title: string; value: string | number; icon: React.ElementType }) => (
+    <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+            <Icon className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+            <div className="text-2xl font-bold text-foreground">{value}</div>
+        </CardContent>
+    </Card>
+);
+
+const PlaceholderUserIcon = ({ className }: { className?: string }) => (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <circle cx="12" cy="9" r="4" />
+      <path d="M12 14c-3.866 0-7 3.134-7 7v1h14v-1c0-3.866-3.134-7-7-7z" />
+    </svg>
+);
+
 export default function UserManagementPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
@@ -69,6 +90,7 @@ export default function UserManagementPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const { toast } = useToast();
 
@@ -132,6 +154,13 @@ export default function UserManagementPage() {
   const getRoleName = (roleId: string) => {
     return roles.find(r => r.id === roleId)?.name || 'Sin Rol';
   };
+  
+  const filteredUsers = useMemo(() => {
+    return users.filter(user => 
+        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [users, searchTerm]);
 
   const UserActions = ({ user }: { user: User }) => (
     <DropdownMenu>
@@ -161,6 +190,24 @@ export default function UserManagementPage() {
           </Button>
         </div>
       </div>
+       <div className="grid gap-6 md:grid-cols-3 mb-6">
+        <StatCard title="Total de Usuarios" value={users.length} icon={Users} />
+        <StatCard title="Roles Definidos" value={roles.length} icon={Shield} />
+      </div>
+      <Card className="mb-6">
+        <CardContent className="p-4">
+            <div className="relative">
+                <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                    type="search"
+                    placeholder="Buscar por nombre o email..."
+                    className="pl-8 w-full"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
+        </CardContent>
+      </Card>
       <Card>
         <CardContent className="pt-6">
           {loading ? (
@@ -183,48 +230,58 @@ export default function UserManagementPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {users.map((user) => (
-                        <TableRow key={user.id}>
-                            <TableCell className="font-medium">{user.name}</TableCell>
-                            <TableCell>{user.email}</TableCell>
-                            <TableCell>
-                            <Badge variant="secondary">{getRoleName(user.roleId)}</Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                                <UserActions user={user} />
-                            </TableCell>
-                        </TableRow>
-                        ))}
+                        {filteredUsers.map((user) => {
+                            const UserAvatar = getAvatar(user.avatar);
+                            return (
+                                <TableRow key={user.id}>
+                                    <TableCell className="font-medium">
+                                        <div className="flex items-center gap-3">
+                                            <Avatar className="h-9 w-9">
+                                                {UserAvatar ? UserAvatar : <AvatarFallback><PlaceholderUserIcon className="h-5 w-5"/></AvatarFallback>}
+                                            </Avatar>
+                                            <span>{user.name}</span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>{user.email}</TableCell>
+                                    <TableCell>
+                                    <Badge variant="secondary">{getRoleName(user.roleId)}</Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <UserActions user={user} />
+                                    </TableCell>
+                                </TableRow>
+                            )
+                        })}
                     </TableBody>
                     </Table>
                 </div>
 
                 {/* Mobile Card View */}
-                <div className="grid grid-cols-1 gap-4 md:hidden">
-                    {users.map((user) => (
-                        <Card key={user.id}>
-                            <CardHeader>
-                                <div className="flex justify-between items-center">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:hidden">
+                    {filteredUsers.map((user) => {
+                       const UserAvatar = getAvatar(user.avatar);
+                       return (
+                        <Card key={user.id} className="overflow-hidden">
+                            <CardHeader className="p-4">
+                                <div className="flex justify-between items-start">
                                     <div className="flex items-center gap-4">
-                                        <Avatar>
-                                            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                                        <Avatar className="h-12 w-12">
+                                            {UserAvatar ? UserAvatar : <AvatarFallback><PlaceholderUserIcon className="h-6 w-6" /></AvatarFallback>}
                                         </Avatar>
                                         <div>
-                                            <CardTitle>{user.name}</CardTitle>
-                                            <p className="text-sm text-muted-foreground">{user.email}</p>
+                                            <CardTitle className="text-base">{user.name}</CardTitle>
+                                            <p className="text-xs text-muted-foreground">{user.email}</p>
                                         </div>
                                     </div>
-                                    <div className="md:hidden">
-                                        <UserActions user={user} />
-                                    </div>
+                                    <UserActions user={user} />
                                 </div>
                             </CardHeader>
-                            <CardFooter className="bg-muted/50 p-3 flex justify-between items-center">
-                                <span className="text-sm text-muted-foreground">Rol Asignado</span>
+                            <CardContent className="px-4 pb-4 pt-0">
                                 <Badge variant="secondary">{getRoleName(user.roleId)}</Badge>
-                            </CardFooter>
+                            </CardContent>
                         </Card>
-                    ))}
+                       )
+                    })}
                 </div>
             </>
           )}
