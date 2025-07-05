@@ -39,7 +39,7 @@ const prompt = ai.definePrompt({
   Principio Activo: {{{activeIngredient}}}
   Dosificación Propuesta: {{{dosage}}}
 
-  Usa la herramienta 'getDrugInfo' para buscar información del Vademecum sobre el principio activo. Compara la información obtenida (dosis estándar, interacciones, etc.) con la dosificación propuesta.
+  Usa la herramienta 'getDrugInfo' para buscar información del Vademecum sobre el principio activo. Usa el 'canonicalName' que retorna la herramienta como el nombre oficial. Compara la información obtenida (dosis estándar, interacciones, etc.) con la dosificación propuesta.
 
   Proporciona un resumen conciso:
   - Si la dosificación parece razonable y no hay advertencias críticas, comienza tu respuesta con "Aprobado:".

@@ -22,7 +22,7 @@ const ExtractRecipeDataFromImageInputSchema = z.object({
 export type ExtractRecipeDataFromImageInput = z.infer<typeof ExtractRecipeDataFromImageInputSchema>;
 
 const RecipeItemSchema = z.object({
-  principalActiveIngredient: z.string().describe("The main active ingredient, corrected to its canonical name using the `getDrugInfo` tool."),
+  principalActiveIngredient: z.string().describe("The main active ingredient, corrected to its canonical name using the `getDrugInfo` tool. You MUST use the `canonicalName` returned by the tool."),
   pharmaceuticalForm: z.string().describe("The pharmaceutical form (e.g., 'Cápsulas', 'Crema', 'Solución', 'Papelillos').").optional(),
   concentrationValue: z.string().describe("The strength of the preparation, e.g., '5' for a 5% cream.").optional(),
   concentrationUnit: z.string().describe("The unit for the concentration, e.g., '%' for a cream, 'mg' for a capsule.").optional(),
