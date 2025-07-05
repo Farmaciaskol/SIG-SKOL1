@@ -244,7 +244,7 @@ function MainNavContent({
             <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 shrink-0 rounded-full"
+                className="h-9 w-9 shrink-0 rounded-full hidden md:flex"
                 onClick={toggleSidebar}
             >
                 <ChevronLeft
