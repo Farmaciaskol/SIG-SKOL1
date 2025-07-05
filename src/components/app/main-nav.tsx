@@ -234,7 +234,7 @@ function MainNavContent({
 
 
   return (
-    <div className="flex h-full w-full flex-col bg-background group/sidebar" data-state={state}>
+    <div className="flex min-h-svh w-full flex-col bg-background group/sidebar" data-state={state}>
       {/* === HEADER === */}
       <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b bg-card px-4 sm:px-6">
         {/* Header Left Side */}

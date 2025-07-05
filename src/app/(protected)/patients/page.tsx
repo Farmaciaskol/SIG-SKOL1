@@ -41,7 +41,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 
 
-const statusStyles: Record<ProactivePatientStatus, { border: string, icon: React.ElementType, iconColor: string }> = {
+const statusStyles: Record<ProactivePatientStatus, { border: string; icon: React.ElementType, iconColor: string }> = {
   [ProactivePatientStatus.URGENT]: { border: 'border-l-4 border-red-500', icon: AlertTriangle, iconColor: 'text-red-500' },
   [ProactivePatientStatus.ATTENTION]: { border: 'border-l-4 border-yellow-400', icon: AlertTriangle, iconColor: 'text-yellow-500' },
   [ProactivePatientStatus.OK]: { border: 'border-l-4 border-green-500', icon: CheckCircle2, iconColor: 'text-green-500' },
@@ -249,8 +249,8 @@ export default function PatientsPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </div>
-            <div className="flex items-center gap-4">
-                <span className="text-sm font-medium text-foreground">Filtros de Prevención:</span>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                <span className="text-sm font-medium text-foreground shrink-0">Filtros de Prevención:</span>
                 <div className="flex items-center gap-2">
                     <Button 
                         variant={activeFilter === 'all' ? 'default' : 'link'}
