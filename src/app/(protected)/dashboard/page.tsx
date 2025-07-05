@@ -1,4 +1,6 @@
 
+'use client';
+
 import Link from 'next/link';
 import {
   Users,
@@ -12,20 +14,118 @@ import {
   AlertCircle,
   FileText,
   FilePlus2,
-  DollarSign
+  DollarSign,
+  Package,
+  PackageCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getRecipes, getPatients, getInventory } from '@/lib/data';
-import { differenceInDays, format } from 'date-fns';
+import { differenceInDays, format, isValid, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { statusConfig } from '@/lib/constants';
 import { RecipeStatus, ProactivePatientStatus } from '@/lib/types';
 import type { Recipe, Patient, InventoryItem } from '@/lib/types';
-import { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Calendar } from '@/components/ui/calendar';
 
+// --- Client Components for the Dashboard ---
+
+type CalendarEvent = {
+  date: Date;
+  title: string;
+  type: 'received' | 'ready' | 'dispensed';
+};
+
+const eventConfig = {
+    received: { icon: PackageCheck, color: 'bg-indigo-500', label: 'Recepcionado' },
+    ready: { icon: Package, color: 'bg-orange-500', label: 'Listo para Retiro' },
+    dispensed: { icon: CheckCircle2, color: 'bg-green-500', label: 'Dispensado' },
+};
+
+function DashboardCalendar({ events }: { events: CalendarEvent[] }) {
+    const [date, setDate] = useState<Date | undefined>(new Date());
+
+    const eventsByDate = useMemo(() => {
+        return events.reduce((acc, event) => {
+            const day = format(event.date, 'yyyy-MM-dd');
+            if (!acc[day]) {
+                acc[day] = [];
+            }
+            acc[day].push(event);
+            return acc;
+        }, {} as Record<string, CalendarEvent[]>);
+    }, [events]);
+
+    const eventDays = useMemo(() => Object.keys(eventsByDate).map(dayStr => new Date(`${dayStr}T12:00:00`)), [eventsByDate]);
+    
+    const selectedDayEvents = useMemo(() => {
+        if (!date) return [];
+        const day = format(date, 'yyyy-MM-dd');
+        return eventsByDate[day] || [];
+    }, [date, eventsByDate]);
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="text-lg font-semibold text-primary">Calendario de Actividades</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col md:flex-row gap-6">
+                <div className="flex justify-center">
+                     <Calendar
+                        mode="single"
+                        selected={date}
+                        onSelect={setDate}
+                        className="rounded-md border p-0"
+                        locale={es}
+                        components={{
+                            DayContent: (props) => {
+                                const isEventDay = eventDays.some(d => format(d, 'yyyy-MM-dd') === format(props.date, 'yyyy-MM-dd'));
+                                return (
+                                    <div className="relative w-full h-full flex items-center justify-center">
+                                        {format(props.date, 'd')}
+                                        {isEventDay && (
+                                            <div className="absolute bottom-1.5 w-1.5 h-1.5 rounded-full bg-primary" />
+                                        )}
+                                    </div>
+                                );
+                            },
+                        }}
+                    />
+                </div>
+                <div className="flex-1 space-y-4">
+                    <h4 className="font-semibold text-foreground">
+                       Eventos para {date ? format(date, "d 'de' MMMM", { locale: es }) : '...'}
+                    </h4>
+                    {selectedDayEvents.length > 0 ? (
+                        <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
+                            {selectedDayEvents.map((event, index) => {
+                                const config = eventConfig[event.type];
+                                return (
+                                <div key={index} className="flex items-start gap-3">
+                                    <div className={`mt-1.5 flex h-2 w-2 rounded-full ${config.color}`} />
+                                    <div className="space-y-0.5">
+                                        <p className="text-sm font-medium leading-none">{event.title}</p>
+                                        <p className="text-sm text-muted-foreground">{config.label}</p>
+                                    </div>
+                                </div>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <div className="flex items-center justify-center h-full text-sm text-muted-foreground p-4 text-center border-2 border-dashed rounded-md">
+                           No hay eventos para la fecha seleccionada.
+                        </div>
+                    )}
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+// --- Server Components for the Dashboard ---
 
 type KpiCardProps = {
   title: string;
@@ -83,7 +183,7 @@ const ProactiveAlertsCard = ({ patients }: { patients: Patient[] }) => {
   };
 
   return (
-    <Card className="lg:col-span-1">
+    <Card>
       <CardHeader className="flex flex-row items-center gap-3 border-b pb-4">
         <Wand2 className="h-5 w-5 text-muted-foreground" />
         <CardTitle className="text-lg font-semibold text-primary">Alertas Proactivas (IA)</CardTitle>
@@ -157,7 +257,7 @@ const ActivityFeedCard = ({ recipes, patients }: { recipes: Recipe[], patients: 
     const getPatientName = (patientId: string) => patients.find(p => p.id === patientId)?.name || 'N/A';
 
     return (
-        <Card className="lg:col-span-1">
+        <Card>
             <Tabs defaultValue="delayed" className="w-full">
                 <CardHeader className="p-4 border-b">
                     <TabsList className="grid w-full grid-cols-2">
@@ -259,6 +359,42 @@ export default async function DashboardPage() {
     { title: 'Ítems con Stock Bajo', value: inventoryData.filter(i => i.quantity < i.lowStockThreshold).length, icon: Box, href: '/inventory' },
     { title: 'Recetas por Pagar', value: `$${pendingPayments.toLocaleString('es-CL')}`, icon: DollarSign, href: '/financial-management' },
   ];
+  
+  const calendarEvents = recipesData
+    .flatMap(recipe => {
+      const events: CalendarEvent[] = [];
+      
+      if (recipe.status === RecipeStatus.Dispensed && recipe.dispensationDate && isValid(parseISO(recipe.dispensationDate))) {
+        events.push({
+          date: parseISO(recipe.dispensationDate),
+          title: `Dispensada: Receta ${recipe.id.substring(0, 6)}...`,
+          type: 'dispensed'
+        });
+      }
+
+      if (recipe.auditTrail) {
+        const receivedEvent = recipe.auditTrail.find(t => t.status === RecipeStatus.ReceivedAtSkol);
+        if (receivedEvent && isValid(parseISO(receivedEvent.date))) {
+          events.push({
+            date: parseISO(receivedEvent.date),
+            title: `Recepcionada: Receta ${recipe.id.substring(0, 6)}...`,
+            type: 'received'
+          });
+        }
+
+        const readyEvent = recipe.auditTrail.find(t => t.status === RecipeStatus.ReadyForPickup);
+        if (readyEvent && isValid(parseISO(readyEvent.date))) {
+          events.push({
+            date: parseISO(readyEvent.date),
+            title: `Lista para Retiro: Receta ${recipe.id.substring(0, 6)}...`,
+            type: 'ready'
+          });
+        }
+      }
+      
+      return events;
+    })
+    .filter(event => isValid(event.date));
 
   return (
     <>
@@ -283,10 +419,16 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-        <ProactiveAlertsCard patients={patientsData} />
-        <ActivityFeedCard recipes={recipesData} patients={patientsData} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+        <div className="lg:col-span-2 space-y-6">
+          <ActivityFeedCard recipes={recipesData} patients={patientsData} />
+          <DashboardCalendar events={calendarEvents} />
+        </div>
+        <div className="lg:col-span-1 space-y-6">
+          <ProactiveAlertsCard patients={patientsData} />
+        </div>
       </div>
     </>
   );
 }
+
