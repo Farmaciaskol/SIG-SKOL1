@@ -123,14 +123,7 @@ function DashboardCalendar({ events }: { events: CalendarEvent[] }) {
     );
 }
 
-type KpiCardProps = {
-  title: string;
-  value: string | number;
-  icon: React.ElementType;
-  href: string;
-};
-
-const KpiCard = ({ title, value, icon: Icon, href }: KpiCardProps) => (
+const KpiCard = ({ title, value, icon: Icon, href }: { title: string; value: string | number; icon: React.ElementType, href: string; }) => (
   <Link href={href}>
     <Card className="hover:shadow-md transition-shadow duration-300 cursor-pointer bg-card">
       <CardContent className="p-4 flex items-center gap-4">
