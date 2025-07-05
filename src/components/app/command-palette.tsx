@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -92,7 +93,6 @@ export function CommandPalette() {
       { href: '/dispatch-management', label: 'Gestión Despachos', icon: Truck },
       { href: '/pharmacovigilance', label: 'Farmacovigilancia', icon: ShieldAlert },
       { href: '/controlled-drugs', label: 'Controlados', icon: Lock },
-      { href: '/simplify-instructions', label: 'Simplificar Indicaciones', icon: Wand2 },
       { href: '/financial-management', label: 'Gestión Financiera', icon: DollarSign },
       { href: '/reports', label: 'Reportes', icon: BarChart2 },
       { href: '/user-management', label: 'Gestión Usuarios', icon: UserCog },
