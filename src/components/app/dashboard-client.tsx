@@ -366,7 +366,7 @@ export function DashboardClient({ recipes, patients, inventory, calendarEvents }
               <Link href="/patients"><Users className="mr-2 h-4 w-4" /> Ver Pacientes</Link>
             </Button>
             <Button asChild>
-              <Link href="/recipes/new"><PlusCircle className="mr-2 h-4 w-4" /> Nueva Receta</Link>
+              <Link href="/recipes"><FileText className="mr-2 h-4 w-4" /> Gestionar Recetas</Link>
             </Button>
         </div>
       </div>
