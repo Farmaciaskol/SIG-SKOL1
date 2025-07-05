@@ -10,7 +10,7 @@ import {
 } from '@/lib/data';
 import type { PatientMessage, Patient } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Send, MessageSquare, Search, User } from 'lucide-react';
+import { Loader2, Send, MessageSquare, Search, User, ChevronLeft } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
@@ -98,10 +98,11 @@ const ConversationList = ({ conversations, selectedConversation, onSelect, searc
   );
 };
 
-const MessageThread = ({ conversation, messages, onSendMessage }: {
+const MessageThread = ({ conversation, messages, onSendMessage, onBack }: {
   conversation: Conversation;
   messages: PatientMessage[];
   onSendMessage: (content: string) => void;
+  onBack: () => void;
 }) => {
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -121,7 +122,11 @@ const MessageThread = ({ conversation, messages, onSendMessage }: {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b flex items-center gap-4">
+      <div className="p-4 border-b flex items-center gap-2">
+        <Button variant="ghost" size="icon" className="md:hidden" onClick={onBack}>
+          <ChevronLeft className="h-5 w-5" />
+          <span className="sr-only">Volver</span>
+        </Button>
         <Avatar>
           <AvatarFallback>{conversation.patientName.charAt(0)}</AvatarFallback>
         </Avatar>
@@ -273,7 +278,10 @@ export default function MessagingPage() {
             <Card className="h-[calc(100vh-200px)]">
                 <CardContent className="p-0 h-full">
                     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 h-full">
-                        <div className="col-span-1 h-full">
+                        <div className={cn(
+                            "md:col-span-1 lg:col-span-1 h-full md:flex",
+                            selectedConversation && "hidden"
+                        )}>
                            <ConversationList 
                              conversations={conversations}
                              selectedConversation={selectedConversation}
@@ -282,15 +290,19 @@ export default function MessagingPage() {
                              setSearchTerm={setSearchTerm}
                            />
                         </div>
-                        <div className="hidden md:block md:col-span-2 lg:col-span-3 h-full">
+                        <div className={cn(
+                            "md:col-span-2 lg:col-span-3 h-full",
+                            !selectedConversation && "hidden md:flex"
+                        )}>
                             {selectedConversation ? (
                                 <MessageThread
                                   conversation={selectedConversation}
                                   messages={messagesForSelectedConversation}
                                   onSendMessage={handleSendMessage}
+                                  onBack={() => setSelectedConversation(null)}
                                 />
                             ) : (
-                                <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+                                <div className="hidden md:flex flex-col items-center justify-center h-full text-center text-muted-foreground">
                                     <MessageSquare className="h-16 w-16 mb-4"/>
                                     <p className="text-lg font-medium">Seleccione una conversación</p>
                                     <p className="text-sm">Elija una conversación de la lista para ver los mensajes.</p>
