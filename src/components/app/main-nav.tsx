@@ -88,7 +88,6 @@ const menuGroups = [
         { href: '/dispatch-management', label: 'Gestión Despachos', icon: Truck },
         { href: '/pharmacovigilance', label: 'Farmacovigilancia', icon: ShieldAlert },
         { href: '/controlled-drugs', label: 'Controlados', icon: Lock },
-        { href: '/simplify-instructions', label: 'Simplificar Indicaciones', icon: Wand2 },
       ],
     },
     {
