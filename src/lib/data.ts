@@ -861,3 +861,28 @@ export const markMessagesAsRead = async (patientId: string, reader: 'pharmacist'
     await batch.commit();
 };
     
+export const addRole = async (role: Omit<Role, 'id'>): Promise<string> => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    const q = query(collection(db, "roles"), where("name", "==", role.name), limit(1));
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+        throw new Error(`El rol "${role.name}" ya existe.`);
+    }
+    const docRef = await addDoc(collection(db, 'roles'), role);
+    return docRef.id;
+};
+
+export const updateRole = async (id: string, updates: Partial<Role>): Promise<void> => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    await updateDoc(doc(db, 'roles', id), updates);
+};
+
+export const deleteRole = async (id: string): Promise<void> => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    const usersQuery = query(collection(db, "users"), where("roleId", "==", id), limit(1));
+    const usersSnapshot = await getDocs(usersQuery);
+    if (!usersSnapshot.empty) {
+        throw new Error("No se puede eliminar el rol porque está asignado a uno o más usuarios.");
+    }
+    await deleteDoc(doc(db, 'roles', id));
+};
