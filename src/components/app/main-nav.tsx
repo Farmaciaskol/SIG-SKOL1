@@ -28,6 +28,8 @@ import {
   User,
   MessageSquare,
   Search,
+  FlaskConical,
+  ChevronDown
 } from 'lucide-react';
 import {
   Sidebar,
@@ -64,6 +66,7 @@ import { Input } from '../ui/input';
 const menuGroups = [
     {
       title: 'Principal',
+      icon: LayoutDashboard,
       items: [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { href: '/portal-inbox', label: 'Bandeja Portal', icon: Inbox },
@@ -72,6 +75,7 @@ const menuGroups = [
     },
     {
       title: 'Gestión',
+      icon: Users,
       items: [
         { href: '/patients', label: 'Pacientes', icon: Users },
         { href: '/doctors', label: 'Médicos', icon: Stethoscope },
@@ -80,6 +84,7 @@ const menuGroups = [
     },
     {
       title: 'Operaciones',
+      icon: FlaskConical,
       items: [
         { href: '/inventory', label: 'Inventario Skol', icon: Package },
         { href: '/monthly-dispensing', label: 'Dispensación Mensual', icon: CalendarDays },
@@ -91,6 +96,7 @@ const menuGroups = [
     },
     {
       title: 'Administración',
+      icon: Settings,
       items: [
         { href: '/financial-management', label: 'Gestión Financiera', icon: DollarSign },
         { href: '/reports', label: 'Reportes', icon: BarChart2 },
@@ -331,15 +337,19 @@ export function MainNav({
           {/* Sidebar */}
           <Sidebar className="border-r bg-card" collapsible="icon">
             <SidebarContent className="p-0 flex-1">
-              <Accordion type="multiple" value={openItems} onValueChange={setOpenItems} className="w-full px-4">
+              <Accordion type="multiple" value={openItems} onValueChange={setOpenItems} className="w-full px-2">
                 {menuGroups.map((group) => (
                   <AccordionItem key={group.title} value={group.title} className="border-b-0">
                     <AccordionTrigger
-                      className="py-2 px-0 hover:no-underline hover:bg-transparent rounded-none text-foreground/60 font-semibold text-xs justify-start gap-1 capitalize data-[state=open]:text-primary"
+                       className="py-2 px-2 hover:no-underline hover:bg-accent rounded-md text-foreground/80 font-semibold justify-start gap-2 data-[state=open]:text-primary data-[state=open]:bg-accent"
                     >
-                      <span className="tracking-wider group-data-[collapsible=icon]:hidden">{group.title}</span>
+                      <div className="flex items-center gap-2">
+                         <group.icon className="h-4 w-4" />
+                         <span className="group-data-[collapsible=icon]:hidden">{group.title}</span>
+                      </div>
+                      <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200 group-data-[collapsible=icon]:hidden" />
                     </AccordionTrigger>
-                    <AccordionContent className="pl-2 pt-1 pb-1">
+                    <AccordionContent className="pl-4 pt-1 pb-1">
                       <SidebarMenu>
                         {group.items.map((item) => (
                           <SidebarMenuItem key={item.href}>
