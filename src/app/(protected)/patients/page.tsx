@@ -10,7 +10,7 @@ import { getPatients, deletePatient, getRecipes } from '@/lib/data';
 import type { Patient, Recipe } from '@/lib/types';
 import { ProactivePatientStatus, PatientActionNeeded, RecipeStatus } from '@/lib/types';
 import { runProactiveAnalysisForAllPatients } from '@/lib/actions';
-import { PlusCircle, Search, User, Heart, AlertTriangle, Pencil, Trash2, FileText, Repeat, Truck, CheckCircle2, Loader2, Wand2, MoreHorizontal, FlaskConical, Package } from 'lucide-react';
+import { PlusCircle, Search, User, Heart, AlertTriangle, Pencil, Trash2, FileText, Repeat, Truck, CheckCircle2, Loader2, Wand2, MoreHorizontal, FlaskConical, Package, ChevronsRight, ChevronsLeft, ChevronRight, ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PatientFormDialog } from '@/components/app/patient-form-dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -36,12 +36,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
 
 
-const statusStyles: Record<ProactivePatientStatus, string> = {
-  [ProactivePatientStatus.URGENT]: 'border-red-500 bg-red-50',
-  [ProactivePatientStatus.ATTENTION]: 'border-yellow-400 bg-yellow-50',
-  [ProactivePatientStatus.OK]: 'border-border',
+const statusStyles: Record<ProactivePatientStatus, { border: string, icon: React.ElementType, iconColor: string }> = {
+  [ProactivePatientStatus.URGENT]: { border: 'border-l-4 border-red-500', icon: AlertTriangle, iconColor: 'text-red-500' },
+  [ProactivePatientStatus.ATTENTION]: { border: 'border-l-4 border-yellow-400', icon: AlertTriangle, iconColor: 'text-yellow-500' },
+  [ProactivePatientStatus.OK]: { border: 'border-l-4 border-green-500', icon: CheckCircle2, iconColor: 'text-green-500' },
 };
 
 const actionButtonConfig: Record<PatientActionNeeded, { text: string; icon: React.ElementType }> = {
@@ -65,6 +67,11 @@ export default function PatientsPage() {
   const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
+
+  const [selectedPatients, setSelectedPatients] = useState<string[]>([]);
+  const [isDeleteBatchAlertOpen, setIsDeleteBatchAlertOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 15;
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -130,7 +137,21 @@ export default function PatientsPage() {
       setIsDeleting(false);
     }
   };
-
+  
+  const handleBatchDelete = async () => {
+    setIsDeleting(true);
+    try {
+        await Promise.all(selectedPatients.map(id => deletePatient(id)));
+        toast({ title: `${selectedPatients.length} Pacientes Eliminados`, description: 'Los pacientes seleccionados han sido eliminados.' });
+        setSelectedPatients([]);
+        fetchData();
+    } catch (error) {
+         toast({ title: 'Error', description: 'No se pudieron eliminar todos los pacientes seleccionados.', variant: 'destructive' });
+    } finally {
+        setIsDeleting(false);
+        setIsDeleteBatchAlertOpen(false);
+    }
+  };
 
   const filteredPatients = useMemo(() => {
     return patients
@@ -149,111 +170,51 @@ export default function PatientsPage() {
       });
   }, [patients, searchTerm, activeFilter]);
 
-  const PatientCard = ({ patient, recipes }: { patient: Patient, recipes: Recipe[] }) => {
-    const { text: buttonText, icon: ButtonIcon } = actionButtonConfig[patient.actionNeeded] || actionButtonConfig.NONE;
-    
-    const buttonHref = useMemo(() => {
-      switch (patient.actionNeeded) {
-        case PatientActionNeeded.CREATE_NEW_RECIPE:
-          return `/recipes/new?patientId=${patient.id}`;
-        case PatientActionNeeded.REPREPARE_CYCLE:
-        case PatientActionNeeded.DISPENSE_COMMERCIAL:
-        case PatientActionNeeded.NONE:
-        default:
-          return `/patients/${patient.id}`;
-      }
-    }, [patient.actionNeeded, patient.id]);
-    
-    const patientRecipes = useMemo(() => recipes.filter(r => r.patientId === patient.id), [recipes, patient.id]);
-    const activeRecipes = useMemo(() => patientRecipes.filter(r => ![
-        RecipeStatus.Dispensed, 
-        RecipeStatus.Cancelled, 
-        RecipeStatus.Rejected, 
-        RecipeStatus.Archived
-    ].includes(r.status)), [patientRecipes]);
+  const totalPages = Math.ceil(filteredPatients.length / ITEMS_PER_PAGE);
 
-    const recipesInPreparation = useMemo(() => activeRecipes.filter(r => r.status === RecipeStatus.Preparation || r.status === RecipeStatus.SentToExternal).length, [activeRecipes]);
-    const recipesReadyForPickup = useMemo(() => activeRecipes.filter(r => r.status === RecipeStatus.ReadyForPickup || r.status === RecipeStatus.ReceivedAtSkol).length, [activeRecipes]);
-    const expiredRecipesCount = useMemo(() => activeRecipes.filter(r => r.dueDate && new Date(r.dueDate) < new Date()).length, [activeRecipes]);
+  const paginatedPatients = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredPatients.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredPatients, currentPage]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, activeFilter]);
 
-    return (
-        <Card className={cn("flex flex-col justify-between transition-shadow hover:shadow-md", statusStyles[patient.proactiveStatus])}>
-            <CardHeader className="p-4">
-                <div className="flex justify-between items-start">
-                    <div>
-                        <CardTitle className="text-lg font-bold text-foreground hover:underline">
-                            <Link href={`/patients/${patient.id}`} title={patient.name} className="truncate">
-                                {patient.name}
-                            </Link>
-                        </CardTitle>
-                        <div className="flex items-center text-xs text-muted-foreground mt-1">
-                            <User className="mr-2 h-3 w-3" />
-                            <span>{patient.rut}</span>
-                        </div>
-                    </div>
-                     <div className="flex items-center gap-2">
-                        {patient.isChronic && <Heart className="h-5 w-5 text-red-500" fill="currentColor" title="Paciente Crónico" />}
-                        {patient.allergies && patient.allergies.length > 0 && <AlertTriangle className="h-5 w-5 text-amber-500" strokeWidth={2.5} title={`Alergias: ${patient.allergies.join(', ')}`} />}
-                    </div>
-                </div>
-            </CardHeader>
-            <CardContent className="p-4 flex-grow">
-                <div className="flex items-start text-sm">
-                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                    <p className="text-foreground/90 leading-snug">{patient.proactiveMessage}</p>
-                </div>
-            </CardContent>
-            <CardFooter className="flex justify-between items-center bg-muted/50 p-3">
-                <div className="flex items-center space-x-3 text-xs text-muted-foreground">
-                    {expiredRecipesCount > 0 && (
-                        <TooltipProvider><Tooltip><TooltipTrigger asChild>
-                            <div className="flex items-center gap-1.5 text-red-600 font-semibold">
-                                <AlertTriangle className="h-4 w-4" />
-                                <span>{expiredRecipesCount}</span>
-                            </div>
-                        </TooltipTrigger><TooltipContent><p>{expiredRecipesCount} Receta(s) Vencida(s)</p></TooltipContent></Tooltip></TooltipProvider>
-                    )}
-                    {recipesInPreparation > 0 && (
-                        <TooltipProvider><Tooltip><TooltipTrigger asChild>
-                            <div className="flex items-center gap-1.5">
-                                <FlaskConical className="h-4 w-4" />
-                                <span>{recipesInPreparation}</span>
-                            </div>
-                        </TooltipTrigger><TooltipContent><p>{recipesInPreparation} Receta(s) en Preparación</p></TooltipContent></Tooltip></TooltipProvider>
-                    )}
-                    {recipesReadyForPickup > 0 && (
-                        <TooltipProvider><Tooltip><TooltipTrigger asChild>
-                            <div className="flex items-center gap-1.5">
-                                <Package className="h-4 w-4" />
-                                <span>{recipesReadyForPickup}</span>
-                            </div>
-                        </TooltipTrigger><TooltipContent><p>{recipesReadyForPickup} Receta(s) para Retiro</p></TooltipContent></Tooltip></TooltipProvider>
-                    )}
-                </div>
-                <div className="flex items-center gap-1">
-                    <Button asChild size="sm">
-                        <Link href={buttonHref}>
-                            <ButtonIcon className="mr-2 h-4 w-4" />
-                            {buttonText}
-                        </Link>
-                    </Button>
-                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleOpenForm(patient)}><Pencil className="mr-2 h-4 w-4" />Editar</DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => setPatientToDelete(patient)}><Trash2 className="mr-2 h-4 w-4" />Eliminar</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-            </CardFooter>
-        </Card>
+  const allOnPageSelected = paginatedPatients.length > 0 && paginatedPatients.every(p => selectedPatients.includes(p.id));
+
+  const toggleSelectAll = () => {
+    const pageIds = paginatedPatients.map(p => p.id);
+    if (allOnPageSelected) {
+      setSelectedPatients(prev => prev.filter(id => !pageIds.includes(id)));
+    } else {
+      setSelectedPatients(prev => [...new Set([...prev, ...pageIds])]);
+    }
+  }
+
+  const toggleSelectPatient = (id: string) => {
+    setSelectedPatients(prev => 
+      prev.includes(id) ? prev.filter(pId => pId !== id) : [...prev, id]
     );
-};
+  }
+
+  const PatientRowActions = ({ patient }: { patient: Patient }) => (
+    <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+        <Button aria-haspopup="true" size="icon" variant="ghost">
+            <MoreHorizontal className="h-4 w-4" />
+            <span className="sr-only">Menú</span>
+        </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+            <DropdownMenuItem asChild><Link href={`/patients/${patient.id}`}><User className="mr-2 h-4 w-4" />Ver Ficha</Link></DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleOpenForm(patient)}><Pencil className="mr-2 h-4 w-4" />Editar</DropdownMenuItem>
+            <DropdownMenuItem asChild><Link href={`/recipes/new?patientId=${patient.id}`}><FileText className="mr-2 h-4 w-4" />Nueva Receta</Link></DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => setPatientToDelete(patient)}><Trash2 className="mr-2 h-4 w-4" />Eliminar</DropdownMenuItem>
+        </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
   return (
     <>
@@ -337,11 +298,100 @@ export default function PatientsPage() {
             </div>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredPatients.map(patient => (
-                <PatientCard key={patient.id} patient={patient} recipes={recipes} />
-            ))}
-        </div>
+        <Card>
+            <CardContent className="p-0">
+                <div className="hidden md:block">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="p-4"><Checkbox onCheckedChange={toggleSelectAll} checked={allOnPageSelected} /></TableHead>
+                                <TableHead>Nombre</TableHead>
+                                <TableHead>RUT</TableHead>
+                                <TableHead>Condición</TableHead>
+                                <TableHead>Mensaje Proactivo (IA)</TableHead>
+                                <TableHead className="text-right">Acciones</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {paginatedPatients.map(patient => {
+                                const {icon: StatusIcon, iconColor} = statusStyles[patient.proactiveStatus];
+                                return (
+                                <TableRow key={patient.id} data-state={selectedPatients.includes(patient.id) && "selected"}>
+                                    <TableCell className="p-4"><Checkbox onCheckedChange={() => toggleSelectPatient(patient.id)} checked={selectedPatients.includes(patient.id)}/></TableCell>
+                                    <TableCell className="font-medium">
+                                        <Link href={`/patients/${patient.id}`} className="hover:underline">{patient.name}</Link>
+                                    </TableCell>
+                                    <TableCell>{patient.rut}</TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center gap-2">
+                                            {patient.isChronic && <Heart className="h-4 w-4 text-red-500" fill="currentColor" title="Paciente Crónico" />}
+                                            {patient.allergies && patient.allergies.length > 0 && <AlertTriangle className="h-4 w-4 text-amber-500" strokeWidth={2.5} title={`Alergias: ${patient.allergies.join(', ')}`} />}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center gap-2 text-sm">
+                                            <StatusIcon className={cn("h-4 w-4", iconColor)} />
+                                            <span className="text-foreground/90">{patient.proactiveMessage}</span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <PatientRowActions patient={patient} />
+                                    </TableCell>
+                                </TableRow>
+                                )
+                            })}
+                        </TableBody>
+                    </Table>
+                </div>
+                 <div className="grid grid-cols-1 gap-4 md:hidden p-4">
+                    {paginatedPatients.map(patient => {
+                        const { border, icon: StatusIcon, iconColor } = statusStyles[patient.proactiveStatus];
+                        return (
+                            <Card key={patient.id} className={cn("flex flex-col", border, selectedPatients.includes(patient.id) && "ring-2 ring-primary")}>
+                                <CardHeader className="p-4 flex flex-row items-start gap-3">
+                                    <Checkbox onCheckedChange={() => toggleSelectPatient(patient.id)} checked={selectedPatients.includes(patient.id)} className="mt-1"/>
+                                    <div className="flex-1">
+                                        <div className="flex justify-between items-start">
+                                            <CardTitle className="text-lg leading-tight hover:underline">
+                                                <Link href={`/patients/${patient.id}`}>{patient.name}</Link>
+                                            </CardTitle>
+                                             <div className="flex items-center gap-2">
+                                                {patient.isChronic && <Heart className="h-5 w-5 text-red-500" fill="currentColor" title="Paciente Crónico" />}
+                                                {patient.allergies && patient.allergies.length > 0 && <AlertTriangle className="h-5 w-5 text-amber-500" strokeWidth={2.5} title={`Alergias: ${patient.allergies.join(', ')}`} />}
+                                            </div>
+                                        </div>
+                                        <p className="text-sm text-muted-foreground">{patient.rut}</p>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="p-4 pt-0">
+                                    <div className="flex items-start text-sm">
+                                        <StatusIcon className={cn("h-5 w-5 mr-2 mt-0.5 flex-shrink-0", iconColor)} />
+                                        <p className="text-foreground/90 leading-snug">{patient.proactiveMessage}</p>
+                                    </div>
+                                </CardContent>
+                                <CardFooter className="bg-muted/50 p-2 flex justify-end">
+                                    <PatientRowActions patient={patient}/>
+                                </CardFooter>
+                            </Card>
+                        )
+                    })}
+                 </div>
+            </CardContent>
+             <CardFooter className="flex items-center justify-between px-4 py-3 border-t">
+                <div className="text-xs text-muted-foreground">
+                    {selectedPatients.length > 0
+                    ? `${selectedPatients.length} de ${filteredPatients.length} fila(s) seleccionadas.`
+                    : `Total de ${filteredPatients.length} pacientes.`}
+                </div>
+                <div className="flex items-center space-x-2">
+                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(1)} disabled={currentPage === 1}><ChevronsLeft /></Button>
+                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1}><ChevronLeft /></Button>
+                    <span className="text-sm">Página {currentPage} de {totalPages}</span>
+                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages}><ChevronRight /></Button>
+                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}><ChevronsRight /></Button>
+                </div>
+            </CardFooter>
+        </Card>
       )}
 
       <PatientFormDialog
@@ -368,6 +418,31 @@ export default function PatientsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      {selectedPatients.length > 0 && (
+        <Card className="fixed bottom-4 left-1/2 -translate-x-1/2 w-auto max-w-sm z-50 shadow-2xl">
+            <CardContent className="p-3 flex items-center justify-between gap-4">
+                <p className="text-sm font-medium">{selectedPatients.length} paciente(s) seleccionado(s)</p>
+                <div className="flex items-center gap-2">
+                    <Button variant="destructive" size="sm" onClick={() => setIsDeleteBatchAlertOpen(true)}><Trash2 className="mr-2 h-4 w-4"/>Eliminar</Button>
+                </div>
+            </CardContent>
+        </Card>
+      )}
+
+      <AlertDialog open={isDeleteBatchAlertOpen} onOpenChange={setIsDeleteBatchAlertOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>¿Eliminar {selectedPatients.length} pacientes?</AlertDialogTitle>
+                <AlertDialogDescription>Esta acción no se puede deshacer. Los pacientes seleccionados serán eliminados permanentemente.</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleBatchDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">{isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Eliminar</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </>
   );
 }
