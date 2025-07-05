@@ -341,13 +341,12 @@ export function MainNav({
                 {menuGroups.map((group) => (
                   <AccordionItem key={group.title} value={group.title} className="border-b-0">
                     <AccordionTrigger
-                       className="py-2 px-2 hover:no-underline hover:bg-accent rounded-md text-foreground/80 font-semibold justify-start gap-2 data-[state=open]:text-primary data-[state=open]:bg-accent"
+                       className="py-2 px-2 hover:no-underline hover:bg-accent rounded-md text-foreground/80 font-semibold data-[state=open]:text-primary data-[state=open]:bg-accent group-data-[collapsible=icon]:justify-center"
                     >
                       <div className="flex items-center gap-2">
                          <group.icon className="h-4 w-4" />
                          <span className="group-data-[collapsible=icon]:hidden">{group.title}</span>
                       </div>
-                      <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200 group-data-[collapsible=icon]:hidden" />
                     </AccordionTrigger>
                     <AccordionContent className="pl-4 pt-1 pb-1">
                       <SidebarMenu>
