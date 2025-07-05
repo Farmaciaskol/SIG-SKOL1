@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -37,7 +36,6 @@ import {
   SidebarMenuButton,
   SidebarMenu,
   SidebarProvider,
-  SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -188,7 +186,7 @@ function MainNavContent({
   const pathname = usePathname();
   const [user] = useAuthState(auth);
   const [appUser, setAppUser] = React.useState<AppUser | null>(null);
-  const { state, toggleSidebar } = useSidebar();
+  const { state, toggleSidebar, isMobile } = useSidebar();
   
   const defaultOpenGroup = menuGroups.find(group => group.items.some(item => pathname.startsWith(item.href)))?.title || 'Principal';
   const [openItems, setOpenItems] = React.useState([defaultOpenGroup]);
@@ -244,13 +242,13 @@ function MainNavContent({
             <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 shrink-0 rounded-full hidden md:flex"
+                className="flex h-9 w-9 shrink-0 rounded-full"
                 onClick={toggleSidebar}
             >
                 <ChevronLeft
                     className={cn(
                         'h-5 w-5 transition-transform duration-300 ease-in-out',
-                        state === 'collapsed' && 'rotate-180'
+                        isMobile ? '' : state === 'collapsed' && 'rotate-180'
                     )}
                 />
                 <span className="sr-only">Toggle sidebar</span>
@@ -278,8 +276,6 @@ function MainNavContent({
                     />
                 </div>
             </Link>
-
-            <SidebarTrigger className="md:hidden" />
           </div>
         
         {/* Header Right Side */}
