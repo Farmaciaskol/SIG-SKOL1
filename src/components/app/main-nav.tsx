@@ -241,20 +241,10 @@ function MainNavContent({
       <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b bg-card px-4 sm:px-6">
         {/* Header Left Side */}
         <div className="flex items-center gap-2">
-            <Link href="/dashboard">
-                <Image
-                    src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/IMAGOTIPO_IMAGOTIPO%20FONDO%20-04_IMAGOTIPO%20BLANCO_IMAGOTIPO%20AZUL.png?alt=media&token=746abbd3-b1d7-4abc-80c4-d8125cf78fa2"
-                    alt="Skol Pharmacy Imagotipo"
-                    width={36}
-                    height={36}
-                    className="object-contain"
-                    priority
-                />
-            </Link>
-             <Button
+            <Button
                 variant="ghost"
                 size="icon"
-                className="hidden h-9 w-9 shrink-0 rounded-full md:flex"
+                className="h-9 w-9 shrink-0 rounded-full"
                 onClick={toggleSidebar}
             >
                 <ChevronLeft
@@ -329,8 +319,28 @@ function MainNavContent({
         
         {/* Sidebar */}
         <Sidebar className="border-r bg-card" collapsible="icon">
+           <div className="flex h-16 shrink-0 items-center justify-center p-2 group-data-[collapsible=icon]:px-0">
+            <Link href="/dashboard" className="relative flex h-10 w-full items-center justify-center">
+                <Image
+                    src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=1a612d04-0f27-4317-bfd6-06b48f019a24"
+                    alt="Skol Pharmacy Logo"
+                    width={120}
+                    height={33}
+                    className="object-contain transition-opacity duration-300 ease-in-out group-data-[collapsible=icon]:opacity-0"
+                    priority
+                />
+                <Image
+                    src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/IMAGOTIPO_IMAGOTIPO%20FONDO%20-04_IMAGOTIPO%20BLANCO_IMAGOTIPO%20AZUL.png?alt=media&token=746abbd3-b1d7-4abc-80c4-d8125cf78fa2"
+                    alt="Skol Pharmacy Imagotipo"
+                    width={36}
+                    height={36}
+                    className="object-contain transition-opacity duration-300 ease-in-out absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-data-[collapsible=icon]:opacity-100"
+                    priority
+                />
+            </Link>
+          </div>
           <SidebarContent className="p-0 flex-1">
-            <Accordion type="multiple" value={openItems} onValueChange={setOpenItems} className="w-full px-2 mt-2">
+            <Accordion type="multiple" value={openItems} onValueChange={setOpenItems} className="w-full px-2">
               {menuGroups.map((group) => (
                 <AccordionItem key={group.title} value={group.title} className="border-b-0">
                   <AccordionTrigger
