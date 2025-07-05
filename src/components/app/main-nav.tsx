@@ -15,7 +15,6 @@ import {
   BarChart2,
   UserCog,
   Settings,
-  UserSquare,
   LogOut,
   Wand2,
   Stethoscope,
@@ -27,7 +26,6 @@ import {
   Bell,
   User,
   MessageSquare,
-  Search,
   FlaskConical,
   ChevronDown,
   ChevronLeft
@@ -36,7 +34,6 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarProvider,
@@ -179,7 +176,7 @@ const PlaceholderUserIcon = ({ className }: { className?: string }) => (
 );
 
 const SidebarToggle = () => {
-  const { state, toggleSidebar } = useSidebar();
+  const { toggleSidebar } = useSidebar();
 
   return (
     <div className="flex w-full items-center justify-center p-2">
@@ -192,7 +189,7 @@ const SidebarToggle = () => {
         <ChevronLeft
           className={cn(
             'h-5 w-5 transition-transform duration-300 ease-in-out',
-            state === 'collapsed' && 'rotate-180'
+            'group-data-[state=collapsed]:rotate-180'
           )}
         />
         <span className="sr-only">Toggle sidebar</span>
@@ -266,16 +263,6 @@ export function MainNav({
           {/* Header Left Side */}
           <div className="flex items-center gap-2">
             <SidebarTrigger className="bg-primary text-primary-foreground hover:bg-primary/90 md:hidden" />
-            <Link href="/dashboard" className="hidden md:block">
-              <Image
-                src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
-                alt="Skol Pharmacy Logo"
-                width={120}
-                height={33}
-                className="object-contain"
-                priority
-              />
-            </Link>
           </div>
           
           {/* Header Right Side */}
@@ -340,14 +327,25 @@ export function MainNav({
           {/* Sidebar */}
           <Sidebar className="border-r bg-card" collapsible="icon">
             <SidebarContent className="p-0 flex-1">
-               <div className="border-b p-4 md:hidden">
+              {/* Logo Section */}
+              <div className="flex h-16 items-center justify-center border-b px-2">
                 <Link href="/dashboard">
+                  {/* Expanded Logo */}
                   <Image
                     src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
                     alt="Skol Pharmacy Logo"
                     width={120}
                     height={33}
-                    className="object-contain"
+                    className="object-contain transition-opacity duration-300 group-data-[state=collapsed]:opacity-0 group-data-[state=collapsed]:hidden"
+                    priority
+                  />
+                  {/* Collapsed Logo (Imagotipo) */}
+                   <Image
+                    src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/IMAGOTIPO_IMAGOTIPO%20FONDO%20-04_IMAGOTIPO%20BLANCO_IMAGOTIPO%20AZUL.png?alt=media&token=746abbd3-b1d7-4abc-80c4-d8125cf78fa2"
+                    alt="Skol Pharmacy Imagotipo"
+                    width={36}
+                    height={36}
+                    className="object-contain transition-opacity duration-300 group-data-[state=expanded]:opacity-0 group-data-[state=expanded]:hidden"
                     priority
                   />
                 </Link>
@@ -360,7 +358,7 @@ export function MainNav({
                        className="py-2 px-2 hover:no-underline hover:bg-accent rounded-md text-foreground/80 data-[state=open]:text-primary data-[state=open]:bg-accent group-data-[collapsible=icon]:h-12 group-data-[collapsible=icon]:w-12 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:py-0 group-data-[collapsible=icon]:px-0"
                     >
                       <div className="flex items-center gap-2">
-                         <group.icon className="h-4 w-4" />
+                         <group.icon className="h-5 w-5" />
                          <span className="group-data-[collapsible=icon]:hidden">{group.title}</span>
                       </div>
                     </AccordionTrigger>
