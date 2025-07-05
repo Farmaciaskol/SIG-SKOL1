@@ -238,8 +238,8 @@ export function MainNav({
         <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-4 border-b bg-card px-4 sm:px-6">
           {/* Header Left Side */}
           <div className="flex items-center gap-2">
-            <SidebarTrigger className="bg-primary text-primary-foreground hover:bg-primary/90" />
-            <Link href="/dashboard" className="hidden lg:block">
+            <SidebarTrigger className="bg-primary text-primary-foreground hover:bg-primary/90 md:hidden" />
+            <Link href="/dashboard">
               <Image
                 src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
                 alt="Skol Pharmacy Logo"
@@ -321,7 +321,13 @@ export function MainNav({
         </header>
 
         {/* === MAIN CONTAINER (SIDEBAR + CONTENT) === */}
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 overflow-hidden relative">
+          <SidebarTrigger
+            variant="outline"
+            className="absolute top-6 -translate-x-1/2 z-20 hidden h-8 w-8 rounded-full md:flex
+                       left-[var(--sidebar-width)] group-data-[state=collapsed]/sidebar-wrapper:left-[var(--sidebar-width-icon)]
+                       transition-all duration-200"
+          />
           {/* Sidebar */}
           <Sidebar className="border-r bg-card" collapsible="icon">
             <SidebarContent className="p-0 flex-1">
