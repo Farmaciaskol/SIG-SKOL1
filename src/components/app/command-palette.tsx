@@ -7,7 +7,6 @@ import {
   Users,
   Stethoscope,
   LayoutDashboard,
-  FlaskConical,
   Truck,
   ShieldAlert,
   Lock,
@@ -15,6 +14,12 @@ import {
   UserCog,
   BarChart2,
   Search,
+  Building2,
+  Package,
+  CalendarDays,
+  DollarSign,
+  Inbox,
+  Wand2,
 } from 'lucide-react';
 import {
   CommandDialog,
@@ -25,13 +30,15 @@ import {
   CommandList,
   CommandSeparator,
 } from '@/components/ui/command';
-import { getPatients, getDoctors, Patient, Doctor } from '@/lib/data';
+import { getPatients, getDoctors, getRecipes, Patient, Doctor } from '@/lib/data';
+import type { Recipe } from '@/lib/types';
 
 export function CommandPalette() {
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
   const [patients, setPatients] = React.useState<Patient[]>([]);
   const [doctors, setDoctors] = React.useState<Doctor[]>([]);
+  const [recipes, setRecipes] = React.useState<Recipe[]>([]);
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -48,12 +55,14 @@ export function CommandPalette() {
   React.useEffect(() => {
     if (open) {
       const fetchData = async () => {
-        const [patientsData, doctorsData] = await Promise.all([
+        const [patientsData, doctorsData, recipesData] = await Promise.all([
           getPatients(),
           getDoctors(),
+          getRecipes(),
         ]);
         setPatients(patientsData);
         setDoctors(doctorsData);
+        setRecipes(recipesData);
       };
       fetchData();
     }
@@ -64,17 +73,26 @@ export function CommandPalette() {
     command();
   }, []);
   
+  const getPatientName = (patientId: string) => {
+    return patients.find(p => p.id === patientId)?.name || 'N/A';
+  }
+
   const pages = [
       { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { href: '/portal-inbox', label: 'Bandeja Portal', icon: Inbox },
       { href: '/recipes', label: 'Recetas', icon: FileText },
       { href: '/patients', label: 'Pacientes', icon: Users },
       { href: '/doctors', label: 'Médicos', icon: Stethoscope },
-      { href: '/inventory', label: 'Inventario', icon: FlaskConical },
-      { href: '/dispatch-management', label: 'Despachos', icon: Truck },
+      { href: '/external-prescriptions', label: 'Recetarios', icon: Building2 },
+      { href: '/inventory', label: 'Inventario', icon: Package },
+      { href: '/monthly-dispensing', label: 'Dispensación Mensual', icon: CalendarDays },
+      { href: '/dispatch-management', label: 'Gestión Despachos', icon: Truck },
       { href: '/pharmacovigilance', label: 'Farmacovigilancia', icon: ShieldAlert },
       { href: '/controlled-drugs', label: 'Controlados', icon: Lock },
-      { href: '/user-management', label: 'Usuarios', icon: UserCog },
+      { href: '/simplify-instructions', label: 'Simplificar Indicaciones', icon: Wand2 },
+      { href: '/financial-management', label: 'Gestión Financiera', icon: DollarSign },
       { href: '/reports', label: 'Reportes', icon: BarChart2 },
+      { href: '/user-management', label: 'Gestión Usuarios', icon: UserCog },
       { href: '/settings', label: 'Configuración', icon: Settings },
   ];
 
@@ -94,6 +112,22 @@ export function CommandPalette() {
         <CommandInput placeholder="Escriba un comando o busque..." />
         <CommandList>
           <CommandEmpty>No se encontraron resultados.</CommandEmpty>
+          
+          <CommandGroup heading="Recetas">
+            {recipes.map((recipe) => (
+              <CommandItem
+                key={recipe.id}
+                value={`receta ${recipe.id} ${getPatientName(recipe.patientId)} ${recipe.items[0]?.principalActiveIngredient}`}
+                onSelect={() => {
+                  runCommand(() => router.push(`/recipes/${recipe.id}`));
+                }}
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                <span>Receta: {recipe.id.substring(0,8)}...</span>
+                <span className="text-xs text-muted-foreground ml-2">{getPatientName(recipe.patientId)}</span>
+              </CommandItem>
+            ))}
+          </CommandGroup>
           
           <CommandGroup heading="Pacientes">
             {patients.map((patient) => (
