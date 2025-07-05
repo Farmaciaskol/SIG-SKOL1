@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription }
 import { Input } from '@/components/ui/input';
 import { addLotToInventoryItem, deleteInventoryItem } from '@/lib/data';
 import type { InventoryItem, LotDetail } from '@/lib/types';
-import { PlusCircle, Search, Edit, History, PackagePlus, Trash2, MoreVertical, DollarSign, Package, PackageX, AlertTriangle, Star, Box, ChevronDown, Loader2, Calendar as CalendarIcon, Snowflake } from 'lucide-react';
+import { PlusCircle, Search, Edit, History, PackagePlus, Trash2, MoreVertical, DollarSign, Package, PackageX, AlertTriangle, Star, Box, ChevronDown, Loader2, Calendar as CalendarIcon, Snowflake, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from 'lucide-react';
 import { format, differenceInDays, isBefore, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
@@ -77,8 +77,42 @@ const StatCard = ({ title, value, icon: Icon }: { title: string; value: string |
     </Card>
 );
 
-const ProductCard = ({ item, onEdit, onManageLots, onDelete }: { item: InventoryItemWithStats; onEdit: (item: InventoryItem) => void; onManageLots: (item: InventoryItemWithStats) => void; onDelete: (item: InventoryItem) => void; }) => {
+const InventoryActions = ({ item, onEdit, onManageLots, onDelete }: { item: InventoryItemWithStats; onEdit: (item: InventoryItem) => void; onManageLots: (item: InventoryItemWithStats) => void; onDelete: (item: InventoryItem) => void; }) => {
     const { toast } = useToast();
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-8 w-8">
+            <MoreVertical className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuItem onClick={() => onEdit(item)}>
+            <Edit className="mr-2 h-4 w-4" />
+            <span>Editar Definición</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onManageLots(item)}>
+            <Box className="mr-2 h-4 w-4" />
+            <span>Gestionar Lotes</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => toast({ title: 'Función no disponible', description: 'El historial de movimientos estará disponible próximamente.' })}>
+            <History className="mr-2 h-4 w-4" />
+            <span>Ver Historial</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => toast({ title: 'Función no disponible', description: 'El registro de devoluciones estará disponible próximamente.' })}>
+            <PackagePlus className="mr-2 h-4 w-4" />
+            <span>Registrar Devolución</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem className="text-red-600 focus:text-red-600" onSelect={() => onDelete(item)}>
+            <Trash2 className="mr-2 h-4 w-4" />
+            <span>Eliminar Producto</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+};
+
+const ProductCard = ({ item, onEdit, onManageLots, onDelete }: { item: InventoryItemWithStats; onEdit: (item: InventoryItem) => void; onManageLots: (item: InventoryItemWithStats) => void; onDelete: (item: InventoryItem) => void; }) => {
     const statusStyles: Record<InventoryItemWithStats['status'], { badge: string; border: string }> = {
       'OK': { badge: 'bg-green-100 text-green-800', border: 'border-transparent' },
       'Stock Bajo': { badge: 'bg-yellow-100 text-yellow-800 border-yellow-300', border: 'border-yellow-400' },
@@ -132,13 +166,9 @@ const ProductCard = ({ item, onEdit, onManageLots, onDelete }: { item: Inventory
                             <Edit className="mr-2 h-4 w-4" />
                             <span>Editar Definición</span>
                         </DropdownMenuItem>
-                         <DropdownMenuItem onSelect={() => toast({ title: 'Función no disponible', description: 'El historial de movimientos estará disponible próximamente.' })}>
-                            <History className="mr-2 h-4 w-4" />
-                            <span>Ver Historial</span>
-                        </DropdownMenuItem>
-                         <DropdownMenuItem onSelect={() => toast({ title: 'Función no disponible', description: 'El registro de devoluciones estará disponible próximamente.' })}>
-                            <PackagePlus className="mr-2 h-4 w-4" />
-                            <span>Registrar Devolución</span>
+                         <DropdownMenuItem onClick={() => onManageLots(item)}>
+                            <Box className="mr-2 h-4 w-4" />
+                            <span>Gestionar Lotes</span>
                         </DropdownMenuItem>
                          <DropdownMenuItem className="text-red-600 focus:text-red-600" onSelect={() => onDelete(item)}>
                             <Trash2 className="mr-2 h-4 w-4" />
@@ -289,6 +319,10 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
     // Delete confirmation dialog
     const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null);
 
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 20;
+
     useEffect(() => {
         setInventory(initialInventory);
     }, [initialInventory]);
@@ -343,6 +377,18 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
             return matchesFilter && matchesSearch;
         })
     }, [inventoryWithStats, activeFilter, searchTerm]);
+
+    const totalPages = Math.ceil(filteredInventory.length / ITEMS_PER_PAGE);
+
+    const paginatedInventory = useMemo(() => {
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        return filteredInventory.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    }, [filteredInventory, currentPage]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, activeFilter]);
+
 
     const globalStats = useMemo(() => {
         const totalValue = inventory.reduce((sum, item) => sum + (item.quantity * (item.costPrice || 0)), 0);
@@ -478,14 +524,8 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
                 </CardContent>
             </Card>
 
-            {filteredInventory.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {filteredInventory.map(item => (
-                        <ProductCard key={item.id} item={item} onEdit={handleEdit} onManageLots={handleManageLots} onDelete={setItemToDelete} />
-                    ))}
-                </div>
-            ) : (
-                <Card className="text-center py-16 mt-8 shadow-none border-dashed">
+            {paginatedInventory.length === 0 ? (
+                 <Card className="text-center py-16 mt-8 shadow-none border-dashed">
                     <div className="flex flex-col items-center justify-center">
                         <Package className="h-16 w-16 text-muted-foreground mb-4" />
                         <h2 className="text-xl font-semibold text-foreground">No se encontraron productos</h2>
@@ -497,6 +537,76 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
                         </Button>
                     </div>
                 </Card>
+            ) : (
+                <>
+                    {/* Desktop Table View */}
+                    <Card className="hidden md:block">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Producto</TableHead>
+                                    <TableHead>Stock Total</TableHead>
+                                    <TableHead>Próximo Vto.</TableHead>
+                                    <TableHead>Estado</TableHead>
+                                    <TableHead className="text-right">Acciones</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {paginatedInventory.map(item => {
+                                     const statusStyles: Record<InventoryItemWithStats['status'], string> = {
+                                        'OK': 'text-green-600',
+                                        'Stock Bajo': 'text-yellow-600',
+                                        'Agotado': 'text-red-600',
+                                        'Próximo a Vencer': 'text-orange-600',
+                                        'Vencido': 'text-red-700 font-bold',
+                                    };
+                                    return (
+                                    <TableRow key={item.id}>
+                                        <TableCell>
+                                            <div className="font-medium text-foreground">{item.name}</div>
+                                            <div className="text-xs text-muted-foreground">SKU: {item.sku || 'N/A'}</div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <span className="font-semibold text-lg text-foreground">{item.quantity}</span>
+                                            <span className="text-sm text-muted-foreground ml-1">{item.unit}</span>
+                                        </TableCell>
+                                        <TableCell>
+                                            {item.nextExpiryDate && !isNaN(parseISO(item.nextExpiryDate).getTime()) ? format(parseISO(item.nextExpiryDate), 'MMM yyyy', {locale: es}) : 'N/A'}
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant="outline" className={cn("font-semibold", statusStyles[item.status])}>{item.status}</Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <InventoryActions item={item} onEdit={handleEdit} onManageLots={handleManageLots} onDelete={setItemToDelete} />
+                                        </TableCell>
+                                    </TableRow>
+                                )})}
+                            </TableBody>
+                        </Table>
+                    </Card>
+
+                    {/* Mobile Card View */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:hidden">
+                        {paginatedInventory.map(item => (
+                            <ProductCard key={item.id} item={item} onEdit={handleEdit} onManageLots={handleManageLots} onDelete={setItemToDelete} />
+                        ))}
+                    </div>
+
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-between mt-6">
+                            <div className="text-xs text-muted-foreground">
+                                Página {currentPage} de {totalPages}
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <Button variant="outline" size="sm" onClick={() => setCurrentPage(1)} disabled={currentPage === 1}><ChevronsLeft /></Button>
+                                <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1}><ChevronLeft /></Button>
+                                <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages}><ChevronRight /></Button>
+                                <Button variant="outline" size="sm" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}><ChevronsRight /></Button>
+                            </div>
+                        </div>
+                    )}
+                </>
             )}
         </>
     );
