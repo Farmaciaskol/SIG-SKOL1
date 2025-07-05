@@ -239,7 +239,7 @@ export function MainNav({
           {/* Header Left Side */}
           <div className="flex items-center gap-2">
             <SidebarTrigger className="bg-primary text-primary-foreground hover:bg-primary/90 md:hidden" />
-            <Link href="/dashboard">
+            <Link href="/dashboard" className="hidden md:block">
               <Image
                 src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
                 alt="Skol Pharmacy Logo"
@@ -337,7 +337,7 @@ export function MainNav({
                     <AccordionTrigger
                       className="py-2 px-0 hover:no-underline hover:bg-transparent rounded-none text-foreground/60 font-semibold text-xs justify-start gap-1 capitalize data-[state=open]:text-primary"
                     >
-                      <span className="tracking-wider">{group.title}</span>
+                      <span className="tracking-wider group-data-[collapsible=icon]:hidden">{group.title}</span>
                     </AccordionTrigger>
                     <AccordionContent className="pl-2 pt-1 pb-1">
                       <SidebarMenu>
@@ -346,18 +346,14 @@ export function MainNav({
                             <SidebarMenuButton
                               asChild
                               isActive={pathname.startsWith(item.href)}
-                              className={cn(
-                                "justify-start font-normal text-sm",
-                                pathname.startsWith(item.href) ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground font-semibold" : "text-foreground hover:bg-accent hover:text-accent-foreground"
-                              )}
+                              tooltip={item.label}
+                              className={cn(pathname.startsWith(item.href) && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground font-semibold")}
                             >
-                              <Link href={item.href} className="flex justify-between items-center w-full">
-                                <div className="flex items-center gap-2">
-                                  <item.icon className="h-4 w-4" />
-                                  <span>{item.label}</span>
-                                </div>
+                              <Link href={item.href}>
+                                <item.icon className="h-4 w-4" />
+                                <span className="flex-1 group-data-[collapsible=icon]:hidden">{item.label}</span>
                                 {item.href === '/portal-inbox' && portalInboxCount > 0 && (
-                                  <Badge className="h-5">{portalInboxCount}</Badge>
+                                  <Badge className="h-5 group-data-[collapsible=icon]:hidden">{portalInboxCount}</Badge>
                                 )}
                               </Link>
                             </SidebarMenuButton>
@@ -374,16 +370,14 @@ export function MainNav({
                    {bottomMenuItems.map((item) => (
                        <SidebarMenuItem key={item.href}>
                            <SidebarMenuButton
-                               asChild
-                               isActive={pathname.startsWith(item.href)}
-                              className={cn(
-                                   "justify-start font-normal text-sm",
-                                   pathname.startsWith(item.href) ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground font-semibold" : "text-foreground hover:bg-accent hover:text-accent-foreground"
-                               )}
+                                asChild
+                                isActive={pathname.startsWith(item.href)}
+                                tooltip={item.label}
+                                className={cn(pathname.startsWith(item.href) && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground font-semibold")}
                            >
                            <Link href={item.href}>
                                <item.icon className="h-4 w-4" />
-                               <span>{item.label}</span>
+                               <span className="flex-1 group-data-[collapsible=icon]:hidden">{item.label}</span>
                            </Link>
                            </SidebarMenuButton>
                        </SidebarMenuItem>
