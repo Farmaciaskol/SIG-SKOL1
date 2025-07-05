@@ -1014,14 +1014,14 @@ export const RecipesClient = ({
           return null;
         case RecipeStatus.Validated:
           return recipe.supplySource === 'Insumos de Skol' 
-            ? <Button size="sm" asChild><Link href="/dispatch-management"><Truck className="mr-2 h-4 w-4 text-blue-600" />Ir a Despacho</Link></Button>
-            : <Button size="sm" onClick={() => setRecipeToSend(recipe)}><Send className="mr-2 h-4 w-4 text-cyan-600" />Enviar</Button>;
+            ? <Button size="sm" asChild><Link href="/dispatch-management"><Truck className="mr-2 h-4 w-4 text-white" />Ir a Despacho</Link></Button>
+            : <Button size="sm" onClick={() => setRecipeToSend(recipe)}><Send className="mr-2 h-4 w-4 text-white" />Enviar</Button>;
         case RecipeStatus.SentToExternal:
-          return <Button size="sm" onClick={() => setRecipeToReceive(recipe)}><PackageCheck className="mr-2 h-4 w-4 text-indigo-600" />Recepcionar</Button>;
+          return <Button size="sm" onClick={() => setRecipeToReceive(recipe)}><PackageCheck className="mr-2 h-4 w-4 text-white" />Recepcionar</Button>;
         case RecipeStatus.ReceivedAtSkol:
-          return <Button size="sm" onClick={() => handleUpdateStatus(recipe, RecipeStatus.ReadyForPickup)}><Package className="mr-2 h-4 w-4 text-orange-600" />Marcar Retiro</Button>;
+          return <Button size="sm" onClick={() => handleUpdateStatus(recipe, RecipeStatus.ReadyForPickup)}><Package className="mr-2 h-4 w-4 text-white" />Marcar Retiro</Button>;
         case RecipeStatus.ReadyForPickup:
-          return <Button size="sm" onClick={() => handleUpdateStatus(recipe, RecipeStatus.Dispensed)}><CheckCheck className="mr-2 h-4 w-4 text-green-600" />Dispensar</Button>;
+          return <Button size="sm" onClick={() => handleUpdateStatus(recipe, RecipeStatus.Dispensed)}><CheckCheck className="mr-2 h-4 w-4 text-white" />Dispensar</Button>;
         case RecipeStatus.Dispensed:
           return (
             <TooltipProvider>
@@ -1055,7 +1055,7 @@ export const RecipesClient = ({
               Rechazar
             </Button>
             <Button size="sm" className="flex-1" onClick={() => handleUpdateStatus(recipe, RecipeStatus.Validated, 'Receta validada por farmacéutico.')}>
-              <ShieldCheck className="mr-2 h-4 w-4 text-green-600" />
+              <ShieldCheck className="mr-2 h-4 w-4 text-white" />
               Validar
             </Button>
           </>
@@ -1266,8 +1266,8 @@ export const RecipesClient = ({
                             return (
                                 <TableRow key={recipe.id} className={cn("hover:bg-muted/50", selectedRecipes.includes(recipe.id) && "bg-muted/50")}>
                                 <TableCell className="p-4"><Checkbox onCheckedChange={() => toggleSelectRecipe(recipe.id)} checked={selectedRecipes.includes(recipe.id)}/></TableCell>
-                                <TableCell className="font-mono text-primary">
-                                    <Link href={`/recipes/${recipe.id}`} className="hover:underline">
+                                <TableCell className="font-mono">
+                                    <Link href={`/recipes/${recipe.id}`} className="text-muted-foreground hover:text-primary hover:underline">
                                         {recipe.id}
                                     </Link>
                                 </TableCell>
@@ -1291,7 +1291,7 @@ export const RecipesClient = ({
                                 <TableCell>{format(new Date(recipe.createdAt), "d 'de' MMMM, yyyy", { locale: es })}</TableCell>
                                 <TableCell>
                                     <div className="flex items-center gap-2">
-                                    <Badge variant="outline" className={cn("font-normal", statusConfig[recipe.status]?.badge)}>
+                                    <Badge className={cn("font-normal", statusConfig[recipe.status]?.badge)}>
                                         <StatusIcon className="h-3 w-3 mr-1.5" />
                                         {statusConfig[recipe.status]?.text || recipe.status}
                                     </Badge>
@@ -1356,18 +1356,18 @@ export const RecipesClient = ({
                                         <Link href={`/patients/${recipe.patientId}`} className="hover:underline">{getPatientName(recipe.patientId)}</Link>
                                     </CardTitle>
                                     <div className="flex flex-col items-start gap-1 mt-1">
-                                        <CardDescription className="text-xs">Receta <Link href={`/recipes/${recipe.id}`} className="font-mono text-primary hover:underline">{recipe.id}</Link></CardDescription>
+                                        <CardDescription className="text-xs">Receta <Link href={`/recipes/${recipe.id}`} className="font-mono text-muted-foreground hover:text-primary hover:underline">{recipe.id}</Link></CardDescription>
                                         <div className="flex items-center gap-2">
-                                            <Badge variant="outline" className={cn("font-normal text-xs text-center whitespace-nowrap", statusConfig[recipe.status]?.badge)}>{statusConfig[recipe.status]?.text || recipe.status}</Badge>
+                                            <Badge className={cn("font-normal text-xs text-center whitespace-nowrap", statusConfig[recipe.status]?.badge)}>{statusConfig[recipe.status]?.text || recipe.status}</Badge>
                                             {showCycleCount && (<Badge variant="secondary" className="font-mono text-xs">{`${currentCycle}/${totalCycles}`}</Badge>)}
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <div className="flex items-center gap-1 shrink-0">
-                                {isPaymentPending && (<TooltipProvider><Tooltip><TooltipTrigger asChild><span><DollarSign className="h-4 w-4 text-amber-500" /></span></TooltipTrigger><TooltipContent><p>Pago pendiente</p></TooltipContent></Tooltip></TooltipProvider>)}
-                                {recipe.status === RecipeStatus.PendingReviewPortal && (<TooltipProvider><Tooltip><TooltipTrigger asChild><span><UserSquare className="h-4 w-4 text-purple-500" /></span></TooltipTrigger><TooltipContent><p>Receta del Portal</p></TooltipContent></Tooltip></TooltipProvider>)}
-                                {recipe.items.some(item => item.requiresFractionation) && (<TooltipProvider><Tooltip><TooltipTrigger asChild><span><Split className="h-4 w-4 text-orange-500" /></span></TooltipTrigger><TooltipContent><p>Requiere Fraccionamiento</p></TooltipContent></Tooltip></TooltipProvider>)}
+                                {isPaymentPending && (<TooltipProvider><Tooltip><TooltipTrigger asChild><span><DollarSign className="h-4 w-4 text-amber-600" /></span></TooltipTrigger><TooltipContent><p>Pago pendiente</p></TooltipContent></Tooltip></TooltipProvider>)}
+                                {recipe.status === RecipeStatus.PendingReviewPortal && (<TooltipProvider><Tooltip><TooltipTrigger asChild><span><UserSquare className="h-4 w-4 text-purple-600" /></span></TooltipTrigger><TooltipContent><p>Receta del Portal</p></TooltipContent></Tooltip></TooltipProvider>)}
+                                {recipe.items.some(item => item.requiresFractionation) && (<TooltipProvider><Tooltip><TooltipTrigger asChild><span><Split className="h-4 w-4 text-orange-600" /></span></TooltipTrigger><TooltipContent><p>Requiere Fraccionamiento</p></TooltipContent></Tooltip></TooltipProvider>)}
                             </div>
                         </div>
                     </CardHeader>
