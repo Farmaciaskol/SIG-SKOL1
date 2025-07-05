@@ -62,7 +62,7 @@ import { Badge } from '../ui/badge';
 import { getAvatar } from '@/components/app/predefined-avatars';
 import { getUsers } from '@/lib/data';
 import { User as AppUser } from '@/lib/types';
-import { Input } from '../ui/input';
+import { CommandPalette } from './command-palette';
 
 
 const menuGroups = [
@@ -280,15 +280,9 @@ export function MainNav({
           
           {/* Header Right Side */}
           <div className="flex flex-1 items-center justify-end gap-2 md:gap-4">
-            <form className="relative w-full max-w-sm">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Buscar..."
-                className="w-full appearance-none bg-muted pl-8 shadow-none h-9"
-              />
-            </form>
-
+            <div className="w-full max-w-xs ml-auto">
+              <CommandPalette />
+            </div>
             <Button asChild variant="ghost" size="icon" className="relative h-9 w-9">
               <Link href="/messaging">
                 <MessageSquare className="h-5 w-5" />
