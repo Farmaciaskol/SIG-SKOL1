@@ -12,6 +12,10 @@ import {
   FileText,
   Package,
   PackageCheck,
+  Inbox,
+  FlaskConical,
+  Box,
+  DollarSign,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,7 +23,7 @@ import { differenceInDays, format, isValid, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { statusConfig } from '@/lib/constants';
 import { RecipeStatus, ProactivePatientStatus } from '@/lib/types';
-import type { Recipe, Patient } from '@/lib/types';
+import type { Recipe, Patient, InventoryItem } from '@/lib/types';
 import React, { useMemo, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -324,10 +328,10 @@ const ActivityFeedCard = ({ recipes, patients }: { recipes: Recipe[], patients: 
     );
 };
 
-export function DashboardClient({ kpis, recipes, patients, calendarEvents }: { 
-    kpis: KpiCardProps[];
+export function DashboardClient({ recipes, patients, inventory, calendarEvents }: { 
     recipes: Recipe[];
     patients: Patient[];
+    inventory: InventoryItem[];
     calendarEvents: CalendarEvent[];
 }) {
   const today = new Date();
@@ -338,6 +342,19 @@ export function DashboardClient({ kpis, recipes, patients, calendarEvents }: {
     day: 'numeric',
   }).format(today);
   const capitalizedDate = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
+
+  const kpis = useMemo(() => {
+    const pendingPayments = recipes
+      .filter(r => r.paymentStatus === 'Pendiente')
+      .reduce((sum, r) => sum + (r.preparationCost || 0) + (r.transportCost || 0), 0);
+      
+    return [
+      { title: 'Bandeja de Entrada Portal', value: recipes.filter(r => r.status === RecipeStatus.PendingReviewPortal).length, icon: Inbox, href: '/portal-inbox' },
+      { title: 'En Preparación', value: recipes.filter(r => r.status === RecipeStatus.Preparation).length, icon: FlaskConical, href: '/recipes?status=En+Preparación' },
+      { title: 'Ítems con Stock Bajo', value: inventory.filter(i => i.quantity < i.lowStockThreshold).length, icon: Box, href: '/inventory' },
+      { title: 'Recetas por Pagar', value: `$${pendingPayments.toLocaleString('es-CL')}`, icon: DollarSign, href: '/financial-management' },
+    ];
+  }, [recipes, inventory]);
 
   return (
     <>
