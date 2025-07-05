@@ -61,7 +61,6 @@ const recipeItemSchema = z.object({
   totalQuantityValue: z.string().min(1, "El valor de la Cantidad Total es requerido."),
   totalQuantityUnit: z.string().min(1, "La unidad de la Cantidad Total es requerida."),
   usageInstructions: z.string().min(1, "Las Instrucciones de Uso son requeridas."),
-  requiresFractionation: z.boolean().optional(),
   sourceInventoryItemId: z.string().optional(),
 });
 
@@ -146,7 +145,6 @@ const defaultItem = {
   totalQuantityValue: '',
   totalQuantityUnit: '',
   usageInstructions: '',
-  requiresFractionation: false,
   sourceInventoryItemId: '',
 };
 
@@ -619,13 +617,15 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
     try {
       const result = await extractRecipeDataFromImage({ photoDataUri: previewImage });
       
-      if (result.patientName && !currentValues.newPatientName && !currentValues.patientId) {
+      const patientNameIsEmpty = !currentValues.newPatientName && !currentValues.patientId;
+      if (result.patientName && patientNameIsEmpty) {
         form.setValue('patientSelectionType', 'new');
         form.setValue('newPatientName', result.patientName);
         form.setValue('newPatientRut', result.patientRut || '');
       }
 
-      if (result.doctorName && !currentValues.newDoctorName && !currentValues.doctorId) {
+      const doctorNameIsEmpty = !currentValues.newDoctorName && !currentValues.doctorId;
+      if (result.doctorName && doctorNameIsEmpty) {
         form.setValue('doctorSelectionType', 'new');
         form.setValue('newDoctorName', result.doctorName);
         form.setValue('newDoctorLicense', result.doctorLicense || '');
