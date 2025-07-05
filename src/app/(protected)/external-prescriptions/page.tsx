@@ -222,7 +222,12 @@ export default function ExternalPrescriptionsPage() {
   const handleOpenForm = (pharmacy: ExternalPharmacy | null) => {
     setEditingPharmacy(pharmacy);
     if (pharmacy) {
-      form.reset(pharmacy);
+      form.reset({
+        ...pharmacy,
+        transportCost: pharmacy.transportCost ?? 0,
+        standardPreparationTime: pharmacy.standardPreparationTime ?? 0,
+        skolSuppliedPreparationTime: pharmacy.skolSuppliedPreparationTime ?? 0,
+      });
     } else {
       form.reset({
         name: '', contactPerson: '', email: '', phone: '', address: '',
