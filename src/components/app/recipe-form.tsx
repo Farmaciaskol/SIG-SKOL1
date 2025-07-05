@@ -1,3 +1,4 @@
+
 'use client';
 
 import { extractRecipeDataFromImage } from '@/ai/flows/extract-recipe-data-from-image';
@@ -403,6 +404,7 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
   const [imageFile, setImageFile] = React.useState<File | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [isZoomed, setIsZoomed] = React.useState(false);
+  const [zoomOrigin, setZoomOrigin] = React.useState('center center');
   const [isInventoryFormOpen, setIsInventoryFormOpen] = React.useState(false);
 
   const isEditMode = !!recipeId;
@@ -516,6 +518,28 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
   const handleInventoryFormFinished = () => {
     setIsInventoryFormOpen(false);
     refreshInventory();
+  };
+
+  const handleImageClick = (e: React.MouseEvent<HTMLImageElement>) => {
+    e.stopPropagation();
+    if (isZoomed) {
+      setIsZoomed(false);
+    } else {
+      const { offsetX, offsetY } = e.nativeEvent;
+      const { offsetWidth, offsetHeight } = e.currentTarget;
+      const x = (offsetX / offsetWidth) * 100;
+      const y = (offsetY / offsetHeight) * 100;
+      setZoomOrigin(`${x}% ${y}%`);
+      setIsZoomed(true);
+    }
+  };
+
+  const handleZoomButtonClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    if (!isZoomed) {
+      setZoomOrigin('center center');
+    }
+    setIsZoomed((prev) => !prev);
   };
 
 
@@ -730,16 +754,17 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
                           alt="Vista previa de receta" 
                           fill 
                           className={cn(
-                              "object-contain transition-transform duration-300 ease-in-out cursor-pointer",
-                              isZoomed ? "scale-[2.5]" : "scale-100"
+                              "object-contain transition-transform duration-300 ease-in-out",
+                              isZoomed ? "scale-[2.5] cursor-zoom-out" : "scale-100 cursor-zoom-in"
                           )}
-                          onClick={()=> setIsZoomed(prev => !prev)}
+                          onClick={handleImageClick}
+                          style={{ transformOrigin: zoomOrigin }}
                       />
                       <div className="absolute top-2 right-2 flex flex-col gap-2 z-10">
-                        <Button type="button" variant="secondary" size="icon" className="h-8 w-8 bg-black/50 hover:bg-black/70 text-white rounded-full" onClick={()=> setIsZoomed(prev => !prev)}>
+                        <Button type="button" variant="secondary" size="icon" className="h-8 w-8 bg-black/50 hover:bg-black/70 text-white rounded-full" onClick={handleZoomButtonClick}>
                           {isZoomed ? <ZoomOut className="h-4 w-4" /> : <ZoomIn className="h-4 w-4" />}
                         </Button>
-                        <Button type="button" variant="secondary" size="icon" className="h-8 w-8 bg-black/50 hover:bg-black/70 text-white rounded-full" onClick={() => { setPreviewImage(null); setImageFile(null); if(fileInputRef.current) fileInputRef.current.value = ""; setIsZoomed(false); }}>
+                        <Button type="button" variant="secondary" size="icon" className="h-8 w-8 bg-black/50 hover:bg-black/70 text-white rounded-full" onClick={() => { setPreviewImage(null); setImageFile(null); if(fileInputRef.current) fileInputRef.current.value = ""; setIsZoomed(false); setZoomOrigin('center center'); }}>
                           <XIcon className="h-4 w-4" />
                         </Button>
                       </div>
