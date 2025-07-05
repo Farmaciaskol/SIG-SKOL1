@@ -29,7 +29,8 @@ import {
   MessageSquare,
   Search,
   FlaskConical,
-  ChevronDown
+  ChevronDown,
+  ChevronLeft
 } from 'lucide-react';
 import {
   Sidebar,
@@ -40,6 +41,7 @@ import {
   SidebarMenuButton,
   SidebarProvider,
   SidebarTrigger,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
@@ -104,10 +106,6 @@ const menuGroups = [
         { href: '/settings', label: 'Configuración', icon: Settings },
       ],
     },
-];
-
-const bottomMenuItems = [
-    { href: '/patient-portal/login', label: 'Portal de Pacientes', icon: UserSquare },
 ];
 
 interface MainNavProps extends React.HTMLAttributes<HTMLElement> {
@@ -179,6 +177,29 @@ const PlaceholderUserIcon = ({ className }: { className?: string }) => (
     <path d="M12 14c-3.866 0-7 3.134-7 7v1h14v-1c0-3.866-3.134-7-7-7z" />
   </svg>
 );
+
+const SidebarToggle = () => {
+  const { state, toggleSidebar } = useSidebar();
+
+  return (
+    <div className="flex w-full items-center p-2 group-data-[collapsible=icon]:justify-center">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-9 w-9 shrink-0 rounded-full"
+        onClick={toggleSidebar}
+      >
+        <ChevronLeft
+          className={cn(
+            'h-5 w-5 transition-transform duration-300 ease-in-out',
+            state === 'collapsed' && 'rotate-180'
+          )}
+        />
+        <span className="sr-only">Toggle sidebar</span>
+      </Button>
+    </div>
+  );
+};
 
 export function MainNav({
   className,
@@ -314,12 +335,7 @@ export function MainNav({
 
         {/* === MAIN CONTAINER (SIDEBAR + CONTENT) === */}
         <div className="flex flex-1 overflow-hidden relative">
-          <SidebarTrigger
-            variant="outline"
-            className="absolute top-6 -translate-x-1/2 z-20 hidden h-8 w-8 rounded-full md:flex
-                       left-[var(--sidebar-width)] group-data-[state=collapsed]/sidebar-wrapper:left-[var(--sidebar-width-icon)]
-                       transition-all duration-200"
-          />
+          
           {/* Sidebar */}
           <Sidebar className="border-r bg-card" collapsible="icon">
             <SidebarContent className="p-0 flex-1">
@@ -384,24 +400,8 @@ export function MainNav({
                 ))}
               </Accordion>
             </SidebarContent>
-             <SidebarFooter className="mt-auto border-t p-4 space-y-4">
-               <SidebarMenu className="px-0">
-                   {bottomMenuItems.map((item) => (
-                       <SidebarMenuItem key={item.href}>
-                           <SidebarMenuButton
-                                asChild
-                                isActive={pathname.startsWith(item.href)}
-                                tooltip={item.label}
-                                className={cn(pathname.startsWith(item.href) && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground font-semibold")}
-                           >
-                           <Link href={item.href}>
-                               <item.icon className="h-4 w-4" />
-                               <span className="flex-1 group-data-[collapsible=icon]:hidden">{item.label}</span>
-                           </Link>
-                           </SidebarMenuButton>
-                       </SidebarMenuItem>
-                   ))}
-               </SidebarMenu>
+             <SidebarFooter className="mt-auto border-t p-0">
+                <SidebarToggle />
              </SidebarFooter>
           </Sidebar>
           
