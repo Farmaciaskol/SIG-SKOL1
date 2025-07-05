@@ -121,7 +121,7 @@ export default function PatientDetailPage() {
   }, [fetchData]);
 
   const activeTreatments = useMemo(() => {
-    if (!patient) return [];
+    if (!patient || !inventory) return [];
 
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Compare dates only
@@ -142,25 +142,35 @@ export default function PatientDetailPage() {
                     isExpired = dueDate < today;
                 }
             }
+            const item = r.items[0];
             return {
                 type: 'magistral' as const,
-                name: r.items[0]?.principalActiveIngredient || 'Preparado Magistral',
+                name: item?.principalActiveIngredient || 'Preparado Magistral',
                 details: `Receta #${r.id.substring(0, 6)}... - ${r.status}`,
                 id: r.id,
                 isExpired,
+                dose: item ? `${item.concentrationValue}${item.concentrationUnit}` : 'N/A',
+                quantity: item ? `${item.totalQuantityValue} ${item.totalQuantityUnit}` : 'N/A',
+                price: r.preparationCost ? `$${r.preparationCost.toLocaleString('es-CL')}` : 'N/A',
             }
         });
     
-    const activeCommercialMeds = (patient.commercialMedications || []).map((med, index) => ({
-        type: 'commercial' as const,
-        name: med,
-        details: 'Medicamento Comercial',
-        id: `comm-${index}`,
-        isExpired: false,
-    }));
+    const activeCommercialMeds = (patient.commercialMedications || []).map((med, index) => {
+        const inventoryItem = inventory.find(i => i.name.toLowerCase() === med.toLowerCase());
+        return {
+            type: 'commercial' as const,
+            name: med,
+            details: 'Medicamento Comercial',
+            id: `comm-${index}`,
+            isExpired: false,
+            dose: inventoryItem ? `${inventoryItem.doseValue} ${inventoryItem.doseUnit}` : 'N/A',
+            quantity: inventoryItem ? `${inventoryItem.itemsPerBaseUnit} ${inventoryItem.pharmaceuticalForm}/envase` : 'N/A',
+            price: inventoryItem?.salePrice ? `$${inventoryItem.salePrice.toLocaleString('es-CL')}` : 'N/A',
+        }
+    });
 
     return [...activeMagistralRecipes, ...activeCommercialMeds];
-  }, [patient, recipes]);
+  }, [patient, recipes, inventory]);
 
   const handleAnalyzeHistory = async () => {
     if (!patient) return;
@@ -365,22 +375,38 @@ export default function PatientDetailPage() {
                     {activeTreatments.length > 0 ? (
                         <ul className="space-y-3">
                             {activeTreatments.map((treatment) => (
-                                <li key={treatment.id} className={cn("flex items-center justify-between p-3 bg-muted/50 rounded-lg", treatment.isExpired && "bg-red-50 border-l-4 border-red-400")}>
-                                    <div>
-                                        <p className={cn("font-semibold text-foreground", treatment.isExpired && "text-red-800")}>{treatment.name}</p>
-                                        <p className="text-xs text-muted-foreground">{treatment.details}</p>
-                                        {treatment.isExpired && (
-                                            <div className="flex items-center gap-1.5 mt-2 text-red-600">
-                                                <AlertTriangle className="h-4 w-4" />
-                                                <p className="text-sm font-semibold">Receta Vencida</p>
-                                            </div>
+                                <li key={treatment.id} className={cn("p-4 bg-muted/50 rounded-lg", treatment.isExpired && "bg-red-50 border-l-4 border-red-400")}>
+                                    <div className="flex items-start justify-between">
+                                        <div>
+                                            <p className={cn("font-semibold text-foreground text-base", treatment.isExpired && "text-red-800")}>{treatment.name}</p>
+                                            <p className="text-xs text-muted-foreground">{treatment.details}</p>
+                                        </div>
+                                        {treatment.type === 'magistral' && (
+                                            <Button variant="ghost" size="sm" asChild>
+                                                <Link href={`/recipes/${treatment.id}`}>Ver Receta</Link>
+                                            </Button>
                                         )}
                                     </div>
-                                    {treatment.type === 'magistral' && (
-                                        <Button variant="ghost" size="sm" asChild>
-                                            <Link href={`/recipes/${treatment.id}`}>Ver Receta</Link>
-                                        </Button>
+                                    {treatment.isExpired && (
+                                        <div className="flex items-center gap-1.5 mt-2 text-red-600">
+                                            <AlertTriangle className="h-4 w-4" />
+                                            <p className="text-sm font-semibold">Receta Vencida</p>
+                                        </div>
                                     )}
+                                    <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-muted-foreground/10 text-xs">
+                                        <div>
+                                            <p className="text-muted-foreground">Dosis/Conc.</p>
+                                            <p className="font-medium text-foreground">{treatment.dose}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-muted-foreground">Cantidad</p>
+                                            <p className="font-medium text-foreground">{treatment.quantity}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-muted-foreground">Precio/Costo</p>
+                                            <p className="font-medium text-foreground">{treatment.price}</p>
+                                        </div>
+                                    </div>
                                 </li>
                             ))}
                         </ul>
