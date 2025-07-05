@@ -256,23 +256,27 @@ function MainNavContent({
                 <span className="sr-only">Toggle sidebar</span>
             </Button>
             
-            <Link href="/dashboard" className="relative flex items-center h-10 w-40">
-                <Image
-                    src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=1a612d04-0f27-4317-bfd6-06b48f019a24"
-                    alt="Skol Pharmacy Logo"
-                    width={120}
-                    height={33}
-                    className="object-contain transition-opacity duration-300 ease-in-out group-data-[state=collapsed]:opacity-0"
-                    priority
-                />
-                <Image
-                    src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/IMAGOTIPO_IMAGOTIPO%20FONDO%20-04_IMAGOTIPO%20BLANCO_IMAGOTIPO%20AZUL.png?alt=media&token=746abbd3-b1d7-4abc-80c4-d8125cf78fa2"
-                    alt="Skol Pharmacy Imagotipo"
-                    width={36}
-                    height={36}
-                    className="object-contain transition-opacity duration-300 ease-in-out absolute left-0 opacity-0 group-data-[state=collapsed]:opacity-100"
-                    priority
-                />
+            <Link href="/dashboard" className="block">
+                <div className="relative h-10 w-32 flex items-center">
+                    {/* Full Logo: visible when expanded */}
+                    <Image
+                        src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=1a612d04-0f27-4317-bfd6-06b48f019a24"
+                        alt="Skol Pharmacy Logo"
+                        width={120}
+                        height={33}
+                        className="object-contain h-full w-auto transition-opacity duration-300 group-data-[state=collapsed]:opacity-0"
+                        priority
+                    />
+                    {/* Imagotipo: visible when collapsed */}
+                    <Image
+                        src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/IMAGOTIPO_IMAGOTIPO%20FONDO%20-04_IMAGOTIPO%20BLANCO_IMAGOTIPO%20AZUL.png?alt=media&token=746abbd3-b1d7-4abc-80c4-d8125cf78fa2"
+                        alt="Skol Pharmacy Imagotipo"
+                        width={36}
+                        height={36}
+                        className="absolute left-0 top-1/2 -translate-y-1/2 object-contain h-9 w-9 transition-opacity duration-300 opacity-0 group-data-[state=collapsed]:opacity-100"
+                        priority
+                    />
+                </div>
             </Link>
 
             <SidebarTrigger className="md:hidden" />
