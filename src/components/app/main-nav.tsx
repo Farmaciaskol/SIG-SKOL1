@@ -278,7 +278,20 @@ export function MainNav({
             </Link>
           </div>
           
-          <div className="flex-1" />
+          <div className="flex flex-1 justify-center px-4">
+            <div className="w-full max-w-md">
+              <form>
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="search"
+                    placeholder="Buscar recetas, pacientes..."
+                    className="w-full appearance-none bg-muted pl-8 shadow-none h-9"
+                  />
+                </div>
+              </form>
+            </div>
+          </div>
 
           {/* Header Right Side */}
           <div className="flex items-center gap-2">
@@ -351,19 +364,8 @@ export function MainNav({
                   />
                 </Link>
               </div>
-              <div className="p-2 group-data-[collapsible=icon]:hidden">
-                <form>
-                  <div className="relative">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      type="search"
-                      placeholder="Buscar recetas, pacientes..."
-                      className="w-full appearance-none bg-muted pl-8 shadow-none h-9"
-                    />
-                  </div>
-                </form>
-              </div>
-              <Accordion type="multiple" value={openItems} onValueChange={setOpenItems} className="w-full px-2">
+              
+              <Accordion type="multiple" value={openItems} onValueChange={setOpenItems} className="w-full px-2 mt-2">
                 {menuGroups.map((group) => (
                   <AccordionItem key={group.title} value={group.title} className="border-b-0">
                     <AccordionTrigger
