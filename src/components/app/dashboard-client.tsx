@@ -16,6 +16,8 @@ import {
   FlaskConical,
   Box,
   DollarSign,
+  Send,
+  Truck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,11 +36,13 @@ import { Calendar } from '@/components/ui/calendar';
 type CalendarEvent = {
   date: Date;
   title: string;
-  type: 'created' | 'received' | 'ready' | 'dispensed';
+  type: 'created' | 'received' | 'ready' | 'dispensed' | 'sentToPharmacy' | 'estimatedReception';
 };
 
 const eventConfig = {
     created: { icon: FileText, color: 'bg-blue-500', label: 'Receta Creada' },
+    sentToPharmacy: { icon: Send, color: 'bg-cyan-500', label: 'Enviada a Recetario' },
+    estimatedReception: { icon: Truck, color: 'bg-teal-500', label: 'Recepción Estimada' },
     received: { icon: PackageCheck, color: 'bg-indigo-500', label: 'Recepcionado en Skol' },
     ready: { icon: Package, color: 'bg-orange-500', label: 'Listo para Retiro' },
     dispensed: { icon: CheckCircle2, color: 'bg-green-500', label: 'Dispensado' },
