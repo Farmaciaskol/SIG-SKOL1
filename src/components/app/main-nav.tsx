@@ -257,21 +257,9 @@ export function MainNav({
             </Link>
           </div>
           
-          {/* Header Middle (Search on Desktop, Logo on Mobile) */}
+          {/* Header Middle */}
           <div className="flex flex-1 items-center justify-center">
-            {/* Mobile Logo */}
-            <Link href="/dashboard" className="md:hidden">
-              <Image
-                src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
-                alt="Skol Pharmacy Logo"
-                width={120}
-                height={33}
-                className="object-contain"
-                priority
-              />
-            </Link>
-            {/* Desktop Search */}
-            <div className="w-full max-w-sm hidden md:block">
+            <div className="w-full max-w-sm">
               <form>
                 <div className="relative">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -349,6 +337,18 @@ export function MainNav({
           {/* Sidebar */}
           <Sidebar className="border-r bg-card" collapsible="icon">
             <SidebarContent className="p-0 flex-1">
+               <div className="border-b p-4 md:hidden">
+                <Link href="/dashboard">
+                  <Image
+                    src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
+                    alt="Skol Pharmacy Logo"
+                    width={120}
+                    height={33}
+                    className="object-contain"
+                    priority
+                  />
+                </Link>
+              </div>
               <Accordion type="multiple" value={openItems} onValueChange={setOpenItems} className="w-full px-2">
                 {menuGroups.map((group) => (
                   <AccordionItem key={group.title} value={group.title} className="border-b-0">
