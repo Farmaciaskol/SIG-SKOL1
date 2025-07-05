@@ -121,7 +121,7 @@ function AlertsBell({ portalInboxCount, itemsToDispatchCount, lowStockCount }: O
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative h-9 w-9">
+        <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-full">
           <Bell className="h-5 w-5" />
           {totalAlerts > 0 && (
             <Badge variant="destructive" className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full p-0">
@@ -283,7 +283,7 @@ export function MainNav({
             <div className="w-full max-w-xs ml-auto">
               <CommandPalette />
             </div>
-            <Button asChild variant="ghost" size="icon" className="relative h-9 w-9">
+            <Button asChild variant="ghost" size="icon" className="relative h-9 w-9 rounded-full">
               <Link href="/messaging">
                 <MessageSquare className="h-5 w-5" />
                 {unreadMessagesCount > 0 && (
@@ -357,7 +357,7 @@ export function MainNav({
                 {menuGroups.map((group) => (
                   <AccordionItem key={group.title} value={group.title} className="border-b-0">
                     <AccordionTrigger
-                       className="py-2 px-2 hover:no-underline hover:bg-accent rounded-md text-foreground/80 font-semibold data-[state=open]:text-primary data-[state=open]:bg-accent group-data-[collapsible=icon]:justify-center"
+                       className="py-2 px-2 hover:no-underline hover:bg-accent rounded-md text-foreground/80 data-[state=open]:text-primary data-[state=open]:bg-accent group-data-[collapsible=icon]:h-12 group-data-[collapsible=icon]:w-12 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:py-0 group-data-[collapsible=icon]:px-0"
                     >
                       <div className="flex items-center gap-2">
                          <group.icon className="h-4 w-4" />
@@ -372,7 +372,7 @@ export function MainNav({
                               asChild
                               isActive={pathname.startsWith(item.href)}
                               tooltip={item.label}
-                              className={cn(pathname.startsWith(item.href) && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground font-semibold")}
+                              className={cn(pathname.startsWith(item.href) && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground")}
                             >
                               <Link href={item.href}>
                                 <item.icon className="h-4 w-4" />
