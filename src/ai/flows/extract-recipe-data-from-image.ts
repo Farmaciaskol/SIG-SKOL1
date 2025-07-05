@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview AI agent that extracts recipe data from an image.
@@ -9,6 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { getDrugInfo } from '@/ai/tools/vademecum';
 
 const ExtractRecipeDataFromImageInputSchema = z.object({
   photoDataUri: z
@@ -20,12 +22,12 @@ const ExtractRecipeDataFromImageInputSchema = z.object({
 export type ExtractRecipeDataFromImageInput = z.infer<typeof ExtractRecipeDataFromImageInputSchema>;
 
 const RecipeItemSchema = z.object({
-  principalActiveIngredient: z.string().describe("The main active ingredient of the preparation."),
+  principalActiveIngredient: z.string().describe("The main active ingredient, corrected to its canonical name using the `getDrugInfo` tool."),
   pharmaceuticalForm: z.string().describe("The pharmaceutical form (e.g., 'Cápsulas', 'Crema', 'Solución', 'Papelillos').").optional(),
-  concentrationValue: z.string().describe("The numerical value of the concentration (e.g., '5').").optional(),
-  concentrationUnit: z.string().describe("The unit for the concentration (e.g., '%', 'mg/ml').").optional(),
-  dosageValue: z.string().describe("The numerical value of the dose (e.g., '10').").optional(),
-  dosageUnit: z.string().describe("The unit for the dose (e.g., 'mg', 'ml', 'cápsula(s)', 'papelillo(s)').").optional(),
+  concentrationValue: z.string().describe("The strength of the preparation, e.g., '5' for a 5% cream.").optional(),
+  concentrationUnit: z.string().describe("The unit for the concentration, e.g., '%' for a cream, 'mg' for a capsule.").optional(),
+  dosageValue: z.string().describe("The amount the patient takes each time, e.g., '1' for 1 capsule.").optional(),
+  dosageUnit: z.string().describe("The unit for the dose, e.g., 'cápsula(s)', 'aplicación'.").optional(),
   frequency: z.string().describe("The frequency of administration in hours (e.g., '24' for daily).").optional(),
   treatmentDurationValue: z.string().describe("The numerical value of the treatment duration (e.g., '30').").optional(),
   treatmentDurationUnit: z.string().describe("The unit for the treatment duration (e.g., 'días', 'meses').").optional(),
@@ -59,26 +61,23 @@ const prompt = ai.definePrompt({
   name: 'extractRecipeDataFromImagePrompt',
   input: {schema: ExtractRecipeDataFromImageInputSchema},
   output: {schema: ExtractRecipeDataFromImageOutputSchema},
-  prompt: `You are an expert pharmacist and data entry specialist. Your task is to extract structured information from the provided image of a medical prescription.
+  tools: [getDrugInfo],
+  prompt: `You are an expert clinical pharmacist and data entry specialist. Your task is to meticulously extract structured information from the provided image of a medical prescription. Your process must be:
+  1.  **Initial Analysis**: Read the entire prescription to understand the context.
+  2.  **Field Extraction**: Identify and extract the fields for patients and doctors as instructed.
+  3.  **Medication Item Processing**: For each prescribed item, perform the following sub-steps:
+      a.  **Active Ingredient Identification**: Extract the principal active ingredient as written.
+      b.  **Active Ingredient Validation**: Use the \`getDrugInfo\` tool to find the official name for the extracted ingredient. **You must use the canonical name returned by the tool in the \`principalActiveIngredient\` field of the output.** If the tool doesn't find a match, use your best judgment based on the image.
+      c.  **Distinguish Concentration from Dosage**:
+          - **Concentration** is the strength of the final prepared product (e.g., '5%' in a cream, '50mg' per capsule). Populate \`concentrationValue\` and \`concentrationUnit\`.
+          - **Dosage** is what the patient takes each time (e.g., '1' capsule, '1' application). Populate \`dosageValue\` and \`dosageUnit\`. Do not confuse them.
+      d.  **Fill all other fields** for the item based on the prescription.
 
   **Extraction Instructions:**
-  - **Capitalization:** For all text fields (like names, addresses, specialties), format them with proper case (e.g., 'Juan Pérez' instead of 'JUAN PÉREZ').
-  - **RUT Formatting:** Ensure all RUTs (patient and doctor) are formatted as XX.XXX.XXX-X.
-  - **Date Formatting:** The prescription date must be in YYYY-MM-DD format. If the year isn't specified, assume the current year.
-  - **Omissions:** If a piece of information is not visible on the prescription, omit its corresponding field from the JSON output.
-
-  **Fields to Extract:**
-  - Patient's full name (patientName)
-  - Patient's RUT (patientRut)
-  - Patient's full address (patientAddress)
-  - Doctor's full name (doctorName)
-  - Doctor's RUT (doctorRut)
-  - Doctor's professional license number (doctorLicense, also known as N° Colegiatura)
-  - Doctor's specialty (doctorSpecialty)
-  - Date of prescription (prescriptionDate)
-  - A list of prescribed items (items), paying close attention to:
-    - The pharmaceutical form (pharmaceuticalForm, e.g., 'Cápsulas', 'Crema', 'Papelillos').
-    - If a safety stock is mentioned ('dosis de seguridad', 'días extra'), extract the number of days into the 'safetyStockDays' field for the corresponding item.
+  - **Capitalization:** Format all text fields with proper case (e.g., 'Juan Pérez' instead of 'JUAN PÉREZ').
+  - **RUT Formatting:** Ensure all RUTs are formatted as XX.XXX.XXX-X.
+  - **Date Formatting:** Prescription date must be in YYYY-MM-DD format. Assume the current year if not specified.
+  - **Omissions:** If a piece of information is not visible, omit its corresponding field from the JSON output.
 
   Return a single JSON object with all the extracted fields.
 
