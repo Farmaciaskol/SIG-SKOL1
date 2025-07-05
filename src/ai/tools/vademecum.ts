@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A Genkit tool for fetching drug information from a simulated Vademecum.
@@ -33,7 +34,7 @@ const VADEMECUM_DATA = [
     },
     {
         canonicalName: "Hidroquinona",
-        aliases: ["hydroquinone", "hidroquinona"],
+        aliases: ["hidroquinona"],
         interactions: ["Evitar uso con peróxidos ya que puede causar manchas temporales en la piel."],
         contraindications: ["Hipersensibilidad.", "Uso en grandes áreas del cuerpo."],
         standardDosage: "Tópico al 2% - 4% una o dos veces al día sobre las áreas hiperpigmentadas."
@@ -47,7 +48,7 @@ const VADEMECUM_DATA = [
     },
     {
         canonicalName: "Finasterida",
-        aliases: ["finasterida", "finasteride"],
+        aliases: ["finasterida"],
         interactions: [],
         contraindications: ["Mujeres embarazadas o que puedan quedar embarazadas.", "Niños."],
         standardDosage: "1 mg por día para la alopecia androgenética."

@@ -14,13 +14,13 @@ import {z} from 'genkit';
 import { getDrugInfo } from '@/ai/tools/vademecum';
 
 const ValidateActiveIngredientInputSchema = z.object({
-  activeIngredient: z.string().describe('The name of the active ingredient to validate.'),
-  dosage: z.string().describe('The proposed dosage for the patient (e.g., "50mg cada 12 horas").'),
+  activeIngredient: z.string().describe('El nombre del principio activo a validar.'),
+  dosage: z.string().describe('La dosificación propuesta para el paciente (ej: "50mg cada 12 horas").'),
 });
 export type ValidateActiveIngredientInput = z.infer<typeof ValidateActiveIngredientInputSchema>;
 
 const ValidateActiveIngredientOutputSchema = z.string().describe(
-  'A brief, professional validation summary. Start with "Aprobado:" if no issues are found, or "Advertencia:" if there are potential issues to review. Explain the reasoning concisely.'
+  'Un resumen de validación breve y profesional. Comienza con "Aprobado:" si no se encuentran problemas, o "Advertencia:" si hay problemas potenciales a revisar. Explica el razonamiento de manera concisa.'
 );
 export type ValidateActiveIngredientOutput = z.infer<typeof ValidateActiveIngredientOutputSchema>;
 

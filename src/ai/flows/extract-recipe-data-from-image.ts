@@ -22,34 +22,34 @@ const ExtractRecipeDataFromImageInputSchema = z.object({
 export type ExtractRecipeDataFromImageInput = z.infer<typeof ExtractRecipeDataFromImageInputSchema>;
 
 const RecipeItemSchema = z.object({
-  principalActiveIngredient: z.string().describe("The main active ingredient, corrected to its canonical name using the `getDrugInfo` tool. You MUST use the `canonicalName` returned by the tool."),
-  pharmaceuticalForm: z.string().describe("The pharmaceutical form (e.g., 'Cápsulas', 'Crema', 'Solución', 'Papelillos').").optional(),
-  concentrationValue: z.string().describe("The strength of the preparation, e.g., '5' for a 5% cream.").optional(),
-  concentrationUnit: z.string().describe("The unit for the concentration, e.g., '%' for a cream, 'mg' for a capsule.").optional(),
-  dosageValue: z.string().describe("The amount the patient takes each time, e.g., '1' for 1 capsule.").optional(),
-  dosageUnit: z.string().describe("The unit for the dose, e.g., 'cápsula(s)', 'aplicación'.").optional(),
-  frequency: z.string().describe("The frequency of administration in hours (e.g., '24' for daily).").optional(),
-  treatmentDurationValue: z.string().describe("The numerical value of the treatment duration (e.g., '30').").optional(),
-  treatmentDurationUnit: z.string().describe("The unit for the treatment duration (e.g., 'días', 'meses').").optional(),
-  safetyStockDays: z.number().optional().describe("Number of extra days for a safety stock, if mentioned (e.g., '5 días de seguridad')."),
-  totalQuantityValue: z.string().describe("The numerical value of the total quantity to prepare (e.g., '30').").optional(),
-  totalQuantityUnit: z.string().describe("The unit for the total quantity (e.g., 'cápsulas', 'gramos', 'papelillos').").optional(),
-  usageInstructions: z.string().describe("The detailed usage instructions for the patient."),
+  principalActiveIngredient: z.string().describe("El principio activo principal, corregido a su nombre canónico usando la herramienta `getDrugInfo`. DEBES usar el `canonicalName` retornado por la herramienta. Si la herramienta no encuentra el fármaco, usa tu mejor juicio basado en la imagen."),
+  pharmaceuticalForm: z.string().describe("La forma farmacéutica (ej: 'Cápsulas', 'Crema', 'Solución', 'Papelillos').").optional(),
+  concentrationValue: z.string().describe("La potencia del preparado, ej: '5' para una crema al 5%.").optional(),
+  concentrationUnit: z.string().describe("La unidad para la concentración, ej: '%' para una crema, 'mg' para una cápsula.").optional(),
+  dosageValue: z.string().describe("La cantidad que el paciente toma cada vez, ej: '1' para 1 cápsula.").optional(),
+  dosageUnit: z.string().describe("La unidad para la dosis, ej: 'cápsula(s)', 'aplicación'.").optional(),
+  frequency: z.string().describe("La frecuencia de administración en horas (ej: '24' para diario).").optional(),
+  treatmentDurationValue: z.string().describe("El valor numérico de la duración del tratamiento (ej: '30').").optional(),
+  treatmentDurationUnit: z.string().describe("La unidad para la duración del tratamiento (ej: 'días', 'meses').").optional(),
+  safetyStockDays: z.number().optional().describe("Número de días extra para un stock de seguridad, si se menciona (ej: '5 días de seguridad')."),
+  totalQuantityValue: z.string().describe("El valor numérico de la cantidad total a preparar (ej: '30').").optional(),
+  totalQuantityUnit: z.string().describe("La unidad para la cantidad total (ej: 'cápsulas', 'gramos', 'papelillos').").optional(),
+  usageInstructions: z.string().describe("Las instrucciones detalladas de uso para el paciente."),
 });
 
 
 const ExtractRecipeDataFromImageOutputSchema = z.object({
-  patientName: z.string().describe("The full name of the patient.").optional(),
-  patientRut: z.string().describe("The RUT (national ID) of the patient, if visible. Must be formatted as XX.XXX.XXX-X.").optional(),
-  patientAddress: z.string().describe("The full address of the patient, if visible.").optional(),
+  patientName: z.string().describe("El nombre completo del paciente.").optional(),
+  patientRut: z.string().describe("El RUT (cédula de identidad) del paciente, si es visible. Debe ser formateado como XX.XXX.XXX-X.").optional(),
+  patientAddress: z.string().describe("La dirección completa del paciente, si es visible.").optional(),
   
-  doctorName: z.string().describe("The full name of the prescribing doctor.").optional(),
-  doctorRut: z.string().describe("The RUT (national ID) of the doctor, if visible. Must be formatted as XX.XXX.XXX-X.").optional(),
-  doctorLicense: z.string().describe("The license number (N° Colegiatura) of the prescribing doctor.").optional(),
-  doctorSpecialty: z.string().describe("The specialty of the prescribing doctor.").optional(),
+  doctorName: z.string().describe("El nombre completo del médico prescriptor.").optional(),
+  doctorRut: z.string().describe("El RUT (cédula de identidad) del médico, si es visible. Debe ser formateado como XX.XXX.XXX-X.").optional(),
+  doctorLicense: z.string().describe("El número de colegiatura (N° Colegiatura) del médico prescriptor.").optional(),
+  doctorSpecialty: z.string().describe("La especialidad del médico prescriptor.").optional(),
 
-  prescriptionDate: z.string().describe("The date the prescription was issued in YYYY-MM-DD format.").optional(),
-  items: z.array(RecipeItemSchema).describe('An array of prescribed medications or items found in the recipe.')
+  prescriptionDate: z.string().describe("La fecha en que se emitió la receta en formato AAAA-MM-DD.").optional(),
+  items: z.array(RecipeItemSchema).describe('Un arreglo de medicamentos o ítems prescritos encontrados en la receta.')
 });
 export type ExtractRecipeDataFromImageOutput = z.infer<typeof ExtractRecipeDataFromImageOutputSchema>;
 
@@ -62,26 +62,27 @@ const prompt = ai.definePrompt({
   input: {schema: ExtractRecipeDataFromImageInputSchema},
   output: {schema: ExtractRecipeDataFromImageOutputSchema},
   tools: [getDrugInfo],
-  prompt: `You are an expert clinical pharmacist and data entry specialist. Your task is to meticulously extract structured information from the provided image of a medical prescription. Your process must be:
-  1.  **Initial Analysis**: Read the entire prescription to understand the context.
-  2.  **Field Extraction**: Identify and extract the fields for patients and doctors as instructed.
-  3.  **Medication Item Processing**: For each prescribed item, perform the following sub-steps:
-      a.  **Active Ingredient Identification**: Extract the principal active ingredient as written.
-      b.  **Active Ingredient Validation**: Use the \`getDrugInfo\` tool to find the official name for the extracted ingredient. **You must use the canonical name returned by the tool in the \`principalActiveIngredient\` field of the output.** If the tool doesn't find a match, use your best judgment based on the image.
-      c.  **Distinguish Concentration from Dosage**:
-          - **Concentration** is the strength of the final prepared product (e.g., '5%' in a cream, '50mg' per capsule). Populate \`concentrationValue\` and \`concentrationUnit\`.
-          - **Dosage** is what the patient takes each time (e.g., '1' capsule, '1' application). Populate \`dosageValue\` and \`dosageUnit\`. Do not confuse them.
-      d.  **Fill all other fields** for the item based on the prescription.
+  prompt: `Eres un experto farmacéutico clínico y especialista en ingreso de datos. Tu tarea es extraer meticulosamente información estructurada de la imagen de una receta médica proporcionada. Tu proceso debe ser:
+  1.  **Análisis Inicial**: Lee la receta completa para entender el contexto.
+  2.  **Extracción de Campos**: Identifica y extrae los campos de pacientes y médicos como se indica.
+  3.  **Procesamiento de Ítems de Medicamentos**: Para cada ítem prescrito, realiza los siguientes sub-pasos:
+      a.  **Identificación del Principio Activo**: Extrae el principio activo principal tal como está escrito.
+      b.  **Validación del Principio Activo**: Usa la herramienta \`getDrugInfo\` para encontrar el nombre oficial del ingrediente extraído. **DEBES usar el nombre canónico retornado por la herramienta en el campo \`principalActiveIngredient\` de la salida.** Si la herramienta no encuentra una coincidencia, usa tu mejor juicio basado en la imagen.
+      c.  **Diferenciar Concentración de Dosis**:
+          - **Concentración** es la potencia del producto final preparado (ej., '5%' en una crema, '50mg' por cápsula). Rellena \`concentrationValue\` y \`concentrationUnit\`.
+          - **Dosis** es lo que el paciente toma cada vez (ej., '1' cápsula, '1' aplicación). Rellena \`dosageValue\` y \`dosageUnit\`. No los confundas.
+      d.  **Rellena todos los demás campos** para el ítem basándote en la receta.
 
-  **Extraction Instructions:**
-  - **Capitalization:** Format all text fields with proper case (e.g., 'Juan Pérez' instead of 'JUAN PÉREZ').
-  - **RUT Formatting:** Ensure all RUTs are formatted as XX.XXX.XXX-X.
-  - **Date Formatting:** Prescription date must be in YYYY-MM-DD format. Assume the current year if not specified.
-  - **Omissions:** If a piece of information is not visible, omit its corresponding field from the JSON output.
+  **Instrucciones de Extracción:**
+  - **Capitalización:** Formatea todos los campos de texto con mayúsculas y minúsculas adecuadas (ej., 'Juan Pérez' en lugar de 'JUAN PÉREZ').
+  - **Formato de RUT:** Asegúrate de que todos los RUTs estén formateados como XX.XXX.XXX-X.
+  - **Formato de Fecha:** La fecha de la receta debe estar en formato AAAA-MM-DD. Asume el año actual si no se especifica.
+  - **Omisiones:** Si una pieza de información no es visible, omite su campo correspondiente del JSON de salida.
+  - **Idioma:** Toda la información extraída y los valores en el JSON de salida deben estar en **español**.
 
-  Return a single JSON object with all the extracted fields.
+  Devuelve un único objeto JSON con todos los campos extraídos.
 
-  Prescription Image: {{media url=photoDataUri}}`,
+  Imagen de la Receta: {{media url=photoDataUri}}`,
 });
 
 const extractRecipeDataFromImageFlow = ai.defineFlow(
