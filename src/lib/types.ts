@@ -47,6 +47,21 @@ export enum PharmacovigilanceReportStatus {
   Closed = 'Cerrado',
 }
 
+export enum PharmacovigilanceSeverity {
+    Leve = 'Leve',
+    Moderada = 'Moderada',
+    Grave = 'Grave',
+}
+
+export enum PharmacovigilanceOutcome {
+    RecuperadoSinSecuelas = 'Recuperado sin secuelas',
+    RecuperadoConSecuelas = 'Recuperado con secuelas',
+    NoRecuperado = 'No recuperado',
+    Mortal = 'Mortal',
+    Desconocido = 'Desconocido',
+}
+
+
 export enum ControlledLogEntryType {
   MagistralDispensation = 'Dispensación Magistral',
   DirectSale = 'Venta Directa',
@@ -312,17 +327,49 @@ export interface DispatchNote {
 export interface PharmacovigilanceReport {
   id: string;
   reportedAt: string; // ISO String
+  updatedAt: string; // ISO String
+  
+  // Reporter
   reporterName: string;
-  recipeId?: string;
-  patientId?: string;
-  externalPharmacyId?: string;
-  involvedMedications: string;
+
+  // Patient
+  patientId: string;
+  patientInfoSnapshot: {
+      name: string;
+      rut: string;
+      age?: number; // Age at time of report
+      gender: 'Masculino' | 'Femenino' | 'Otro';
+  };
+  
+  // Medication
+  isMagistral: boolean;
+  suspectedMedicationName: string;
+  recipeId?: string; // If magistral
+  dose?: string;
+  pharmaceuticalForm?: string;
+  administrationRoute?: string;
+  treatmentStartDate?: string;
+  treatmentEndDate?: string;
+  lotNumber?: string;
+  
+  // Reaction
+  reactionStartDate: string;
   problemDescription: string;
+  severity: PharmacovigilanceSeverity;
+  outcome: PharmacovigilanceOutcome;
+  
+  // Context
+  concomitantMedications?: string;
+
+  // Management
   status: PharmacovigilanceReportStatus;
   actionsTaken?: string;
   pharmacyResponse?: string;
   resolutionDetails?: string;
-  updatedAt: string; // ISO String
+
+  // Deprecated - kept for backwards compatibility if needed, but new reports won't use it
+  involvedMedications?: string; 
+  externalPharmacyId?: string; // Can be derived from recipe if available
 }
 
 export interface PatientMessage {

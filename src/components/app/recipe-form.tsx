@@ -1,8 +1,6 @@
-
 'use client';
 
 import { extractRecipeDataFromImage } from '@/ai/flows/extract-recipe-data-from-image';
-import { simplifyInstructions } from '@/ai/flows/simplify-instructions';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -157,8 +155,6 @@ const RecipeItemCard = ({
   form,
   appSettings,
   inventory,
-  isSimplifying,
-  handleSimplifyInstructions,
   totalFields,
   onOpenInventoryForm,
 }: {
@@ -167,8 +163,6 @@ const RecipeItemCard = ({
   form: any;
   appSettings: AppSettings | null;
   inventory: InventoryItem[];
-  isSimplifying: number | null;
-  handleSimplifyInstructions: (index: number) => void;
   totalFields: number;
   onOpenInventoryForm: () => void;
 }) => {
@@ -381,13 +375,6 @@ const RecipeItemCard = ({
             )} />
           )}
         </div>
-
-        <div className="flex justify-start pt-4">
-          <Button type="button" variant="outline" size="sm" onClick={() => handleSimplifyInstructions(index)} disabled={isSimplifying === index}>
-            {isSimplifying === index ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
-            {isSimplifying === index ? 'Simplificando...' : 'Simplificar (IA)'}
-          </Button>
-        </div>
       </CardContent>
     </Card>
   );
@@ -412,7 +399,6 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
   const [appSettings, setAppSettings] = React.useState<AppSettings | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [isAiExtracting, setIsAiExtracting] = React.useState(false);
-  const [isSimplifying, setIsSimplifying] = React.useState<number | null>(null);
   const [previewImage, setPreviewImage] = React.useState<string | null>(null);
   const [imageFile, setImageFile] = React.useState<File | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -670,26 +656,6 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
       setIsAiExtracting(false);
     }
   };
-
-
-  const handleSimplifyInstructions = async (index: number) => {
-    const instructions = form.getValues(`items.${index}.usageInstructions`);
-    if (!instructions) {
-      toast({ title: 'Sin instrucciones', description: 'No hay texto para simplificar.', variant: 'default' });
-      return;
-    }
-    setIsSimplifying(index);
-    try {
-      const simplified = await simplifyInstructions(instructions);
-      form.setValue(`items.${index}.usageInstructions`, simplified);
-      toast({ title: 'Instrucciones Simplificadas', description: 'El texto ha sido actualizado.' });
-    } catch (error) {
-      console.error('Simplification failed:', error);
-      toast({ title: 'Error de IA', description: 'No se pudo simplificar el texto.', variant: 'destructive' });
-    } finally {
-      setIsSimplifying(null);
-    }
-  };
   
   const handleNextStep = async () => {
     const fieldsToValidate = STEPS[currentStep - 1].fields;
@@ -749,221 +715,227 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
       </Dialog>
       
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="p-6">
-            {/* Stepper Navigation */}
-            <div className="mb-8">
-              <ol className="flex items-center w-full">
-                {STEPS.map((step, index) => (
-                  <li key={step.id} className={cn("flex w-full items-center", { "text-primary dark:text-blue-500 after:border-primary dark:after:border-blue-500": currentStep > step.id }, { "after:content-[''] after:w-full after:h-1 after:border-b after:border-gray-200 after:border-1 after:inline-block dark:after:border-gray-700": index !== STEPS.length - 1 })}>
-                    <span className={cn(
-                      "flex items-center justify-center w-10 h-10 rounded-full lg:h-12 lg:w-12 shrink-0",
-                      currentStep >= step.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                    )}>
-                      {currentStep > step.id ? <Check className="w-5 h-5"/> : <span className="font-bold">{step.id}</span>}
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            </div>
-
-            {/* Step 1: Patient and Doctor */}
-            <div className={cn(currentStep !== 1 && "hidden")}>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div>
-                    <h2 className="text-xl font-semibold mb-4 text-foreground">Paciente *</h2>
-                    <FormField control={form.control} name="patientSelectionType" render={({ field }) => (
-                      <Tabs value={field.value} onValueChange={(value) => field.onChange(value as 'existing' | 'new')} className="w-full">
-                        <TabsList className="grid w-full grid-cols-2"><TabsTrigger value="existing">Paciente Existente</TabsTrigger><TabsTrigger value="new">Paciente Nuevo</TabsTrigger></TabsList>
-                        <TabsContent value="existing" className="mt-4">
-                          <FormField control={form.control} name="patientId" render={({ field }) => (
-                            <FormItem><FormLabel>Buscar Paciente</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un paciente..." /></SelectTrigger></FormControl>
-                                <SelectContent><>{patients.map(p => <SelectItem key={p.id} value={p.id}>{p.name} - {p.rut}</SelectItem>)}</>
-                                </SelectContent>
-                              </Select><FormMessage />
-                            </FormItem>
-                          )} />
-                        </TabsContent>
-                        <TabsContent value="new" className="mt-4 space-y-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField control={form.control} name="newPatientName" render={({ field }) => (<FormItem><FormLabel>Nombre Paciente</FormLabel><FormControl><Input placeholder="Nombre Apellido" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                            <FormField control={form.control} name="newPatientRut" render={({ field }) => (<FormItem><FormLabel>RUT Paciente</FormLabel><FormControl><Input placeholder="12.345.678-9" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                          </div>
-                        </TabsContent>
-                      </Tabs>
-                    )} />
-                    <FormField control={form.control} name="dispatchAddress" render={({ field }) => (
-                      <FormItem className="mt-4"><FormLabel>Dirección de Despacho</FormLabel><FormControl><Input placeholder="Ej: Calle Falsa 123, Comuna" {...field} /></FormControl><FormDescription className="text-xs text-muted-foreground">(Opcional. Por defecto, se retira en farmacia.)</FormDescription><FormMessage /></FormItem>
-                    )} />
-                  </div>
-                   <div>
-                    <h2 className="text-xl font-semibold mb-4 text-foreground">Médico *</h2>
-                    <FormField control={form.control} name="doctorSelectionType" render={({ field }) => (
-                      <Tabs value={field.value} onValueChange={(value) => field.onChange(value as 'existing' | 'new')} className="w-full">
-                        <TabsList className="grid w-full grid-cols-2"><TabsTrigger value="existing">Médico Existente</TabsTrigger><TabsTrigger value="new">Médico Nuevo</TabsTrigger></TabsList>
-                        <TabsContent value="existing" className="mt-4">
-                          <FormField control={form.control} name="doctorId" render={({ field }) => (
-                            <FormItem><FormLabel>Buscar Médico</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un médico..." /></SelectTrigger></FormControl>
-                                <SelectContent><>{doctors.map(d => <SelectItem key={d.id} value={d.id}>{d.name} - {d.specialty}</SelectItem>)}</>
-                                </SelectContent>
-                              </Select><FormMessage />
-                            </FormItem>
-                          )} />
-                        </TabsContent>
-                        <TabsContent value="new" className="mt-4 space-y-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField control={form.control} name="newDoctorName" render={({ field }) => (<FormItem><FormLabel>Nombre Médico</FormLabel><FormControl><Input placeholder="Nombre Apellido" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                            <FormField control={form.control} name="newDoctorLicense" render={({ field }) => (<FormItem><FormLabel>N° Colegiatura</FormLabel><FormControl><Input placeholder="Ej: 12345" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                            <FormField control={form.control} name="newDoctorRut" render={({ field }) => (<FormItem><FormLabel>RUT Médico (Opcional)</FormLabel><FormControl><Input placeholder="12.345.678-K" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                            <FormField control={form.control} name="newDoctorSpecialty" render={({ field }) => (<FormItem><FormLabel>Especialidad Médico</FormLabel><FormControl><Input placeholder="Ej: Cardiología" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                          </div>
-                        </TabsContent>
-                      </Tabs>
-                    )} />
-                  </div>
-                </div>
-            </div>
-
-            {/* Step 2: Recipe Details */}
-            <div className={cn(currentStep !== 2 && "hidden")}>
-               <h2 className="text-xl font-semibold mb-4 text-foreground">Detalles Generales y Adjunto</h2>
-               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-                  <div className="space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <FormItem>
-                          <FormLabel>ID Receta</FormLabel>
-                          <FormControl><Input disabled value={isEditMode && !copyFromId ? recipeId : "Nuevo (se genera al guardar)"} /></FormControl>
-                        </FormItem>
-                        <FormField control={form.control} name="prescriptionDate" render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Fecha Prescripción *</FormLabel>
-                            <Popover><PopoverTrigger asChild><FormControl><Button variant="outline" className={cn("w-full justify-between text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? format(field.value, 'dd-MM-yyyy') : <span>dd-mm-aaaa</span>}<CalendarIcon className="h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent></Popover>
-                            <FormMessage />
-                          </FormItem>
-                        )} />
-                        <FormField control={form.control} name="dueDate" render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Fecha Vencimiento</FormLabel>
-                            <Popover><PopoverTrigger asChild><FormControl><Button variant="outline" className={cn("w-full justify-between text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? format(field.value, 'dd-MM-yyyy') : <span>dd-mm-aaaa</span>}<CalendarIcon className="h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} /></PopoverContent></Popover>
-                            <FormDescription className="text-xs text-muted-foreground">(Por defecto 6 meses, editable.)</FormDescription>
-                          </FormItem>
-                        )} />
-                      </div>
-                      <div className="space-y-4">
-                          <h3 className="text-lg font-semibold text-foreground">Medicamento Controlado</h3>
-                          <FormField control={form.control} name="isControlled" render={({ field }) => (<FormItem className="flex flex-row items-center space-x-2 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel className="font-normal">Es Controlado</FormLabel></FormItem>)} />
-                          {isControlled && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              <FormField control={form.control} name="controlledRecipeType" render={({ field }) => (<FormItem><FormLabel>Tipo de Receta Controlada *</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Seleccione tipo..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="Receta Cheque">Receta Cheque</SelectItem><SelectItem value="Receta Retenida">Receta Retenida</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
-                              <FormField control={form.control} name="controlledRecipeFolio" render={({ field }) => (<FormItem><FormLabel>Folio Receta *</FormLabel><FormControl><Input placeholder="Ej: F123456 o Folio Cheque" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                            </div>
+        <form onSubmit={form.handleSubmit(onSubmit)}>
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start p-6">
+            
+            {/* --- Left Column: Image Viewer --- */}
+            <div className="lg:col-span-2 space-y-4 lg:sticky lg:top-24">
+              <h2 className="text-xl font-semibold text-foreground">Imagen de la Receta</h2>
+              <div className="w-full aspect-[4/5] flex items-center justify-center border-2 border-dashed rounded-lg overflow-hidden bg-muted/50 relative">
+                  <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*,application/pdf" className="hidden" />
+                  {previewImage ? (
+                    <>
+                      <Image 
+                          src={previewImage} 
+                          alt="Vista previa de receta" 
+                          fill 
+                          className={cn(
+                              "object-contain transition-transform duration-300 ease-in-out cursor-pointer",
+                              isZoomed ? "scale-[2.5]" : "scale-100"
                           )}
+                          onClick={()=> setIsZoomed(prev => !prev)}
+                      />
+                      <div className="absolute top-2 right-2 flex flex-col gap-2 z-10">
+                        <Button type="button" variant="secondary" size="icon" className="h-8 w-8 bg-black/50 hover:bg-black/70 text-white rounded-full" onClick={()=> setIsZoomed(prev => !prev)}>
+                          {isZoomed ? <ZoomOut className="h-4 w-4" /> : <ZoomIn className="h-4 w-4" />}
+                        </Button>
+                        <Button type="button" variant="secondary" size="icon" className="h-8 w-8 bg-black/50 hover:bg-black/70 text-white rounded-full" onClick={() => { setPreviewImage(null); setImageFile(null); if(fileInputRef.current) fileInputRef.current.value = ""; setIsZoomed(false); }}>
+                          <XIcon className="h-4 w-4" />
+                        </Button>
                       </div>
-                  </div>
-                  <div className="space-y-2">
-                     <FormLabel>Imagen de la Receta</FormLabel>
-                     <div className="w-full h-64 flex items-center justify-center border-2 border-dashed rounded-lg overflow-hidden bg-muted/50 relative">
-                        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*,application/pdf" className="hidden" />
-                        {previewImage ? (
-                          <>
-                            <Image 
-                                src={previewImage} 
-                                alt="Vista previa de receta" 
-                                fill 
-                                className={cn(
-                                    "object-contain transition-transform duration-300 ease-in-out cursor-pointer",
-                                    isZoomed ? "scale-[2.5]" : "scale-100"
-                                )}
-                                onClick={()=> setIsZoomed(prev => !prev)}
-                            />
-                            <div className="absolute top-2 right-2 flex flex-col gap-2 z-10">
-                              <Button type="button" variant="secondary" size="icon" className="h-8 w-8 bg-black/50 hover:bg-black/70 text-white rounded-full" onClick={()=> setIsZoomed(prev => !prev)}>
-                                {isZoomed ? <ZoomOut className="h-4 w-4" /> : <ZoomIn className="h-4 w-4" />}
-                              </Button>
-                              <Button type="button" variant="secondary" size="icon" className="h-8 w-8 bg-black/50 hover:bg-black/70 text-white rounded-full" onClick={() => { setPreviewImage(null); setImageFile(null); if(fileInputRef.current) fileInputRef.current.value = ""; setIsZoomed(false); }}>
-                                <XIcon className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </>
-                        ) : (
-                          <div onClick={() => fileInputRef.current?.click()} className="text-center cursor-pointer p-4">
-                            <ImageIcon className="h-10 w-10 text-muted-foreground mb-2 mx-auto" />
-                            <p className="text-sm text-muted-foreground mb-1">Arrastra o haz clic para subir</p>
-                          </div>
-                        )}
-                      </div>
-                      <Button type="button" onClick={handleExtractWithAI} disabled={!previewImage || isAiExtracting} className="w-full mt-2">
-                        {isAiExtracting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
-                        {isAiExtracting ? 'Extrayendo...' : 'Extraer con IA'}
-                      </Button>
-                  </div>
-               </div>
+                    </>
+                  ) : (
+                    <div onClick={() => fileInputRef.current?.click()} className="text-center cursor-pointer p-4">
+                      <ImageIcon className="h-10 w-10 text-muted-foreground mb-2 mx-auto" />
+                      <p className="text-sm text-muted-foreground mb-1">Arrastra o haz clic para subir</p>
+                    </div>
+                  )}
+              </div>
+              <Button type="button" onClick={handleExtractWithAI} disabled={!previewImage || isAiExtracting} className="w-full mt-2">
+                {isAiExtracting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
+                {isAiExtracting ? 'Extrayendo...' : 'Extraer con IA'}
+              </Button>
             </div>
             
-            {/* Step 3: Items */}
-            <div className={cn(currentStep !== 3 && "hidden")}>
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold text-foreground">Preparado Magistral</h2>
-                  <Button type="button" variant="link" onClick={() => append(defaultItem)} className="text-primary hover:text-primary/80"><PlusCircle className="mr-2 h-4 w-4" />Añadir Ítem</Button>
-                </div>
-                <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
-                  {fields.map((item, index) => (
-                    <RecipeItemCard key={item.id} index={index} remove={remove} form={form} appSettings={appSettings} inventory={inventory} isSimplifying={isSimplifying} handleSimplifyInstructions={handleSimplifyInstructions} totalFields={fields.length} onOpenInventoryForm={() => setIsInventoryFormOpen(true)} />
+            {/* --- Right Column: Form Steps --- */}
+            <div className="lg:col-span-3">
+              {/* Stepper Navigation */}
+              <div className="mb-8">
+                <ol className="flex items-center w-full">
+                  {STEPS.map((step, index) => (
+                    <li key={step.id} className={cn("flex w-full items-center", { "text-primary dark:text-blue-500 after:border-primary dark:after:border-blue-500": currentStep > step.id }, { "after:content-[''] after:w-full after:h-1 after:border-b after:border-gray-200 after:border-1 after:inline-block dark:after:border-gray-700": index !== STEPS.length - 1 })}>
+                      <span className={cn(
+                        "flex items-center justify-center w-10 h-10 rounded-full lg:h-12 lg:w-12 shrink-0",
+                        currentStep >= step.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                      )}>
+                        {currentStep > step.id ? <Check className="w-5 h-5"/> : <span className="font-bold">{step.id}</span>}
+                      </span>
+                    </li>
                   ))}
-                </div>
-                <FormField control={form.control} name="items" render={() => (<FormItem><FormMessage className="mt-4" /></FormItem>)} />
-            </div>
+                </ol>
+              </div>
 
-            {/* Step 4: Costs and Review */}
-             <div className={cn(currentStep !== 4 && "hidden")}>
-                 <h2 className="text-xl font-semibold mb-4 text-foreground">Recetario, Costos y Guardado</h2>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
-                  <FormField control={form.control} name="externalPharmacyId" render={({ field }) => (
-                    <FormItem><FormLabel>Recetario Asignado *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un recetario..." /></SelectTrigger></FormControl>
-                        <SelectContent>{externalPharmacies.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
-                      </Select><FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="supplySource" render={({ field }) => (
-                    <FormItem><FormLabel>Origen de Insumos *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un origen..." /></SelectTrigger></FormControl>
-                        <SelectContent><SelectItem value="Stock del Recetario">Stock del Recetario</SelectItem><SelectItem value="Insumos de Skol">Insumos de Skol</SelectItem></SelectContent>
-                      </Select><FormMessage />
-                    </FormItem>
-                  )} />
-                  <div className="md:col-span-2">
-                    <FormField control={form.control} name="preparationCost" render={({ field }) => (
-                      <FormItem><FormLabel>Costo Preparación (CLP) *</FormLabel>
-                        <FormControl><Input type="number" placeholder="Ej: 15000" {...field} /></FormControl>
-                        <FormDescription className="text-xs text-muted-foreground">Costo que Skol pagará al recetario.</FormDescription><FormMessage />
+              {/* Step 1: Patient and Doctor */}
+              <div className={cn(currentStep !== 1 && "hidden")}>
+                  <div className="grid grid-cols-1 gap-6">
+                    <div>
+                      <h2 className="text-xl font-semibold mb-4 text-foreground">Paciente *</h2>
+                      <FormField control={form.control} name="patientSelectionType" render={({ field }) => (
+                        <Tabs value={field.value} onValueChange={(value) => field.onChange(value as 'existing' | 'new')} className="w-full">
+                          <TabsList className="grid w-full grid-cols-2"><TabsTrigger value="existing">Paciente Existente</TabsTrigger><TabsTrigger value="new">Paciente Nuevo</TabsTrigger></TabsList>
+                          <TabsContent value="existing" className="mt-4">
+                            <FormField control={form.control} name="patientId" render={({ field }) => (
+                              <FormItem><FormLabel>Buscar Paciente</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un paciente..." /></SelectTrigger></FormControl>
+                                  <SelectContent><>{patients.map(p => <SelectItem key={p.id} value={p.id}>{p.name} - {p.rut}</SelectItem>)}</>
+                                  </SelectContent>
+                                </Select><FormMessage />
+                              </FormItem>
+                            )} />
+                          </TabsContent>
+                          <TabsContent value="new" className="mt-4 space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <FormField control={form.control} name="newPatientName" render={({ field }) => (<FormItem><FormLabel>Nombre Paciente</FormLabel><FormControl><Input placeholder="Nombre Apellido" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                              <FormField control={form.control} name="newPatientRut" render={({ field }) => (<FormItem><FormLabel>RUT Paciente</FormLabel><FormControl><Input placeholder="12.345.678-9" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            </div>
+                          </TabsContent>
+                        </Tabs>
+                      )} />
+                      <FormField control={form.control} name="dispatchAddress" render={({ field }) => (
+                        <FormItem className="mt-4"><FormLabel>Dirección de Despacho</FormLabel><FormControl><Input placeholder="Ej: Calle Falsa 123, Comuna" {...field} /></FormControl><FormDescription className="text-xs text-muted-foreground">(Opcional. Por defecto, se retira en farmacia.)</FormDescription><FormMessage /></FormItem>
+                      )} />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-semibold mb-4 text-foreground">Médico *</h2>
+                      <FormField control={form.control} name="doctorSelectionType" render={({ field }) => (
+                        <Tabs value={field.value} onValueChange={(value) => field.onChange(value as 'existing' | 'new')} className="w-full">
+                          <TabsList className="grid w-full grid-cols-2"><TabsTrigger value="existing">Médico Existente</TabsTrigger><TabsTrigger value="new">Médico Nuevo</TabsTrigger></TabsList>
+                          <TabsContent value="existing" className="mt-4">
+                            <FormField control={form.control} name="doctorId" render={({ field }) => (
+                              <FormItem><FormLabel>Buscar Médico</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un médico..." /></SelectTrigger></FormControl>
+                                  <SelectContent><>{doctors.map(d => <SelectItem key={d.id} value={d.id}>{d.name} - {d.specialty}</SelectItem>)}</>
+                                  </SelectContent>
+                                </Select><FormMessage />
+                              </FormItem>
+                            )} />
+                          </TabsContent>
+                          <TabsContent value="new" className="mt-4 space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <FormField control={form.control} name="newDoctorName" render={({ field }) => (<FormItem><FormLabel>Nombre Médico</FormLabel><FormControl><Input placeholder="Nombre Apellido" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                              <FormField control={form.control} name="newDoctorLicense" render={({ field }) => (<FormItem><FormLabel>N° Colegiatura</FormLabel><FormControl><Input placeholder="Ej: 12345" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                              <FormField control={form.control} name="newDoctorRut" render={({ field }) => (<FormItem><FormLabel>RUT Médico (Opcional)</FormLabel><FormControl><Input placeholder="12.345.678-K" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                              <FormField control={form.control} name="newDoctorSpecialty" render={({ field }) => (<FormItem><FormLabel>Especialidad Médico</FormLabel><FormControl><Input placeholder="Ej: Cardiología" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            </div>
+                          </TabsContent>
+                        </Tabs>
+                      )} />
+                    </div>
+                  </div>
+              </div>
+
+              {/* Step 2: Recipe Details */}
+              <div className={cn(currentStep !== 2 && "hidden")}>
+                <h2 className="text-xl font-semibold mb-4 text-foreground">Detalles Generales</h2>
+                <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <FormItem>
+                        <FormLabel>ID Receta</FormLabel>
+                        <FormControl><Input disabled value={isEditMode && !copyFromId ? recipeId : "Nuevo (se genera al guardar)"} /></FormControl>
+                      </FormItem>
+                      <FormField control={form.control} name="prescriptionDate" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Fecha Prescripción *</FormLabel>
+                          <Popover><PopoverTrigger asChild><FormControl><Button variant="outline" className={cn("w-full justify-between text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? format(field.value, 'dd-MM-yyyy') : <span>dd-mm-aaaa</span>}<CalendarIcon className="h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent></Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name="dueDate" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Fecha Vencimiento</FormLabel>
+                          <Popover><PopoverTrigger asChild><FormControl><Button variant="outline" className={cn("w-full justify-between text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? format(field.value, 'dd-MM-yyyy') : <span>dd-mm-aaaa</span>}<CalendarIcon className="h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} /></PopoverContent></Popover>
+                          <FormDescription className="text-xs text-muted-foreground">(Por defecto 6 meses, editable.)</FormDescription>
+                        </FormItem>
+                      )} />
+                    </div>
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-foreground">Medicamento Controlado</h3>
+                        <FormField control={form.control} name="isControlled" render={({ field }) => (<FormItem className="flex flex-row items-center space-x-2 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel className="font-normal">Es Controlado</FormLabel></FormItem>)} />
+                        {isControlled && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <FormField control={form.control} name="controlledRecipeType" render={({ field }) => (<FormItem><FormLabel>Tipo de Receta Controlada *</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Seleccione tipo..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="Receta Cheque">Receta Cheque</SelectItem><SelectItem value="Receta Retenida">Receta Retenida</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="controlledRecipeFolio" render={({ field }) => (<FormItem><FormLabel>Folio Receta *</FormLabel><FormControl><Input placeholder="Ej: F123456 o Folio Cheque" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                          </div>
+                        )}
+                    </div>
+                </div>
+              </div>
+              
+              {/* Step 3: Items */}
+              <div className={cn(currentStep !== 3 && "hidden")}>
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-semibold text-foreground">Preparado Magistral</h2>
+                    <Button type="button" variant="link" onClick={() => append(defaultItem)} className="text-primary hover:text-primary/80"><PlusCircle className="mr-2 h-4 w-4" />Añadir Ítem</Button>
+                  </div>
+                  <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
+                    {fields.map((item, index) => (
+                      <RecipeItemCard key={item.id} index={index} remove={remove} form={form} appSettings={appSettings} inventory={inventory} totalFields={fields.length} onOpenInventoryForm={() => setIsInventoryFormOpen(true)} />
+                    ))}
+                  </div>
+                  <FormField control={form.control} name="items" render={() => (<FormItem><FormMessage className="mt-4" /></FormItem>)} />
+              </div>
+
+              {/* Step 4: Costs and Review */}
+              <div className={cn(currentStep !== 4 && "hidden")}>
+                  <h2 className="text-xl font-semibold mb-4 text-foreground">Recetario, Costos y Guardado</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+                    <FormField control={form.control} name="externalPharmacyId" render={({ field }) => (
+                      <FormItem><FormLabel>Recetario Asignado *</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un recetario..." /></SelectTrigger></FormControl>
+                          <SelectContent>{externalPharmacies.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+                        </Select><FormMessage />
                       </FormItem>
                     )} />
+                    <FormField control={form.control} name="supplySource" render={({ field }) => (
+                      <FormItem><FormLabel>Origen de Insumos *</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un origen..." /></SelectTrigger></FormControl>
+                          <SelectContent><SelectItem value="Stock del Recetario">Stock del Recetario</SelectItem><SelectItem value="Insumos de Skol">Insumos de Skol</SelectItem></SelectContent>
+                        </Select><FormMessage />
+                      </FormItem>
+                    )} />
+                    <div className="md:col-span-2">
+                      <FormField control={form.control} name="preparationCost" render={({ field }) => (
+                        <FormItem><FormLabel>Costo Preparación (CLP) *</FormLabel>
+                          <FormControl><Input type="number" placeholder="Ej: 15000" {...field} /></FormControl>
+                          <FormDescription className="text-xs text-muted-foreground">Costo que Skol pagará al recetario.</FormDescription><FormMessage />
+                        </FormItem>
+                      )} />
+                    </div>
                   </div>
-                </div>
-            </div>
+              </div>
 
-            {/* Form Navigation */}
-            <div className="flex justify-between items-center mt-8 pt-4 border-t">
-              <Button type="button" variant="ghost" onClick={() => setCurrentStep(prev => prev - 1)} disabled={currentStep === 1}>
-                  Anterior
-              </Button>
-              {currentStep < STEPS.length ? (
-                  <Button type="button" onClick={handleNextStep}>
-                    Siguiente
-                  </Button>
-              ) : (
-                <Button type="submit" disabled={form.formState.isSubmitting}>
-                  {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {isEditMode && !copyFromId ? 'Guardar Cambios' : 'Crear Receta'}
+              {/* Form Navigation */}
+              <div className="flex justify-between items-center mt-8 pt-4 border-t">
+                <Button type="button" variant="ghost" onClick={() => setCurrentStep(prev => prev - 1)} disabled={currentStep === 1}>
+                    Anterior
                 </Button>
-              )}
+                {currentStep < STEPS.length ? (
+                    <Button type="button" onClick={handleNextStep}>
+                      Siguiente
+                    </Button>
+                ) : (
+                  <Button type="submit" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isEditMode && !copyFromId ? 'Guardar Cambios' : 'Crear Receta'}
+                  </Button>
+                )}
+              </div>
             </div>
+          </div>
         </form>
       </Form>
     </>

@@ -22,7 +22,7 @@ import { PlusCircle, Eye, HeartPulse, Clock, CalendarPlus, CheckCircle, FileWarn
 import { Bar, BarChart, Pie, PieChart, Cell } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 import { useToast } from '@/hooks/use-toast';
-import { differenceInDays, isThisMonth, format } from 'date-fns';
+import { differenceInDays, isThisMonth, format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 const StatCard = ({ title, value, icon: Icon }: { title: string; value: string | number; icon: React.ElementType }) => (
@@ -106,10 +106,10 @@ export default function PharmacovigilancePage() {
 
   const chartDataByMedication = useMemo(() => {
     const medicationCounts = reports.reduce((acc, report) => {
-      const medications = report.involvedMedications.split(',').map(m => m.trim().toLowerCase()).filter(Boolean);
-      medications.forEach(med => {
-        acc[med] = (acc[med] || 0) + 1;
-      });
+      const medName = report.suspectedMedicationName?.trim().toLowerCase();
+      if (medName) {
+        acc[medName] = (acc[medName] || 0) + 1;
+      }
       return acc;
     }, {} as Record<string, number>);
 
@@ -118,6 +118,7 @@ export default function PharmacovigilancePage() {
       .slice(0, 5)
       .map(([name, total]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), total }));
   }, [reports]);
+
 
   const getPatientName = (patientId?: string) => patients.find(p => p.id === patientId)?.name || 'N/A';
 
@@ -201,7 +202,7 @@ export default function PharmacovigilancePage() {
                       <TableHead>ID Reporte</TableHead>
                       <TableHead>Fecha Reporte</TableHead>
                       <TableHead>Paciente</TableHead>
-                      <TableHead>Receta ID</TableHead>
+                      <TableHead>Medicamento</TableHead>
                       <TableHead>Estado</TableHead>
                       <TableHead><span className="sr-only">Acciones</span></TableHead>
                     </TableRow>
@@ -212,15 +213,9 @@ export default function PharmacovigilancePage() {
                         <TableCell className="font-mono text-primary">{report.id}</TableCell>
                         <TableCell>{format(new Date(report.reportedAt), 'dd-MM-yyyy')}</TableCell>
                         <TableCell>{getPatientName(report.patientId)}</TableCell>
-                        <TableCell className="font-mono">
-                          {report.recipeId ? (
-                            <Link href={`/recipes/${report.recipeId}`} className="hover:underline text-primary">
-                              {report.recipeId}
-                            </Link>
-                          ) : 'N/A'}
-                        </TableCell>
+                        <TableCell>{report.suspectedMedicationName}</TableCell>
                         <TableCell>
-                          <Badge className={statusStyles[report.status].badge}>{report.status}</Badge>
+                          <Badge className={statusStyles[report.status].badge}>{statusStyles[report.status].text}</Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           <Button variant="ghost" size="sm" asChild>
@@ -240,7 +235,7 @@ export default function PharmacovigilancePage() {
                     <CardHeader>
                       <div className="flex justify-between items-start">
                         <CardTitle className="font-mono text-primary">{report.id}</CardTitle>
-                        <Badge className={statusStyles[report.status].badge}>{report.status}</Badge>
+                        <Badge className={statusStyles[report.status].badge}>{statusStyles[report.status].text}</Badge>
                       </div>
                        <p className="text-xs text-muted-foreground">
                         {format(new Date(report.reportedAt), 'dd MMMM, yyyy', { locale: es })}
@@ -248,7 +243,7 @@ export default function PharmacovigilancePage() {
                     </CardHeader>
                     <CardContent className="text-sm space-y-2">
                        <p><span className="font-semibold">Paciente:</span> {getPatientName(report.patientId)}</p>
-                       <p><span className="font-semibold">Medicamento:</span> {report.involvedMedications}</p>
+                       <p><span className="font-semibold">Medicamento:</span> {report.suspectedMedicationName}</p>
                     </CardContent>
                     <CardFooter className="bg-muted/50 p-3">
                        <Button variant="outline" size="sm" asChild className="w-full">

@@ -148,42 +148,33 @@ export default function PharmacovigilanceReportPage() {
                             {statusStyles[report.status]?.text || report.status}
                         </Badge>
                     </CardTitle>
-                    <CardDescription>Resumen del evento adverso o problema de calidad notificado.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
-                        <div className="space-y-1">
-                            <p className="text-muted-foreground font-medium">Reportado por</p>
-                            <p className="font-semibold text-lg">{report.reporterName}</p>
-                        </div>
-                        <div className="space-y-1">
-                            <p className="text-muted-foreground font-medium">Fecha Reporte</p>
-                            <p className="font-semibold text-lg">{format(parseISO(report.reportedAt), 'dd MMMM, yyyy', { locale: es })}</p>
-                        </div>
-                        <div className="space-y-1">
-                            <p className="text-muted-foreground font-medium">Última Actualización</p>
-                            <p className="font-semibold text-lg">{format(parseISO(report.updatedAt), 'dd MMMM, yyyy HH:mm', { locale: es })}</p>
-                        </div>
+                <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">
+                        <div><span className="font-semibold text-foreground">Notificador:</span> {report.reporterName}</div>
+                        <div><span className="font-semibold text-foreground">Fecha Reporte:</span> {format(parseISO(report.reportedAt), 'dd MMM, yyyy', { locale: es })}</div>
+                        <div><span className="font-semibold text-foreground">Gravedad:</span> {report.severity}</div>
+                        <div><span className="font-semibold text-foreground">Desenlace:</span> {report.outcome}</div>
+                        <div className="md:col-span-2"><span className="font-semibold text-foreground">Fecha Inicio Reacción:</span> {format(parseISO(report.reactionStartDate), 'dd MMM, yyyy', { locale: es })}</div>
                     </div>
-                    
-                    <Separator />
-                    
-                    <div className="space-y-3">
-                        <h4 className="font-semibold text-foreground">Medicamento(s) Involucrado(s)</h4>
-                        <div className="flex flex-wrap gap-2">
-                            {report.involvedMedications.split(',').map((med, index) => (
-                                <Badge key={index} variant="secondary">{med.trim()}</Badge>
-                            ))}
-                        </div>
-                    </div>
+                </CardContent>
+            </Card>
 
-                    <Separator />
+            <Card>
+                <CardHeader><CardTitle className="text-primary">Descripción del Problema</CardTitle></CardHeader>
+                <CardContent className="p-4 border rounded-md bg-muted/50 text-sm text-foreground/90 whitespace-pre-wrap">
+                    {report.problemDescription}
+                </CardContent>
+            </Card>
 
-                    <div className="space-y-3">
-                        <h4 className="font-semibold text-foreground">Descripción del Problema</h4>
-                        <div className="p-4 border rounded-md bg-muted/50">
-                            <p className="text-sm text-foreground/90 whitespace-pre-wrap">{report.problemDescription}</p>
-                        </div>
+            <Card>
+                <CardHeader><CardTitle className="text-primary">Medicamento Sospechoso</CardTitle></CardHeader>
+                <CardContent className="space-y-4 text-sm">
+                    <p className="text-lg font-bold">{report.suspectedMedicationName}</p>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div><span className="font-semibold">Dosis:</span> {report.dose || 'N/A'}</div>
+                        <div><span className="font-semibold">Forma Farmacéutica:</span> {report.pharmaceuticalForm || 'N/A'}</div>
+                        <div><span className="font-semibold">Lote:</span> {report.lotNumber || 'N/A'}</div>
                     </div>
                 </CardContent>
             </Card>
@@ -234,10 +225,11 @@ export default function PharmacovigilanceReportPage() {
                 <Card>
                     <CardHeader><CardTitle className="flex items-center gap-2 text-primary"><User /> Paciente</CardTitle></CardHeader>
                     <CardContent className="text-sm space-y-2">
-                        <p className="font-bold text-lg text-primary">{patient.name}</p>
-                        <p className="text-muted-foreground">{patient.rut}</p>
+                        <p className="font-bold text-lg text-primary">{report.patientInfoSnapshot.name}</p>
+                        <p className="text-muted-foreground">{report.patientInfoSnapshot.rut}</p>
+                         <p className="text-muted-foreground">{report.patientInfoSnapshot.age} años, {report.patientInfoSnapshot.gender}</p>
                         <Button variant="outline" size="sm" className="w-full mt-2" asChild>
-                            <Link href={`/patients/${patient.id}`}>Ver Ficha Completa</Link>
+                            <Link href={`/patients/${report.patientId}`}>Ver Ficha Completa</Link>
                         </Button>
                     </CardContent>
                 </Card>
@@ -257,6 +249,14 @@ export default function PharmacovigilanceReportPage() {
                     </CardContent>
                 </Card>
             )}
+             {report.concomitantMedications && (
+                <Card>
+                    <CardHeader><CardTitle className="flex items-center gap-2 text-primary"><FlaskConical /> Medicación Concomitante</CardTitle></CardHeader>
+                    <CardContent className="text-sm">
+                        <p>{report.concomitantMedications}</p>
+                    </CardContent>
+                </Card>
+             )}
         </div>
       </div>
     </div>

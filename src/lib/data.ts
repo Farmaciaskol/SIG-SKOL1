@@ -653,15 +653,16 @@ export const updatePharmacovigilanceReport = async (id: string, updates: Partial
     await updateDoc(reportRef, dataToUpdate);
 };
 
-export const addPharmacovigilanceReport = async (reportData: Omit<PharmacovigilanceReport, 'id' | 'reportedAt' | 'updatedAt' | 'status'>): Promise<string> => {
+export const addPharmacovigilanceReport = async (reportData: Omit<PharmacovigilanceReport, 'id' | 'reportedAt' | 'updatedAt' | 'status' | 'involvedMedications'>): Promise<string> => {
     if (!db) throw new Error("Firestore is not initialized.");
     const newReport: Omit<PharmacovigilanceReport, 'id'> = {
         ...reportData,
         status: PharmacovigilanceReportStatus.New,
         reportedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        involvedMedications: reportData.suspectedMedicationName, // For backwards compatibility with charts
     };
-    const docRef = await addDoc(collection(db, 'pharmacovigilanceReports'), newReport);
+    const docRef = await addDoc(collection(db, 'pharmacovigilanceReports'), newReport as any);
     return docRef.id;
 };
 
