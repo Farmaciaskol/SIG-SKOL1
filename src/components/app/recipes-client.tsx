@@ -136,6 +136,29 @@ import { auth } from '@/lib/firebase';
 
 // --- HELPER COMPONENTS (defined outside the main component for clarity and performance) ---
 
+const StatCard = ({ title, value, icon: Icon, onClick, active = false }: { title: string; value: string | number; icon: React.ElementType; onClick: () => void; active?: boolean; }) => {
+  const iconColor = useMemo(() => {
+    if (Number(value) <= 0) return '';
+    if (title === 'Pend. Validación') return 'text-yellow-500';
+    if (title === 'Próximas a Vencer') return 'text-orange-500';
+    if (title === 'Rechazadas') return 'text-red-500';
+    return '';
+  }, [title, value]);
+
+  return (
+    <Card className={cn("hover:shadow-md transition-shadow cursor-pointer", active && "ring-2 ring-primary")} onClick={onClick}>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <Icon className={cn("h-4 w-4 text-muted-foreground", iconColor)} />
+      </CardHeader>
+      <CardContent className="p-4 pt-0">
+        <p className="text-2xl font-bold">{value}</p>
+      </CardContent>
+    </Card>
+  );
+};
+
+
 const calculateTotalCycles = (recipe: Recipe): number => {
     if (!recipe.dueDate || !recipe.createdAt || !recipe.items?.[0]) {
       return MAX_REPREPARATIONS + 1;
@@ -786,6 +809,34 @@ export const RecipesClient = ({
     }
   };
   
+  const stats = useMemo(() => {
+    const now = new Date();
+    const thirtyDaysFromNow = new Date();
+    thirtyDaysFromNow.setDate(now.getDate() + 30);
+
+    const activeRecipes = initialRecipes.filter(r => 
+        ![RecipeStatus.Dispensed, RecipeStatus.Cancelled, RecipeStatus.Rejected, RecipeStatus.Archived].includes(r.status)
+    );
+    
+    const expiringOrExpiredCount = activeRecipes.filter(r => {
+        if (!r.dueDate) return false;
+        try {
+            const dueDate = parseISO(r.dueDate);
+            return dueDate < thirtyDaysFromNow;
+        } catch (e) {
+            return false;
+        }
+    }).length;
+
+    return {
+      pendingValidation: initialRecipes.filter(r => r.status === RecipeStatus.PendingValidation).length,
+      inPreparation: initialRecipes.filter(r => r.status === RecipeStatus.Preparation || r.status === RecipeStatus.SentToExternal).length,
+      readyForPickup: initialRecipes.filter(r => r.status === RecipeStatus.ReadyForPickup || r.status === RecipeStatus.ReceivedAtSkol).length,
+      rejected: initialRecipes.filter(r => r.status === RecipeStatus.Rejected).length,
+      expiringOrExpired: expiringOrExpiredCount,
+    };
+  }, [initialRecipes]);
+
   const filteredRecipes = useMemo(() => {
     return recipes
     .filter((recipe) => {
@@ -1119,7 +1170,44 @@ export const RecipesClient = ({
             </Link>
         </Button>
       </div>
-      
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 mt-6">
+        <StatCard 
+          title="Pend. Validación" 
+          value={stats.pendingValidation} 
+          icon={FileClock}
+          onClick={() => setStatusFilter(RecipeStatus.PendingValidation)}
+          active={statusFilter === RecipeStatus.PendingValidation}
+        />
+        <StatCard 
+          title="En Preparación" 
+          value={stats.inPreparation} 
+          icon={FlaskConical}
+          onClick={() => setStatusFilter(RecipeStatus.Preparation)}
+          active={statusFilter === RecipeStatus.Preparation}
+        />
+        <StatCard 
+          title="Para Retiro" 
+          value={stats.readyForPickup} 
+          icon={Package}
+          onClick={() => setStatusFilter(RecipeStatus.ReadyForPickup)}
+          active={statusFilter === RecipeStatus.ReadyForPickup}
+        />
+        <StatCard 
+          title="Próximas a Vencer" 
+          value={stats.expiringOrExpired} 
+          icon={AlertTriangle}
+          onClick={() => setStatusFilter('expiring')}
+          active={statusFilter === 'expiring'}
+        />
+        <StatCard 
+          title="Rechazadas" 
+          value={stats.rejected} 
+          icon={XCircle}
+          onClick={() => setStatusFilter(RecipeStatus.Rejected)}
+          active={statusFilter === RecipeStatus.Rejected}
+        />
+      </div>
+
       <Card className="mt-6">
         <CardContent className="p-4">
           <Collapsible
