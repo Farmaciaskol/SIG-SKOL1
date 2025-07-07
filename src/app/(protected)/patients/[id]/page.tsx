@@ -32,6 +32,7 @@ import { auth } from '@/lib/firebase';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
+import { InventoryItemForm } from '@/components/app/inventory-item-form';
 
 type ActiveTreatment = {
   type: 'magistral';
@@ -230,10 +231,13 @@ export default function PatientDetailPage() {
   const [isCommercialMedsModalOpen, setIsCommercialMedsModalOpen] = useState(false);
   const [isSavingMeds, setIsSavingMeds] = useState(false);
   const [currentMeds, setCurrentMeds] = useState<string[]>([]);
-  const [medToAdd, setMedToAdd] = useState('');
-
+  const [medSearchTerm, setMedSearchTerm] = useState('');
+  
   // FV Dialog State
   const [reportingTreatment, setReportingTreatment] = useState<ActiveTreatment | null>(null);
+  
+  // Inventory Form Dialog State
+  const [isInventoryFormOpen, setIsInventoryFormOpen] = useState(false);
 
 
   const fetchData = useCallback(async () => {
@@ -273,6 +277,10 @@ export default function PatientDetailPage() {
       setLoading(false);
     }
   }, [id, toast]);
+
+  const refreshData = useCallback(() => {
+    fetchData();
+  }, [fetchData]);
 
   useEffect(() => {
     fetchData();
@@ -354,7 +362,7 @@ export default function PatientDetailPage() {
       await updatePatient(patient.id, { associatedDoctorIds: doctorsToAssociate });
       toast({ title: 'Médicos Actualizados', description: 'Se han guardado las asociaciones de médicos.' });
       setIsAssociateDoctorModalOpen(false);
-      await fetchData(); // Refresh data
+      refreshData();
     } catch (error) {
       toast({ title: 'Error', description: 'No se pudieron guardar las asociaciones.', variant: 'destructive' });
     } finally {
@@ -364,19 +372,16 @@ export default function PatientDetailPage() {
   
   const handleOpenCommercialMedsModal = () => {
     setCurrentMeds(patient?.commercialMedications || []);
-    setMedToAdd('');
+    setMedSearchTerm('');
     setIsCommercialMedsModalOpen(true);
   };
 
-  const handleAddMed = () => {
-    if (medToAdd && !currentMeds.some(m => m.toLowerCase() === medToAdd.toLowerCase())) {
-        setCurrentMeds([...currentMeds, medToAdd]);
-        setMedToAdd('');
-    }
-  };
-
-  const handleRemoveMed = (medToRemove: string) => {
-    setCurrentMeds(currentMeds.filter(med => med !== medToRemove));
+  const handleToggleMed = (medName: string) => {
+    setCurrentMeds(prev => 
+      prev.some(m => m.toLowerCase() === medName.toLowerCase())
+        ? prev.filter(m => m.toLowerCase() !== medName.toLowerCase())
+        : [...prev, medName]
+    );
   };
 
   const handleSaveCommercialMeds = async () => {
@@ -386,19 +391,25 @@ export default function PatientDetailPage() {
       await updatePatient(patient.id, { commercialMedications: currentMeds });
       toast({ title: 'Medicamentos Actualizados', description: 'La lista de medicamentos comerciales ha sido guardada.' });
       setIsCommercialMedsModalOpen(false);
-      await fetchData(); // To get the updated patient data
+      refreshData();
     } catch (error) {
       toast({ title: 'Error', description: 'No se pudieron guardar los medicamentos.', variant: 'destructive' });
     } finally {
       setIsSavingMeds(false);
     }
   };
+  
+  const handleInventoryFormFinished = () => {
+    setIsInventoryFormOpen(false);
+    refreshData();
+  }
 
   const availableInventoryMeds = useMemo(() => {
-    if (!inventory || !currentMeds) return [];
-    const currentMedsLower = currentMeds.map(m => m.toLowerCase());
-    return inventory.filter(item => !currentMedsLower.includes(item.name.toLowerCase()));
-  }, [inventory, currentMeds]);
+    if (!inventory) return [];
+    return inventory.filter(item =>
+      item.name.toLowerCase().includes(medSearchTerm.toLowerCase())
+    );
+  }, [inventory, medSearchTerm]);
 
 
   if (loading) {
@@ -713,7 +724,7 @@ export default function PatientDetailPage() {
         patient={patient}
         isOpen={isEditModalOpen}
         onOpenChange={setIsEditModalOpen}
-        onSuccess={fetchData}
+        onSuccess={refreshData}
       />
       
       <PharmacovigilanceDialog
@@ -723,7 +734,7 @@ export default function PatientDetailPage() {
         treatment={reportingTreatment}
         onSuccess={() => {
             setReportingTreatment(null);
-            fetchData();
+            refreshData();
         }}
       />
 
@@ -785,38 +796,50 @@ export default function PatientDetailPage() {
             <DialogHeader>
             <DialogTitle>Editar Medicamentos Comerciales</DialogTitle>
             <DialogDescription>
-                Añada o elimine los medicamentos que el paciente está tomando, seleccionándolos desde el inventario.
+                Añada o elimine los medicamentos que el paciente está tomando.
             </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
-                <div className="flex items-center gap-2">
-                    <Select value={medToAdd} onValueChange={setMedToAdd}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar medicamento del inventario..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableInventoryMeds.length > 0 ? (
-                          availableInventoryMeds.map(item => (
-                            <SelectItem key={item.id} value={item.name}>
-                              {item.name} ({item.quantity} {item.unit})
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <div className="p-2 text-sm text-muted-foreground text-center">No hay más medicamentos para añadir.</div>
-                        )}
-                      </SelectContent>
-                    </Select>
-                    <Button onClick={handleAddMed} type="button" disabled={!medToAdd}>Añadir</Button>
+                 <div className="relative">
+                    <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Buscar en inventario..."
+                        value={medSearchTerm}
+                        onChange={(e) => setMedSearchTerm(e.target.value)}
+                        className="pl-8"
+                    />
                 </div>
                 <div className="space-y-2 max-h-60 overflow-y-auto p-2 border rounded-md">
-                    {currentMeds.length > 0 ? currentMeds.map((med, index) => (
-                    <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded-md">
+                    {availableInventoryMeds.length > 0 ? availableInventoryMeds.map((item, index) => (
+                    <div key={item.id} className="flex items-center justify-between p-2 hover:bg-muted/50 rounded-md">
+                        <label htmlFor={`med-${item.id}`} className="text-sm font-medium leading-none cursor-pointer flex-1">
+                          {item.name}
+                        </label>
+                        <Checkbox 
+                          id={`med-${item.id}`}
+                          checked={currentMeds.some(m => m.toLowerCase() === item.name.toLowerCase())}
+                          onCheckedChange={() => handleToggleMed(item.name)}
+                        />
+                    </div>
+                    )) : (
+                        <div className="text-center p-4">
+                            <p className="text-sm text-muted-foreground">No se encontraron medicamentos en el inventario.</p>
+                            <Button variant="link" className="text-sm h-auto p-0 mt-2" onClick={() => { setIsCommercialMedsModalOpen(false); setIsInventoryFormOpen(true);}}>
+                                ¿Desea crear un nuevo producto en el inventario?
+                            </Button>
+                        </div>
+                    )}
+                </div>
+                <h4 className="font-semibold pt-2">Medicamentos Seleccionados:</h4>
+                 <div className="space-y-2 max-h-40 overflow-y-auto p-2 border rounded-md bg-muted/50">
+                     {currentMeds.length > 0 ? currentMeds.map((med, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 rounded-md">
                         <span className="text-sm">{med}</span>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveMed(med)}>
-                        <X className="h-4 w-4" />
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleMed(med)}>
+                           <X className="h-4 w-4" />
                         </Button>
                     </div>
-                    )) : <p className="text-sm text-center text-muted-foreground p-4">No hay medicamentos añadidos.</p>}
+                    )) : <p className="text-sm text-center text-muted-foreground p-4">Ningún medicamento seleccionado.</p>}
                 </div>
             </div>
             <DialogFooter>
@@ -826,6 +849,18 @@ export default function PatientDetailPage() {
                 Guardar Cambios
             </Button>
             </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+       <Dialog open={isInventoryFormOpen} onOpenChange={setIsInventoryFormOpen}>
+        <DialogContent className="sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-semibold">Crear Producto en Inventario</DialogTitle>
+            <DialogDescription>
+                Configure un nuevo producto. Estará disponible inmediatamente para asignarlo al paciente.
+            </DialogDescription>
+          </DialogHeader>
+          <InventoryItemForm onFinished={handleInventoryFormFinished} />
         </DialogContent>
       </Dialog>
     </>

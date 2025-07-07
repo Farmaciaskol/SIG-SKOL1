@@ -78,7 +78,7 @@ export const InventoryItemForm = ({ item, onFinished }: { item?: InventoryItem; 
             itemsPerBaseUnit: item?.itemsPerBaseUnit || 1,
             unit: item?.unit || 'caja',
             lowStockThreshold: item?.lowStockThreshold || 0,
-            maxStock: item?.maxStock || '',
+            maxStock: item?.maxStock || undefined,
             mainProvider: item?.mainProvider || '',
             location: item?.location || '',
             costPrice: item?.costPrice || 0,
