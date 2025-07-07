@@ -136,11 +136,15 @@ import { auth } from '@/lib/firebase';
 
 // --- HELPER COMPONENTS (defined outside the main component for clarity and performance) ---
 
-const StatCard = ({ title, value, icon: Icon, onClick, active = false, iconClassName }: { title: string; value: string | number; icon: React.ElementType; onClick: () => void; active?: boolean; iconClassName?: string; }) => (
+const StatCard = ({ title, value, icon: Icon, onClick, active = false }: { title: string; value: string | number; icon: React.ElementType; onClick: () => void; active?: boolean; }) => (
   <Card className={cn("hover:shadow-md transition-shadow cursor-pointer", active && "ring-2 ring-primary")} onClick={onClick}>
     <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 pb-2">
       <CardTitle className="text-sm font-medium">{title}</CardTitle>
-      <Icon className={cn("h-4 w-4 text-muted-foreground", iconClassName)} />
+      <Icon className={cn("h-4 w-4 text-muted-foreground", {
+        'text-yellow-500': title === 'Pend. Validación' && Number(value) > 0,
+        'text-orange-500': title === 'Próximas a Vencer' && Number(value) > 0,
+        'text-red-500': title === 'Rechazadas' && Number(value) > 0,
+      })} />
     </CardHeader>
     <CardContent className="p-4 pt-0">
       <p className="text-2xl font-bold">{value}</p>
@@ -1166,7 +1170,6 @@ export const RecipesClient = ({
           icon={FileClock}
           onClick={() => setStatusFilter(RecipeStatus.PendingValidation)}
           active={statusFilter === RecipeStatus.PendingValidation}
-          iconClassName={stats.pendingValidation > 0 ? 'text-yellow-500' : ''}
         />
         <StatCard 
           title="En Preparación" 
@@ -1188,7 +1191,6 @@ export const RecipesClient = ({
           icon={AlertTriangle}
           onClick={() => setStatusFilter('expiring')}
           active={statusFilter === 'expiring'}
-          iconClassName={stats.expiringOrExpired > 0 ? 'text-orange-500' : ''}
         />
         <StatCard 
           title="Rechazadas" 
@@ -1196,7 +1198,6 @@ export const RecipesClient = ({
           icon={XCircle}
           onClick={() => setStatusFilter(RecipeStatus.Rejected)}
           active={statusFilter === RecipeStatus.Rejected}
-          iconClassName={stats.rejected > 0 ? 'text-red-500' : ''}
         />
       </div>
 
