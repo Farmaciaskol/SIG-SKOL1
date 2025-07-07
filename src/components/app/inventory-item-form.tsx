@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { addInventoryItem, updateInventoryItem, InventoryItem } from '@/lib/data';
+import { VADEMECUM_DATA } from '@/lib/constants';
 import { Loader2 } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -84,6 +85,25 @@ export function InventoryItemForm({ itemToEdit, onFinished }: InventoryItemFormP
         },
     });
 
+    const productName = useWatch({ control: form.control, name: 'name' });
+    const inventoryType = useWatch({ control: form.control, name: 'inventoryType' });
+
+    useEffect(() => {
+        if (productName && inventoryType === 'Fraccionamiento' && !form.getValues('activePrinciple')) {
+            const lowerProductName = productName.toLowerCase().trim();
+            const drugInfo = VADEMECUM_DATA.find(
+                drug => drug.productName.toLowerCase().trim() === lowerProductName
+            );
+            if (drugInfo) {
+                form.setValue('activePrinciple', drugInfo.activeIngredient, { shouldValidate: true });
+                toast({
+                    title: "Principio Activo Sugerido",
+                    description: `Se ha autocompletado el principio activo "${drugInfo.activeIngredient}" basado en el nombre del producto.`,
+                });
+            }
+        }
+    }, [productName, inventoryType, form, toast]);
+
     useEffect(() => {
         if (itemToEdit) {
             form.reset({
@@ -127,7 +147,7 @@ export function InventoryItemForm({ itemToEdit, onFinished }: InventoryItemFormP
     };
     
     const { isSubmitting } = form.formState;
-    const inventoryType = form.watch('inventoryType');
+    const currentInventoryType = form.watch('inventoryType');
 
     return (
         <Form {...form}>
@@ -158,7 +178,7 @@ export function InventoryItemForm({ itemToEdit, onFinished }: InventoryItemFormP
                     <FormItem><FormLabel>Nombre del Producto *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
 
-                {inventoryType === 'Fraccionamiento' && (
+                {currentInventoryType === 'Fraccionamiento' && (
                     <Card className="p-4 bg-muted/30">
                         <CardHeader className="p-0 pb-4"><CardTitle className="text-base text-primary">Datos para Fraccionamiento</CardTitle></CardHeader>
                         <CardContent className="p-0 space-y-4">
