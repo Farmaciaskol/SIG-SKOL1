@@ -43,6 +43,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
 import { Label } from '../ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { fetchRawInventoryFromLioren, type LiorenProduct } from '@/lib/lioren-api';
 
 
 const EXPIRY_THRESHOLD_DAYS = 90;
@@ -289,6 +291,8 @@ function LotManagementDialog({
 export function InventoryClient({ initialInventory }: { initialInventory: InventoryItem[] }) {
     const [loading, setLoading] = useState(false);
     const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory);
+    const [liorenInventory, setLiorenInventory] = useState<LiorenProduct[]>([]);
+    const [loadingLioren, setLoadingLioren] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState<FilterStatus>('all');
     const { toast } = useToast();
@@ -305,15 +309,24 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
 
     const refreshData = async () => {
         setLoading(true);
+        setLoadingLioren(true);
         try {
             const data = await getInventory();
             setInventory(data);
+            const liorenData = await fetchRawInventoryFromLioren();
+            setLiorenInventory(liorenData);
         } catch (error) {
             toast({ title: "Error", description: "No se pudo actualizar el inventario.", variant: "destructive" });
         } finally {
             setLoading(false);
+            setLoadingLioren(false);
         }
     };
+    
+    useEffect(() => {
+        refreshData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleOpenForm = (item: InventoryItem | null) => {
         setEditingItem(item);
@@ -474,125 +487,173 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
                     <PlusCircle className="mr-2 h-4 w-4" /> Crear Producto
                 </Button>
             </div>
-
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-6">
-                <StatCard title="Valor Total del Inventario" value={globalStats.totalValue} icon={DollarSign} />
-                <StatCard title="Ítems con Stock Bajo" value={globalStats.lowStockCount} icon={Package} />
-                <StatCard title="Ítems Agotados" value={globalStats.outOfStockCount} icon={PackageX} />
-                <StatCard title="Ítems Próximos a Vencer" value={globalStats.expiringSoonCount} icon={AlertTriangle} />
-            </div>
-
-            <Card className="mb-6">
-                <CardContent className="p-4 flex flex-col sm:flex-row gap-4">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Buscar por nombre o SKU..."
-                            className="pl-8"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
+            
+            <Tabs defaultValue="skol-inventory">
+                <TabsList className="grid w-full grid-cols-2 mb-6">
+                    <TabsTrigger value="skol-inventory">Inventario Skol</TabsTrigger>
+                    <TabsTrigger value="lioren-api">Vista API Lioren</TabsTrigger>
+                </TabsList>
+                <TabsContent value="skol-inventory">
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-6">
+                        <StatCard title="Valor Total del Inventario" value={globalStats.totalValue} icon={DollarSign} />
+                        <StatCard title="Ítems con Stock Bajo" value={globalStats.lowStockCount} icon={Package} />
+                        <StatCard title="Ítems Agotados" value={globalStats.outOfStockCount} icon={PackageX} />
+                        <StatCard title="Ítems Próximos a Vencer" value={globalStats.expiringSoonCount} icon={AlertTriangle} />
                     </div>
-                    <div className="flex items-center gap-2 overflow-x-auto pb-2">
-                        {(['all', 'OK', 'Stock Bajo', 'Agotado', 'Próximo a Vencer', 'Vencido'] as FilterStatus[]).map(status => (
-                            <Button 
-                                key={status}
-                                variant={activeFilter === status ? 'default' : 'outline'}
-                                onClick={() => setActiveFilter(status)}
-                                className="text-xs sm:text-sm whitespace-nowrap"
-                            >
-                            {status === 'all' ? 'Todos' : status}
-                            </Button>
-                        ))}
-                    </div>
-                </CardContent>
-            </Card>
 
-            {loading ? (
-                 <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
-            ) : paginatedInventory.length === 0 ? (
-                 <Card className="text-center py-16 mt-8 shadow-none border-dashed">
-                    <div className="flex flex-col items-center justify-center">
-                        <Package className="h-16 w-16 text-muted-foreground mb-4" />
-                        <h2 className="text-xl font-semibold text-foreground">No se encontraron productos</h2>
-                        <p className="text-muted-foreground mt-2 max-w-sm">
-                            Intenta ajustar tu búsqueda o crea un nuevo producto.
-                        </p>
-                    </div>
-                </Card>
-            ) : (
-                <>
-                    {/* Desktop Table View */}
-                    <Card className="hidden md:block">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Producto</TableHead>
-                                    <TableHead>Stock Total</TableHead>
-                                    <TableHead>Próximo Vto.</TableHead>
-                                    <TableHead>Estado</TableHead>
-                                    <TableHead className="text-right">Acciones</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {paginatedInventory.map(item => {
-                                     const statusStyles: Record<InventoryItemWithStats['status'], string> = {
-                                        'OK': 'text-green-600',
-                                        'Stock Bajo': 'text-yellow-600',
-                                        'Agotado': 'text-red-600',
-                                        'Próximo a Vencer': 'text-orange-600',
-                                        'Vencido': 'text-red-700 font-bold',
-                                    };
-                                    return (
-                                    <TableRow key={item.id}>
-                                        <TableCell>
-                                            <div className="font-medium text-foreground">{item.name}</div>
-                                            <div className="text-xs text-muted-foreground">SKU: {item.sku || 'N/A'}</div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-semibold text-lg text-foreground">{item.quantity}</span>
-                                                <span className="text-sm text-muted-foreground ml-1">{item.unit}</span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            {item.nextExpiryDate && !isNaN(parseISO(item.nextExpiryDate).getTime()) ? format(parseISO(item.nextExpiryDate), 'MMM yyyy', {locale: es}) : 'N/A'}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge variant="outline" className={cn("font-semibold", statusStyles[item.status])}>{item.status}</Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <InventoryActions item={item} onManageLots={handleManageLots} onEdit={() => handleOpenForm(item)} onDelete={() => setItemToDelete(item)} />
-                                        </TableCell>
-                                    </TableRow>
-                                )})}
-                            </TableBody>
-                        </Table>
+                    <Card className="mb-6">
+                        <CardContent className="p-4 flex flex-col sm:flex-row gap-4">
+                            <div className="relative flex-1">
+                                <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    placeholder="Buscar por nombre o SKU..."
+                                    className="pl-8"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
+                            <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                                {(['all', 'OK', 'Stock Bajo', 'Agotado', 'Próximo a Vencer', 'Vencido'] as FilterStatus[]).map(status => (
+                                    <Button 
+                                        key={status}
+                                        variant={activeFilter === status ? 'default' : 'outline'}
+                                        onClick={() => setActiveFilter(status)}
+                                        className="text-xs sm:text-sm whitespace-nowrap"
+                                    >
+                                    {status === 'all' ? 'Todos' : status}
+                                    </Button>
+                                ))}
+                            </div>
+                        </CardContent>
                     </Card>
 
-                    {/* Mobile Card View */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:hidden">
-                        {paginatedInventory.map(item => (
-                            <ProductCard key={item.id} item={item} onManageLots={handleManageLots} onEdit={() => handleOpenForm(item)} onDelete={() => setItemToDelete(item)} />
-                        ))}
-                    </div>
+                    {loading ? (
+                        <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                    ) : paginatedInventory.length === 0 ? (
+                        <Card className="text-center py-16 mt-8 shadow-none border-dashed">
+                            <div className="flex flex-col items-center justify-center">
+                                <Package className="h-16 w-16 text-muted-foreground mb-4" />
+                                <h2 className="text-xl font-semibold text-foreground">No se encontraron productos</h2>
+                                <p className="text-muted-foreground mt-2 max-w-sm">
+                                    Intenta ajustar tu búsqueda o crea un nuevo producto.
+                                </p>
+                            </div>
+                        </Card>
+                    ) : (
+                        <>
+                            {/* Desktop Table View */}
+                            <Card className="hidden md:block">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Producto</TableHead>
+                                            <TableHead>Stock Total</TableHead>
+                                            <TableHead>Próximo Vto.</TableHead>
+                                            <TableHead>Estado</TableHead>
+                                            <TableHead className="text-right">Acciones</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {paginatedInventory.map(item => {
+                                            const statusStyles: Record<InventoryItemWithStats['status'], string> = {
+                                                'OK': 'text-green-600',
+                                                'Stock Bajo': 'text-yellow-600',
+                                                'Agotado': 'text-red-600',
+                                                'Próximo a Vencer': 'text-orange-600',
+                                                'Vencido': 'text-red-700 font-bold',
+                                            };
+                                            return (
+                                            <TableRow key={item.id}>
+                                                <TableCell>
+                                                    <div className="font-medium text-foreground">{item.name}</div>
+                                                    <div className="text-xs text-muted-foreground">SKU: {item.sku || 'N/A'}</div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-semibold text-lg text-foreground">{item.quantity}</span>
+                                                        <span className="text-sm text-muted-foreground ml-1">{item.unit}</span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    {item.nextExpiryDate && !isNaN(parseISO(item.nextExpiryDate).getTime()) ? format(parseISO(item.nextExpiryDate), 'MMM yyyy', {locale: es}) : 'N/A'}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge variant="outline" className={cn("font-semibold", statusStyles[item.status])}>{item.status}</Badge>
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    <InventoryActions item={item} onManageLots={handleManageLots} onEdit={() => handleOpenForm(item)} onDelete={() => setItemToDelete(item)} />
+                                                </TableCell>
+                                            </TableRow>
+                                        )})}
+                                    </TableBody>
+                                </Table>
+                            </Card>
 
-                    {/* Pagination Controls */}
-                    {totalPages > 1 && (
-                        <div className="flex items-center justify-between mt-6">
-                            <div className="text-xs text-muted-foreground">
-                                Página {currentPage} de {totalPages}
+                            {/* Mobile Card View */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:hidden">
+                                {paginatedInventory.map(item => (
+                                    <ProductCard key={item.id} item={item} onManageLots={handleManageLots} onEdit={() => handleOpenForm(item)} onDelete={() => setItemToDelete(item)} />
+                                ))}
                             </div>
-                            <div className="flex items-center space-x-2">
-                                <Button variant="outline" size="sm" onClick={() => setCurrentPage(1)} disabled={currentPage === 1}><ChevronsLeft /></Button>
-                                <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1}><ChevronLeft /></Button>
-                                <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages}><ChevronRight /></Button>
-                                <Button variant="outline" size="sm" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}><ChevronsRight /></Button>
-                            </div>
-                        </div>
+
+                            {/* Pagination Controls */}
+                            {totalPages > 1 && (
+                                <div className="flex items-center justify-between mt-6">
+                                    <div className="text-xs text-muted-foreground">
+                                        Página {currentPage} de {totalPages}
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <Button variant="outline" size="sm" onClick={() => setCurrentPage(1)} disabled={currentPage === 1}><ChevronsLeft /></Button>
+                                        <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1}><ChevronLeft /></Button>
+                                        <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages}><ChevronRight /></Button>
+                                        <Button variant="outline" size="sm" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}><ChevronsRight /></Button>
+                                    </div>
+                                </div>
+                            )}
+                        </>
                     )}
-                </>
-            )}
+                </TabsContent>
+                <TabsContent value="lioren-api">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Datos Crudos de la API de Lioren</CardTitle>
+                            <CardDescription>Esta es la información tal como la entrega la API de Lioren, en modo de solo lectura.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {loadingLioren ? (
+                                <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                            ) : liorenInventory.length === 0 ? (
+                                <div className="text-center py-16">No se encontraron productos en Lioren o la API no respondió.</div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Nombre</TableHead>
+                                                <TableHead>SKU/Código</TableHead>
+                                                <TableHead>Stock</TableHead>
+                                                <TableHead className="text-right">Precio Venta</TableHead>
+                                                <TableHead className="text-right">Costo</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {liorenInventory.map(item => (
+                                                <TableRow key={item.id}>
+                                                    <TableCell className="font-medium">{item.nombre}</TableCell>
+                                                    <TableCell className="font-mono">{item.codigo}</TableCell>
+                                                    <TableCell>{item.stock_actual}</TableCell>
+                                                    <TableCell className="text-right">${(item.precio_venta ?? 0).toLocaleString('es-CL')}</TableCell>
+                                                    <TableCell className="text-right">${(item.costo ?? 0).toLocaleString('es-CL')}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
         </>
     );
 }
