@@ -31,7 +31,6 @@ import {
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
-  AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
@@ -289,11 +288,13 @@ function LotManagementDialog({
   )
 }
 
-export function InventoryClient({ initialInventory }: { initialInventory: InventoryItem[] }) {
-    const [loading, setLoading] = useState(false);
+export function InventoryClient({ initialInventory, initialLiorenInventory }: { 
+  initialInventory: InventoryItem[];
+  initialLiorenInventory: LiorenProduct[];
+}) {
     const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory);
-    const [liorenInventory, setLiorenInventory] = useState<LiorenProduct[]>([]);
-    const [loadingLioren, setLoadingLioren] = useState(true);
+    const [liorenInventory, setLiorenInventory] = useState<LiorenProduct[]>(initialLiorenInventory);
+    const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState<FilterStatus>('all');
     const { toast } = useToast();
@@ -310,24 +311,15 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
 
     const refreshData = async () => {
         setLoading(true);
-        setLoadingLioren(true);
         try {
             const data = await getInventory();
             setInventory(data);
-            const liorenData = await fetchRawInventoryFromLioren();
-            setLiorenInventory(liorenData);
         } catch (error) {
             toast({ title: "Error", description: "No se pudo actualizar el inventario.", variant: "destructive" });
         } finally {
             setLoading(false);
-            setLoadingLioren(false);
         }
     };
-    
-    useEffect(() => {
-        refreshData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
 
     const handleOpenForm = (item: InventoryItem | null) => {
         setEditingItem(item);
@@ -621,9 +613,7 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
                             <CardDescription>Esta es la información tal como la entrega la API de Lioren, en modo de solo lectura.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            {loadingLioren ? (
-                                <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
-                            ) : liorenInventory.length === 0 ? (
+                            {liorenInventory.length === 0 ? (
                                 <div className="text-center py-16">No se encontraron productos en Lioren o la API no respondió.</div>
                             ) : (
                                 <div className="overflow-x-auto">
@@ -643,8 +633,8 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
                                                     <TableCell className="font-medium">{item.nombre}</TableCell>
                                                     <TableCell className="font-mono">{item.codigo}</TableCell>
                                                     <TableCell>{item.stock_actual}</TableCell>
-                                                    <TableCell className="text-right">${(item.precio_venta ?? 0).toLocaleString('es-CL')}</TableCell>
-                                                    <TableCell className="text-right">${(item.costo ?? 0).toLocaleString('es-CL')}</TableCell>
+                                                    <TableCell className="text-right">${item.precio_venta?.toLocaleString('es-CL') || '0'}</TableCell>
+                                                    <TableCell className="text-right">${item.costo?.toLocaleString('es-CL') || '0'}</TableCell>
                                                 </TableRow>
                                             ))}
                                         </TableBody>

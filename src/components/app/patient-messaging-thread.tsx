@@ -3,7 +3,8 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { usePatientAuth } from '@/components/app/patient-auth-provider';
-import { getMessagesForPatient, sendMessageFromPatient, markMessagesAsRead } from '@/lib/data';
+import { getMessagesForPatient, markMessagesAsRead } from '@/lib/data';
+import { sendMessageFromPatient } from '@/lib/patient-actions';
 import type { PatientMessage } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Send } from 'lucide-react';
