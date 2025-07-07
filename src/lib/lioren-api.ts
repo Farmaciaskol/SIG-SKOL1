@@ -1,142 +1,94 @@
-
 'use server';
 import type { InventoryItem, LotDetail } from './types';
 
 /**
- * ESTE ARCHIVO ES UNA SIMULACIÓN.
- * Aquí es donde se debe implementar la lógica real para conectarse a la API de Lioren.
- * Deberá manejar la autenticación (probablemente con una API Key en su archivo .env),
- * realizar las llamadas a los endpoints de inventario de Lioren y mapear
- * los datos recibidos al formato que utiliza la aplicación (el tipo `InventoryItem`).
+ * ESTE ARCHIVO ES PARA CONECTARSE A LA API DE LIOREN.
+ * Utiliza la API Key del archivo .env para autenticarse y obtener los datos de inventario.
+ * La función `fetchInventoryFromLioren` es la principal exportación.
  */
 
 
-// Datos de ejemplo para simular la respuesta de la API de Lioren.
-const MOCK_LIOREN_PRODUCTS = [
-  {
-    id: 'L-1001',
-    name: 'Losartan Potásico 50mg',
-    sku: 'F-12345',
-    active_principle: 'Losartan Potásico',
-    category: 'Cardiovascular',
-    stock_total: 25,
-    unit: 'caja',
-    price: 3500,
-    cost: 1800,
-    is_controlled: false,
-    lots: [
-      { number: 'LOTE-A1', stock: 10, expiry: '2025-12-31T00:00:00.000Z' },
-      { number: 'LOTE-A2', stock: 15, expiry: '2026-06-30T00:00:00.000Z' },
-    ]
-  },
-  {
-    id: 'L-1002',
-    name: 'Clonazepam 2mg',
-    sku: 'F-54321',
-    active_principle: 'Clonazepam',
-    category: 'Neurología',
-    stock_total: 10,
-    unit: 'caja',
-    price: 4200,
-    cost: 2100,
-    is_controlled: true,
-    controlled_type: 'Psicotrópico',
-    lots: [
-      { number: 'LOTE-B1', stock: 10, expiry: '2025-08-31T00:00:00.000Z' },
-    ]
-  },
-  {
-    id: 'L-1003',
-    name: 'Paracetamol 500mg',
-    sku: 'F-98765',
-    active_principle: 'Paracetamol',
-    category: 'Analgésicos',
-    stock_total: 0,
-    unit: 'caja',
-    price: 1500,
-    cost: 700,
-    is_controlled: false,
-    lots: []
-  },
-];
-
 /**
  * Mapea un producto crudo de la API de Lioren a nuestro tipo interno InventoryItem.
- * Esta función deberá ser ajustada a la estructura de datos real de Lioren.
+ * Esta función deberá ser ajustada si la estructura de datos real de Lioren cambia.
  * @param liorenProduct - El objeto de producto de la API de Lioren.
  * @returns Un objeto que conforma al tipo InventoryItem.
  */
 function mapLiorenProductToInventoryItem(liorenProduct: any): InventoryItem {
   const lots: LotDetail[] = (liorenProduct.lots || []).map((lot: any) => ({
     lotNumber: lot.number,
-    quantity: lot.stock,
+    quantity: lot.stock || 0,
     expiryDate: lot.expiry,
   }));
 
+  // Estos son campos que nuestra app necesita pero que no sabemos si vienen de Lioren.
+  // Se han establecido valores por defecto que pueden necesitar ser ajustados o mapeados
+  // desde campos reales de Lioren si existen.
+  const defaults = {
+    manufacturer: 'Lioren',
+    pharmaceuticalForm: 'Comprimido',
+    doseValue: 0,
+    doseUnit: 'mg',
+    itemsPerBaseUnit: 1,
+    saleCondition: 'Receta Simple',
+    lowStockThreshold: 5,
+    barcode: liorenProduct.sku || '',
+    requiresRefrigeration: false,
+  };
+
   return {
-    id: liorenProduct.id,
+    id: String(liorenProduct.id),
     name: liorenProduct.name,
-    activePrinciple: liorenProduct.active_principle,
+    activePrinciple: liorenProduct.active_principle || 'N/A',
     sku: liorenProduct.sku,
-    quantity: liorenProduct.stock_total,
+    quantity: liorenProduct.stock_total || 0,
     unit: liorenProduct.unit,
-    costPrice: liorenProduct.cost,
-    salePrice: liorenProduct.price,
-    isControlled: liorenProduct.is_controlled,
+    costPrice: liorenProduct.cost || 0,
+    salePrice: liorenProduct.price || 0,
+    isControlled: liorenProduct.is_controlled || false,
     controlledType: liorenProduct.controlled_type,
     lots: lots,
-    // --- Campos que se deben mapear o definir valores por defecto ---
-    manufacturer: 'Lioren',
-    pharmaceuticalForm: 'Comprimido', // Debería venir de Lioren o tener un valor por defecto
-    doseValue: 50, // Debería venir de Lioren
-    doseUnit: 'mg', // Debería venir de Lioren
-    itemsPerBaseUnit: 30, // Debería venir de Lioren
-    saleCondition: 'Receta Simple', // Debería venir de Lioren
-    lowStockThreshold: 5, // Podría ser un campo en Lioren o un valor por defecto
+    ...defaults,
   };
 }
 
 /**
- * Simula la obtención del inventario desde la API de Lioren.
- * TODO: Reemplazar esta implementación con una llamada `fetch` real.
+ * Obtiene el inventario desde la API de Lioren.
  * @returns Una promesa que resuelve a un array de InventoryItem.
  */
 export async function fetchInventoryFromLioren(): Promise<InventoryItem[]> {
-  console.log("Fetching inventory from MOCK Lioren API...");
+  const apiKey = process.env.LIOREN_API_KEY;
+  if (!apiKey) {
+    console.error("Lioren API key is not configured in .env. Falling back to empty inventory.");
+    return [];
+  }
 
-  // EJEMPLO DE IMPLEMENTACIÓN REAL (DEBE SER ADAPTADO):
-  /*
   try {
-    const apiKey = process.env.LIOREN_API_KEY;
-    if (!apiKey) {
-      throw new Error("Lioren API key is not configured in .env");
-    }
-    
     const response = await fetch('https://api.lioren.cl/v1/productos', {
-      headers: { 'Authorization': `Bearer ${apiKey}` }
+      headers: { 
+        'Authorization': `Bearer ${apiKey}`,
+        'Accept': 'application/json'
+      }
     });
 
     if (!response.ok) {
-      throw new Error(`Lioren API responded with status: ${response.status}`);
+        const errorBody = await response.text();
+        console.error(`Lioren API responded with status: ${response.status}`, errorBody);
+        throw new Error(`Lioren API responded with status: ${response.status}`);
     }
 
-    const data = await response.json(); // Suponiendo que la respuesta es un JSON
+    // La API de Lioren devuelve un objeto con la llave "data" que contiene el arreglo de productos.
+    const responseData = await response.json(); 
     
-    // Suponiendo que la API devuelve un objeto con una propiedad 'data' que es un array de productos
-    if (data && Array.isArray(data.data)) {
-        return data.data.map(mapLiorenProductToInventoryItem);
+    if (responseData && Array.isArray(responseData.data)) {
+        return responseData.data.map(mapLiorenProductToInventoryItem);
     } else {
-        console.error("Unexpected data structure from Lioren API");
+        console.error("Unexpected data structure from Lioren API. Expected an object with a 'data' array.", responseData);
         return [];
     }
   } catch (error) {
     console.error("Failed to fetch from real Lioren API:", error);
-    // Podrías devolver un array vacío o lanzar el error para que el llamador lo maneje
+    // En caso de error, devolvemos un array vacío para no romper la aplicación.
     return [];
   }
-  */
-
-  // Devolvemos datos de ejemplo por ahora.
-  await new Promise(resolve => setTimeout(resolve, 500)); // Simular retraso de red
-  return MOCK_LIOREN_PRODUCTS.map(mapLiorenProductToInventoryItem);
 }
