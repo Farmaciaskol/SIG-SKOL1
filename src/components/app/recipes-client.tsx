@@ -461,7 +461,7 @@ const SendBatchDialog = ({ recipes: recipesToSend, isOpen, onClose, onConfirm, i
     );
 };
 
-const ReprepareMessage = ({ daysSinceDispensation, urgencyStatus }: {
+const ReprepareMessageDialog = ({ daysSinceDispensation, urgencyStatus }: {
   daysSinceDispensation: number | null;
   urgencyStatus: 'early' | 'normal' | 'urgent';
 }) => {
@@ -683,45 +683,7 @@ const MobileRecipeActions = ({ recipe, onReprepare, onCancel, onDelete, onArchiv
     const isArchivable = [RecipeStatus.Rejected, RecipeStatus.Cancelled, RecipeStatus.Dispensed].includes(recipe.status) || (recipe.dueDate ? new Date(recipe.dueDate) < new Date() : false);
     const router = useRouter();
     const canReprepare = recipe.status === RecipeStatus.Dispensed && !(recipe.dueDate ? new Date(recipe.dueDate) < new Date() : false) && (recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0) < calculateTotalCycles(recipe);
-
-    const ActionButton = () => {
-      switch (recipe.status) {
-        case RecipeStatus.PendingValidation:
-          return null;
-        case RecipeStatus.Validated:
-          return recipe.supplySource === 'Insumos de Skol' 
-            ? <Button size="sm" asChild><Link href="/dispatch-management"><Truck className="mr-2 h-4 w-4 text-white" />Ir a Despacho</Link></Button>
-            : <Button size="sm" onClick={() => onSend(recipe)}><Send className="mr-2 h-4 w-4 text-white" />Enviar</Button>;
-        case RecipeStatus.SentToExternal:
-          return <Button size="sm" onClick={() => onReceive(recipe)}><PackageCheck className="mr-2 h-4 w-4 text-white" />Recepcionar</Button>;
-        case RecipeStatus.ReceivedAtSkol:
-          return <Button size="sm" onClick={() => onReadyForPickup(recipe)}><Package className="mr-2 h-4 w-4 text-white" />Marcar Retiro</Button>;
-        case RecipeStatus.ReadyForPickup:
-          return <Button size="sm" onClick={() => onDispense(recipe)}><CheckCheck className="mr-2 h-4 w-4 text-white" />Dispensar</Button>;
-        case RecipeStatus.Dispensed:
-          return (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span tabIndex={0}>
-                    <Button size="sm" onClick={() => onReprepare(recipe)} disabled={!canReprepare}>
-                      <Copy className="mr-2 h-4 w-4" />Re-preparar
-                    </Button>
-                  </span>
-                </TooltipTrigger>
-                {!canReprepare && (
-                  <TooltipContent>
-                    <p>{calculateTotalCycles(recipe) <= (recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0) ? `Límite de ${calculateTotalCycles(recipe)} ciclos estimado alcanzado.` : 'El documento de la receta ha vencido.'}</p>
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            </TooltipProvider>
-          );
-        default:
-          return <Button size="sm" onClick={() => onView(recipe)}><Eye className="mr-2 h-4 w-4" />Ver Detalle</Button>;
-      }
-    };
-
+    
     return (
       <div className="flex justify-end items-center w-full gap-2">
         {recipe.status === RecipeStatus.PendingValidation ? (
@@ -737,7 +699,15 @@ const MobileRecipeActions = ({ recipe, onReprepare, onCancel, onDelete, onArchiv
           </>
         ) : (
           <div className="flex-1">
-            <ActionButton />
+            <ActionButton 
+                recipe={recipe} 
+                onSend={onSend}
+                onReceive={onReceive}
+                onReadyForPickup={onReadyForPickup}
+                onDispense={onDispense}
+                onReprepare={onReprepare}
+                onView={onView}
+            />
           </div>
         )}
         
@@ -1234,7 +1204,7 @@ export function RecipesClient({
     );
   }
   
-  const ReprepareMessageDialog = () => {
+  const ReprepareMessage = () => {
     if (daysSinceDispensation === null) {
       return <DialogDescription>¿Está seguro que desea iniciar un nuevo ciclo para esta receta? La receta volverá al estado 'Pendiente Validación'.</DialogDescription>;
     }
@@ -1532,7 +1502,7 @@ export function RecipesClient({
                             <div className="flex items-center gap-1 shrink-0">
                                 {isPaymentPending && (<TooltipProvider><Tooltip><TooltipTrigger asChild><span><DollarSign className="h-4 w-4 text-amber-600" /></span></TooltipTrigger><TooltipContent><p>Pago pendiente</p></TooltipContent></Tooltip></TooltipProvider>)}
                                 {recipe.status === RecipeStatus.PendingReviewPortal && (<TooltipProvider><Tooltip><TooltipTrigger asChild><span><UserSquare className="h-4 w-4 text-purple-600" /></span></TooltipTrigger><TooltipContent><p>Receta del Portal</p></TooltipContent></Tooltip></TooltipProvider>)}
-                                {recipe.items.some(item => item.requiresFractionation) && (<TooltipProvider><Tooltip><TooltipTrigger asChild><span><Split className="h-4 w-4 text-orange-600" /></span>TooltipContent><p>Requiere Fraccionamiento</p></TooltipContent></Tooltip></TooltipProvider>)}
+                                {recipe.items.some(item => item.requiresFractionation) && (<TooltipProvider><Tooltip><TooltipTrigger asChild><span><Split className="h-4 w-4 text-orange-600" /></span></TooltipTrigger><TooltipContent><p>Requiere Fraccionamiento</p></TooltipContent></Tooltip></TooltipProvider>)}
                             </div>
                         </div>
                     </CardHeader>
@@ -1610,7 +1580,7 @@ export function RecipesClient({
       <Dialog open={!!recipeToReprepare} onOpenChange={(open) => { if (!open) { setRecipeToReprepare(null); setControlledFolio(''); setDaysSinceDispensation(null); } }}><DialogContent>
           <DialogHeader><DialogTitle className="text-xl font-semibold">Re-preparar Receta: {recipeToReprepare?.id}</DialogTitle></DialogHeader>
           <div className="py-2">
-            <ReprepareMessageDialog />
+            <ReprepareMessage />
           </div>
           {recipeToReprepare?.isControlled && (
             <div className="grid gap-2 py-2">
@@ -1745,5 +1715,3 @@ export function RecipesClient({
     </>
   );
 }
-
-    
