@@ -46,10 +46,18 @@ export async function fetchRawInventoryFromLioren(searchTerm?: string): Promise<
     return [];
   }
 
-  const url = 'https://www.lioren.cl/api/productos';
+  const url = new URL('https://www.lioren.cl/api/productos');
+  if (searchTerm && searchTerm.trim()) {
+    // This is the fix: pass the search term to the API
+    url.searchParams.append('nombre', searchTerm);
+  } else {
+    // If there's no search term, we shouldn't call the API as it might return too much data or nothing.
+    // The frontend should ensure a search term is present.
+    return [];
+  }
 
   try {
-    const response = await fetch(url, {
+    const response = await fetch(url.toString(), {
       headers: { 
         'Authorization': `Bearer ${apiKey}`,
         'Accept': 'application/json'
@@ -64,28 +72,17 @@ export async function fetchRawInventoryFromLioren(searchTerm?: string): Promise<
 
     const data = await response.json();
     
-    let allProducts: LiorenProduct[] = [];
+    // The API might return products directly in an array or under a '*' key.
+    // This handles both cases.
     if (Array.isArray(data)) {
-      allProducts = data as LiorenProduct[];
-    } else if (data && Array.isArray(data['*'])) {
-      allProducts = data['*'] as LiorenProduct[];
-    } else {
-       console.warn("[PRUEBA DE CONEXIÓN] La API de Lioren respondió correctamente, pero no se encontró la lista de productos (ni directa ni en clave '*'). Respuesta recibida:", data);
-       return [];
+      return data as LiorenProduct[];
+    }
+    if (data && Array.isArray(data['*'])) {
+      return data['*'] as LiorenProduct[];
     }
     
-    // Filter the results on our side to allow for partial matches
-    if (searchTerm && searchTerm.trim() !== '') {
-        const lowerCaseSearchTerm = searchTerm.toLowerCase();
-        return allProducts.filter(product => 
-            product.nombre.toLowerCase().includes(lowerCaseSearchTerm) ||
-            product.codigo.toLowerCase().includes(lowerCaseSearchTerm)
-        );
-    }
-    
-    // If no search term, return all products. 
-    // The UI should ideally prevent this for performance reasons.
-    return allProducts;
+    // If we passed a search term and got here, it means no results were found.
+    return [];
 
   } catch (error) {
     console.warn("[PRUEBA DE CONEXIÓN] Fallo al conectar con la API de Lioren. Puede ser un problema de red o de la API misma.", error);
