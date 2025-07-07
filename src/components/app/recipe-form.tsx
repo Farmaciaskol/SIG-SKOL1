@@ -205,13 +205,19 @@ const RecipeItemCard = ({
 
 
   const filteredInventoryForPA = React.useMemo(() => {
+    const baseFilter = inventory.filter(invItem => 
+        invItem.inventoryType === 'Fraccionamiento' && 
+        invItem.itemsPerBaseUnit && invItem.itemsPerBaseUnit > 0
+    );
+
     if (!principalActiveIngredientValue?.trim()) {
-      return inventory.filter(invItem => invItem.itemsPerBaseUnit && invItem.itemsPerBaseUnit > 0);
+        return baseFilter;
     }
+    
     const lowerPAI = principalActiveIngredientValue.toLowerCase();
-    return inventory.filter(invItem =>
-      invItem.activePrinciple && (invItem.itemsPerBaseUnit && invItem.itemsPerBaseUnit > 0) &&
-      (invItem.activePrinciple.toLowerCase().includes(lowerPAI))
+    
+    return baseFilter.filter(invItem =>
+        invItem.activePrinciple && invItem.activePrinciple.toLowerCase().includes(lowerPAI)
     );
   }, [principalActiveIngredientValue, inventory]);
 
@@ -348,7 +354,7 @@ const RecipeItemCard = ({
                     ) : (
                       <div className="p-2 text-center text-xs text-muted-foreground">
                         <p>No se encontraron insumos.</p>
-                        <p>La creación de productos se realiza en Lioren.</p>
+                        <p>Asegúrese de que el producto esté en inventario y sea de tipo "Fraccionamiento".</p>
                       </div>
                     )}
                   </SelectContent>

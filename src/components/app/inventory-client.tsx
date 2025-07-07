@@ -135,10 +135,7 @@ const ProductCard = ({
             <CardHeader className="pb-4">
                  <div className="flex justify-between items-start">
                     <h3 className="text-lg font-bold text-primary truncate" title={item.name}>{item.name}</h3>
-                    <div className="flex items-center gap-2">
-                        {item.requiresRefrigeration && <Snowflake className="h-5 w-5 text-blue-500" title="Requiere Cadena de Frío" />}
-                        {item.isControlled && <Star className="h-5 w-5 text-amber-500" title="Sustancia Controlada" />}
-                    </div>
+                    <Badge variant={item.inventoryType === 'Fraccionamiento' ? 'default' : 'secondary'}>{item.inventoryType}</Badge>
                  </div>
                  <p className="text-xs text-muted-foreground">SKU: {item.sku || 'N/A'}</p>
             </CardHeader>
@@ -588,6 +585,7 @@ export function InventoryClient({ initialInventory }: {
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead>Producto</TableHead>
+                                            <TableHead>Tipo</TableHead>
                                             <TableHead>Stock Total</TableHead>
                                             <TableHead>Próximo Vto.</TableHead>
                                             <TableHead>Estado</TableHead>
@@ -609,6 +607,7 @@ export function InventoryClient({ initialInventory }: {
                                                     <div className="font-medium text-foreground">{item.name}</div>
                                                     <div className="text-xs text-muted-foreground">SKU: {item.sku || 'N/A'}</div>
                                                 </TableCell>
+                                                <TableCell><Badge variant={item.inventoryType === 'Fraccionamiento' ? 'default' : 'secondary'}>{item.inventoryType}</Badge></TableCell>
                                                 <TableCell>
                                                     <div className="flex items-center gap-2">
                                                         <span className="font-semibold text-lg text-foreground">{item.quantity}</span>

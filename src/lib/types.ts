@@ -269,27 +269,28 @@ export interface LotDetail {
 export interface InventoryItem {
   id: string;
   name: string; // Nombre comercial
-  activePrinciple: string;
+  inventoryType: 'Fraccionamiento' | 'Venta Directa';
+  activePrinciple?: string;
   sku?: string; // Código Nacional / ISP
   manufacturer?: string;
   barcode?: string;
   
   pharmaceuticalForm: string;
-  doseValue: number;
-  doseUnit: string;
+  doseValue?: number;
+  doseUnit?: string;
   administrationRoute?: string;
   packagePresentation?: string;
   
-  saleCondition: string;
+  saleCondition?: string;
   isBioequivalent?: boolean;
   
   isControlled?: boolean;
-  controlledType?: 'Psicotrópico' | 'Estupefaciente';
+  controlledType?: 'Psicotrópico' | 'Estupefaciente' | '';
   requiresRefrigeration?: boolean;
   atcCode?: string;
 
   // For fraccionamiento
-  itemsPerBaseUnit: number;
+  itemsPerBaseUnit?: number;
 
   // Logistics
   unit: string; // Unidad de compra (caja, frasco)
@@ -298,8 +299,8 @@ export interface InventoryItem {
   maxStock?: number;
   mainProvider?: string;
   location?: string;
-  costPrice: number;
-  salePrice: number;
+  costPrice?: number;
+  salePrice?: number;
   lots?: LotDetail[];
   
   // Aditional

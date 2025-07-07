@@ -582,6 +582,9 @@ export const logDirectSaleDispensation = async (
     const inventoryData = inventorySnap.data() as InventoryItem;
 
     if (!inventoryData.isControlled) throw new Error("This item is not a controlled substance.");
+    if (inventoryData.inventoryType === 'Fraccionamiento') {
+        throw new Error("Este producto es para fraccionamiento y no puede ser vendido directamente en esta modalidad.");
+    }
 
     const lotIndex = inventoryData.lots?.findIndex(l => l.lotNumber === lotNumber);
     if (lotIndex === undefined || lotIndex === -1 || !inventoryData.lots) throw new Error(`Lot ${lotNumber} not found for item ${inventoryItemId}.`);
@@ -1005,4 +1008,3 @@ export const rejectUserRequest = async (requestId: string, reason: string): Prom
         rejectionReason: reason
     });
 };
-
