@@ -120,7 +120,6 @@ const ProductCard = ({
     onEdit: (item: InventoryItem) => void;
     onDelete: (item: InventoryItem) => void;
 }) => {
-    const { toast } = useToast();
     const statusStyles: Record<InventoryItemWithStats['status'], { badge: string; border: string }> = {
       'OK': { badge: 'bg-green-100 text-green-800', border: 'border-transparent' },
       'Stock Bajo': { badge: 'bg-yellow-100 text-yellow-800 border-yellow-300', border: 'border-yellow-400' },
@@ -381,18 +380,16 @@ export function InventoryClient({ initialInventory }: {
         }
     };
 
-    const toTitleCase = (str: string): string => {
-        if (!str) return '';
-        return str.toLowerCase().replace(/(?:^|\s)\w/g, (match) => match.toUpperCase());
-    };
-
     const handleImportLiorenItem = (liorenItem: LiorenProduct) => {
+        const toTitleCase = (str: string): string => {
+            if (!str) return '';
+            return str.toLowerCase().replace(/(?:^|\s)\w/g, (match) => match.toUpperCase());
+        };
+
         const liorenProductName = toTitleCase(liorenItem.nombre);
         const lowerLiorenName = liorenProductName.toLowerCase().trim();
 
-        // Improved Vademecum lookup logic
         const vademecumMatch = VADEMECUM_DATA.find(drug => {
-            // Check if the Lioren product name starts with a known base drug name from Vademecum
             const drugBaseName = drug.productName.split(' ')[0].toLowerCase();
             return lowerLiorenName.startsWith(drugBaseName);
         });
