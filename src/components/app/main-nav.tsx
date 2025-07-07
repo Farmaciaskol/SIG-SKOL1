@@ -29,7 +29,10 @@ import {
   MessageSquare,
   FlaskConical,
   ChevronDown,
-  ChevronLeft
+  ChevronLeft,
+  Boxes,
+  HeartPulse,
+  Banknote,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -79,17 +82,17 @@ const menuGroups = [
       items: [
         { href: '/patients', label: 'Pacientes', icon: Users },
         { href: '/doctors', label: 'Médicos', icon: Stethoscope },
-        { href: '/external-prescriptions', label: 'Recetarios', icon: Building2 },
+        { href: '/external-prescriptions', label: 'Recetarios', icon: FlaskConical },
       ],
     },
     {
       title: 'Operaciones',
       icon: FlaskConical,
       items: [
-        { href: '/inventory', label: 'Inventario Skol', icon: Package },
+        { href: '/inventory', label: 'Inventario Skol', icon: Boxes },
         { href: '/monthly-dispensing', label: 'Dispensación Mensual', icon: CalendarDays },
         { href: '/dispatch-management', label: 'Gestión Despachos', icon: Truck },
-        { href: '/pharmacovigilance', label: 'Farmacovigilancia', icon: ShieldAlert },
+        { href: '/pharmacovigilance', label: 'Farmacovigilancia', icon: HeartPulse },
         { href: '/controlled-drugs', label: 'Controlados', icon: Lock },
       ],
     },
@@ -97,7 +100,7 @@ const menuGroups = [
       title: 'Administración',
       icon: Settings,
       items: [
-        { href: '/financial-management', label: 'Gestión Financiera', icon: DollarSign },
+        { href: '/financial-management', label: 'Gestión Financiera', icon: Banknote },
         { href: '/reports', label: 'Reportes', icon: BarChart2 },
         { href: '/user-management', label: 'Gestión Usuarios', icon: UserCog },
         { href: '/settings', label: 'Configuración', icon: Settings },
@@ -112,7 +115,7 @@ interface MainNavProps extends React.HTMLAttributes<HTMLElement> {
   unreadMessagesCount: number;
 }
 
-function AlertsBell({ portalInboxCount, itemsToDispatchCount, lowStockCount }: Omit<MainNavProps, keyof React.HTMLAttributes<HTMLElement> | 'unreadMessagesCount'>) {
+function AlertsBell({ itemsToDispatchCount, lowStockCount }: Omit<MainNavProps, keyof React.HTMLAttributes<HTMLElement> | 'unreadMessagesCount' | 'portalInboxCount'>) {
   const totalAlerts = itemsToDispatchCount + lowStockCount;
 
   return (
@@ -279,7 +282,6 @@ function MainNavContent({
             </Link>
           </Button>
           <AlertsBell 
-            portalInboxCount={portalInboxCount} 
             itemsToDispatchCount={itemsToDispatchCount} 
             lowStockCount={lowStockCount} 
           />
@@ -338,13 +340,19 @@ function MainNavContent({
                           asChild
                           isActive={pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))}
                           tooltip={item.label}
-                          className={cn( (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground")}
+                          className={cn( (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) && "bg-primary/10 text-primary hover:bg-primary/20")}
                         >
-                          <Link href={item.href}>
+                          <Link href={item.href} className="flex items-center w-full">
                             <item.icon className="h-4 w-4" />
-                            <span className="flex-1 group-data-[collapsible=icon]:hidden">{item.label}</span>
+                            <span className="flex-1 ml-2 group-data-[collapsible=icon]:hidden">{item.label}</span>
                             {item.href === '/portal-inbox' && portalInboxCount > 0 && (
-                              <Badge variant="destructive" className="h-5 group-data-[collapsible=icon]:hidden">{portalInboxCount}</Badge>
+                              <Badge variant="destructive" className="h-5 w-5 p-0 flex items-center justify-center rounded-full group-data-[collapsible=icon]:hidden">{portalInboxCount}</Badge>
+                            )}
+                            {item.href === '/inventory' && lowStockCount > 0 && (
+                              <Badge variant="destructive" className="h-5 w-5 p-0 flex items-center justify-center rounded-full group-data-[collapsible=icon]:hidden">{lowStockCount}</Badge>
+                            )}
+                            {item.href === '/dispatch-management' && itemsToDispatchCount > 0 && (
+                              <Badge variant="destructive" className="h-5 w-5 p-0 flex items-center justify-center rounded-full group-data-[collapsible=icon]:hidden">{itemsToDispatchCount}</Badge>
                             )}
                           </Link>
                         </SidebarMenuButton>
