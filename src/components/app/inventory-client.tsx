@@ -31,7 +31,6 @@ import {
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
-  AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
@@ -390,9 +389,12 @@ export function InventoryClient({ initialInventory }: {
         const liorenProductName = toTitleCase(liorenItem.nombre);
         const lowerLiorenName = liorenProductName.toLowerCase().trim();
 
-        const vademecumMatch = VADEMECUM_DATA.find(
-            drug => drug.productName.toLowerCase().trim() === lowerLiorenName
-        );
+        // Improved Vademecum lookup logic
+        const vademecumMatch = VADEMECUM_DATA.find(drug => {
+            // Check if the Lioren product name starts with a known base drug name from Vademecum
+            const drugBaseName = drug.productName.split(' ')[0].toLowerCase();
+            return lowerLiorenName.startsWith(drugBaseName);
+        });
 
         const activePrinciple = vademecumMatch 
             ? vademecumMatch.activeIngredient 
