@@ -83,12 +83,12 @@ const menuGroups = [
       items: [
         { href: '/patients', label: 'Pacientes', icon: Users },
         { href: '/doctors', label: 'Médicos', icon: Stethoscope },
-        { href: '/external-prescriptions', label: 'Recetarios', icon: FlaskConical },
+        { href: '/external-prescriptions', label: 'Recetarios', icon: Building2 },
       ],
     },
     {
       title: 'Operaciones',
-      icon: FlaskConical,
+      icon: Boxes,
       items: [
         { href: '/inventory', label: 'Inventario Skol', icon: Boxes },
         { href: '/monthly-dispensing', label: 'Dispensación Mensual', icon: CalendarDays },
