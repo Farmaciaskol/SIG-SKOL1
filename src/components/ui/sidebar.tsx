@@ -453,8 +453,8 @@ const SidebarGroupLabel = React.forwardRef<
       ref={ref}
       data-sidebar="group-label"
       className={cn(
-        "duration-200 flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-card-foreground/70 outline-none ring-ring focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
-        "group-data-[collapsible=icon]:opacity-0",
+        "flex h-auto items-center px-2 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground",
+        "group-data-[collapsible=icon]:hidden",
         className
       )}
       {...props}

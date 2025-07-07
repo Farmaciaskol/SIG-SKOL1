@@ -70,7 +70,6 @@ import { CommandPalette } from './command-palette';
 const menuGroups = [
     {
       title: 'Principal',
-      icon: LayoutDashboard,
       items: [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { href: '/portal-inbox', label: 'Bandeja Portal', icon: Inbox },
@@ -79,7 +78,6 @@ const menuGroups = [
     },
     {
       title: 'Gestión',
-      icon: Users,
       items: [
         { href: '/patients', label: 'Pacientes', icon: Users },
         { href: '/doctors', label: 'Médicos', icon: Stethoscope },
@@ -88,7 +86,6 @@ const menuGroups = [
     },
     {
       title: 'Operaciones',
-      icon: Boxes,
       items: [
         { href: '/inventory', label: 'Inventario Skol', icon: Boxes },
         { href: '/monthly-dispensing', label: 'Dispensación Mensual', icon: CalendarDays },
@@ -99,7 +96,6 @@ const menuGroups = [
     },
     {
       title: 'Administración',
-      icon: Settings,
       items: [
         { href: '/financial-management', label: 'Gestión Financiera', icon: Banknote },
         { href: '/reports', label: 'Reportes', icon: BarChart2 },
@@ -331,9 +327,8 @@ function MainNavContent({
             <div className="flex flex-col gap-2 p-2 pt-4">
               {menuGroups.map((group) => (
                 <SidebarGroup key={group.title}>
-                  <SidebarGroupLabel className="flex items-center gap-2 text-sm text-foreground/80 font-semibold h-9">
-                    <group.icon className="h-5 w-5" />
-                    <span className="group-data-[collapsible=icon]:hidden">{group.title}</span>
+                  <SidebarGroupLabel>
+                    {group.title}
                   </SidebarGroupLabel>
                   <SidebarMenu>
                     {group.items.map((item) => (
