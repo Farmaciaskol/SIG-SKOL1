@@ -133,6 +133,7 @@ import { Separator } from '@/components/ui/separator';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
 
+
 // --- HELPER COMPONENTS (defined outside the main component for clarity and performance) ---
 
 const StatCard = ({ title, value, icon: Icon, onClick, active = false }: { title: string; value: string | number; icon: React.ElementType; onClick: () => void; active?: boolean; }) => {
@@ -156,6 +157,7 @@ const StatCard = ({ title, value, icon: Icon, onClick, active = false }: { title
     </Card>
   );
 };
+
 
 const calculateTotalCycles = (recipe: Recipe): number => {
     if (!recipe.dueDate || !recipe.createdAt || !recipe.items?.[0]) {
@@ -183,7 +185,7 @@ const calculateTotalCycles = (recipe: Recipe): number => {
           cycleDurationInDays = durationValue * 30;
           break;
         default:
-          cycleDurationInDays = 30;
+          cycleDurationInDays = 30; // Fallback for unknown units
       }
   
       if (cycleDurationInDays <= 0) return 1;
@@ -351,7 +353,7 @@ const SendBatchDialog = ({ recipes: recipesToSend, isOpen, onClose, onConfirm, i
             groups[id].push(recipe);
         }
         return Object.entries(groups);
-    }, [recipesToSend, getPatientName]); // Added getPatientName dependency
+    }, [recipesToSend, getPatientName]);
 
     if (!isOpen) return null;
 
@@ -545,8 +547,8 @@ const RecipeActions = ({ recipe, onReprepare, onCancel, onDelete, onArchive, onS
   onReadyForPickup: (recipe: Recipe) => void;
   onDispense: (recipe: Recipe) => void;
   onPrint: (recipe: Recipe) => void;
-  onValidate: (recipe: Recipe) => void;
-  onReject: (recipe: Recipe) => void;
+  onValidate: () => void;
+  onReject: () => void;
 }) => {
     const totalCycles = calculateTotalCycles(recipe);
     const dispensedCount = recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0;
@@ -565,12 +567,12 @@ const RecipeActions = ({ recipe, onReprepare, onCancel, onDelete, onArchive, onS
             {recipe.status === RecipeStatus.PendingValidation && (
                 <>
                     <TooltipProvider><Tooltip><TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onValidate(recipe)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onValidate}>
                             <ShieldCheck className="h-4 w-4 text-green-600" />
                         </Button>
                     </TooltipTrigger><TooltipContent><p>Validar</p></TooltipContent></Tooltip></TooltipProvider>
                     <TooltipProvider><Tooltip><TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onReject(recipe)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onReject}>
                             <XCircle className="h-4 w-4 text-red-600" />
                         </Button>
                     </TooltipTrigger><TooltipContent><p>Rechazar</p></TooltipContent></Tooltip></TooltipProvider>
@@ -673,8 +675,8 @@ const MobileRecipeActions = ({ recipe, onReprepare, onCancel, onDelete, onArchiv
     onReadyForPickup: (recipe: Recipe) => void,
     onDispense: (recipe: Recipe) => void,
     onPrint: (recipe: Recipe) => void,
-    onValidate: (recipe: Recipe) => void,
-    onReject: (recipe: Recipe) => void,
+    onValidate: () => void,
+    onReject: () => void,
     onReceive: (recipe: Recipe) => void,
 }) => {
     const canEdit = recipe.status !== RecipeStatus.Dispensed && recipe.status !== RecipeStatus.Cancelled;
@@ -682,16 +684,15 @@ const MobileRecipeActions = ({ recipe, onReprepare, onCancel, onDelete, onArchiv
     const router = useRouter();
     const canReprepare = recipe.status === RecipeStatus.Dispensed && !(recipe.dueDate ? new Date(recipe.dueDate) < new Date() : false) && (recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0) < calculateTotalCycles(recipe);
 
-
     return (
       <div className="flex justify-end items-center w-full gap-2">
         {recipe.status === RecipeStatus.PendingValidation ? (
           <>
-            <Button size="sm" variant="outline" className="text-red-500 border-red-500 hover:bg-red-50 hover:text-red-600 flex-1" onClick={() => onReject(recipe)}>
+            <Button size="sm" variant="outline" className="text-red-500 border-red-500 hover:bg-red-50 hover:text-red-600 flex-1" onClick={onReject}>
               <XCircle className="mr-2 h-4 w-4" />
               Rechazar
             </Button>
-            <Button size="sm" className="flex-1" onClick={() => onValidate(recipe)}>
+            <Button size="sm" className="flex-1" onClick={onValidate}>
               <ShieldCheck className="mr-2 h-4 w-4 text-white" />
               Validar
             </Button>
@@ -702,8 +703,8 @@ const MobileRecipeActions = ({ recipe, onReprepare, onCancel, onDelete, onArchiv
                 recipe={recipe} 
                 onSend={onSend}
                 onReceive={onReceive}
-                onReadyForPickup={onReadyForPickup}
-                onDispense={onDispense}
+                onReadyForPickup={() => onReadyForPickup(recipe)}
+                onDispense={() => onDispense(recipe)}
                 onReprepare={onReprepare}
                 onView={onView}
             />
@@ -745,6 +746,9 @@ const MobileRecipeActions = ({ recipe, onReprepare, onCancel, onDelete, onArchiv
     );
 };
 
+
+// --- MAIN COMPONENT ---
+
 export function RecipesClient({
   initialRecipes,
   initialPatients,
@@ -765,6 +769,7 @@ export function RecipesClient({
   const [doctors, setDoctors] = useState<Doctor[]>(initialDoctors);
   const [externalPharmacies, setExternalPharmacies] = useState<ExternalPharmacy[]>(initialExternalPharmacies);
   
+  // Dialogs state
   const [recipeToView, setRecipeToView] = useState<Recipe | null>(null);
   const [recipeToDelete, setRecipeToDelete] = useState<Recipe | null>(null);
   const [recipeToReject, setRecipeToReject] = useState<Recipe | null>(null);
@@ -777,6 +782,7 @@ export function RecipesClient({
   const [recipesToSendBatch, setRecipesToSendBatch] = useState<Recipe[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Dialogs form fields
   const [reason, setReason] = useState('');
   const [controlledFolio, setControlledFolio] = useState('');
   const [internalLot, setInternalLot] = useState('');
@@ -789,9 +795,11 @@ export function RecipesClient({
     cadenaFrio: false,
   });
   
+  // Reprepare dialog state
   const [daysSinceDispensation, setDaysSinceDispensation] = useState<number | null>(null);
   const [urgencyStatus, setUrgencyStatus] = useState<'early' | 'normal' | 'urgent'>('normal');
 
+  // Filtering state
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
@@ -799,9 +807,11 @@ export function RecipesClient({
   const [doctorFilter, setDoctorFilter] = useState<string>('all');
   const [pharmacyFilter, setPharmacyFilter] = useState<string>('all');
   
+  // Batch actions state
   const [selectedRecipes, setSelectedRecipes] = useState<string[]>([]);
   const [isDeleteBatchAlertOpen, setIsDeleteBatchAlertOpen] = useState(false);
 
+  // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
   
@@ -1164,7 +1174,7 @@ export function RecipesClient({
       return searchMatch && statusMatch && doctorMatch && pharmacyMatch && dateMatch;
     })
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [recipes, searchTerm, statusFilter, doctorFilter, pharmacyFilter, dateRange, getPatientName]);
+  }, [recipes, searchTerm, statusFilter, doctorFilter, pharmacyFilter, dateRange, patients]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -1217,7 +1227,7 @@ export function RecipesClient({
           onClick={() => setStatusFilter(RecipeStatus.PendingValidation)}
           active={statusFilter === RecipeStatus.PendingValidation}
         />
-        <StatCard
+        <StatCard 
           title="En Preparación" 
           value={stats.inPreparation} 
           icon={FlaskConical}
@@ -1427,7 +1437,7 @@ export function RecipesClient({
                                         onDispense={() => handleUpdateStatus(recipe, RecipeStatus.Dispensed)} 
                                         onPrint={setRecipeToPrint} 
                                         onValidate={() => handleUpdateStatus(recipe, RecipeStatus.Validated, 'Receta validada por farmacéutico.')} 
-                                        onReject={setRecipeToReject} 
+                                        onReject={() => setRecipeToReject(recipe)} 
                                     />
                                 </TableCell>
                                 </TableRow>
@@ -1502,7 +1512,7 @@ export function RecipesClient({
                             onDispense={() => handleUpdateStatus(recipe, RecipeStatus.Dispensed)} 
                             onPrint={setRecipeToPrint}
                             onValidate={() => handleUpdateStatus(recipe, RecipeStatus.Validated, 'Receta validada por farmacéutico.')}
-                            onReject={setRecipeToReject}
+                            onReject={() => setRecipeToReject(recipe)}
                             onReceive={setRecipeToReceive}
                           />
                     </CardFooter>
@@ -1652,7 +1662,7 @@ export function RecipesClient({
         </DialogContent>
       </Dialog>
       <Dialog open={!!recipeToPrint} onOpenChange={(open) => !open && setRecipeToPrint(null)}><DialogContent><DialogHeader><DialogTitle className="text-xl font-semibold">Imprimir Etiqueta: {recipeToPrint?.id}</DialogTitle><DialogDescription>Vista previa de la etiqueta para el paciente.</DialogDescription></DialogHeader><div className="my-6 p-4 border rounded-lg bg-muted/50 space-y-2 font-mono text-sm"><p><span className="font-semibold">SKOL Pharmacy</span></p><p>Paciente: {getPatientName(recipeToPrint?.patientId || '')}</p><p>Receta: {recipeToPrint?.id}</p><p>Producto: {recipeToPrint?.items[0]?.principalActiveIngredient} {recipeToPrint?.items[0]?.concentrationValue}{recipeToPrint?.items[0]?.concentrationUnit}</p><p className="pt-2">Instrucciones: {recipeToPrint?.items[0]?.usageInstructions}</p><p className="pt-2">Vencimiento: {recipeToPrint?.preparationExpiryDate ? format(parseISO(recipeToPrint.preparationExpiryDate), 'dd-MM-yyyy') : 'N/A'}</p><p>Lote: {recipeToPrint?.internalPreparationLot || 'N/A'}</p></div><DialogFooter><Button variant="outline" onClick={() => setRecipeToPrint(null)}>Cerrar</Button><Button onClick={() => toast({title: 'Imprimiendo...', description: 'La funcionalidad de impresión real no está implementada.'})}><Printer className="mr-2 h-4 w-4"/>Imprimir</Button></DialogFooter></DialogContent></Dialog>
-      <AlertDialog open={isDeleteBatchAlertOpen} onOpenChange={setIsDeleteBatchAlertOpen}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Eliminar {selectedRecipes.length} recetas?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Las recetas seleccionadas serán eliminadas permanentemente.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleBatchDelete} disabled={isSubmitting} className="bg-destructive hover:bg-destructive/90">{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Eliminar</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+      <AlertDialog open={isDeleteBatchAlertOpen} onOpenChange={setIsDeleteBatchAlertOpen}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Eliminar {selectedRecipes.length} recetas?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Las recetas seleccionadas serán eliminadas permanentemente.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleBatchDelete} disabled={isSubmitting} className="bg-destructive hover:bg-destructive/90">{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Eliminar</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
       
       <AlertDialog open={!!recipeToArchive} onOpenChange={(open) => !open && setRecipeToArchive(null)}>
         <AlertDialogContent>
