@@ -10,15 +10,26 @@ export interface LiorenStock {
 export interface LiorenProduct {
   id: number;
   nombre: string;
+  exento: number;
   codigo: string; // SKU
+  unidad: string;
+  param1: string;
+  param2: string;
+  param3: string;
+  param4: string;
   descripcion?: string;
-  precioventabruto: number;
+  activo: number;
   preciocompraneto: number;
+  precioventabruto: number;
+  cod_imp_venta: string;
+  cod_imp_compra: string;
+  peso: number;
+  largo: string;
+  ancho: string;
+  alto: string;
   stocks: LiorenStock[];
-  familia?: {
-    nombre: string;
-  };
-  // Add other fields from the API as needed
+  atributos: any[];
+  otrosprecios: any[];
 }
 
 export async function fetchRawInventoryFromLioren(): Promise<LiorenProduct[]> {
@@ -46,11 +57,11 @@ export async function fetchRawInventoryFromLioren(): Promise<LiorenProduct[]> {
 
     const data = await response.json();
     
-    // Robust check for the presence and type of the 'productos' array
-    if (data && Array.isArray(data.productos)) {
-      return data.productos as LiorenProduct[];
+    // The API returns the list of products under the key "*"
+    if (data && Array.isArray(data['*'])) {
+      return data['*'] as LiorenProduct[];
     } else {
-      console.warn("Lioren API response did not contain a 'productos' array.");
+      console.warn("Lioren API response did not contain a '*' array key for products.");
       return [];
     }
 
