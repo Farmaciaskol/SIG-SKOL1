@@ -41,7 +41,6 @@ import React from 'react';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { InventoryItemForm } from './inventory-item-form';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
 
@@ -155,7 +154,6 @@ const RecipeItemCard = ({
   appSettings,
   inventory,
   totalFields,
-  onOpenInventoryForm,
 }: {
   index: number;
   remove: (index: number) => void;
@@ -163,7 +161,6 @@ const RecipeItemCard = ({
   appSettings: AppSettings | null;
   inventory: InventoryItem[];
   totalFields: number;
-  onOpenInventoryForm: () => void;
 }) => {
   const {
     control,
@@ -351,9 +348,7 @@ const RecipeItemCard = ({
                     ) : (
                       <div className="p-2 text-center text-xs text-muted-foreground">
                         <p>No se encontraron insumos.</p>
-                        <Button type="button" variant="link" className="p-0 h-auto text-xs" onClick={onOpenInventoryForm}>
-                          Crear producto en Inventario
-                        </Button>
+                        <p>La creación de productos se realiza en Lioren.</p>
                       </div>
                     )}
                   </SelectContent>
@@ -393,7 +388,6 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [isZoomed, setIsZoomed] = React.useState(false);
   const [zoomOrigin, setZoomOrigin] = React.useState('center center');
-  const [isInventoryFormOpen, setIsInventoryFormOpen] = React.useState(false);
 
   const isEditMode = !!recipeId;
 
@@ -492,20 +486,7 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
     }
   }, [form]);
   
-  const refreshInventory = async () => {
-    try {
-      const inventoryData = await getInventory();
-      setInventory(inventoryData);
-    } catch (error) {
-      toast({ title: "Error", description: "No se pudo refrescar la lista de inventario.", variant: "destructive" });
-    }
-  };
   
-  const handleInventoryFormFinished = () => {
-    setIsInventoryFormOpen(false);
-    refreshInventory();
-  };
-
   const handleImageClick = (e: React.MouseEvent<HTMLImageElement>) => {
     e.stopPropagation();
     if (isZoomed) {
@@ -708,18 +689,6 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
 
   return (
     <>
-      <Dialog open={isInventoryFormOpen} onOpenChange={setIsInventoryFormOpen}>
-        <DialogContent className="sm:max-w-3xl">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-semibold">Crear Nuevo Producto de Inventario</DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              Configure un nuevo producto para la gestión de stock. Podrá seleccionarlo inmediatamente en esta receta.
-            </DialogDescription>
-          </DialogHeader>
-          <InventoryItemForm onFinished={handleInventoryFormFinished} />
-        </DialogContent>
-      </Dialog>
-      
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start p-6">
@@ -888,7 +857,7 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
                   </div>
                   <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
                     {fields.map((item, index) => (
-                      <RecipeItemCard key={item.id} index={index} remove={remove} form={form} appSettings={appSettings} inventory={inventory} totalFields={fields.length} onOpenInventoryForm={() => setIsInventoryFormOpen(true)} />
+                      <RecipeItemCard key={item.id} index={index} remove={remove} form={form} appSettings={appSettings} inventory={inventory} totalFields={fields.length} />
                     ))}
                   </div>
                   <FormField control={form.control} name="items" render={() => (<FormItem><FormMessage className="mt-4" /></FormItem>)} />
