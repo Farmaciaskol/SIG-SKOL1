@@ -65,6 +65,7 @@ const StatCard = ({ title, value, icon: Icon }: { title: string; value: string |
 type PharmacyFinancials = {
   pharmacyId: string;
   pharmacyName: string;
+  paymentModel: 'Por Receta' | 'Factura Mensual';
   pendingBalance: number;
   paidAmount: number;
   pendingRecipes: Recipe[];
@@ -112,15 +113,27 @@ export default function FinancialManagementPage() {
     return pharmacies.map(pharmacy => {
       const pharmacyRecipes = recipes.filter(r => r.externalPharmacyId === pharmacy.id);
       
-      const pendingRecipes = pharmacyRecipes.filter(r =>
-        r.paymentStatus !== 'Pagado' &&
-        [
-          RecipeStatus.SentToExternal,
-          RecipeStatus.ReceivedAtSkol,
-          RecipeStatus.ReadyForPickup,
-          RecipeStatus.Dispensed
-        ].includes(r.status)
-      );
+      let pendingRecipes: Recipe[];
+      const paymentModel = pharmacy.defaultPaymentModel || 'Por Receta';
+
+      if (paymentModel === 'Factura Mensual') {
+        // For monthly billing, we consider all dispensed but unpaid recipes.
+        pendingRecipes = pharmacyRecipes.filter(r =>
+          r.status === RecipeStatus.Dispensed &&
+          r.paymentStatus !== 'Pagado'
+        );
+      } else { // 'Por Receta'
+        // For per-recipe payment, we consider recipes that are in process with the external pharmacy.
+        pendingRecipes = pharmacyRecipes.filter(r =>
+          r.paymentStatus !== 'Pagado' &&
+          [
+            RecipeStatus.SentToExternal,
+            RecipeStatus.ReceivedAtSkol,
+            RecipeStatus.ReadyForPickup,
+            RecipeStatus.Dispensed
+          ].includes(r.status)
+        );
+      }
       
       const totalPreparationCost = pendingRecipes.reduce((acc, r) => acc + (r.preparationCost || 0), 0);
       const totalTransportCost = pendingRecipes.reduce((acc, r) => acc + (r.transportCost || 0), 0);
@@ -133,6 +146,7 @@ export default function FinancialManagementPage() {
       return {
         pharmacyId: pharmacy.id,
         pharmacyName: pharmacy.name,
+        paymentModel: paymentModel,
         pendingBalance,
         paidAmount,
         pendingRecipes,
@@ -225,10 +239,13 @@ export default function FinancialManagementPage() {
                             <AccordionItem value={data.pharmacyId} key={data.pharmacyId} className="border rounded-lg overflow-hidden">
                                 <AccordionTrigger className="text-lg font-semibold text-foreground hover:no-underline px-6 py-4 bg-muted/50 data-[state=open]:border-b">
                                     <div className="flex justify-between items-center w-full pr-4">
+                                      <div className="flex flex-col items-start text-left">
                                         <span>{data.pharmacyName}</span>
-                                        <Badge variant={data.pendingBalance > 0 ? "destructive" : "default"}>
-                                            Saldo: ${data.pendingBalance.toLocaleString('es-CL')}
-                                        </Badge>
+                                        <Badge variant="outline" className="font-normal text-xs mt-1">{data.paymentModel}</Badge>
+                                      </div>
+                                      <Badge variant={data.pendingBalance > 0 ? "destructive" : "default"}>
+                                          Saldo: ${data.pendingBalance.toLocaleString('es-CL')}
+                                      </Badge>
                                     </div>
                                 </AccordionTrigger>
                                 <AccordionContent className="p-6 pt-4 space-y-4">
