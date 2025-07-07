@@ -133,8 +133,6 @@ import { Separator } from '@/components/ui/separator';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
 
-// --- HELPER COMPONENTS (defined outside the main component for clarity and performance) ---
-
 const StatCard = ({ title, value, icon: Icon, onClick, active = false }: { title: string; value: string | number; icon: React.ElementType; onClick: () => void; active?: boolean; }) => {
   const iconColor = useMemo(() => {
     if (Number(value) <= 0) return '';
@@ -156,7 +154,6 @@ const StatCard = ({ title, value, icon: Icon, onClick, active = false }: { title
     </Card>
   );
 };
-
 
 const calculateTotalCycles = (recipe: Recipe): number => {
     if (!recipe.dueDate || !recipe.createdAt || !recipe.items?.[0]) {
@@ -184,7 +181,7 @@ const calculateTotalCycles = (recipe: Recipe): number => {
           cycleDurationInDays = durationValue * 30;
           break;
         default:
-          cycleDurationInDays = 30; // Fallback for unknown units
+          cycleDurationInDays = 30;
       }
   
       if (cycleDurationInDays <= 0) return 1;
@@ -460,7 +457,6 @@ const SendBatchDialog = ({ recipes: recipesToSend, isOpen, onClose, onConfirm, i
     );
 };
 
-
 const ReprepareMessage = ({ daysSinceDispensation, urgencyStatus }: {
   daysSinceDispensation: number | null;
   urgencyStatus: 'early' | 'normal' | 'urgent';
@@ -480,8 +476,62 @@ const ReprepareMessage = ({ daysSinceDispensation, urgencyStatus }: {
     return null;
 };
 
+const ActionButton = ({ recipe, onSend, onReceive, onReadyForPickup, onDispense, onReprepare, onView }: {
+    recipe: Recipe;
+    onSend: (r: Recipe) => void;
+    onReceive: (r: Recipe) => void;
+    onReadyForPickup: (r: Recipe) => void;
+    onDispense: (r: Recipe) => void;
+    onReprepare: (r: Recipe) => void;
+    onView: (r: Recipe) => void;
+}) => {
+    const totalCycles = calculateTotalCycles(recipe);
+    const dispensedCount = recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0;
+    const isExpired = recipe.dueDate ? new Date(recipe.dueDate) < new Date() : false;
+    const cycleLimitReached = dispensedCount >= totalCycles;
+    const canReprepare = recipe.status === RecipeStatus.Dispensed && !isExpired && !cycleLimitReached;
+    let disabledReprepareTooltip = '';
+    if (isExpired) disabledReprepareTooltip = 'El documento de la receta ha vencido.';
+    else if (cycleLimitReached) disabledReprepareTooltip = `Límite de ${totalCycles} ciclos estimado alcanzado.`;
 
-const RecipeActions = ({ recipe, onReprepare, onCancel, onDelete, onArchive, onSend, onView, onReceive, onReadyForPickup, onDispense, onPrint }: {
+    switch (recipe.status) {
+        case RecipeStatus.PendingValidation:
+          return null;
+        case RecipeStatus.Validated:
+          return recipe.supplySource === 'Insumos de Skol' 
+            ? <Button size="sm" asChild><Link href="/dispatch-management"><Truck className="mr-2 h-4 w-4 text-white" />Ir a Despacho</Link></Button>
+            : <Button size="sm" onClick={() => onSend(recipe)}><Send className="mr-2 h-4 w-4 text-white" />Enviar</Button>;
+        case RecipeStatus.SentToExternal:
+          return <Button size="sm" onClick={() => onReceive(recipe)}><PackageCheck className="mr-2 h-4 w-4 text-white" />Recepcionar</Button>;
+        case RecipeStatus.ReceivedAtSkol:
+          return <Button size="sm" onClick={() => onReadyForPickup(recipe)}><Package className="mr-2 h-4 w-4 text-white" />Marcar Retiro</Button>;
+        case RecipeStatus.ReadyForPickup:
+          return <Button size="sm" onClick={() => onDispense(recipe)}><CheckCheck className="mr-2 h-4 w-4 text-white" />Dispensar</Button>;
+        case RecipeStatus.Dispensed:
+          return (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span tabIndex={0}>
+                    <Button size="sm" onClick={() => onReprepare(recipe)} disabled={!canReprepare}>
+                      <Copy className="mr-2 h-4 w-4" />Re-preparar
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                {!canReprepare && disabledReprepareTooltip && (
+                  <TooltipContent>
+                    <p>{disabledReprepareTooltip}</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
+          );
+        default:
+          return <Button size="sm" onClick={() => onView(recipe)}><Eye className="mr-2 h-4 w-4" />Ver Detalle</Button>;
+      }
+};
+
+const RecipeActions = ({ recipe, onReprepare, onCancel, onDelete, onArchive, onSend, onView, onReceive, onReadyForPickup, onDispense, onPrint, onValidate, onReject }: {
   recipe: Recipe;
   onReprepare: (recipe: Recipe) => void;
   onCancel: (recipe: Recipe) => void;
@@ -493,6 +543,8 @@ const RecipeActions = ({ recipe, onReprepare, onCancel, onDelete, onArchive, onS
   onReadyForPickup: (recipe: Recipe) => void;
   onDispense: (recipe: Recipe) => void;
   onPrint: (recipe: Recipe) => void;
+  onValidate: (recipe: Recipe) => void;
+  onReject: (recipe: Recipe) => void;
 }) => {
     const totalCycles = calculateTotalCycles(recipe);
     const dispensedCount = recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0;
@@ -511,12 +563,12 @@ const RecipeActions = ({ recipe, onReprepare, onCancel, onDelete, onArchive, onS
             {recipe.status === RecipeStatus.PendingValidation && (
                 <>
                     <TooltipProvider><Tooltip><TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onDispense(recipe)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onValidate(recipe)}>
                             <ShieldCheck className="h-4 w-4 text-green-600" />
                         </Button>
                     </TooltipTrigger><TooltipContent><p>Validar</p></TooltipContent></Tooltip></TooltipProvider>
                     <TooltipProvider><Tooltip><TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onCancel(recipe)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onReject(recipe)}>
                             <XCircle className="h-4 w-4 text-red-600" />
                         </Button>
                     </TooltipTrigger><TooltipContent><p>Rechazar</p></TooltipContent></Tooltip></TooltipProvider>
@@ -606,8 +658,8 @@ const RecipeActions = ({ recipe, onReprepare, onCancel, onDelete, onArchive, onS
             </DropdownMenu>
         </div>
     );
-  };
-
+};
+  
 const MobileRecipeActions = ({ recipe, onReprepare, onCancel, onDelete, onArchive, onSend, onView, onReadyForPickup, onDispense, onPrint, onValidate, onReject, onReceive }: {
     recipe: Recipe,
     onReprepare: (recipe: Recipe) => void,
@@ -623,56 +675,11 @@ const MobileRecipeActions = ({ recipe, onReprepare, onCancel, onDelete, onArchiv
     onReject: (recipe: Recipe) => void,
     onReceive: (recipe: Recipe) => void,
 }) => {
-    const totalCycles = calculateTotalCycles(recipe);
-    const dispensedCount = recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0;
-    const isExpired = recipe.dueDate ? new Date(recipe.dueDate) < new Date() : false;
-    const cycleLimitReached = dispensedCount >= totalCycles;
-    const canReprepare = recipe.status === RecipeStatus.Dispensed && !isExpired && !cycleLimitReached;
-    let disabledReprepareTooltip = '';
-    if (isExpired) disabledReprepareTooltip = 'El documento de la receta ha vencido.';
-    else if (cycleLimitReached) disabledReprepareTooltip = `Límite de ${totalCycles} ciclos estimado alcanzado.`;
-
     const canEdit = recipe.status !== RecipeStatus.Dispensed && recipe.status !== RecipeStatus.Cancelled;
-    const isArchivable = [RecipeStatus.Rejected, RecipeStatus.Cancelled, RecipeStatus.Dispensed].includes(recipe.status) || isExpired;
+    const isArchivable = [RecipeStatus.Rejected, RecipeStatus.Cancelled, RecipeStatus.Dispensed].includes(recipe.status) || (recipe.dueDate ? new Date(recipe.dueDate) < new Date() : false);
     const router = useRouter();
+    const canReprepare = recipe.status === RecipeStatus.Dispensed && !(recipe.dueDate ? new Date(recipe.dueDate) < new Date() : false) && (recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0) < calculateTotalCycles(recipe);
 
-    const ActionButton = () => {
-      switch (recipe.status) {
-        case RecipeStatus.PendingValidation:
-          return null;
-        case RecipeStatus.Validated:
-          return recipe.supplySource === 'Insumos de Skol' 
-            ? <Button size="sm" asChild><Link href="/dispatch-management"><Truck className="mr-2 h-4 w-4 text-white" />Ir a Despacho</Link></Button>
-            : <Button size="sm" onClick={() => onSend(recipe)}><Send className="mr-2 h-4 w-4 text-white" />Enviar</Button>;
-        case RecipeStatus.SentToExternal:
-          return <Button size="sm" onClick={() => onReceive(recipe)}><PackageCheck className="mr-2 h-4 w-4 text-white" />Recepcionar</Button>;
-        case RecipeStatus.ReceivedAtSkol:
-          return <Button size="sm" onClick={() => onReadyForPickup(recipe)}><Package className="mr-2 h-4 w-4 text-white" />Marcar Retiro</Button>;
-        case RecipeStatus.ReadyForPickup:
-          return <Button size="sm" onClick={() => onDispense(recipe)}><CheckCheck className="mr-2 h-4 w-4 text-white" />Dispensar</Button>;
-        case RecipeStatus.Dispensed:
-          return (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span tabIndex={0}>
-                    <Button size="sm" onClick={() => onReprepare(recipe)} disabled={!canReprepare}>
-                      <Copy className="mr-2 h-4 w-4" />Re-preparar
-                    </Button>
-                  </span>
-                </TooltipTrigger>
-                {!canReprepare && disabledReprepareTooltip && (
-                  <TooltipContent>
-                    <p>{disabledReprepareTooltip}</p>
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            </TooltipProvider>
-          );
-        default:
-          return <Button size="sm" onClick={() => onView(recipe)}><Eye className="mr-2 h-4 w-4" />Ver Detalle</Button>;
-      }
-    };
 
     return (
       <div className="flex justify-end items-center w-full gap-2">
@@ -689,7 +696,15 @@ const MobileRecipeActions = ({ recipe, onReprepare, onCancel, onDelete, onArchiv
           </>
         ) : (
           <div className="flex-1">
-            <ActionButton />
+            <ActionButton 
+                recipe={recipe} 
+                onSend={onSend}
+                onReceive={onReceive}
+                onReadyForPickup={onReadyForPickup}
+                onDispense={onDispense}
+                onReprepare={onReprepare}
+                onView={onView}
+            />
           </div>
         )}
         
@@ -726,9 +741,7 @@ const MobileRecipeActions = ({ recipe, onReprepare, onCancel, onDelete, onArchiv
         </DropdownMenu>
       </div>
     );
-  };
-
-// --- MAIN COMPONENT ---
+};
 
 export function RecipesClient({
   initialRecipes,
@@ -750,7 +763,6 @@ export function RecipesClient({
   const [doctors, setDoctors] = useState<Doctor[]>(initialDoctors);
   const [externalPharmacies, setExternalPharmacies] = useState<ExternalPharmacy[]>(initialExternalPharmacies);
   
-  // Dialogs state
   const [recipeToView, setRecipeToView] = useState<Recipe | null>(null);
   const [recipeToDelete, setRecipeToDelete] = useState<Recipe | null>(null);
   const [recipeToReject, setRecipeToReject] = useState<Recipe | null>(null);
@@ -763,7 +775,6 @@ export function RecipesClient({
   const [recipesToSendBatch, setRecipesToSendBatch] = useState<Recipe[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Dialogs form fields
   const [reason, setReason] = useState('');
   const [controlledFolio, setControlledFolio] = useState('');
   const [internalLot, setInternalLot] = useState('');
@@ -776,11 +787,9 @@ export function RecipesClient({
     cadenaFrio: false,
   });
   
-  // Reprepare dialog state
   const [daysSinceDispensation, setDaysSinceDispensation] = useState<number | null>(null);
   const [urgencyStatus, setUrgencyStatus] = useState<'early' | 'normal' | 'urgent'>('normal');
 
-  // Filtering state
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
@@ -788,17 +797,15 @@ export function RecipesClient({
   const [doctorFilter, setDoctorFilter] = useState<string>('all');
   const [pharmacyFilter, setPharmacyFilter] = useState<string>('all');
   
-  // Batch actions state
   const [selectedRecipes, setSelectedRecipes] = useState<string[]>([]);
   const [isDeleteBatchAlertOpen, setIsDeleteBatchAlertOpen] = useState(false);
 
-  // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
   
-  const getPatientName = (patientId: string) => patients.find((p) => p.id === patientId)?.name || 'N/A';
-  const getPharmacy = (pharmacyId?: string) => externalPharmacies.find((p) => p.id === pharmacyId);
-  const getDoctorName = (doctorId: string) => doctors.find((d) => d.id === doctorId)?.name || 'N/A';
+  const getPatientName = useCallback((patientId: string) => patients.find((p) => p.id === patientId)?.name || 'N/A', [patients]);
+  const getPharmacy = useCallback((pharmacyId?: string) => externalPharmacies.find((p) => p.id === pharmacyId), [externalPharmacies]);
+  const getDoctorName = useCallback((doctorId: string) => doctors.find((d) => d.id === doctorId)?.name || 'N/A', [doctors]);
   
   useEffect(() => {
     if (recipeToReprepare) {
@@ -824,7 +831,7 @@ export function RecipesClient({
     setExternalPharmacies(initialExternalPharmacies);
   }, [initialRecipes, initialPatients, initialDoctors, initialExternalPharmacies]);
 
-  const handleUpdateStatus = async (recipe: Recipe, newStatus: RecipeStatus, notes?: string) => {
+  const handleUpdateStatus = useCallback(async (recipe: Recipe, newStatus: RecipeStatus, notes?: string) => {
     if (!user) {
         toast({ title: 'Error de Autenticación', description: 'Debe iniciar sesión para realizar esta acción.', variant: 'destructive' });
         return;
@@ -868,7 +875,7 @@ export function RecipesClient({
     } finally {
         setIsSubmitting(false);
     }
-  }
+  }, [user, patients, toast, router]);
 
   const handleConfirmReject = async () => {
     if (!recipeToReject || !reason) return;
@@ -1155,7 +1162,7 @@ export function RecipesClient({
       return searchMatch && statusMatch && doctorMatch && pharmacyMatch && dateMatch;
     })
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [recipes, searchTerm, statusFilter, doctorFilter, pharmacyFilter, dateRange, patients]);
+  }, [recipes, searchTerm, statusFilter, doctorFilter, pharmacyFilter, dateRange, getPatientName]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -1184,7 +1191,7 @@ export function RecipesClient({
       prev.includes(id) ? prev.filter(rId => rId !== id) : [...prev, id]
     );
   }
-
+  
   return (
     <>
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
@@ -1311,7 +1318,6 @@ export function RecipesClient({
         </CardContent>
       </Card>
 
-
       {filteredRecipes.length === 0 ? (
         <Card className="w-full py-16 mt-8 shadow-none border-dashed">
             <div className="flex flex-col items-center justify-center text-center">
@@ -1405,7 +1411,23 @@ export function RecipesClient({
                                     )}
                                     </div>
                                 </TableCell>
-                                <TableCell className="text-right"><RecipeActions recipe={recipe} onReprepare={setRecipeToReprepare} onCancel={setRecipeToCancel} onDelete={setRecipeToDelete} onArchive={setRecipeToArchive} onSend={setRecipeToSend} onView={setRecipeToView} onReceive={setRecipeToReceive} onReadyForPickup={() => handleUpdateStatus(recipe, RecipeStatus.ReadyForPickup)} onDispense={() => handleUpdateStatus(recipe, RecipeStatus.Dispensed)} onPrint={setRecipeToPrint} /></TableCell>
+                                <TableCell className="text-right">
+                                    <RecipeActions 
+                                        recipe={recipe} 
+                                        onReprepare={setRecipeToReprepare} 
+                                        onCancel={setRecipeToCancel} 
+                                        onDelete={setRecipeToDelete} 
+                                        onArchive={setRecipeToArchive} 
+                                        onSend={setRecipeToSend} 
+                                        onView={setRecipeToView} 
+                                        onReceive={setRecipeToReceive} 
+                                        onReadyForPickup={() => handleUpdateStatus(recipe, RecipeStatus.ReadyForPickup)} 
+                                        onDispense={() => handleUpdateStatus(recipe, RecipeStatus.Dispensed)} 
+                                        onPrint={setRecipeToPrint} 
+                                        onValidate={() => handleUpdateStatus(recipe, RecipeStatus.Validated, 'Receta validada por farmacéutico.')} 
+                                        onReject={setRecipeToReject} 
+                                    />
+                                </TableCell>
                                 </TableRow>
                             )
                         })}
@@ -1424,25 +1446,66 @@ export function RecipesClient({
 
             <div className="grid grid-cols-1 gap-4 md:hidden mt-6">
                 {paginatedRecipes.map((recipe) => {
+                    const isPaymentPending = recipe.paymentStatus === 'Pendiente' && (recipe.status === RecipeStatus.ReceivedAtSkol || recipe.status === RecipeStatus.ReadyForPickup || recipe.status === RecipeStatus.Dispensed);
+                    const totalCycles = calculateTotalCycles(recipe);
+                    const dispensedCount = recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0;
+                    const showCycleCount = ![RecipeStatus.Archived, RecipeStatus.Rejected, RecipeStatus.Cancelled].includes(recipe.status);
+                    const currentCycle = Math.min(dispensedCount + 1, totalCycles);
                     return (
-                      <MobileRecipeActions 
-                        key={recipe.id}
-                        recipe={recipe} 
-                        onReprepare={setRecipeToReprepare} 
-                        onCancel={setRecipeToCancel} 
-                        onDelete={setRecipeToDelete} 
-                        onArchive={setRecipeToArchive} 
-                        onSend={setRecipeToSend} 
-                        onView={setRecipeToView} 
-                        onReadyForPickup={() => handleUpdateStatus(recipe, RecipeStatus.ReadyForPickup)} 
-                        onDispense={() => handleUpdateStatus(recipe, RecipeStatus.Dispensed)} 
-                        onPrint={setRecipeToPrint}
-                        onValidate={() => handleUpdateStatus(recipe, RecipeStatus.Validated, 'Receta validada por farmacéutico.')}
-                        onReject={setRecipeToReject}
-                        onReceive={setRecipeToReceive}
-                      />
-                    )
-                })}
+                    <Card key={recipe.id} className={cn(selectedRecipes.includes(recipe.id) && "ring-2 ring-primary")}>
+                    <CardHeader className="p-4">
+                        <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-3">
+                                <Checkbox onCheckedChange={() => toggleSelectRecipe(recipe.id)} checked={selectedRecipes.includes(recipe.id)} className="mt-1 shrink-0"/>
+                                <div className="flex-1">
+                                    <CardTitle className="text-lg leading-tight">
+                                        <Link href={`/patients/${recipe.patientId}`} className="hover:underline">{getPatientName(recipe.patientId)}</Link>
+                                    </CardTitle>
+                                    <div className="flex flex-col items-start gap-1 mt-1">
+                                        <CardDescription className="text-xs">Receta <Link href={`/recipes/${recipe.id}`} className="font-mono text-muted-foreground hover:text-primary hover:underline">{recipe.id}</Link></CardDescription>
+                                        <div className="flex items-center gap-2">
+                                            <Badge className={cn("font-normal text-xs text-center whitespace-nowrap", statusConfig[recipe.status]?.badge)}>{statusConfig[recipe.status]?.text || recipe.status}</Badge>
+                                            {showCycleCount && (<Badge variant="secondary" className="font-mono text-xs">{`${currentCycle}/${totalCycles}`}</Badge>)}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                                {isPaymentPending && (<TooltipProvider><Tooltip><TooltipTrigger asChild><span><DollarSign className="h-4 w-4 text-amber-600" /></span></TooltipTrigger><TooltipContent><p>Pago pendiente</p></TooltipContent></Tooltip></TooltipProvider>)}
+                                {recipe.status === RecipeStatus.PendingReviewPortal && (<TooltipProvider><Tooltip><TooltipTrigger asChild><span><UserSquare className="h-4 w-4 text-purple-600" /></span></TooltipTrigger><TooltipContent><p>Receta del Portal</p></TooltipContent></Tooltip></TooltipProvider>)}
+                                {recipe.items.some(item => item.requiresFractionation) && (<TooltipProvider><Tooltip><TooltipTrigger asChild><span><Split className="h-4 w-4 text-orange-600" /></span></TooltipTrigger><TooltipContent><p>Requiere Fraccionamiento</p></TooltipContent></Tooltip></TooltipProvider>)}
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="px-4 pb-4 pt-0 space-y-2">
+                        {recipe.items.length > 0 ? (
+                        <div>
+                            <p className="font-semibold text-foreground flex items-center gap-2" title={`${recipe.items[0].principalActiveIngredient} ${recipe.items[0].concentrationValue}${recipe.items[0].concentrationUnit}`}>{recipe.items[0].principalActiveIngredient}{' '}{recipe.items[0].concentrationValue}{recipe.items[0].concentrationUnit}{recipe.items.some(i => i.isRefrigerated) && <Snowflake className="h-4 w-4 text-blue-500" />}</p>
+                            <p className="text-sm text-muted-foreground truncate" title={recipe.items[0].usageInstructions}>{recipe.items[0].usageInstructions}</p>
+                            {recipe.items.length > 1 && (<p className="text-xs font-bold text-muted-foreground mt-1">+ {recipe.items.length - 1} más</p>)}
+                        </div>
+                        ) : (<p className="text-sm text-muted-foreground">Sin preparado</p>)}
+                        <p className="text-xs text-muted-foreground pt-1">Creada: {format(new Date(recipe.createdAt), "d MMM yyyy", { locale: es })}</p>
+                    </CardContent>
+                    <CardFooter className="p-3 bg-muted/50">
+                        <MobileRecipeActions 
+                            recipe={recipe} 
+                            onReprepare={setRecipeToReprepare} 
+                            onCancel={setRecipeToCancel} 
+                            onDelete={setRecipeToDelete} 
+                            onArchive={setRecipeToArchive} 
+                            onSend={setRecipeToSend} 
+                            onView={setRecipeToView} 
+                            onReadyForPickup={() => handleUpdateStatus(recipe, RecipeStatus.ReadyForPickup)} 
+                            onDispense={() => handleUpdateStatus(recipe, RecipeStatus.Dispensed)} 
+                            onPrint={setRecipeToPrint}
+                            onValidate={() => handleUpdateStatus(recipe, RecipeStatus.Validated, 'Receta validada por farmacéutico.')}
+                            onReject={setRecipeToReject}
+                            onReceive={setRecipeToReceive}
+                          />
+                    </CardFooter>
+                    </Card>
+                )})}
             </div>
              <div className="flex items-center justify-between pt-4 md:hidden">
                 <p className="text-sm text-muted-foreground">{filteredRecipes.length} resultados</p>
