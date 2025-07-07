@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -47,31 +46,33 @@ export default function NewOrderPage() {
     const router = useRouter();
 
     const [products, setProducts] = useState<LiorenProduct[]>([]);
-    const [loadingProducts, setLoadingProducts] = useState(true);
+    const [loadingProducts, setLoadingProducts] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [hasSearched, setHasSearched] = useState(false);
     const [cart, setCart] = useState<CartItem[]>([]);
     const [prescriptionFile, setPrescriptionFile] = useState<File | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    useEffect(() => {
-        const fetchProducts = async () => {
-            setLoadingProducts(true);
-            try {
-                const fetchedProducts = await fetchRawInventoryFromLioren();
-                const availableProducts = fetchedProducts.filter(p => p.stocks.some(s => s.stock > 0));
-                setProducts(availableProducts);
-            } catch (error) {
-                toast({ title: 'Error', description: 'No se pudieron cargar los productos.', variant: 'destructive' });
-            } finally {
-                setLoadingProducts(false);
+    const handleSearch = async () => {
+        if (!searchTerm.trim()) {
+            toast({ title: "Búsqueda vacía", description: "Por favor, ingrese un término para buscar." });
+            return;
+        }
+        setLoadingProducts(true);
+        setHasSearched(true);
+        try {
+            const fetchedProducts = await fetchRawInventoryFromLioren(searchTerm);
+            const availableProducts = fetchedProducts.filter(p => p.stocks.some(s => s.stock > 0));
+            setProducts(availableProducts);
+            if(availableProducts.length === 0) {
+                toast({ title: "Sin resultados", description: "No se encontraron productos con ese nombre." });
             }
-        };
-        fetchProducts();
-    }, [toast]);
-
-    const filteredProducts = useMemo(() => {
-        return products.filter(p => p.nombre.toLowerCase().includes(searchTerm.toLowerCase()));
-    }, [products, searchTerm]);
+        } catch (error) {
+            toast({ title: 'Error', description: 'No se pudieron cargar los productos.', variant: 'destructive' });
+        } finally {
+            setLoadingProducts(false);
+        }
+    };
 
     const handleAddToCart = (product: LiorenProduct) => {
         setCart(prevCart => {
@@ -154,23 +155,36 @@ export default function NewOrderPage() {
             
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2">
-                    <div className="relative mb-6">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                        <Input 
-                            placeholder="Buscar productos por nombre..." 
-                            className="pl-10 h-12 text-lg" 
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                        />
+                    <div className="flex items-center gap-2 mb-6">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                            <Input 
+                                placeholder="Buscar productos por nombre..." 
+                                className="pl-10 h-12 text-lg" 
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                                onKeyDown={e => { if (e.key === 'Enter') handleSearch() }}
+                            />
+                        </div>
+                        <Button onClick={handleSearch} disabled={loadingProducts} className="h-12">
+                            {loadingProducts ? <Loader2 className="h-5 w-5 animate-spin"/> : "Buscar"}
+                        </Button>
                     </div>
+
                     {loadingProducts ? (
                         <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                    ) : hasSearched ? (
+                        products.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                                {products.map(product => (
+                                    <ProductCard key={product.id} product={product} onAddToCart={handleAddToCart} />
+                                ))}
+                            </div>
+                        ) : (
+                             <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg">No se encontraron productos para su búsqueda.</div>
+                        )
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                            {filteredProducts.map(product => (
-                                <ProductCard key={product.id} product={product} onAddToCart={handleAddToCart} />
-                            ))}
-                        </div>
+                        <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg">Ingrese un término en el buscador para encontrar productos.</div>
                     )}
                 </div>
 
