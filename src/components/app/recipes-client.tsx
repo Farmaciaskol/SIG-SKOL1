@@ -201,7 +201,7 @@ const SendToPharmacyDialog = ({ recipe, pharmacy, patients, isOpen, onClose, onC
 
     const descriptiveFilename = useMemo(() => {
         if (!recipe) return 'receta.jpg';
-        const sanitize = (str: string) => str.replace(/ /g, '_').replace(/[^\w.-]/g, '');
+        const sanitize = (str: string) => str.replace(/ /g, '_').replace(/[^a-zA-Z0-9.-]/g, '');
         const patientName = sanitize(patients.find(p => p.id === recipe.patientId)?.name || 'paciente');
         const activeIngredient = sanitize(recipe.items[0]?.principalActiveIngredient || 'preparado');
         const url = recipe.prescriptionImageUrl || '';
@@ -1130,23 +1130,23 @@ export const RecipesClient = ({
   
   const ReprepareMessage = () => {
     if (daysSinceDispensation === null) {
-      return <DialogDescription>¿Está seguro que desea iniciar un nuevo ciclo para esta receta? La receta volverá al estado 'Pendiente Validación'.</DialogDescription>
+      return <DialogDescription>¿Está seguro que desea iniciar un nuevo ciclo para esta receta? La receta volverá al estado 'Pendiente Validación'.</DialogDescription>;
     }
     if (urgencyStatus === 'early') {
-      return <p className="text-amber-600 font-semibold">Alerta: Han pasado solo {daysSinceDispensation} día(s) desde la última dispensación. ¿Continuar de todas formas?</p>
+      return <p className="text-amber-600 font-semibold">Alerta: Han pasado solo {daysSinceDispensation} día(s) desde la última dispensación. ¿Continuar de todas formas?</p>;
     }
     if (urgencyStatus === 'normal') {
-      return <p className="text-green-600 font-semibold">Han pasado {daysSinceDispensation} día(s). Es un buen momento para preparar el siguiente ciclo. ¿Desea continuar?</p>
+      return <p className="text-green-600 font-semibold">Han pasado {daysSinceDispensation} día(s). Es un buen momento para preparar el siguiente ciclo. ¿Desea continuar?</p>;
     }
     if (urgencyStatus === 'urgent') {
-      return <p className="text-red-600 font-semibold">Urgente: Han pasado {daysSinceDispensation} día(s) desde la última dispensación. Esta solicitud se marcará como urgente.</p>
+      return <p className="text-red-600 font-semibold">Urgente: Han pasado {daysSinceDispensation} día(s) desde la última dispensación. Esta solicitud se marcará como urgente.</p>;
     }
     return null;
-  }
+  };
 
   return (
     <>
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight font-headline">Gestión de Recetas</h1>
           <p className="text-sm text-muted-foreground">
