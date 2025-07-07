@@ -220,7 +220,11 @@ export const getItemsToDispatchCount = async (): Promise<number> => {
 
 export const getLowStockInventoryCount = async (): Promise<number> => {
     try {
-        const allItems = await getInventory(); // Fetches from local DB now
+        // IMPORTANT: This function must only fetch from the local Firestore DB
+        // to prevent a failing network request from crashing the main app layout.
+        // It directly calls fetchCollection instead of getInventory to ensure
+        // no other logic (like external API calls) is ever introduced here.
+        const allItems = await fetchCollection<InventoryItem>('inventory');
         return allItems.filter(item => item.quantity < item.lowStockThreshold).length;
     } catch (error) {
         console.error("Error fetching low stock inventory count:", error);
@@ -1001,3 +1005,4 @@ export const rejectUserRequest = async (requestId: string, reason: string): Prom
         rejectionReason: reason
     });
 };
+
