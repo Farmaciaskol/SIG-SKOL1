@@ -353,7 +353,7 @@ const SendBatchDialog = ({ recipes: recipesToSend, isOpen, onClose, onConfirm, i
             groups[id].push(recipe);
         }
         return Object.entries(groups);
-    }, [recipesToSend, getPatientName]);
+    }, [recipesToSend]);
 
     if (!isOpen) return null;
 
@@ -1174,7 +1174,7 @@ export function RecipesClient({
       return searchMatch && statusMatch && doctorMatch && pharmacyMatch && dateMatch;
     })
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [recipes, searchTerm, statusFilter, doctorFilter, pharmacyFilter, dateRange, patients]);
+  }, [recipes, searchTerm, statusFilter, doctorFilter, pharmacyFilter, dateRange, patients, getPatientName]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -1203,7 +1203,7 @@ export function RecipesClient({
       prev.includes(id) ? prev.filter(rId => rId !== id) : [...prev, id]
     );
   }
-  
+
   return (
     <>
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
@@ -1424,7 +1424,7 @@ export function RecipesClient({
                                     </div>
                                 </TableCell>
                                 <TableCell className="text-right">
-                                    <RecipeActions 
+                                    <RecipeActions
                                         recipe={recipe} 
                                         onReprepare={setRecipeToReprepare} 
                                         onCancel={setRecipeToCancel} 
@@ -1662,7 +1662,7 @@ export function RecipesClient({
         </DialogContent>
       </Dialog>
       <Dialog open={!!recipeToPrint} onOpenChange={(open) => !open && setRecipeToPrint(null)}><DialogContent><DialogHeader><DialogTitle className="text-xl font-semibold">Imprimir Etiqueta: {recipeToPrint?.id}</DialogTitle><DialogDescription>Vista previa de la etiqueta para el paciente.</DialogDescription></DialogHeader><div className="my-6 p-4 border rounded-lg bg-muted/50 space-y-2 font-mono text-sm"><p><span className="font-semibold">SKOL Pharmacy</span></p><p>Paciente: {getPatientName(recipeToPrint?.patientId || '')}</p><p>Receta: {recipeToPrint?.id}</p><p>Producto: {recipeToPrint?.items[0]?.principalActiveIngredient} {recipeToPrint?.items[0]?.concentrationValue}{recipeToPrint?.items[0]?.concentrationUnit}</p><p className="pt-2">Instrucciones: {recipeToPrint?.items[0]?.usageInstructions}</p><p className="pt-2">Vencimiento: {recipeToPrint?.preparationExpiryDate ? format(parseISO(recipeToPrint.preparationExpiryDate), 'dd-MM-yyyy') : 'N/A'}</p><p>Lote: {recipeToPrint?.internalPreparationLot || 'N/A'}</p></div><DialogFooter><Button variant="outline" onClick={() => setRecipeToPrint(null)}>Cerrar</Button><Button onClick={() => toast({title: 'Imprimiendo...', description: 'La funcionalidad de impresión real no está implementada.'})}><Printer className="mr-2 h-4 w-4"/>Imprimir</Button></DialogFooter></DialogContent></Dialog>
-      <AlertDialog open={isDeleteBatchAlertOpen} onOpenChange={setIsDeleteBatchAlertOpen}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Eliminar {selectedRecipes.length} recetas?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Las recetas seleccionadas serán eliminadas permanentemente.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleBatchDelete} disabled={isSubmitting} className="bg-destructive hover:bg-destructive/90">{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Eliminar</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+      <AlertDialog open={isDeleteBatchAlertOpen} onOpenChange={setIsDeleteBatchAlertOpen}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Eliminar {selectedRecipes.length} recetas?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Las recetas seleccionadas serán eliminadas permanentemente.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleBatchDelete} disabled={isSubmitting} className="bg-destructive hover:bg-destructive/90">{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Eliminar</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
       
       <AlertDialog open={!!recipeToArchive} onOpenChange={(open) => !open && setRecipeToArchive(null)}>
         <AlertDialogContent>
