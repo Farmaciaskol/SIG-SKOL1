@@ -830,5 +830,3 @@ export function InventoryClient({ initialInventory }: {
         </>
     );
 }
-
-    
