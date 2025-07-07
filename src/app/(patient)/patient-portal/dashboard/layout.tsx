@@ -28,6 +28,7 @@ import { getMessagesForPatient, markMessagesAsRead } from '@/lib/data';
 import { sendMessageFromPatient } from '@/lib/patient-actions';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '@/components/ui/sheet';
+import { PatientMessagingThread } from '@/components/app/patient-messaging-thread';
 
 
 const BottomNavItem = ({ href, icon: Icon, label, isActive }: { href: string, icon: React.ElementType, label: string, isActive: boolean }) => (
@@ -132,12 +133,12 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
                         <span className="sr-only">Mensajería</span>
                     </Button>
                   </SheetTrigger>
-                  <SheetContent>
-                     <SheetHeader>
+                  <SheetContent className="p-0 flex flex-col">
+                     <SheetHeader className="p-6 pb-4 border-b">
                         <SheetTitle>Mensajería Segura</SheetTitle>
                         <SheetDescription>Comunícate con nuestro equipo para dudas no urgentes.</SheetDescription>
                     </SheetHeader>
-                    {/* Messaging component would go here */}
+                    <PatientMessagingThread />
                   </SheetContent>
                 </Sheet>
                 
