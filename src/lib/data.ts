@@ -68,8 +68,39 @@ export const getDoctors = async (): Promise<Doctor[]> => fetchCollection<Doctor>
 export const getExternalPharmacies = async (): Promise<ExternalPharmacy[]> => fetchCollection<ExternalPharmacy>('externalPharmacies');
 
 export const getInventory = async (): Promise<InventoryItem[]> => {
-    // This function now fetches data from the Lioren API service.
-    return fetchInventoryFromLioren();
+    if (!db) {
+        console.error("Firestore is not initialized. Cannot get local inventory.");
+        return [];
+    }
+    try {
+        const localInventory = await fetchCollection<InventoryItem>('inventory');
+        const liorenInventory = await fetchInventoryFromLioren();
+
+        const liorenMap = new Map(liorenInventory.map(item => [item.sku, item]));
+
+        const mergedInventory = localInventory.map(localItem => {
+            const liorenItem = localItem.sku ? liorenMap.get(localItem.sku) : undefined;
+            if (liorenItem) {
+                // Update stock and lots from Lioren, keep local enriched data
+                return {
+                    ...localItem,
+                    quantity: liorenItem.quantity,
+                    lots: liorenItem.lots,
+                    costPrice: liorenItem.costPrice,
+                    salePrice: liorenItem.salePrice,
+                };
+            }
+            // If not found in Lioren, return the local item as is (stock might be stale)
+            return localItem;
+        });
+
+        return mergedInventory;
+
+    } catch (error) {
+        console.error("Error merging inventories:", error);
+        // Fallback to local inventory if Lioren fails
+        return fetchCollection<InventoryItem>('inventory');
+    }
 };
 
 export const getUsers = async (): Promise<User[]> => fetchCollection<User>('users');
@@ -410,32 +441,43 @@ export const saveRecipe = async (data: any, imageFile: File | null, userId: stri
     }
 };
 
-// --- Inventory Functions (Now managed by Lioren) ---
-// The functions below are commented out as inventory management is now external.
-// You might need to implement write operations (add, update, delete) to Lioren's API
-// in the `lioren-api.ts` file if required.
-
-/*
 export const addInventoryItem = async (item: Omit<InventoryItem, 'id' | 'quantity' | 'lots'>): Promise<string> => {
-    // This should now be done in Lioren's platform.
-    throw new Error("Inventory management is handled by Lioren. Add items there.");
+    if (!db) throw new Error("Firestore is not initialized.");
+    const docRef = await addDoc(collection(db, 'inventory'), {
+        ...item,
+        quantity: 0,
+        lots: []
+    });
+    return docRef.id;
 };
 
 export const deleteInventoryItem = async (id: string): Promise<void> => {
-    // This should now be done in Lioren's platform.
-    throw new Error("Inventory management is handled by Lioren. Delete items there.");
+    if (!db) throw new Error("Firestore is not initialized.");
+    await deleteDoc(doc(db, 'inventory', id));
 };
 
-export const updateInventoryItem = async (id: string, updates: Partial<InventoryItem>): Promise<void> => {
-    // This should now be done in Lioren's platform.
-    throw new Error("Inventory management is handled by Lioren. Update items there.");
+export const updateInventoryItem = async (id: string, updates: Partial<Omit<InventoryItem, 'id' | 'quantity' | 'lots'>>): Promise<void> => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    await updateDoc(doc(db, 'inventory', id), updates);
 };
 
 export const addLotToInventoryItem = async (itemId: string, newLot: LotDetail): Promise<void> => {
-    // This should now be done in Lioren's platform.
-    throw new Error("Inventory management is handled by Lioren. Add lots there.");
+    if (!db) throw new Error("Firestore is not initialized.");
+    const itemRef = doc(db, 'inventory', itemId);
+    const itemSnap = await getDoc(itemRef);
+    if (!itemSnap.exists()) throw new Error("Inventory item not found.");
+    
+    const itemData = itemSnap.data() as InventoryItem;
+    const existingLots = itemData.lots || [];
+
+    const updatedLots = [...existingLots, newLot];
+    const newTotalQuantity = updatedLots.reduce((sum, lot) => sum + lot.quantity, 0);
+    
+    await updateDoc(itemRef, {
+        lots: updatedLots,
+        quantity: newTotalQuantity
+    });
 };
-*/
 
 
 export const processDispatch = async (pharmacyId: string, dispatchItems: DispatchItem[], dispatcherId: string, dispatcherName: string): Promise<string> => {
@@ -993,5 +1035,3 @@ export const rejectUserRequest = async (requestId: string, reason: string): Prom
         rejectionReason: reason
     });
 };
-
-

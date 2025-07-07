@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { getInventory, addInventoryItem, updateInventoryItem, deleteInventoryItem } from '@/lib/data';
 import type { InventoryItem, LotDetail } from '@/lib/types';
 import { PlusCircle, Search, Edit, History, PackagePlus, Trash2, MoreVertical, DollarSign, Package, PackageX, AlertTriangle, Star, Box, ChevronDown, Loader2, Calendar as CalendarIcon, Snowflake, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from 'lucide-react';
 import { format, differenceInDays, isBefore, parseISO } from 'date-fns';
@@ -23,10 +24,22 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { InventoryItemForm } from './inventory-item-form';
+
 
 const EXPIRY_THRESHOLD_DAYS = 90;
 
@@ -52,8 +65,17 @@ const StatCard = ({ title, value, icon: Icon }: { title: string; value: string |
     </Card>
 );
 
-const InventoryActions = ({ item, onManageLots }: { item: InventoryItemWithStats; onManageLots: (item: InventoryItemWithStats) => void; }) => {
-    const { toast } = useToast();
+const InventoryActions = ({ 
+    item, 
+    onManageLots, 
+    onEdit, 
+    onDelete 
+}: { 
+    item: InventoryItemWithStats; 
+    onManageLots: (item: InventoryItemWithStats) => void;
+    onEdit: (item: InventoryItem) => void;
+    onDelete: (item: InventoryItem) => void;
+}) => {
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -64,22 +86,32 @@ const InventoryActions = ({ item, onManageLots }: { item: InventoryItemWithStats
         <DropdownMenuContent align="end" className="w-48">
           <DropdownMenuItem onClick={() => onManageLots(item)}>
             <Box className="mr-2 h-4 w-4" />
-            <span>Ver Lotes</span>
+            <span>Ver Lotes de Lioren</span>
           </DropdownMenuItem>
-           <DropdownMenuItem onSelect={() => toast({ title: 'Gestión en Lioren', description: 'La edición y eliminación de productos se debe realizar directamente en Lioren.' })}>
+           <DropdownMenuItem onClick={() => onEdit(item)}>
             <Edit className="mr-2 h-4 w-4" />
-            <span>Editar en Lioren</span>
+            <span>Editar Producto</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => toast({ title: 'Función no disponible', description: 'El historial de movimientos estará disponible próximamente.' })}>
-            <History className="mr-2 h-4 w-4" />
-            <span>Ver Historial</span>
+          <DropdownMenuItem onClick={() => onDelete(item)} className="text-red-500 focus:text-red-600">
+            <Trash2 className="mr-2 h-4 w-4" />
+            <span>Eliminar Producto</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     );
 };
 
-const ProductCard = ({ item, onManageLots }: { item: InventoryItemWithStats; onManageLots: (item: InventoryItemWithStats) => void; }) => {
+const ProductCard = ({ 
+    item, 
+    onManageLots, 
+    onEdit, 
+    onDelete 
+}: { 
+    item: InventoryItemWithStats; 
+    onManageLots: (item: InventoryItemWithStats) => void;
+    onEdit: (item: InventoryItem) => void;
+    onDelete: (item: InventoryItem) => void;
+}) => {
     const { toast } = useToast();
     const statusStyles: Record<InventoryItemWithStats['status'], { badge: string; border: string }> = {
       'OK': { badge: 'bg-green-100 text-green-800', border: 'border-transparent' },
@@ -121,11 +153,9 @@ const ProductCard = ({ item, onManageLots }: { item: InventoryItemWithStats; onM
             <CardFooter className="bg-muted/50 p-3 flex flex-col items-stretch gap-2">
                 <Button onClick={() => onManageLots(item)}>
                     <Box className="mr-2 h-4 w-4" />
-                    Ver Lotes
+                    Ver Lotes de Lioren
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => toast({ title: 'Gestión en Lioren', description: 'La gestión de este producto se realiza en Lioren.' })}>
-                    Más Acciones
-                </Button>
+                <InventoryActions item={item} onManageLots={onManageLots} onEdit={onEdit} onDelete={onDelete} />
             </CardFooter>
         </Card>
     )
@@ -164,7 +194,7 @@ function LotManagementDialog({ item, isOpen, onOpenChange }: { item: InventoryIt
                     </TableRow>
                 ))
                 ) : (
-                <TableRow><TableCell colSpan={3} className="text-center h-24">No hay lotes con stock.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={3} className="text-center h-24">No hay lotes con stock en Lioren.</TableCell></TableRow>
                 )}
             </TableBody>
             </Table>
@@ -175,22 +205,56 @@ function LotManagementDialog({ item, isOpen, onOpenChange }: { item: InventoryIt
 }
 
 export function InventoryClient({ initialInventory }: { initialInventory: InventoryItem[] }) {
-    const router = useRouter();
+    const [loading, setLoading] = useState(false);
     const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState<FilterStatus>('all');
     const { toast } = useToast();
 
-    // Lot Management Dialog State
+    // Dialog States
     const [managingLotsFor, setManagingLotsFor] = useState<InventoryItemWithStats | null>(null);
+    const [isFormOpen, setIsFormOpen] = useState(false);
+    const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+    const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null);
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 20;
 
-    useEffect(() => {
-        setInventory(initialInventory);
-    }, [initialInventory]);
+    const refreshData = async () => {
+        setLoading(true);
+        try {
+            const data = await getInventory();
+            setInventory(data);
+        } catch (error) {
+            toast({ title: "Error", description: "No se pudo actualizar el inventario.", variant: "destructive" });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleOpenForm = (item: InventoryItem | null) => {
+        setEditingItem(item);
+        setIsFormOpen(true);
+    };
+
+    const handleFormFinished = () => {
+        setIsFormOpen(false);
+        setEditingItem(null);
+        refreshData();
+    };
+
+    const handleDeleteItem = async () => {
+        if (!itemToDelete) return;
+        try {
+            await deleteInventoryItem(itemToDelete.id);
+            toast({ title: "Producto Eliminado", description: "El producto ha sido eliminado de la base de datos local." });
+            setItemToDelete(null);
+            refreshData();
+        } catch (error) {
+            toast({ title: "Error", description: "No se pudo eliminar el producto.", variant: "destructive" });
+        }
+    };
 
     const inventoryWithStats = useMemo<InventoryItemWithStats[]>(() => {
         return inventory.map(item => {
@@ -200,7 +264,11 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
             const sortedLots = [...lots]
                 .filter(lot => {
                     if (lot.quantity <= 0 || !lot.expiryDate) return false;
-                    return !isNaN(parseISO(lot.expiryDate).getTime());
+                    try {
+                        return !isNaN(parseISO(lot.expiryDate).getTime());
+                    } catch {
+                        return false;
+                    }
                 })
                 .sort((a, b) => parseISO(a.expiryDate).getTime() - parseISO(b.expiryDate).getTime());
             
@@ -210,9 +278,13 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
             let isExpiringSoon = false;
 
             if (nextExpiryDate) {
-                const expiryDateObj = parseISO(nextExpiryDate);
-                isExpired = isBefore(expiryDateObj, now);
-                isExpiringSoon = differenceInDays(expiryDateObj, now) <= EXPIRY_THRESHOLD_DAYS && !isExpired;
+                try {
+                    const expiryDateObj = parseISO(nextExpiryDate);
+                    isExpired = isBefore(expiryDateObj, now);
+                    isExpiringSoon = differenceInDays(expiryDateObj, now) <= EXPIRY_THRESHOLD_DAYS && !isExpired;
+                } catch {
+                    // Ignore invalid dates
+                }
             }
 
             let status: InventoryItemWithStats['status'] = 'OK';
@@ -281,6 +353,33 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
                 onOpenChange={(open) => { if (!open) setManagingLotsFor(null); }}
             />
             
+            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+              <DialogContent className="sm:max-w-3xl">
+                <DialogHeader>
+                    <DialogTitle>{editingItem ? 'Editar Producto' : 'Crear Nuevo Producto'}</DialogTitle>
+                    <DialogDescription>
+                        {editingItem ? 'Modifique los detalles del producto en la base de datos local.' : 'Añada un nuevo producto a la base de datos interna. El stock se sincronizará desde Lioren si el SKU coincide.'}
+                    </DialogDescription>
+                </DialogHeader>
+                <InventoryItemForm onFinished={handleFormFinished} itemToEdit={editingItem || undefined} />
+              </DialogContent>
+            </Dialog>
+
+             <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Esta acción eliminará permanentemente el producto <span className="font-bold">{itemToDelete?.name}</span> de la base de datos interna. No lo eliminará de Lioren.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteItem} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+            
             <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight font-headline text-primary">Gestión de Inventario (Sincronizado con Lioren)</h1>
@@ -288,8 +387,8 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
                         Control logístico y trazabilidad de los insumos de la farmacia.
                     </p>
                 </div>
-                <Button onClick={() => toast({ title: 'Gestión en Lioren', description: 'La creación de productos se realiza directamente en la plataforma de Lioren.' })}>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Crear Producto en Lioren
+                 <Button onClick={() => handleOpenForm(null)}>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Crear Producto
                 </Button>
             </div>
 
@@ -326,13 +425,15 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
                 </CardContent>
             </Card>
 
-            {paginatedInventory.length === 0 ? (
+            {loading ? (
+                 <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
+            ) : paginatedInventory.length === 0 ? (
                  <Card className="text-center py-16 mt-8 shadow-none border-dashed">
                     <div className="flex flex-col items-center justify-center">
                         <Package className="h-16 w-16 text-muted-foreground mb-4" />
                         <h2 className="text-xl font-semibold text-foreground">No se encontraron productos</h2>
                         <p className="text-muted-foreground mt-2 max-w-sm">
-                            Intenta ajustar tu búsqueda o sincroniza con Lioren para ver tu inventario.
+                            Intenta ajustar tu búsqueda o crea un nuevo producto.
                         </p>
                     </div>
                 </Card>
@@ -376,7 +477,7 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
                                             <Badge variant="outline" className={cn("font-semibold", statusStyles[item.status])}>{item.status}</Badge>
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <InventoryActions item={item} onManageLots={handleManageLots} />
+                                            <InventoryActions item={item} onManageLots={handleManageLots} onEdit={() => handleOpenForm(item)} onDelete={() => setItemToDelete(item)} />
                                         </TableCell>
                                     </TableRow>
                                 )})}
@@ -387,7 +488,7 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
                     {/* Mobile Card View */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:hidden">
                         {paginatedInventory.map(item => (
-                            <ProductCard key={item.id} item={item} onManageLots={handleManageLots} />
+                            <ProductCard key={item.id} item={item} onManageLots={handleManageLots} onEdit={() => handleOpenForm(item)} onDelete={() => setItemToDelete(item)} />
                         ))}
                     </div>
 
