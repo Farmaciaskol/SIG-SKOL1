@@ -81,6 +81,23 @@ export enum DispensationItemStatus {
   ManuallyAdded = 'Añadido Manualmente',
 }
 
+export enum UserRequestStatus {
+    Pending = 'Pendiente',
+    Approved = 'Aprobada',
+    Rejected = 'Rechazada',
+}
+
+export interface UserRequest {
+    id: string;
+    name: string;
+    rut: string;
+    email: string;
+    firebaseUid?: string; // Set after Firebase Auth user creation on patient side
+    status: UserRequestStatus;
+    requestedAt: string; // ISO String
+    rejectionReason?: string;
+}
+
 export interface DispensationItem {
   id: string; // recipeId or inventoryItemId
   type: 'magistral' | 'commercial';
@@ -100,6 +117,8 @@ export interface MonthlyDispensationBox {
   createdAt: string; // ISO
   updatedAt: string; // ISO
   dispensedAt?: string; // ISO
+  retrievedBy_Name?: string;
+  retrievedBy_RUT?: string;
 }
 
 
@@ -143,7 +162,7 @@ export interface RecipeItem {
 }
 
 export interface AuditTrailEntry {
-  status: RecipeStatus;
+  status: RecipeStatus | MonthlyDispensationBoxStatus;
   date: string; // ISO String
   userId: string;
   notes?: string;
@@ -201,6 +220,7 @@ export interface Patient {
   address?: string;
   gender?: 'Masculino' | 'Femenino' | 'Otro';
   isChronic: boolean;
+  isHomeCare?: boolean;
   preferredDispensationDay?: number;
   allergies?: string[];
   commercialMedications?: string[];
@@ -213,6 +233,7 @@ export interface Patient {
   proactiveMessage: string;
   actionNeeded: PatientActionNeeded;
   avatar?: string;
+  firebaseUid?: string; // To link with Firebase Auth
 }
 
 export interface Doctor {
@@ -404,5 +425,6 @@ export interface AppData {
   controlledSubstanceLog: ControlledSubstanceLogEntry[];
   monthlyDispensations: MonthlyDispensationBox[];
   patientMessages: PatientMessage[];
+  userRequests: UserRequest[];
   appSettings?: AppSettings;
 }

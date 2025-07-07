@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from 'next/link';
@@ -111,7 +112,7 @@ interface MainNavProps extends React.HTMLAttributes<HTMLElement> {
 }
 
 function AlertsBell({ portalInboxCount, itemsToDispatchCount, lowStockCount }: Omit<MainNavProps, keyof React.HTMLAttributes<HTMLElement> | 'unreadMessagesCount'>) {
-  const totalAlerts = portalInboxCount + itemsToDispatchCount + lowStockCount;
+  const totalAlerts = itemsToDispatchCount + lowStockCount;
 
   return (
     <DropdownMenu>
@@ -131,14 +132,6 @@ function AlertsBell({ portalInboxCount, itemsToDispatchCount, lowStockCount }: O
         <DropdownMenuSeparator />
         {totalAlerts > 0 ? (
           <>
-            {portalInboxCount > 0 && (
-              <DropdownMenuItem asChild>
-                <Link href="/portal-inbox" className="flex justify-between items-center cursor-pointer">
-                  <span>Nuevas Recetas del Portal</span>
-                  <Badge>{portalInboxCount}</Badge>
-                </Link>
-              </DropdownMenuItem>
-            )}
             {itemsToDispatchCount > 0 && (
               <DropdownMenuItem asChild>
                 <Link href="/dispatch-management" className="flex justify-between items-center cursor-pointer">

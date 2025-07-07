@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -31,6 +32,7 @@ import {
   CommandList,
   CommandSeparator,
 } from '@/components/ui/command';
+import { DialogTitle } from '@/components/ui/dialog';
 import { getPatients, getDoctors, getRecipes, Patient, Doctor } from '@/lib/data';
 import type { Recipe } from '@/lib/types';
 
@@ -112,6 +114,7 @@ export function CommandPalette() {
         </kbd>
       </button>
       <CommandDialog open={open} onOpenChange={setOpen}>
+        <DialogTitle className="sr-only">Paleta de Comandos</DialogTitle>
         <CommandInput placeholder="Escriba un comando o busque..." />
         <CommandList>
           <CommandEmpty>No se encontraron resultados.</CommandEmpty>

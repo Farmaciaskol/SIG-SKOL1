@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -52,7 +53,7 @@ export default function PatientPortalLoginPage() {
         } else {
           toast({
             title: 'Perfil no encontrado',
-            description: 'Sus credenciales son correctas, pero no encontramos un perfil de paciente asociado a este email.',
+            description: 'Sus credenciales son correctas, pero no encontramos un perfil de paciente asociado a este email. Es posible que su solicitud de cuenta esté pendiente de aprobación.',
             variant: 'destructive',
           });
           setLoading(false);
@@ -126,16 +127,12 @@ export default function PatientPortalLoginPage() {
                 </CardContent>
             </Card>
              <p className="px-8 text-center text-sm text-muted-foreground">
-                ¿Olvidaste tu contraseña?{' '}
+                ¿No tienes una cuenta?{' '}
                 <Link 
-                    href="#" 
-                    onClick={(e) => { 
-                        e.preventDefault(); 
-                        toast({ title: "Función no disponible", description: "La recuperación de contraseña se implementará en una futura versión." }) 
-                    }} 
+                    href="/patient-portal/register" 
                     className="font-medium text-primary hover:underline"
                 >
-                    Recuperar aquí
+                    Regístrate aquí
                 </Link>
             </p>
         </div>

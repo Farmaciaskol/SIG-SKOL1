@@ -1,11 +1,11 @@
+
 import { MainNav } from '@/components/app/main-nav';
 import { AuthProvider } from '@/components/app/auth-provider';
-import { getRecipesCountByStatus, getItemsToDispatchCount, getLowStockInventoryCount, getUnreadPatientMessagesCount } from '@/lib/data';
-import { RecipeStatus } from '@/lib/types';
+import { getPendingPortalItemsCount, getItemsToDispatchCount, getLowStockInventoryCount, getUnreadPatientMessagesCount } from '@/lib/data';
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const [portalInboxCount, itemsToDispatchCount, lowStockCount, unreadMessagesCount] = await Promise.all([
-    getRecipesCountByStatus(RecipeStatus.PendingReviewPortal),
+    getPendingPortalItemsCount(),
     getItemsToDispatchCount(),
     getLowStockInventoryCount(),
     getUnreadPatientMessagesCount(),

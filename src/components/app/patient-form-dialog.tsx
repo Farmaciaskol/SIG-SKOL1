@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -45,6 +46,7 @@ const patientFormSchema = z.object({
   address: z.string().optional(),
   gender: z.enum(['Masculino', 'Femenino', 'Otro']),
   isChronic: z.boolean().default(false),
+  isHomeCare: z.boolean().default(false),
   allergies: z.string().optional(),
 });
 
@@ -66,7 +68,7 @@ export function PatientFormDialog({ patient, isOpen, onOpenChange, onSuccess }: 
         resolver: zodResolver(patientFormSchema),
         defaultValues: {
             name: '', rut: '', email: '', phone: '', address: '',
-            gender: 'Masculino', isChronic: false, allergies: ''
+            gender: 'Masculino', isChronic: false, isHomeCare: false, allergies: ''
         },
     });
 
@@ -80,12 +82,13 @@ export function PatientFormDialog({ patient, isOpen, onOpenChange, onSuccess }: 
                 address: patient.address || '',
                 gender: patient.gender || 'Masculino',
                 isChronic: patient.isChronic || false,
+                isHomeCare: patient.isHomeCare || false,
                 allergies: patient.allergies?.join(', ') || '',
             });
         } else if (isOpen && !patient) {
             form.reset({
                 name: '', rut: '', email: '', phone: '', address: '',
-                gender: 'Masculino', isChronic: false, allergies: ''
+                gender: 'Masculino', isChronic: false, isHomeCare: false, allergies: ''
             });
         }
     }, [isOpen, patient, form]);
@@ -103,7 +106,7 @@ export function PatientFormDialog({ patient, isOpen, onOpenChange, onSuccess }: 
                 toast({ title: 'Paciente Actualizado', description: 'Los datos del paciente se han guardado.' });
             } else {
                 if (!dataToSave.email) {
-                    toast({ title: "Email requerido", description: "El email es necesario para crear un nuevo paciente y su acceso al portal.", variant: "destructive" });
+                    toast({ title: "Email requerido", description: "El email es necesario para que el paciente pueda registrarse en el portal.", variant: "destructive" });
                     setIsSubmitting(false);
                     return;
                 }
@@ -126,7 +129,7 @@ export function PatientFormDialog({ patient, isOpen, onOpenChange, onSuccess }: 
                 <DialogHeader>
                     <DialogTitle>{isEditMode ? 'Editar Paciente' : 'Nuevo Paciente'}</DialogTitle>
                     <DialogDescription>
-                        {isEditMode ? 'Actualice los datos del paciente.' : 'Complete el formulario para registrar un nuevo paciente. El email es requerido para el acceso al portal.'}
+                        {isEditMode ? 'Actualice los datos del paciente.' : 'Complete el formulario para registrar un nuevo paciente. El email es requerido para que pueda activar su cuenta en el portal.'}
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -161,12 +164,20 @@ export function PatientFormDialog({ patient, isOpen, onOpenChange, onSuccess }: 
                             <FormItem><FormLabel>Dirección</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                         )}/>
                         
-                        <FormField control={form.control} name="isChronic" render={({ field }) => (
-                            <FormItem className="flex flex-row items-end space-x-2 space-y-0 h-10">
-                                <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                <FormLabel className="!mt-0">Es Paciente Crónico</FormLabel>
-                            </FormItem>
-                        )}/>
+                        <div className="flex items-center space-x-6 pt-2">
+                            <FormField control={form.control} name="isChronic" render={({ field }) => (
+                                <FormItem className="flex flex-row items-center space-x-2 space-y-0 h-10">
+                                    <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                    <FormLabel className="!mt-0">Es Paciente Crónico</FormLabel>
+                                </FormItem>
+                            )}/>
+                             <FormField control={form.control} name="isHomeCare" render={({ field }) => (
+                                <FormItem className="flex flex-row items-center space-x-2 space-y-0 h-10">
+                                    <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                    <FormLabel className="!mt-0">Es Paciente Homecare</FormLabel>
+                                </FormItem>
+                            )}/>
+                        </div>
                        
                         <FormField control={form.control} name="allergies" render={({ field }) => (
                             <FormItem><FormLabel>Alergias Conocidas</FormLabel><FormControl><Textarea placeholder="Separadas por comas. Ej: Penicilina, AINEs" {...field} /></FormControl><FormMessage /></FormItem>
@@ -177,10 +188,14 @@ export function PatientFormDialog({ patient, isOpen, onOpenChange, onSuccess }: 
                         <div>
                             <h3 className="text-lg font-medium mb-1">Credenciales de Acceso al Portal</h3>
                             <p className="text-sm text-muted-foreground mb-4">
-                                El email servirá como nombre de usuario del paciente. El paciente deberá usar la función "Olvidé mi contraseña" para establecerla por primera vez.
+                                El email servirá como nombre de usuario para que el paciente cree su cuenta.
                             </p>
                             <FormField control={form.control} name="email" render={({ field }) => (
-                                <FormItem><FormLabel>Email (Usuario) {isEditMode ? '' : '*'}</FormLabel><FormControl><Input type="email" {...field} disabled={isEditMode} /></FormControl><FormMessage /></FormItem>
+                                <FormItem>
+                                  <FormLabel>Email {isEditMode ? '' : '*'}</FormLabel>
+                                  <FormControl><Input type="email" {...field} /></FormControl>
+                                  <FormMessage />
+                                </FormItem>
                             )}/>
                         </div>
 
