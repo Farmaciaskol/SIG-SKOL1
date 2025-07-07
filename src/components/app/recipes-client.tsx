@@ -330,7 +330,7 @@ const SendBatchDialog = ({ recipes: recipesToSend, isOpen, onClose, onConfirm, i
             groups[id].push(recipe);
         }
         return Object.entries(groups);
-    }, [recipesToSend]);
+    }, [recipesToSend, getPharmacy]);
 
     if (!isOpen) return null;
 
@@ -661,44 +661,6 @@ const MobileRecipeActions = ({ recipe, onReprepare, onCancel, onDelete, onArchiv
     const router = useRouter();
     const canReprepare = recipe.status === RecipeStatus.Dispensed && !(recipe.dueDate ? new Date(recipe.dueDate) < new Date() : false) && (recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0) < calculateTotalCycles(recipe);
     
-    const ActionButtonLocal = () => {
-      switch (recipe.status) {
-        case RecipeStatus.PendingValidation:
-          return null;
-        case RecipeStatus.Validated:
-          return recipe.supplySource === 'Insumos de Skol' 
-            ? <Button size="sm" asChild><Link href="/dispatch-management"><Truck className="mr-2 h-4 w-4 text-white" />Ir a Despacho</Link></Button>
-            : <Button size="sm" onClick={() => onSend(recipe)}><Send className="mr-2 h-4 w-4 text-white" />Enviar</Button>;
-        case RecipeStatus.SentToExternal:
-          return <Button size="sm" onClick={() => onReceive(recipe)}><PackageCheck className="mr-2 h-4 w-4 text-white" />Recepcionar</Button>;
-        case RecipeStatus.ReceivedAtSkol:
-          return <Button size="sm" onClick={() => onReadyForPickup(recipe)}><Package className="mr-2 h-4 w-4 text-white" />Marcar Retiro</Button>;
-        case RecipeStatus.ReadyForPickup:
-          return <Button size="sm" onClick={() => onDispense(recipe)}><CheckCheck className="mr-2 h-4 w-4 text-white" />Dispensar</Button>;
-        case RecipeStatus.Dispensed:
-          return (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span tabIndex={0}>
-                    <Button size="sm" onClick={() => onReprepare(recipe)} disabled={!canReprepare}>
-                      <Copy className="mr-2 h-4 w-4" />Re-preparar
-                    </Button>
-                  </span>
-                </TooltipTrigger>
-                {!canReprepare && (
-                  <TooltipContent>
-                    <p>No se puede re-preparar (receta vencida o límite de ciclos alcanzado)</p>
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            </TooltipProvider>
-          );
-        default:
-          return <Button size="sm" onClick={() => onView(recipe)}><Eye className="mr-2 h-4 w-4" />Ver Detalle</Button>;
-      }
-    };
-    
     return (
       <div className="flex justify-end items-center w-full gap-2">
         {recipe.status === RecipeStatus.PendingValidation ? (
@@ -714,7 +676,15 @@ const MobileRecipeActions = ({ recipe, onReprepare, onCancel, onDelete, onArchiv
           </>
         ) : (
           <div className="flex-1">
-            <ActionButtonLocal />
+            <ActionButton 
+                recipe={recipe} 
+                onSend={onSend} 
+                onReceive={onReceive} 
+                onReadyForPickup={onReadyForPickup} 
+                onDispense={onDispense} 
+                onReprepare={onReprepare} 
+                onView={onView} 
+            />
           </div>
         )}
         
@@ -1153,7 +1123,7 @@ export function RecipesClient({
       return searchMatch && statusMatch && doctorMatch && pharmacyMatch && dateMatch;
     })
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [recipes, searchTerm, statusFilter, doctorFilter, pharmacyFilter, dateRange, patients, getPatientName]);
+  }, [recipes, searchTerm, statusFilter, doctorFilter, pharmacyFilter, dateRange, getPatientName]);
 
   useEffect(() => {
     setCurrentPage(1);
