@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { usePatientAuth } from '@/components/app/patient-auth-provider';
 import { getDashboardData } from '@/lib/patient-actions';
 import { Recipe, RecipeStatus, ProactivePatientStatus } from '@/lib/types';
-import { Loader2, AlertTriangle, FileUp, FileText, History, DollarSign, Pill } from 'lucide-react';
+import { Loader2, AlertTriangle, FileUp, FileText, History, DollarSign, Pill, ShoppingBag } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -89,7 +89,7 @@ export default function PatientPortalDashboardPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Estado de tu Última Receta</CardTitle>
+                    <CardTitle>Estado de tu Última Receta Magistral</CardTitle>
                 </CardHeader>
                 <CardContent>
                     {latestRecipe ? (
@@ -102,7 +102,7 @@ export default function PatientPortalDashboardPage() {
                             </div>
                         </div>
                     ) : (
-                        <p className="text-muted-foreground text-center py-4">No tienes recetas activas en este momento.</p>
+                        <p className="text-muted-foreground text-center py-4">No tienes recetas magistrales activas en este momento.</p>
                     )}
                 </CardContent>
             </Card>
@@ -111,28 +111,28 @@ export default function PatientPortalDashboardPage() {
                 <h2 className="text-xl font-bold tracking-tight">Accesos Directos</h2>
                  <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
                     <QuickActionButton 
-                        title="Subir Receta"
-                        description="Carga una nueva receta médica."
-                        icon={FileUp}
-                        href="/patient-portal/dashboard/new-prescription"
+                        title="Hacer un Pedido"
+                        description="Compra tus medicamentos."
+                        icon={ShoppingBag}
+                        href="/patient-portal/dashboard/new-order"
                     />
                     <QuickActionButton 
                         title="Mis Tratamientos"
-                        description="Ver y gestionar tus medicamentos."
+                        description="Ver magistrales y comerciales."
                         icon={Pill}
                         href="/patient-portal/dashboard/treatments"
                     />
-                    <QuickActionButton 
-                        title="Historial"
-                        description="Revisa tus recetas anteriores."
-                        icon={History}
-                        href="/patient-portal/dashboard/history"
-                    />
                      <QuickActionButton 
-                        title="Pagos"
-                        description="Consulta tus pagos y costos."
-                        icon={DollarSign}
-                        href="/patient-portal/dashboard/payments"
+                        title="Historial de Pedidos"
+                        description="Revisa tus pedidos anteriores."
+                        icon={History}
+                        href="/patient-portal/dashboard/orders"
+                    />
+                    <QuickActionButton 
+                        title="Subir Receta Magistral"
+                        description="Carga una nueva receta médica."
+                        icon={FileUp}
+                        href="/patient-portal/dashboard/new-prescription"
                     />
                 </div>
             </div>

@@ -4,7 +4,7 @@
 import { usePatientAuth } from '@/components/app/patient-auth-provider';
 import { useRouter, usePathname } from 'next/navigation';
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { Bell, Loader2, LogOut, User, Settings, MessageSquare, Send, Home, FileText, Pill, UserCircle } from 'lucide-react';
+import { Bell, Loader2, LogOut, User, Settings, MessageSquare, Send, Home, FileText, Pill, UserCircle, ShoppingBag, History } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import {
@@ -101,8 +101,8 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
   const navItems = [
       { href: '/patient-portal/dashboard', icon: Home, label: 'Inicio' },
-      { href: '/patient-portal/dashboard/treatments', icon: Pill, label: 'Tratamientos' },
-      { href: '/patient-portal/dashboard/history', icon: FileText, label: 'Recetas' },
+      { href: '/patient-portal/dashboard/new-order', icon: ShoppingBag, label: 'Pedir' },
+      { href: '/patient-portal/dashboard/orders', icon: History, label: 'Mis Pedidos' },
       { href: '/patient-portal/dashboard/profile', icon: UserCircle, label: 'Mi Perfil' },
   ];
 

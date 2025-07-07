@@ -5,7 +5,7 @@
 import { db, storage, auth } from './firebase';
 import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc, deleteDoc, writeBatch, query, where, limit,getCountFromServer } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, ControlledLogEntryType, ProactivePatientStatus, PatientActionNeeded, MonthlyDispensationBoxStatus, DispensationItemStatus, PharmacovigilanceReportStatus, UserRequestStatus, type Recipe, type Doctor, type InventoryItem, type User, type Role, type ExternalPharmacy, type Patient, type PharmacovigilanceReport, type AppData, type AuditTrailEntry, type DispatchNote, type DispatchItem, type ControlledSubstanceLogEntry, type LotDetail, type AppSettings, type MonthlyDispensationBox, type PatientMessage, type UserRequest } from './types';
+import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, ControlledLogEntryType, ProactivePatientStatus, PatientActionNeeded, MonthlyDispensationBoxStatus, DispensationItemStatus, PharmacovigilanceReportStatus, UserRequestStatus, type Recipe, type Doctor, type InventoryItem, type User, type Role, type ExternalPharmacy, type Patient, type PharmacovigilanceReport, type AppData, type AuditTrailEntry, type DispatchNote, type DispatchItem, type ControlledSubstanceLogEntry, type LotDetail, type AppSettings, type MonthlyDispensationBox, type PatientMessage, type UserRequest, type Order, type OrderItem } from './types';
 import { MAX_REPREPARATIONS } from './constants';
 import { addMonths } from 'date-fns';
 
@@ -1008,3 +1008,49 @@ export const rejectUserRequest = async (requestId: string, reason: string): Prom
         rejectionReason: reason
     });
 };
+
+export const getOrders = async (patientId: string): Promise<Order[]> => {
+    if (!db) return [];
+    const q = query(collection(db, "orders"), where("patientId", "==", patientId));
+    return fetchCollection<Order>('orders', q);
+};
+
+export async function placeOrder(
+  patientId: string,
+  items: OrderItem[],
+  total: number,
+  userId: string,
+  prescriptionFile?: File
+): Promise<string> {
+  if (!db || !storage) {
+    throw new Error("Firestore o Storage no están inicializados.");
+  }
+  
+  const orderRef = doc(collection(db, 'orders'));
+  const orderId = orderRef.id;
+  
+  let prescriptionImageUrl: string | undefined = undefined;
+  if (prescriptionFile) {
+    const storageRef = ref(storage, `order-prescriptions/${userId}/${orderId}`);
+    try {
+      const uploadResult = await uploadBytes(storageRef, prescriptionFile);
+      prescriptionImageUrl = await getDownloadURL(uploadResult.ref);
+    } catch (storageError) {
+      console.error("Firebase Storage upload failed for order:", storageError);
+      throw new Error("Error al subir la imagen de la receta.");
+    }
+  }
+
+  const newOrder: Omit<Order, 'id'> = {
+    patientId,
+    items,
+    total,
+    status: 'Pendiente',
+    createdAt: new Date().toISOString(),
+    prescriptionImageUrl,
+  };
+  
+  await setDoc(orderRef, newOrder);
+  
+  return orderId;
+}

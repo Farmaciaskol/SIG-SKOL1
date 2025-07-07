@@ -87,6 +87,15 @@ export enum UserRequestStatus {
     Rejected = 'Rechazada',
 }
 
+export enum OrderStatus {
+  Pending = 'Pendiente',
+  Processing = 'Procesando',
+  Shipped = 'Despachado',
+  Delivered = 'Entregado',
+  Cancelled = 'Cancelado',
+}
+
+
 export interface UserRequest {
     id: string;
     name: string;
@@ -412,6 +421,23 @@ export interface AppSettings {
     quantityToPrepareUnits: string[];
 }
 
+export interface OrderItem {
+  productId: string; // Lioren product ID
+  name: string;
+  quantity: number;
+  price: number; // Price per item at time of order
+}
+
+export interface Order {
+  id: string;
+  patientId: string;
+  items: OrderItem[];
+  total: number;
+  status: OrderStatus;
+  createdAt: string; // ISO String
+  prescriptionImageUrl?: string;
+}
+
 
 export interface AppData {
   recipes: Recipe[];
@@ -427,5 +453,6 @@ export interface AppData {
   monthlyDispensations: MonthlyDispensationBox[];
   patientMessages: PatientMessage[];
   userRequests: UserRequest[];
+  orders: Order[];
   appSettings?: AppSettings;
 }

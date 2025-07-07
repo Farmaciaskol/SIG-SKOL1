@@ -1,13 +1,15 @@
 
+
 'use server';
 
 import {
   getRecipes,
   getRecipe,
   updateRecipe,
-  getMessagesForPatient
+  getMessagesForPatient,
+  placeOrder
 } from './data';
-import type { PatientMessage, Recipe, AuditTrailEntry } from './types';
+import type { PatientMessage, Recipe, AuditTrailEntry, OrderItem } from './types';
 import { RecipeStatus } from './types';
 import { simplifyMedicationInfo } from '@/ai/flows/simplify-medication-info';
 import { db, storage } from './firebase';
@@ -151,4 +153,26 @@ export async function requestRepreparationFromPortal(recipeId: string, patientId
     };
 
     await updateRecipe(recipeId, updates);
+}
+
+export async function placePatientOrder(
+  patientId: string,
+  items: OrderItem[],
+  total: number,
+  userId: string,
+  prescriptionFormData?: FormData
+): Promise<string> {
+    
+  let prescriptionFile: File | undefined = undefined;
+  if (prescriptionFormData) {
+    prescriptionFile = prescriptionFormData.get('prescription') as File | undefined;
+  }
+    
+  try {
+    const orderId = await placeOrder(patientId, items, total, userId, prescriptionFile);
+    return orderId;
+  } catch (error) {
+    console.error("Failed to place order:", error);
+    throw new Error("No se pudo crear el pedido.");
+  }
 }
