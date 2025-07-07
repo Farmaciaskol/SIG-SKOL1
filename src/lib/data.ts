@@ -221,8 +221,13 @@ export const getItemsToDispatchCount = async (): Promise<number> => {
 };
 
 export const getLowStockInventoryCount = async (): Promise<number> => {
-    const allItems = await getInventory(); // Now fetches from Lioren
-    return allItems.filter(item => item.quantity < item.lowStockThreshold).length;
+    try {
+        const allItems = await getInventory(); // Now fetches from Lioren
+        return allItems.filter(item => item.quantity < item.lowStockThreshold).length;
+    } catch (error) {
+        console.error("Error fetching low stock inventory count:", error);
+        return 0; // Return 0 on error to prevent crashing the layout
+    }
 };
 
 export const getUnreadPatientMessagesCount = async (): Promise<number> => {
@@ -988,4 +993,5 @@ export const rejectUserRequest = async (requestId: string, reason: string): Prom
         rejectionReason: reason
     });
 };
+
 
