@@ -10,7 +10,7 @@ import { getPatients, deletePatient, getRecipes } from '@/lib/data';
 import type { Patient, Recipe } from '@/lib/types';
 import { ProactivePatientStatus, PatientActionNeeded, RecipeStatus } from '@/lib/types';
 import { runProactiveAnalysisForAllPatients } from '@/lib/actions';
-import { PlusCircle, Search, User, Heart, AlertTriangle, Pencil, Trash2, FileText, Repeat, Truck, CheckCircle2, Loader2, Wand2, MoreHorizontal, FlaskConical, Package, ChevronsRight, ChevronsLeft, ChevronRight, ChevronLeft } from 'lucide-react';
+import { PlusCircle, Search, User, Heart, AlertTriangle, Pencil, Trash2, FileText, Repeat, Truck, CheckCircle2, Loader2, Wand2, MoreHorizontal, FlaskConical, Package, ChevronsRight, ChevronsLeft, ChevronRight, ChevronLeft, Home } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PatientFormDialog } from '@/components/app/patient-form-dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -54,7 +54,7 @@ const actionButtonConfig: Record<PatientActionNeeded, { text: string; icon: Reac
   [PatientActionNeeded.NONE]: { text: 'Ver Ficha', icon: User },
 };
 
-type FilterStatus = 'all' | ProactivePatientStatus;
+type FilterStatus = 'all' | ProactivePatientStatus | 'homecare';
 
 export default function PatientsPage() {
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -157,7 +157,9 @@ export default function PatientsPage() {
   const filteredPatients = useMemo(() => {
     return patients
       .filter(patient => {
-        if (activeFilter !== 'all' && patient.proactiveStatus !== activeFilter) {
+        if (activeFilter === 'homecare') {
+            if (!patient.isHomeCare) return false;
+        } else if (activeFilter !== 'all' && patient.proactiveStatus !== activeFilter) {
           return false;
         }
         if (searchTerm) {
@@ -276,6 +278,14 @@ export default function PatientsPage() {
                     >
                         Atención
                     </Button>
+                     <Button 
+                        variant={activeFilter === 'homecare' ? 'secondary' : 'link'}
+                        size="sm"
+                        onClick={() => setActiveFilter('homecare')}
+                        className="px-3"
+                    >
+                        Homecare
+                    </Button>
                 </div>
             </div>
         </CardContent>
@@ -326,6 +336,7 @@ export default function PatientsPage() {
                                     <TableCell>
                                         <div className="flex items-center gap-2">
                                             {patient.isChronic && <Heart className="h-4 w-4 text-red-500" fill="currentColor" title="Paciente Crónico" />}
+                                            {patient.isHomeCare && <Home className="h-4 w-4 text-blue-500" title="Paciente Homecare" />}
                                             {patient.allergies && patient.allergies.length > 0 && <AlertTriangle className="h-4 w-4 text-amber-500" strokeWidth={2.5} title={`Alergias: ${patient.allergies.join(', ')}`} />}
                                         </div>
                                     </TableCell>
@@ -358,6 +369,7 @@ export default function PatientsPage() {
                                             </CardTitle>
                                              <div className="flex items-center gap-2">
                                                 {patient.isChronic && <Heart className="h-5 w-5 text-red-500" fill="currentColor" title="Paciente Crónico" />}
+                                                {patient.isHomeCare && <Home className="h-5 w-5 text-blue-500" title="Paciente Homecare" />}
                                                 {patient.allergies && patient.allergies.length > 0 && <AlertTriangle className="h-5 w-5 text-amber-500" strokeWidth={2.5} title={`Alergias: ${patient.allergies.join(', ')}`} />}
                                             </div>
                                         </div>

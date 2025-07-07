@@ -5,7 +5,7 @@ import { usePatientAuth } from '@/components/app/patient-auth-provider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Mail, Phone, MapPin, AlertTriangle, ChevronLeft, User, Heart, ShieldAlert, Pill, Stethoscope, Loader2, Palette, Save } from 'lucide-react';
+import { Mail, Phone, MapPin, AlertTriangle, ChevronLeft, User, Heart, ShieldAlert, Pill, Stethoscope, Loader2, Palette, Save, Home } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useEffect, useState } from 'react';
@@ -142,6 +142,7 @@ export default function PatientProfilePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div className="flex items-center gap-3"><User className="h-4 w-4 text-muted-foreground" /><span className="text-foreground">Género: {patient.gender || 'No especificado'}</span></div>
               <div className="flex items-center gap-3"><Heart className="h-4 w-4 text-muted-foreground" /><span className="text-foreground">Paciente Crónico: <Badge variant={patient.isChronic ? "secondary" : "outline"}>{patient.isChronic ? 'Sí' : 'No'}</Badge></span></div>
+              <div className="flex items-center gap-3"><Home className="h-4 w-4 text-muted-foreground" /><span className="text-foreground">Atención Domiciliaria: <Badge variant={patient.isHomeCare ? "secondary" : "outline"}>{patient.isHomeCare ? 'Sí' : 'No'}</Badge></span></div>
             </div>
         </CardContent>
       </Card>
