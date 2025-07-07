@@ -39,6 +39,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { InventoryItemForm } from './inventory-item-form';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 
 const EXPIRY_THRESHOLD_DAYS = 90;
@@ -86,7 +87,7 @@ const InventoryActions = ({
         <DropdownMenuContent align="end" className="w-48">
           <DropdownMenuItem onClick={() => onManageLots(item)}>
             <Box className="mr-2 h-4 w-4" />
-            <span>Ver Lotes de Lioren</span>
+            <span>Gestionar Lotes</span>
           </DropdownMenuItem>
            <DropdownMenuItem onClick={() => onEdit(item)}>
             <Edit className="mr-2 h-4 w-4" />
@@ -137,10 +138,19 @@ const ProductCard = ({
             </CardHeader>
             <CardContent className="flex-grow space-y-4">
                 <div className="flex justify-between items-baseline">
-                    <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-bold text-foreground">{item.quantity}</span>
-                        <span className="text-muted-foreground">{item.unit}</span>
-                    </div>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger>
+                                <div className="flex items-baseline gap-2 cursor-help">
+                                    <span className="text-3xl font-bold text-foreground">{item.quantity}</span>
+                                    <span className="text-muted-foreground">{item.unit}</span>
+                                </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Stock sincronizado desde Lioren.</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                     <Badge className={cn("font-semibold", badge)}>{item.status}</Badge>
                 </div>
                 <div className="text-sm">
@@ -153,7 +163,7 @@ const ProductCard = ({
             <CardFooter className="bg-muted/50 p-3 flex flex-col items-stretch gap-2">
                 <Button onClick={() => onManageLots(item)}>
                     <Box className="mr-2 h-4 w-4" />
-                    Ver Lotes de Lioren
+                    Gestionar Lotes
                 </Button>
                 <InventoryActions item={item} onManageLots={onManageLots} onEdit={onEdit} onDelete={onDelete} />
             </CardFooter>
@@ -172,8 +182,8 @@ function LotManagementDialog({ item, isOpen, onOpenChange }: { item: InventoryIt
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Lotes para: <span className="text-primary">{item?.name}</span></DialogTitle>
-          <DialogDescription>Listado de lotes y su stock actual desde Lioren.</DialogDescription>
+          <DialogTitle>Lotes de: <span className="text-primary">{item?.name}</span></DialogTitle>
+          <DialogDescription>Listado de lotes y su stock actual, sincronizado desde Lioren.</DialogDescription>
         </DialogHeader>
         <div className="mt-4 max-h-96 overflow-y-auto pr-4">
             <Table>
@@ -467,8 +477,19 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
                                             <div className="text-xs text-muted-foreground">SKU: {item.sku || 'N/A'}</div>
                                         </TableCell>
                                         <TableCell>
-                                            <span className="font-semibold text-lg text-foreground">{item.quantity}</span>
-                                            <span className="text-sm text-muted-foreground ml-1">{item.unit}</span>
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger>
+                                                        <div className="flex items-center gap-2 cursor-help">
+                                                            <span className="font-semibold text-lg text-foreground">{item.quantity}</span>
+                                                            <span className="text-sm text-muted-foreground ml-1">{item.unit}</span>
+                                                        </div>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>Stock sincronizado desde Lioren.</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
                                         </TableCell>
                                         <TableCell>
                                             {item.nextExpiryDate && !isNaN(parseISO(item.nextExpiryDate).getTime()) ? format(parseISO(item.nextExpiryDate), 'MMM yyyy', {locale: es}) : 'N/A'}

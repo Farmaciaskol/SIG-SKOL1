@@ -6,7 +6,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -146,12 +146,30 @@ export function InventoryItemForm({ itemToEdit, onFinished }: InventoryItemFormP
                     <FormField control={form.control} name="sku" render={({ field }) => (
                         <FormItem><FormLabel>SKU (para Lioren)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                     )}/>
-                    <FormField control={form.control} name="costPrice" render={({ field }) => (
-                        <FormItem><FormLabel>Precio Costo</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                    )}/>
-                    <FormField control={form.control} name="salePrice" render={({ field }) => (
-                        <FormItem><FormLabel>Precio Venta</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                    )}/>
+                    <FormField
+                        control={form.control}
+                        name="costPrice"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Precio Costo</FormLabel>
+                                <FormControl><Input type="number" {...field} disabled /></FormControl>
+                                <FormDescription className="text-xs">Sincronizado desde Lioren.</FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="salePrice"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Precio Venta</FormLabel>
+                                <FormControl><Input type="number" {...field} disabled /></FormControl>
+                                <FormDescription className="text-xs">Sincronizado desde Lioren.</FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                 </div>
 
                  <Separator />
