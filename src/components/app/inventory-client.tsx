@@ -15,9 +15,9 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -650,15 +650,18 @@ export function InventoryClient({ initialInventory, initialLiorenInventory }: {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {liorenInventory.map(item => (
-                                                <TableRow key={item.id}>
-                                                    <TableCell className="font-medium">{item.nombre}</TableCell>
-                                                    <TableCell className="font-mono">{item.codigo}</TableCell>
-                                                    <TableCell>{item.stock_actual}</TableCell>
-                                                    <TableCell className="text-right">${item.precioventabruto?.toLocaleString('es-CL') || '0'}</TableCell>
-                                                    <TableCell className="text-right">${item.preciocompraneto?.toLocaleString('es-CL') || '0'}</TableCell>
-                                                </TableRow>
-                                            ))}
+                                            {liorenInventory.map(item => {
+                                                const totalStock = item.stocks?.reduce((sum, s) => sum + s.stock, 0) ?? 0;
+                                                return (
+                                                    <TableRow key={item.id}>
+                                                        <TableCell className="font-medium">{item.nombre}</TableCell>
+                                                        <TableCell className="font-mono">{item.codigo}</TableCell>
+                                                        <TableCell>{totalStock}</TableCell>
+                                                        <TableCell className="text-right">${item.precioventabruto?.toLocaleString('es-CL') || '0'}</TableCell>
+                                                        <TableCell className="text-right">${item.preciocompraneto?.toLocaleString('es-CL') || '0'}</TableCell>
+                                                    </TableRow>
+                                                )
+                                            })}
                                         </TableBody>
                                     </Table>
                                 </div>
@@ -670,5 +673,3 @@ export function InventoryClient({ initialInventory, initialLiorenInventory }: {
         </>
     );
 }
-
-    

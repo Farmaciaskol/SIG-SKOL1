@@ -2,6 +2,11 @@
 'use server';
 
 // Define a type for the raw product from Lioren API
+export interface LiorenStock {
+  sucursal_id: number;
+  nombre: string;
+  stock: number;
+}
 export interface LiorenProduct {
   id: number;
   nombre: string;
@@ -9,7 +14,7 @@ export interface LiorenProduct {
   descripcion?: string;
   precioventabruto: number;
   preciocompraneto: number;
-  stock_actual: number;
+  stocks: LiorenStock[];
   familia?: {
     nombre: string;
   };

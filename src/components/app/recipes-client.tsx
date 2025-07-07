@@ -136,7 +136,7 @@ import { auth } from '@/lib/firebase';
 
 // --- HELPER COMPONENTS (defined outside the main component for clarity and performance) ---
 
-const StatCard = ({ title, value, icon: Icon, onClick, active = false, iconClassName }: { title: string; value: string | number; icon: React.ElementType; onClick: () => void; active?: boolean; iconClassName?: string }) => (
+const StatCard = ({ title, value, icon: Icon, onClick, active = false, iconClassName }: { title: string; value: string | number; icon: React.ElementType; onClick: () => void; active?: boolean; iconClassName?: string; }) => (
   <Card className={cn("hover:shadow-md transition-shadow cursor-pointer", active && "ring-2 ring-primary")} onClick={onClick}>
     <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 pb-2">
       <CardTitle className="text-sm font-medium">{title}</CardTitle>
@@ -823,7 +823,7 @@ export const RecipesClient = ({
       readyForPickup: initialRecipes.filter(r => r.status === RecipeStatus.ReadyForPickup || r.status === RecipeStatus.ReceivedAtSkol).length,
       rejected: initialRecipes.filter(r => r.status === RecipeStatus.Rejected).length,
       expiringOrExpired: expiringOrExpiredCount,
-    }
+    };
   }, [initialRecipes]);
 
   const filteredRecipes = useMemo(() => {
@@ -1159,7 +1159,6 @@ export const RecipesClient = ({
             </Link>
         </Button>
       </div>
-
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 mt-6">
         <StatCard 
           title="Pend. Validación" 
