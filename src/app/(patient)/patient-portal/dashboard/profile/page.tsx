@@ -17,6 +17,12 @@ import { PREDEFINED_AVATARS, getAvatar } from '@/components/app/predefined-avata
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 
 
 export default function PatientProfilePage() {
