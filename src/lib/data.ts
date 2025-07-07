@@ -8,6 +8,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, ControlledLogEntryType, ProactivePatientStatus, PatientActionNeeded, MonthlyDispensationBoxStatus, DispensationItemStatus, PharmacovigilanceReportStatus, UserRequestStatus, type Recipe, type Doctor, type InventoryItem, type User, type Role, type ExternalPharmacy, type Patient, type PharmacovigilanceReport, type AppData, type AuditTrailEntry, type DispatchNote, type DispatchItem, type ControlledSubstanceLogEntry, type LotDetail, type AppSettings, type MonthlyDispensationBox, type PatientMessage, type UserRequest } from './types';
 import { MAX_REPREPARATIONS } from './constants';
 import { addMonths } from 'date-fns';
+import { fetchInventoryFromLioren } from './lioren-api';
 
 // Helper function to recursively convert Firestore Timestamps to ISO strings
 function deepConvertTimestamps(obj: any): any {
@@ -67,7 +68,8 @@ export const getDoctors = async (): Promise<Doctor[]> => fetchCollection<Doctor>
 export const getExternalPharmacies = async (): Promise<ExternalPharmacy[]> => fetchCollection<ExternalPharmacy>('externalPharmacies');
 
 export const getInventory = async (): Promise<InventoryItem[]> => {
-    return fetchCollection<InventoryItem>('inventory');
+    // This function now fetches data from the Lioren API service.
+    return fetchInventoryFromLioren();
 };
 
 export const getUsers = async (): Promise<User[]> => fetchCollection<User>('users');
@@ -204,7 +206,7 @@ export const getItemsToDispatchCount = async (): Promise<number> => {
 };
 
 export const getLowStockInventoryCount = async (): Promise<number> => {
-    const allItems = await getInventory(); // Firestore doesn't support inequality filters on different fields easily.
+    const allItems = await getInventory(); // Now fetches from Lioren
     return allItems.filter(item => item.quantity < item.lowStockThreshold).length;
 };
 
@@ -383,60 +385,33 @@ export const saveRecipe = async (data: any, imageFile: File | null, userId: stri
     }
 };
 
+// --- Inventory Functions (Now managed by Lioren) ---
+// The functions below are commented out as inventory management is now external.
+// You might need to implement write operations (add, update, delete) to Lioren's API
+// in the `lioren-api.ts` file if required.
+
+/*
 export const addInventoryItem = async (item: Omit<InventoryItem, 'id' | 'quantity' | 'lots'>): Promise<string> => {
-    if (!db) throw new Error("Firestore is not initialized.");
-    
-    const q = query(collection(db, "inventory"), where("name", "==", item.name), limit(1));
-    const querySnapshot = await getDocs(q);
-    if (!querySnapshot.empty) {
-        throw new Error('Ya existe un producto de inventario con este nombre.');
-    }
-    
-    const itemData = { ...item, quantity: 0, lots: [] };
-    const docRef = await addDoc(collection(db, 'inventory'), itemData as any);
-    return docRef.id;
+    // This should now be done in Lioren's platform.
+    throw new Error("Inventory management is handled by Lioren. Add items there.");
 };
 
 export const deleteInventoryItem = async (id: string): Promise<void> => {
-    if (!db) throw new Error("Firestore is not initialized.");
-    
-    // In a production app, you would check for dependencies here,
-    // e.g., if the item is part of an active, non-dispensed recipe.
-    // For this prototype, we will proceed with direct deletion.
-
-    await deleteDoc(doc(db, 'inventory', id));
+    // This should now be done in Lioren's platform.
+    throw new Error("Inventory management is handled by Lioren. Delete items there.");
 };
 
 export const updateInventoryItem = async (id: string, updates: Partial<InventoryItem>): Promise<void> => {
-    if (!db) throw new Error("Firestore is not initialized.");
-    await updateDoc(doc(db, 'inventory', id), updates as any);
+    // This should now be done in Lioren's platform.
+    throw new Error("Inventory management is handled by Lioren. Update items there.");
 };
 
 export const addLotToInventoryItem = async (itemId: string, newLot: LotDetail): Promise<void> => {
-    if (!db) throw new Error("Firestore is not initialized.");
-    
-    const itemRef = doc(db, 'inventory', itemId);
-    const itemSnap = await getDoc(itemRef);
-
-    if (!itemSnap.exists()) {
-        throw new Error(`Inventory item with ID ${itemId} not found.`);
-    }
-
-    const itemData = itemSnap.data() as InventoryItem;
-    
-    const existingLot = itemData.lots?.find(l => l.lotNumber.toLowerCase() === newLot.lotNumber.toLowerCase());
-    if (existingLot) {
-        throw new Error(`El lote con el número ${newLot.lotNumber} ya existe para este producto.`);
-    }
-
-    const updatedLots = [...(itemData.lots || []), newLot];
-    const newTotalQuantity = updatedLots.reduce((sum, lot) => sum + lot.quantity, 0);
-
-    await updateDoc(itemRef, {
-        lots: updatedLots,
-        quantity: newTotalQuantity
-    });
+    // This should now be done in Lioren's platform.
+    throw new Error("Inventory management is handled by Lioren. Add lots there.");
 };
+*/
+
 
 export const processDispatch = async (pharmacyId: string, dispatchItems: DispatchItem[], dispatcherId: string, dispatcherName: string): Promise<string> => {
     if (!db) throw new Error("Firestore is not initialized.");
@@ -572,10 +547,15 @@ export const logDirectSaleDispensation = async (
     const lot = inventoryData.lots[lotIndex];
     if (lot.quantity < quantity) throw new Error(`Not enough stock for lot ${lotNumber}. Required: ${quantity}, Available: ${lot.quantity}`);
     
+    // In a real integration, this stock update would happen via an API call to Lioren.
+    // For now, we are commenting out the direct modification of our local copy.
+    // The next call to getInventory() will fetch the updated state from Lioren's (mock) API.
+    /*
     const newLots = [...inventoryData.lots];
     newLots[lotIndex] = { ...lot, quantity: lot.quantity - quantity };
     const newTotalQuantity = inventoryData.quantity - quantity;
     batch.update(inventoryRef, { lots: newLots, quantity: newTotalQuantity });
+    */
 
     const logSnapshot = await getDocs(query(logCol, where("entryType", "==", ControlledLogEntryType.DirectSale)));
     const newFolioNumber = logSnapshot.size + 1;
