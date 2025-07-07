@@ -7,8 +7,8 @@ export interface LiorenProduct {
   nombre: string;
   codigo: string; // SKU
   descripcion?: string;
-  precio_venta: number;
-  costo: number;
+  precioventabruto: number;
+  preciocompraneto: number;
   stock_actual: number;
   familia?: {
     nombre: string;
@@ -25,7 +25,7 @@ export async function fetchRawInventoryFromLioren(): Promise<LiorenProduct[]> {
   }
 
   try {
-    const response = await fetch('https://api.lioren.cl/v1/productos', {
+    const response = await fetch('https://www.lioren.cl/api/productos', {
       headers: { 
         'Authorization': `Bearer ${apiKey}`,
         'Accept': 'application/json'

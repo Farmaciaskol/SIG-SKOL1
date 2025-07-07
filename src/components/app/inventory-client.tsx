@@ -655,8 +655,8 @@ export function InventoryClient({ initialInventory, initialLiorenInventory }: {
                                                     <TableCell className="font-medium">{item.nombre}</TableCell>
                                                     <TableCell className="font-mono">{item.codigo}</TableCell>
                                                     <TableCell>{item.stock_actual}</TableCell>
-                                                    <TableCell className="text-right">${item.precio_venta?.toLocaleString('es-CL') || '0'}</TableCell>
-                                                    <TableCell className="text-right">${item.costo?.toLocaleString('es-CL') || '0'}</TableCell>
+                                                    <TableCell className="text-right">${item.precioventabruto?.toLocaleString('es-CL') || '0'}</TableCell>
+                                                    <TableCell className="text-right">${item.preciocompraneto?.toLocaleString('es-CL') || '0'}</TableCell>
                                                 </TableRow>
                                             ))}
                                         </TableBody>
