@@ -309,6 +309,20 @@ export function InventoryClient({ initialInventory, initialLiorenInventory }: {
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 20;
 
+    const [openRows, setOpenRows] = useState<Set<string>>(new Set());
+
+    const toggleRow = (id: string) => {
+        setOpenRows(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(id)) {
+            newSet.delete(id);
+        } else {
+            newSet.add(id);
+        }
+        return newSet;
+        });
+    };
+
     const refreshLocalData = async () => {
         setLoading(true);
         try {
@@ -642,9 +656,10 @@ export function InventoryClient({ initialInventory, initialLiorenInventory }: {
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
+                                                <TableHead className="w-12"></TableHead>
                                                 <TableHead>Nombre</TableHead>
                                                 <TableHead>SKU/Código</TableHead>
-                                                <TableHead>Stock</TableHead>
+                                                <TableHead>Stock Total</TableHead>
                                                 <TableHead className="text-right">Precio Venta</TableHead>
                                                 <TableHead className="text-right">Costo</TableHead>
                                             </TableRow>
@@ -652,14 +667,51 @@ export function InventoryClient({ initialInventory, initialLiorenInventory }: {
                                         <TableBody>
                                             {liorenInventory.map(item => {
                                                 const totalStock = item.stocks?.reduce((sum, s) => sum + s.stock, 0) ?? 0;
+                                                const hasBreakdown = item.stocks && item.stocks.length > 0;
+                                                const isRowOpen = openRows.has(item.id.toString());
                                                 return (
-                                                    <TableRow key={item.id}>
-                                                        <TableCell className="font-medium">{item.nombre}</TableCell>
-                                                        <TableCell className="font-mono">{item.codigo}</TableCell>
-                                                        <TableCell>{totalStock}</TableCell>
-                                                        <TableCell className="text-right">${item.precioventabruto?.toLocaleString('es-CL') || '0'}</TableCell>
-                                                        <TableCell className="text-right">${item.preciocompraneto?.toLocaleString('es-CL') || '0'}</TableCell>
-                                                    </TableRow>
+                                                    <React.Fragment key={item.id}>
+                                                        <TableRow>
+                                                            <TableCell>
+                                                                {hasBreakdown && (
+                                                                    <Button variant="ghost" size="icon" className="-ml-2 h-8 w-8" onClick={() => toggleRow(item.id.toString())}>
+                                                                        <ChevronDown className={cn("h-4 w-4 transition-transform", isRowOpen && "rotate-180")} />
+                                                                    </Button>
+                                                                )}
+                                                            </TableCell>
+                                                            <TableCell className="font-medium">{item.nombre}</TableCell>
+                                                            <TableCell className="font-mono">{item.codigo}</TableCell>
+                                                            <TableCell>{totalStock}</TableCell>
+                                                            <TableCell className="text-right">${item.precioventabruto?.toLocaleString('es-CL') || '0'}</TableCell>
+                                                            <TableCell className="text-right">${item.preciocompraneto?.toLocaleString('es-CL') || '0'}</TableCell>
+                                                        </TableRow>
+                                                        {hasBreakdown && isRowOpen && (
+                                                            <TableRow className="bg-muted/50 hover:bg-muted/80">
+                                                                <TableCell />
+                                                                <TableCell colSpan={5} className="p-0">
+                                                                    <div className="p-4">
+                                                                        <h4 className="font-semibold text-xs mb-2">Desglose de Stock por Bodega</h4>
+                                                                        <Table>
+                                                                            <TableHeader>
+                                                                                <TableRow className="border-b-0">
+                                                                                    <TableHead className="h-8">Bodega</TableHead>
+                                                                                    <TableHead className="h-8 text-right">Stock</TableHead>
+                                                                                </TableRow>
+                                                                            </TableHeader>
+                                                                            <TableBody>
+                                                                                {item.stocks.map((stock, index) => (
+                                                                                    <TableRow key={index} className="border-b-0 hover:bg-muted/90">
+                                                                                        <TableCell className="py-1">{stock.nombre}</TableCell>
+                                                                                        <TableCell className="py-1 text-right">{stock.stock}</TableCell>
+                                                                                    </TableRow>
+                                                                                ))}
+                                                                            </TableBody>
+                                                                        </Table>
+                                                                    </div>
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        )}
+                                                    </React.Fragment>
                                                 )
                                             })}
                                         </TableBody>
