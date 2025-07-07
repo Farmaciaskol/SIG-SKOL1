@@ -17,7 +17,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -308,6 +307,9 @@ export function InventoryClient({ initialInventory }: {
 
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 20;
+    
+    const [liorenCurrentPage, setLiorenCurrentPage] = useState(1);
+    const LIOREN_ITEMS_PER_PAGE = 15;
 
     const [openRows, setOpenRows] = useState<Set<string>>(new Set());
 
@@ -337,6 +339,7 @@ export function InventoryClient({ initialInventory }: {
     
     const handleSearchLioren = async () => {
         setIsSearchingLioren(true);
+        setLiorenCurrentPage(1);
         try {
             const results = await fetchRawInventoryFromLioren(liorenSearchTerm);
             setLiorenInventory(results);
@@ -438,6 +441,13 @@ export function InventoryClient({ initialInventory }: {
         const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
         return filteredInventory.slice(startIndex, startIndex + ITEMS_PER_PAGE);
     }, [filteredInventory, currentPage]);
+    
+    const totalLiorenPages = Math.ceil(liorenInventory.length / LIOREN_ITEMS_PER_PAGE);
+
+    const paginatedLiorenInventory = useMemo(() => {
+        const startIndex = (liorenCurrentPage - 1) * LIOREN_ITEMS_PER_PAGE;
+        return liorenInventory.slice(startIndex, startIndex + LIOREN_ITEMS_PER_PAGE);
+    }, [liorenInventory, liorenCurrentPage]);
 
     useEffect(() => {
         setCurrentPage(1);
@@ -678,7 +688,7 @@ export function InventoryClient({ initialInventory }: {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {liorenInventory.map(item => {
+                                            {paginatedLiorenInventory.map(item => {
                                                 const totalStock = item.stocks?.reduce((sum, s) => sum + (Number(s.stock) || 0), 0) ?? 0;
                                                 const hasBreakdown = item.stocks && item.stocks.length > 0;
                                                 const isRowOpen = openRows.has(item.id.toString());
@@ -732,9 +742,23 @@ export function InventoryClient({ initialInventory }: {
                                 </div>
                             )}
                         </CardContent>
+                         {totalLiorenPages > 1 && (
+                            <CardFooter className="flex items-center justify-between px-4 py-3 border-t">
+                                <div className="text-xs text-muted-foreground">
+                                    Página {liorenCurrentPage} de {totalLiorenPages}
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <Button variant="outline" size="sm" onClick={() => setLiorenCurrentPage(1)} disabled={liorenCurrentPage === 1}><ChevronsLeft /></Button>
+                                    <Button variant="outline" size="sm" onClick={() => setLiorenCurrentPage(prev => Math.max(prev - 1, 1))} disabled={liorenCurrentPage === 1}><ChevronLeft /></Button>
+                                    <Button variant="outline" size="sm" onClick={() => setLiorenCurrentPage(prev => Math.min(prev + 1, totalLiorenPages))} disabled={liorenCurrentPage === totalLiorenPages}><ChevronRight /></Button>
+                                    <Button variant="outline" size="sm" onClick={() => setLiorenCurrentPage(totalLiorenPages)} disabled={liorenCurrentPage === totalLiorenPages}><ChevronsRight /></Button>
+                                </div>
+                            </CardFooter>
+                         )}
                     </Card>
                 </TabsContent>
             </Tabs>
         </>
     );
 }
+
