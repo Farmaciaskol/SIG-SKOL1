@@ -76,7 +76,7 @@ export default function MonthlyDispensingPage() {
     return {
       inPreparation: dispensations.filter(d => d.status === MonthlyDispensationBoxStatus.InPreparation).length,
       readyForPickup: dispensations.filter(d => d.status === MonthlyDispensationBoxStatus.ReadyForPickup).length,
-      dispensed: dispensations.filter(d => d.status === MonthlyDispensationBoxStatus.Dispensed).length,
+      dispensedThisMonth: dispensations.filter(d => d.status === MonthlyDispensationBoxStatus.Dispensed && d.dispensedAt && new Date(d.dispensedAt).getMonth() === new Date().getMonth()).length,
     }
   }, [dispensations]);
 
@@ -85,7 +85,7 @@ export default function MonthlyDispensingPage() {
   }, [dispensations]);
 
   const getComplianceStatus = (box: MonthlyDispensationBox) => {
-    const hasIssues = box.items.some(item => item.status !== DispensationItemStatus.OkToInclude);
+    const hasIssues = box.items.some(item => item.status === DispensationItemStatus.RequiresAttention || item.status === DispensationItemStatus.DoNotInclude);
     if (hasIssues) {
       return { text: 'Requiere Revisión', icon: AlertCircle, color: 'text-orange-500' };
     }
@@ -120,7 +120,7 @@ export default function MonthlyDispensingPage() {
       <div className="grid gap-6 md:grid-cols-3">
         <StatCard title="En Preparación" value={stats.inPreparation} icon={Box} />
         <StatCard title="Listas para Retiro" value={stats.readyForPickup} icon={Package} />
-        <StatCard title="Dispensadas (Mes Actual)" value={stats.dispensed} icon={CheckCircle} />
+        <StatCard title="Dispensadas (Mes Actual)" value={stats.dispensedThisMonth} icon={CheckCircle} />
       </div>
 
       <Card>
@@ -133,9 +133,9 @@ export default function MonthlyDispensingPage() {
               <TableRow>
                 <TableHead>Período</TableHead>
                 <TableHead>Paciente</TableHead>
-                <TableHead>Cumplimiento Recetas</TableHead>
+                <TableHead>Cumplimiento Ítems</TableHead>
                 <TableHead>Estado Caja</TableHead>
-                <TableHead>Fecha Creación</TableHead>
+                <TableHead>Dispensado a</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
@@ -156,7 +156,7 @@ export default function MonthlyDispensingPage() {
                     <TableCell>
                       <Badge className={statusInfo.badge}>{statusInfo.text}</Badge>
                     </TableCell>
-                    <TableCell>{format(new Date(box.createdAt), 'dd-MM-yyyy')}</TableCell>
+                    <TableCell>{box.retrievedBy_Name || '-'}</TableCell>
                     <TableCell className="text-right">
                       <Button asChild variant="outline" size="sm">
                         <Link href={`/monthly-dispensing/${box.id}`}>Ver / Gestionar</Link>

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -24,9 +24,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ChevronLeft, Loader2, User, Calendar, CheckCircle, AlertTriangle, XCircle, Printer, Box, Save, Package } from 'lucide-react';
+import { ChevronLeft, Loader2, User, Calendar, CheckCircle, AlertTriangle, XCircle, Printer, Box, Save, Package, PackageCheck } from 'lucide-react';
 import { format, parse } from 'date-fns';
 import { es } from 'date-fns/locale';
 import React from 'react';
@@ -40,6 +42,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Dialog, DialogClose } from '@/components/ui/dialog';
 
 const itemStatusConfig: Record<DispensationItemStatus, { text: string; icon: React.ElementType; color: string }> = {
   [DispensationItemStatus.OkToInclude]: { text: 'OK para Incluir', icon: CheckCircle, color: 'text-green-500' },
@@ -47,6 +50,104 @@ const itemStatusConfig: Record<DispensationItemStatus, { text: string; icon: Rea
   [DispensationItemStatus.DoNotInclude]: { text: 'No Incluir', icon: XCircle, color: 'text-red-500' },
   [DispensationItemStatus.ManuallyAdded]: { text: 'Añadido Manualmente', icon: CheckCircle, color: 'text-blue-500' },
 };
+
+const DispenseConfirmationDialog = ({ 
+  isOpen, 
+  onOpenChange, 
+  onConfirm,
+  isSaving,
+  retrieverName,
+  setRetrieverName,
+  retrieverRut,
+  setRetrieverRut,
+}: {
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
+    onConfirm: () => void;
+    isSaving: boolean;
+    retrieverName: string;
+    setRetrieverName: (value: string) => void;
+    retrieverRut: string;
+    setRetrieverRut: (value: string) => void;
+}) => (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+        <DialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Confirmar Dispensación</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Ingrese los datos de la persona que retira la caja. Esta acción es irreversible.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                    <Label htmlFor="retriever-name">Nombre de quien retira *</Label>
+                    <Input id="retriever-name" value={retrieverName} onChange={(e) => setRetrieverName(e.target.value)} placeholder="Nombre completo" />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="retriever-rut">RUT de quien retira *</Label>
+                    <Input id="retriever-rut" value={retrieverRut} onChange={(e) => setRetrieverRut(e.target.value)} placeholder="XX.XXX.XXX-X" />
+                </div>
+            </div>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={onConfirm} disabled={isSaving || !retrieverName || !retrieverRut}>
+                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                    Dispensar
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </DialogContent>
+    </Dialog>
+);
+
+const PrintLabelDialog = ({
+    isOpen,
+    onOpenChange,
+    box,
+    patient,
+}: {
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
+    box: MonthlyDispensationBox | null;
+    patient: Patient | null;
+}) => {
+    const handlePrint = () => {
+        setTimeout(() => { window.print(); }, 100);
+    };
+
+    if (!box || !patient) return null;
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="printable-label">
+                <div className="p-6 space-y-4">
+                     <h2 className="text-xl font-bold text-center">FARMACIA SKOL</h2>
+                     <Separator />
+                     <div className="text-center">
+                        <p className="font-semibold text-lg">{patient.name}</p>
+                        <p className="text-sm">{patient.rut}</p>
+                     </div>
+                     <Separator />
+                     <div>
+                        <p className="font-semibold">Contenido:</p>
+                        <ul className="list-disc list-inside text-sm">
+                            {box.items.filter(i => i.status === 'OK para Incluir' || i.status === 'Añadido Manualmente').map(item => (
+                                <li key={item.id}>{item.name}</li>
+                            ))}
+                        </ul>
+                     </div>
+                     <Separator />
+                     <p className="text-sm"><span className="font-semibold">Período:</span> {format(parse(box.period, 'yyyy-MM', new Date()), 'MMMM yyyy', { locale: es })}</p>
+                </div>
+                 <DialogFooter className="p-4 border-t no-print">
+                    <DialogClose asChild>
+                        <Button type="button" variant="secondary">Cerrar</Button>
+                    </DialogClose>
+                    <Button type="button" onClick={handlePrint}><Printer className="mr-2 h-4 w-4" />Imprimir</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
 
 export default function DispensationDetailPage() {
   const params = useParams();
@@ -60,6 +161,12 @@ export default function DispensationDetailPage() {
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  
+  // States for dialogs
+  const [isDispenseDialogOpen, setIsDispenseDialogOpen] = useState(false);
+  const [retrieverName, setRetrieverName] = useState('');
+  const [retrieverRut, setRetrieverRut] = useState('');
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!id) return;
@@ -143,6 +250,26 @@ export default function DispensationDetailPage() {
     }
   };
 
+  const handleDispenseBox = async () => {
+    if (!box || !retrieverName || !retrieverRut) return;
+    setIsSaving(true);
+    try {
+      await updateMonthlyDispensationBox(box.id, {
+        status: MonthlyDispensationBoxStatus.Dispensed,
+        dispensedAt: new Date().toISOString(),
+        retrievedBy_Name: retrieverName,
+        retrievedBy_RUT: retrieverRut,
+      });
+      toast({ title: "Caja Dispensada", description: "La dispensación ha sido registrada." });
+      setIsDispenseDialogOpen(false);
+      fetchData();
+    } catch (error) {
+       console.error('Failed to dispense box:', error);
+       toast({ title: 'Error', description: 'No se pudo registrar la dispensación.', variant: 'destructive' });
+    } finally {
+        setIsSaving(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -162,10 +289,26 @@ export default function DispensationDetailPage() {
   const itemsToIncludeCount = box.items.filter(i => i.status === DispensationItemStatus.OkToInclude || i.status === DispensationItemStatus.ManuallyAdded).length;
   const itemsWithAttentionCount = box.items.filter(i => i.status === DispensationItemStatus.RequiresAttention).length;
   const canMarkAsReady = box.status === MonthlyDispensationBoxStatus.InPreparation;
-
+  const canDispense = box.status === MonthlyDispensationBoxStatus.ReadyForPickup;
 
   return (
     <>
+      <DispenseConfirmationDialog
+        isOpen={isDispenseDialogOpen}
+        onOpenChange={setIsDispenseDialogOpen}
+        onConfirm={handleDispenseBox}
+        isSaving={isSaving}
+        retrieverName={retrieverName}
+        setRetrieverName={setRetrieverName}
+        retrieverRut={retrieverRut}
+        setRetrieverRut={setRetrieverRut}
+      />
+      <PrintLabelDialog
+        isOpen={isPrintDialogOpen}
+        onOpenChange={setIsPrintDialogOpen}
+        box={box}
+        patient={patient}
+      />
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="outline" size="icon" className="h-10 w-10" asChild>
@@ -199,9 +342,10 @@ export default function DispensationDetailPage() {
                                   {box.items.map(item => {
                                       const originalItem = originalBox?.items.find(i => i.id === item.id);
                                       const isOverridden = originalItem && originalItem.status !== item.status;
+                                      const isFormDisabled = box.status !== MonthlyDispensationBoxStatus.InPreparation;
 
                                       return (
-                                        <TableRow key={item.id}>
+                                        <TableRow key={item.id} className={isFormDisabled ? 'bg-muted/30' : ''}>
                                             <TableCell>
                                                 <p className="font-semibold text-foreground">{item.name}</p>
                                                 <p className="text-xs text-muted-foreground">{item.details}</p>
@@ -217,7 +361,7 @@ export default function DispensationDetailPage() {
                                                     <Select 
                                                       value={item.status} 
                                                       onValueChange={(value) => handleItemChange(item.id, 'status', value as DispensationItemStatus)}
-                                                      disabled={!canMarkAsReady}
+                                                      disabled={isFormDisabled}
                                                     >
                                                         <SelectTrigger><SelectValue /></SelectTrigger>
                                                         <SelectContent>
@@ -235,7 +379,7 @@ export default function DispensationDetailPage() {
                                                   className="text-xs"
                                                   value={item.pharmacistNotes || ''}
                                                   onChange={(e) => handleItemChange(item.id, 'pharmacistNotes', e.target.value)}
-                                                  disabled={!canMarkAsReady}
+                                                  disabled={isFormDisabled}
                                                 />
                                             </TableCell>
                                         </TableRow>
@@ -254,11 +398,23 @@ export default function DispensationDetailPage() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                      <p>Estado Actual: <Badge className="text-base">{box.status}</Badge></p>
+                      {box.status === MonthlyDispensationBoxStatus.Dispensed && box.retrievedBy_Name && (
+                        <div className="text-sm">
+                            <p className="font-semibold">Dispensado a:</p>
+                            <p>{box.retrievedBy_Name} ({box.retrievedBy_RUT})</p>
+                        </div>
+                      )}
                      <Separator />
                      <p className="text-sm font-semibold">Ítems a Incluir: {itemsToIncludeCount}</p>
                      <p className="text-sm font-semibold text-orange-600">Ítems con Alertas: {itemsWithAttentionCount}</p>
                   </CardContent>
                   <CardFooter className="flex flex-col gap-2">
+                     {canDispense && (
+                        <Button className="w-full" onClick={() => setIsDispenseDialogOpen(true)} disabled={isSaving}>
+                            <PackageCheck className="mr-2 h-4 w-4"/>
+                            Dispensar Caja
+                        </Button>
+                     )}
                      <Button className="w-full" onClick={handleMarkAsReadyClick} disabled={!canMarkAsReady || isSaving}>
                         {isSaving && box.status === MonthlyDispensationBoxStatus.InPreparation ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Package className="mr-2 h-4 w-4"/>}
                         Marcar como Lista para Retiro
@@ -267,7 +423,7 @@ export default function DispensationDetailPage() {
                          {isSaving && box.status !== MonthlyDispensationBoxStatus.InPreparation ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
                         Guardar Progreso
                      </Button>
-                     <Button className="w-full" variant="outline" disabled={true}>
+                     <Button className="w-full" variant="outline" onClick={() => setIsPrintDialogOpen(true)}>
                         <Printer className="mr-2 h-4 w-4"/>
                         Imprimir Etiqueta de Caja
                      </Button>
