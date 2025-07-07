@@ -37,6 +37,7 @@ import {
 import {
   Sidebar,
   SidebarContent,
+  SidebarHeader,
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarMenu,
@@ -240,29 +241,6 @@ function MainNavContent({
                 />
                 <span className="sr-only">Toggle sidebar</span>
             </Button>
-            
-            <Link href="/dashboard" className="block">
-                <div className="relative h-10 w-32 flex items-center">
-                    {/* Full Logo: visible when expanded */}
-                    <Image
-                        src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=1a612d04-0f27-4317-bfd6-06b48f019a24"
-                        alt="Skol Pharmacy Logo"
-                        width={120}
-                        height={33}
-                        className="object-contain h-full w-auto transition-opacity duration-300 group-data-[state=expanded]:opacity-100 group-data-[state=collapsed]:opacity-0"
-                        priority
-                    />
-                    {/* Imagotipo: visible when collapsed */}
-                    <Image
-                        src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/IMAGOTIPO_IMAGOTIPO%20FONDO%20-04_IMAGOTIPO%20BLANCO_IMAGOTIPO%20AZUL.png?alt=media&token=746abbd3-b1d7-4abc-80c4-d8125cf78fa2"
-                        alt="Skol Pharmacy Imagotipo"
-                        width={36}
-                        height={36}
-                        className="absolute left-0 top-1/2 -translate-y-1/2 object-contain h-9 w-9 transition-opacity duration-300 opacity-0 group-data-[state=collapsed]:opacity-100"
-                        priority
-                    />
-                </div>
-            </Link>
           </div>
         
         {/* Header Right Side */}
@@ -325,8 +303,32 @@ function MainNavContent({
         
         {/* Sidebar */}
         <Sidebar className="border-r bg-card" collapsible="icon">
-          <SidebarContent className="p-0 flex-1 pt-4">
-            <div className="flex flex-col gap-2 px-2">
+          <SidebarHeader className="h-16 flex items-center justify-center p-2 border-b">
+            <Link href="/dashboard" className="block">
+              <div className="relative h-10 w-32 flex items-center">
+                  {/* Full Logo: visible when expanded */}
+                  <Image
+                      src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=1a612d04-0f27-4317-bfd6-06b48f019a24"
+                      alt="Skol Pharmacy Logo"
+                      width={120}
+                      height={33}
+                      className="object-contain h-full w-auto transition-opacity duration-300 group-data-[state=expanded]:opacity-100 group-data-[state=collapsed]:opacity-0"
+                      priority
+                  />
+                  {/* Imagotipo: visible when collapsed */}
+                  <Image
+                      src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/IMAGOTIPO_IMAGOTIPO%20FONDO%20-04_IMAGOTIPO%20BLANCO_IMAGOTIPO%20AZUL.png?alt=media&token=746abbd3-b1d7-4abc-80c4-d8125cf78fa2"
+                      alt="Skol Pharmacy Imagotipo"
+                      width={36}
+                      height={36}
+                      className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 object-contain h-9 w-9 transition-opacity duration-300 opacity-0 group-data-[state=collapsed]:opacity-100"
+                      priority
+                  />
+              </div>
+            </Link>
+          </SidebarHeader>
+          <SidebarContent className="p-0 flex-1">
+            <div className="flex flex-col gap-2 p-2 pt-4">
               {menuGroups.map((group) => (
                 <SidebarGroup key={group.title}>
                   <SidebarGroupLabel className="flex items-center gap-2 text-sm text-foreground/80 font-semibold h-9">
