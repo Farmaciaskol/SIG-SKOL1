@@ -19,7 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { PlusCircle, Eye, HeartPulse, Clock, CalendarPlus, CheckCircle, FileWarning } from 'lucide-react';
-import { Bar, BarChart, Pie, PieChart } from 'recharts';
+import { Bar, BarChart, Pie, PieChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 import { useToast } from '@/hooks/use-toast';
 import { differenceInDays, isThisMonth, format, parseISO } from 'date-fns';
@@ -172,10 +172,13 @@ export default function PharmacovigilancePage() {
           </CardHeader>
           <CardContent>
              {reports.length > 0 ? (
-                <ChartContainer config={{ total: { label: "Reportes" } }} className="h-[250px] w-full">
-                <BarChart accessibilityLayer data={chartDataByMedication} layout="vertical" margin={{ left: 10 }}>
+                <ChartContainer config={{ total: { label: "Reportes", color: "hsl(var(--chart-1))" } }} className="h-[250px] w-full">
+                <BarChart accessibilityLayer data={chartDataByMedication} layout="vertical" margin={{ right: 20 }}>
+                    <CartesianGrid horizontal={false} />
+                    <YAxis dataKey="name" type="category" tickLine={false} tickMargin={10} axisLine={false} hide />
+                    <XAxis dataKey="total" type="number" hide />
                     <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="total" fill="var(--color-total)" radius={4} />
+                    <Bar dataKey="total" radius={4} />
                 </BarChart>
                 </ChartContainer>
              ) : (

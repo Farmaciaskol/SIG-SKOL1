@@ -319,175 +319,175 @@ export default function ExternalPrescriptionsPage() {
   }
 
   return (
-    <Dialog open={isFormOpen} onOpenChange={(open) => {
-      if (!open) setEditingPharmacy(null);
-      setIsFormOpen(open);
-    }}>
-      <>
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground font-headline">Gestión de Recetarios</h1>
-            <p className="text-sm text-muted-foreground">
-              Panel de control para gestionar la relación con los socios.
-            </p>
+    <>
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground font-headline">Gestión de Recetarios</h1>
+          <p className="text-sm text-muted-foreground">
+            Panel de control para gestionar la relación con los socios.
+          </p>
+        </div>
+        <Button onClick={() => handleOpenForm(null)}>
+          <PlusCircle className="mr-2 h-4 w-4" /> Nuevo Recetario
+        </Button>
+      </div>
+      
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-6">
+          <StatCard title="Saldo Pendiente Total" value={globalStats.totalBalance} icon={Banknote} />
+          <StatCard title="Total de Recetarios" value={globalStats.totalPharmacies} icon={Building2} />
+          <StatCard title="Recetario con Mayor Saldo" value={globalStats.highestBalancePharmacyName} icon={Warehouse} />
+      </div>
+
+      <Card className="mb-6">
+          <CardContent className="p-4">
+              <div className="relative">
+                  <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                      type="search"
+                      placeholder="Buscar por nombre o persona de contacto..."
+                      className="pl-8 w-full"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+              </div>
+          </CardContent>
+      </Card>
+      
+      {filteredPharmacies.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredPharmacies.map((pharmacy) => (
+                  <PharmacyCard 
+                      key={pharmacy.id} 
+                      pharmacy={pharmacy} 
+                      onEdit={() => handleOpenForm(pharmacy)} 
+                      onDelete={() => setPharmacyToDelete(pharmacy)}
+                  />
+              ))}
           </div>
-          <Button onClick={() => handleOpenForm(null)}>
-            <PlusCircle className="mr-2 h-4 w-4" /> Nuevo Recetario
-          </Button>
-        </div>
-        
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-6">
-            <StatCard title="Saldo Pendiente Total" value={globalStats.totalBalance} icon={Banknote} />
-            <StatCard title="Total de Recetarios" value={globalStats.totalPharmacies} icon={Building2} />
-            <StatCard title="Recetario con Mayor Saldo" value={globalStats.highestBalancePharmacyName} icon={Warehouse} />
-        </div>
+      ) : (
+          <Card className="text-center py-16 mt-8 shadow-none border-dashed">
+              <div className="flex flex-col items-center justify-center">
+                  <Warehouse className="h-16 w-16 text-muted-foreground mb-4" />
+                  <h2 className="text-xl font-semibold">No se encontraron recetarios</h2>
+                  <p className="text-muted-foreground mt-2 max-w-sm">
+                      Intenta ajustar tu búsqueda o crea un nuevo recetario para empezar.
+                  </p>
+                  <Button className="mt-6" onClick={() => handleOpenForm(null)}>
+                      <PlusCircle className="mr-2 h-4 w-4" /> Crear Primer Recetario
+                  </Button>
+              </div>
+          </Card>
+      )}
 
-        <Card className="mb-6">
-            <CardContent className="p-4">
-                <div className="relative">
-                    <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        type="search"
-                        placeholder="Buscar por nombre o persona de contacto..."
-                        className="pl-8 w-full"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-            </CardContent>
-        </Card>
-        
-        {filteredPharmacies.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredPharmacies.map((pharmacy) => (
-                    <PharmacyCard 
-                        key={pharmacy.id} 
-                        pharmacy={pharmacy} 
-                        onEdit={() => handleOpenForm(pharmacy)} 
-                        onDelete={() => setPharmacyToDelete(pharmacy)}
-                    />
-                ))}
-            </div>
-        ) : (
-            <Card className="text-center py-16 mt-8 shadow-none border-dashed">
-                <div className="flex flex-col items-center justify-center">
-                    <Warehouse className="h-16 w-16 text-muted-foreground mb-4" />
-                    <h2 className="text-xl font-semibold">No se encontraron recetarios</h2>
-                    <p className="text-muted-foreground mt-2 max-w-sm">
-                        Intenta ajustar tu búsqueda o crea un nuevo recetario para empezar.
-                    </p>
-                    <Button className="mt-6" onClick={() => handleOpenForm(null)}>
-                        <PlusCircle className="mr-2 h-4 w-4" /> Crear Primer Recetario
-                    </Button>
-                </div>
-            </Card>
-        )}
-      </>
+      <Dialog open={isFormOpen} onOpenChange={(open) => {
+        if (!open) setEditingPharmacy(null);
+        setIsFormOpen(open);
+      }}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+              <DialogTitle>{editingPharmacy ? 'Editar Recetario' : 'Nuevo Recetario'}</DialogTitle>
+              <DialogDescription>
+                  {editingPharmacy ? 'Actualice los datos del socio.' : 'Complete el formulario para registrar un nuevo socio.'}
+              </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-2 max-h-[70vh] overflow-y-auto pr-4">
+                  <FormField control={form.control} name="name" render={({ field }) => (
+                      <FormItem><FormLabel>Nombre del Recetario *</FormLabel><FormControl><Input placeholder="Ej: Farmacias Magistrales S.A." {...field} /></FormControl><FormMessage /></FormItem>
+                  )}/>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <FormField control={form.control} name="contactPerson" render={({ field }) => (
+                          <FormItem><FormLabel>Persona de Contacto</FormLabel><FormControl><Input placeholder="Ej: Juan Pérez" {...field} /></FormControl><FormMessage /></FormItem>
+                      )}/>
+                       <FormField control={form.control} name="phone" render={({ field }) => (
+                          <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="Ej: +56912345678" {...field} /></FormControl><FormMessage /></FormItem>
+                      )}/>
+                  </div>
+                   <FormField control={form.control} name="email" render={({ field }) => (
+                      <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="Ej: contacto@recetario.com" {...field} /></FormControl><FormMessage /></FormItem>
+                  )}/>
+                   <FormField control={form.control} name="address" render={({ field }) => (
+                      <FormItem><FormLabel>Dirección</FormLabel><FormControl><Input placeholder="Ej: Av. Principal 123, Santiago" {...field} /></FormControl><FormMessage /></FormItem>
+                  )}/>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <FormField
+                          control={form.control}
+                          name="defaultPaymentModel"
+                          render={({ field }) => (
+                          <FormItem>
+                              <FormLabel>Modelo de Pago por Defecto *</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                  <SelectTrigger>
+                                  <SelectValue placeholder="Seleccione un modelo..." />
+                                  </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                  <SelectItem value="Por Receta">Por Receta</SelectItem>
+                                  <SelectItem value="Factura Mensual">Factura Mensual</SelectItem>
+                              </SelectContent>
+                              </Select>
+                              <FormMessage />
+                          </FormItem>
+                          )}
+                      />
+                      <FormField
+                          control={form.control}
+                          name="transportCost"
+                          render={({ field }) => (
+                          <FormItem>
+                              <FormLabel>Costo de Despacho por Defecto (CLP)</FormLabel>
+                              <FormControl><Input type="number" placeholder="Ej: 3500" {...field} /></FormControl>
+                              <FormMessage />
+                          </FormItem>
+                          )}
+                      />
+                  </div>
+                  
+                  <Separator className="my-4" />
+                  <h4 className="font-medium text-foreground mb-2">Tiempos de Entrega (Compromiso)</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <FormField
+                          control={form.control}
+                          name="standardPreparationTime"
+                          render={({ field }) => (
+                          <FormItem>
+                              <FormLabel>Preparación Estándar (días)</FormLabel>
+                              <FormControl><Input type="number" placeholder="Ej: 2" {...field} /></FormControl>
+                              <FormDescription className="text-xs">Para insumos propios del recetario.</FormDescription>
+                              <FormMessage />
+                          </FormItem>
+                          )}
+                      />
+                      <FormField
+                          control={form.control}
+                          name="skolSuppliedPreparationTime"
+                          render={({ field }) => (
+                          <FormItem>
+                              <FormLabel>Preparación Insumo Skol (días)</FormLabel>
+                              <FormControl><Input type="number" placeholder="Ej: 3" {...field} /></FormControl>
+                              <FormDescription className="text-xs">Para insumos que Skol despacha.</FormDescription>
+                              <FormMessage />
+                          </FormItem>
+                          )}
+                      />
+                  </div>
+                  
+                   <FormField control={form.control} name="paymentDetails" render={({ field }) => (
+                      <FormItem><FormLabel>Detalles de Pago</FormLabel><FormControl><Textarea placeholder="Ej: Cuenta Corriente Banco XYZ, N° 123-456-789, a nombre de..." {...field} /></FormControl><FormMessage /></FormItem>
+                  )}/>
 
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-            <DialogTitle>{editingPharmacy ? 'Editar Recetario' : 'Nuevo Recetario'}</DialogTitle>
-            <DialogDescription>
-                {editingPharmacy ? 'Actualice los datos del socio.' : 'Complete el formulario para registrar un nuevo socio.'}
-            </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-2 max-h-[70vh] overflow-y-auto pr-4">
-                <FormField control={form.control} name="name" render={({ field }) => (
-                    <FormItem><FormLabel>Nombre del Recetario *</FormLabel><FormControl><Input placeholder="Ej: Farmacias Magistrales S.A." {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <FormField control={form.control} name="contactPerson" render={({ field }) => (
-                        <FormItem><FormLabel>Persona de Contacto</FormLabel><FormControl><Input placeholder="Ej: Juan Pérez" {...field} /></FormControl><FormMessage /></FormItem>
-                    )}/>
-                     <FormField control={form.control} name="phone" render={({ field }) => (
-                        <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="Ej: +56912345678" {...field} /></FormControl><FormMessage /></FormItem>
-                    )}/>
-                </div>
-                 <FormField control={form.control} name="email" render={({ field }) => (
-                    <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="Ej: contacto@recetario.com" {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
-                 <FormField control={form.control} name="address" render={({ field }) => (
-                    <FormItem><FormLabel>Dirección</FormLabel><FormControl><Input placeholder="Ej: Av. Principal 123, Santiago" {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <FormField
-                        control={form.control}
-                        name="defaultPaymentModel"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Modelo de Pago por Defecto *</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                                <SelectTrigger>
-                                <SelectValue placeholder="Seleccione un modelo..." />
-                                </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                <SelectItem value="Por Receta">Por Receta</SelectItem>
-                                <SelectItem value="Factura Mensual">Factura Mensual</SelectItem>
-                            </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="transportCost"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Costo de Despacho por Defecto (CLP)</FormLabel>
-                            <FormControl><Input type="number" placeholder="Ej: 3500" {...field} /></FormControl>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                </div>
-                
-                <Separator className="my-4" />
-                <h4 className="font-medium text-foreground mb-2">Tiempos de Entrega (Compromiso)</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <FormField
-                        control={form.control}
-                        name="standardPreparationTime"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Preparación Estándar (días)</FormLabel>
-                            <FormControl><Input type="number" placeholder="Ej: 2" {...field} /></FormControl>
-                            <FormDescription className="text-xs">Para insumos propios del recetario.</FormDescription>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="skolSuppliedPreparationTime"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Preparación Insumo Skol (días)</FormLabel>
-                            <FormControl><Input type="number" placeholder="Ej: 3" {...field} /></FormControl>
-                            <FormDescription className="text-xs">Para insumos que Skol despacha.</FormDescription>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                </div>
-                
-                 <FormField control={form.control} name="paymentDetails" render={({ field }) => (
-                    <FormItem><FormLabel>Detalles de Pago</FormLabel><FormControl><Textarea placeholder="Ej: Cuenta Corriente Banco XYZ, N° 123-456-789, a nombre de..." {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
-
-                <DialogFooter className="pt-4 sticky bottom-0 bg-background">
-                    <Button type="button" variant="ghost" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
-                    <Button type="submit" disabled={form.formState.isSubmitting}>
-                        {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {editingPharmacy ? 'Guardar Cambios' : 'Guardar Recetario'}
-                    </Button>
-                </DialogFooter>
-            </form>
-        </Form>
-      </DialogContent>
+                  <DialogFooter className="pt-4 sticky bottom-0 bg-background">
+                      <Button type="button" variant="ghost" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
+                      <Button type="submit" disabled={form.formState.isSubmitting}>
+                          {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          {editingPharmacy ? 'Guardar Cambios' : 'Guardar Recetario'}
+                      </Button>
+                  </DialogFooter>
+              </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
 
        <AlertDialog open={!!pharmacyToDelete} onOpenChange={(open) => !open && setPharmacyToDelete(null)}>
         <AlertDialogContent>
@@ -503,6 +503,6 @@ export default function ExternalPrescriptionsPage() {
             </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Dialog>
+    </>
   );
 }

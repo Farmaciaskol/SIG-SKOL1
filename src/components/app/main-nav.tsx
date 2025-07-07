@@ -371,7 +371,7 @@ function MainNavContent({
   );
 }
 
-export function MainNav(props: MainNavProps) {
+export function MainNav(props: MainNavProps & { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <MainNavContent {...props}>{props.children}</MainNavContent>

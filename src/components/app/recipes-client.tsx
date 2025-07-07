@@ -133,6 +133,8 @@ import { Separator } from '@/components/ui/separator';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
 
+// --- HELPER COMPONENTS (defined outside the main component for clarity and performance) ---
+
 const StatCard = ({ title, value, icon: Icon, onClick, active = false }: { title: string; value: string | number; icon: React.ElementType; onClick: () => void; active?: boolean; }) => {
   const iconColor = useMemo(() => {
     if (Number(value) <= 0) return '';
@@ -349,7 +351,7 @@ const SendBatchDialog = ({ recipes: recipesToSend, isOpen, onClose, onConfirm, i
             groups[id].push(recipe);
         }
         return Object.entries(groups);
-    }, [recipesToSend]);
+    }, [recipesToSend, getPatientName]); // Added getPatientName dependency
 
     if (!isOpen) return null;
 

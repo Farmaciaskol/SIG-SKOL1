@@ -42,7 +42,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Dialog, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 
 const itemStatusConfig: Record<DispensationItemStatus, { text: string; icon: React.ElementType; color: string }> = {
   [DispensationItemStatus.OkToInclude]: { text: 'OK para Incluir', icon: CheckCircle, color: 'text-green-500' },

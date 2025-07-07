@@ -154,7 +154,7 @@ const ProactiveAlertsCard = ({ patients }: { patients: Patient[] }) => {
       return 0;
   });
 
-  const statusConfig = {
+  const statusConfigAlerts = {
     [ProactivePatientStatus.URGENT]: {
       icon: AlertCircle,
       color: 'text-red-600',
@@ -184,7 +184,7 @@ const ProactiveAlertsCard = ({ patients }: { patients: Patient[] }) => {
       <CardContent className="pt-4 space-y-3">
         {alerts.length > 0 ? (
           alerts.map((patient) => {
-            const config = statusConfig[patient.proactiveStatus];
+            const config = statusConfigAlerts[patient.proactiveStatus];
             if (!config) return null;
             const Icon = config.icon;
             return (
@@ -227,7 +227,6 @@ const ProactiveAlertsCard = ({ patients }: { patients: Patient[] }) => {
     </Card>
   );
 };
-
 
 const ActivityFeedCard = ({ recipes, patients }: { recipes: Recipe[], patients: Patient[] }) => {
     const delayedRecipes = useMemo(() => {

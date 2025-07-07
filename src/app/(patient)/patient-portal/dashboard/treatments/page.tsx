@@ -10,7 +10,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Loader2, Pill, Info, Copy, AlertTriangle, ShieldCheck, HeartPulse } from 'lucide-react';
-import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -18,6 +17,8 @@ import { auth } from '@/lib/firebase';
 import { MAX_REPREPARATIONS } from '@/lib/constants';
 import { Separator } from '@/components/ui/separator';
 import type { CheckMedicationInteractionsOutput } from '@/ai/flows/check-medication-interactions';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 const MagistralRecipeManager = ({ recipe }: { recipe: Recipe }) => {
     const { toast } = useToast();

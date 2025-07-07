@@ -62,7 +62,11 @@ const doctorFormSchema = z.object({
 
 type DoctorFormValues = z.infer<typeof doctorFormSchema>;
 
-const DoctorCard = ({ doctor }: { doctor: DoctorWithStats }) => {
+const DoctorCard = ({ doctor, onEdit, onDelete }: { 
+  doctor: DoctorWithStats;
+  onEdit: (doctor: Doctor) => void;
+  onDelete: (doctor: Doctor) => void;
+}) => {
     const { toast } = useToast();
     const getProgressColor = (value: number) => {
       if (isNaN(value)) return 'bg-gray-300';
@@ -76,11 +80,6 @@ const DoctorCard = ({ doctor }: { doctor: DoctorWithStats }) => {
       if (isNaN(value)) return 'N/A';
       return `${Math.round(value)}%`;
     }
-
-    // These would be defined outside or passed as props in a real implementation
-    const openFormForEdit = (doctor: Doctor) => { /* Logic to open edit form */ console.log('Edit', doctor.id); };
-    const setDoctorToDelete = (doctor: Doctor) => { /* Logic to set doctor for deletion */ console.log('Delete', doctor.id); };
-
 
     return (
         <Card className="flex flex-col">
@@ -151,10 +150,10 @@ const DoctorCard = ({ doctor }: { doctor: DoctorWithStats }) => {
                     <Link href={`/doctors/${doctor.id}`}>Ver Detalle</Link>
                 </Button>
                 <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openFormForEdit(doctor)}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(doctor)}>
                         <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-red-100 hover:text-red-600" onClick={() => setDoctorToDelete(doctor)}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-red-100 hover:text-red-600" onClick={() => onDelete(doctor)}>
                         <Trash2 className="h-4 w-4" />
                     </Button>
                 </div>
@@ -309,10 +308,7 @@ export default function DoctorsPage() {
   }
   
   return (
-    <Dialog open={isFormOpen} onOpenChange={(open) => {
-      if (!open) setEditingDoctor(null);
-      setIsFormOpen(open);
-    }}>
+    <>
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground font-headline">Gestión de Médicos</h1>
@@ -343,7 +339,7 @@ export default function DoctorsPage() {
       {filteredDoctors.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredDoctors.map((doctor) => (
-                  <DoctorCard key={doctor.id} doctor={doctor} />
+                  <DoctorCard key={doctor.id} doctor={doctor} onEdit={openFormForEdit} onDelete={setDoctorToDelete} />
               ))}
           </div>
       ) : (
@@ -362,48 +358,53 @@ export default function DoctorsPage() {
       )}
 
       {/* --- Add/Edit Dialog --- */}
-      <DialogContent className="sm:max-w-[480px]">
-        <DialogHeader>
-            <DialogTitle>{editingDoctor ? 'Editar Médico' : 'Añadir Nuevo Médico'}</DialogTitle>
-            <DialogDescription>
-                {editingDoctor ? 'Actualice los datos del médico.' : 'Complete el formulario para registrar un nuevo médico prescriptor.'}
-            </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-2">
-                <FormField control={form.control} name="name" render={({ field }) => (
-                    <FormItem><FormLabel>Nombre Completo *</FormLabel><FormControl><Input placeholder="Ej: Dr. Ricardo Pérez" {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
-                <FormField control={form.control} name="specialty" render={({ field }) => (
-                    <FormItem><FormLabel>Especialidad *</FormLabel><FormControl><Input placeholder="Ej: Dermatología" {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <FormField control={form.control} name="license" render={({ field }) => (
-                      <FormItem><FormLabel>N° Colegiatura</FormLabel><FormControl><Input placeholder="Ej: 12345" {...field} /></FormControl><FormMessage /></FormItem>
+      <Dialog open={isFormOpen} onOpenChange={(open) => {
+        if (!open) setEditingDoctor(null);
+        setIsFormOpen(open);
+      }}>
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+              <DialogTitle>{editingDoctor ? 'Editar Médico' : 'Añadir Nuevo Médico'}</DialogTitle>
+              <DialogDescription>
+                  {editingDoctor ? 'Actualice los datos del médico.' : 'Complete el formulario para registrar un nuevo médico prescriptor.'}
+              </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-2">
+                  <FormField control={form.control} name="name" render={({ field }) => (
+                      <FormItem><FormLabel>Nombre Completo *</FormLabel><FormControl><Input placeholder="Ej: Dr. Ricardo Pérez" {...field} /></FormControl><FormMessage /></FormItem>
                   )}/>
-                  <FormField control={form.control} name="rut" render={({ field }) => (
-                      <FormItem><FormLabel>RUT</FormLabel><FormControl><Input placeholder="Ej: 12.345.678-9" {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormField control={form.control} name="specialty" render={({ field }) => (
+                      <FormItem><FormLabel>Especialidad *</FormLabel><FormControl><Input placeholder="Ej: Dermatología" {...field} /></FormControl><FormMessage /></FormItem>
                   )}/>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                   <FormField control={form.control} name="phone" render={({ field }) => (
-                      <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="Ej: +56912345678" {...field} /></FormControl><FormMessage /></FormItem>
-                  )}/>
-                   <FormField control={form.control} name="email" render={({ field }) => (
-                      <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="Ej: email@dominio.com" {...field} /></FormControl><FormMessage /></FormItem>
-                  )}/>
-                </div>
-                
-                <DialogFooter className="pt-4">
-                    <Button type="button" variant="ghost" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
-                    <Button type="submit" disabled={form.formState.isSubmitting}>
-                        {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {editingDoctor ? 'Guardar Cambios' : 'Guardar Médico'}
-                    </Button>
-                </DialogFooter>
-            </form>
-        </Form>
-      </DialogContent>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FormField control={form.control} name="license" render={({ field }) => (
+                        <FormItem><FormLabel>N° Colegiatura</FormLabel><FormControl><Input placeholder="Ej: 12345" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                    <FormField control={form.control} name="rut" render={({ field }) => (
+                        <FormItem><FormLabel>RUT</FormLabel><FormControl><Input placeholder="Ej: 12.345.678-9" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                     <FormField control={form.control} name="phone" render={({ field }) => (
+                        <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="Ej: +56912345678" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                     <FormField control={form.control} name="email" render={({ field }) => (
+                        <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="Ej: email@dominio.com" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                  </div>
+                  
+                  <DialogFooter className="pt-4">
+                      <Button type="button" variant="ghost" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
+                      <Button type="submit" disabled={form.formState.isSubmitting}>
+                          {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          {editingDoctor ? 'Guardar Cambios' : 'Guardar Médico'}
+                      </Button>
+                  </DialogFooter>
+              </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
       
       {/* --- Delete Confirmation Dialog --- */}
       <AlertDialog open={!!doctorToDelete} onOpenChange={(open) => !open && setDoctorToDelete(null)}>
@@ -420,6 +421,6 @@ export default function DoctorsPage() {
             </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Dialog>
+    </>
   );
 }
