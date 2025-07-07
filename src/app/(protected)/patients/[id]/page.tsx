@@ -33,6 +33,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
 import { InventoryItemForm } from '@/components/app/inventory-item-form';
+import React from 'react';
 
 type ActiveTreatment = {
   type: 'magistral';
