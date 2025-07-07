@@ -59,11 +59,19 @@ export async function fetchRawInventoryFromLioren(): Promise<LiorenProduct[]> {
 
     const data = await response.json();
     
-    if (data && Array.isArray(data['*'])) {
-      console.log(`[PRUEBA DE CONEXIÓN] ¡Éxito! Se obtuvieron ${data['*'].length} productos desde la API de Lioren.`);
+    // Check if the response is an array directly
+    if (Array.isArray(data)) {
+      console.log(`[PRUEBA DE CONEXIÓN] ¡Éxito! Se obtuvieron ${data.length} productos desde la API de Lioren.`);
+      return data as LiorenProduct[];
+    } 
+    // Fallback for the old format, just in case
+    else if (data && Array.isArray(data['*'])) {
+      console.log(`[PRUEBA DE CONEXIÓN] ¡Éxito! Se obtuvieron ${data['*'].length} productos desde la API de Lioren (formato con clave '*').`);
       return data['*'] as LiorenProduct[];
-    } else {
-      console.warn("[PRUEBA DE CONEXIÓN] La API de Lioren respondió correctamente, pero no se encontró la lista de productos (clave '*'). Respuesta recibida:", data);
+    } 
+    // Handle unexpected formats
+    else {
+      console.warn("[PRUEBA DE CONEXIÓN] La API de Lioren respondió correctamente, pero en un formato inesperado. No se encontró un array de productos. Respuesta recibida:", data);
       return [];
     }
 
