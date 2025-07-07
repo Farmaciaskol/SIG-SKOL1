@@ -136,11 +136,11 @@ import { auth } from '@/lib/firebase';
 
 // --- HELPER COMPONENTS (defined outside the main component for clarity and performance) ---
 
-const StatCard = ({ title, value, icon: Icon, onClick, active = false }: { title: string; value: string | number; icon: React.ElementType; onClick: () => void; active?: boolean }) => (
+const StatCard = ({ title, value, icon: Icon, onClick, active = false, iconClassName }: { title: string; value: string | number; icon: React.ElementType; onClick: () => void; active?: boolean; iconClassName?: string }) => (
   <Card className={cn("hover:shadow-md transition-shadow cursor-pointer", active && "ring-2 ring-primary")} onClick={onClick}>
     <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 pb-2">
       <CardTitle className="text-sm font-medium">{title}</CardTitle>
-      <Icon className="h-4 w-4 text-muted-foreground" />
+      <Icon className={cn("h-4 w-4 text-muted-foreground", iconClassName)} />
     </CardHeader>
     <CardContent className="p-4 pt-0">
       <p className="text-2xl font-bold">{value}</p>
@@ -1160,13 +1160,14 @@ export const RecipesClient = ({
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5 mt-6">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 mt-6">
         <StatCard 
           title="Pend. Validación" 
           value={stats.pendingValidation} 
           icon={FileClock}
           onClick={() => setStatusFilter(RecipeStatus.PendingValidation)}
           active={statusFilter === RecipeStatus.PendingValidation}
+          iconClassName={stats.pendingValidation > 0 ? 'text-yellow-500' : ''}
         />
         <StatCard 
           title="En Preparación" 
@@ -1188,6 +1189,7 @@ export const RecipesClient = ({
           icon={AlertTriangle}
           onClick={() => setStatusFilter('expiring')}
           active={statusFilter === 'expiring'}
+          iconClassName={stats.expiringOrExpired > 0 ? 'text-orange-500' : ''}
         />
         <StatCard 
           title="Rechazadas" 
@@ -1195,6 +1197,7 @@ export const RecipesClient = ({
           icon={XCircle}
           onClick={() => setStatusFilter(RecipeStatus.Rejected)}
           active={statusFilter === RecipeStatus.Rejected}
+          iconClassName={stats.rejected > 0 ? 'text-red-500' : ''}
         />
       </div>
 
@@ -1572,7 +1575,7 @@ export const RecipesClient = ({
         </DialogContent>
       </Dialog>
       <Dialog open={!!recipeToPrint} onOpenChange={(open) => !open && setRecipeToPrint(null)}><DialogContent><DialogHeader><DialogTitle className="text-xl font-semibold">Imprimir Etiqueta: {recipeToPrint?.id}</DialogTitle><DialogDescription>Vista previa de la etiqueta para el paciente.</DialogDescription></DialogHeader><div className="my-6 p-4 border rounded-lg bg-muted/50 space-y-2 font-mono text-sm"><p><span className="font-semibold">SKOL Pharmacy</span></p><p>Paciente: {getPatientName(recipeToPrint?.patientId || '')}</p><p>Receta: {recipeToPrint?.id}</p><p>Producto: {recipeToPrint?.items[0]?.principalActiveIngredient} {recipeToPrint?.items[0]?.concentrationValue}{recipeToPrint?.items[0]?.concentrationUnit}</p><p className="pt-2">Instrucciones: {recipeToPrint?.items[0]?.usageInstructions}</p><p className="pt-2">Vencimiento: {recipeToPrint?.preparationExpiryDate ? format(parseISO(recipeToPrint.preparationExpiryDate), 'dd-MM-yyyy') : 'N/A'}</p><p>Lote: {recipeToPrint?.internalPreparationLot || 'N/A'}</p></div><DialogFooter><Button variant="outline" onClick={() => setRecipeToPrint(null)}>Cerrar</Button><Button onClick={() => toast({title: 'Imprimiendo...', description: 'La funcionalidad de impresión real no está implementada.'})}><Printer className="mr-2 h-4 w-4"/>Imprimir</Button></DialogFooter></DialogContent></Dialog>
-      <AlertDialog open={isDeleteBatchAlertOpen} onOpenChange={setIsDeleteBatchAlertOpen}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Eliminar {selectedRecipes.length} recetas?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Las recetas seleccionadas serán eliminadas permanentemente.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleBatchDelete} disabled={isSubmitting} className="bg-destructive hover:bg-destructive/90">{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Eliminar</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+      <AlertDialog open={isDeleteBatchAlertOpen} onOpenChange={setIsDeleteBatchAlertOpen}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Eliminar {selectedRecipes.length} recetas?</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer. Las recetas seleccionadas serán eliminadas permanentemente.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleBatchDelete} disabled={isSubmitting} className="bg-destructive hover:bg-destructive/90">{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Eliminar</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
       
       <AlertDialog open={!!recipeToArchive} onOpenChange={(open) => !open && setRecipeToArchive(null)}>
         <AlertDialogContent>
