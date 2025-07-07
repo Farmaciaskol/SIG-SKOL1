@@ -46,6 +46,7 @@ import { Calendar } from '../ui/calendar';
 import { Label } from '../ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { fetchRawInventoryFromLioren, type LiorenProduct } from '@/lib/lioren-api';
+import { VADEMECUM_DATA } from '@/lib/constants';
 
 
 const EXPIRY_THRESHOLD_DAYS = 90;
@@ -386,14 +387,32 @@ export function InventoryClient({ initialInventory }: {
     };
 
     const handleImportLiorenItem = (liorenItem: LiorenProduct) => {
+        const liorenProductName = toTitleCase(liorenItem.nombre);
+        const lowerLiorenName = liorenProductName.toLowerCase().trim();
+
+        const vademecumMatch = VADEMECUM_DATA.find(
+            drug => drug.productName.toLowerCase().trim() === lowerLiorenName
+        );
+
+        const activePrinciple = vademecumMatch 
+            ? vademecumMatch.activeIngredient 
+            : liorenProductName;
+
+        if (vademecumMatch) {
+            toast({
+                title: "Principio Activo Encontrado",
+                description: `Se autocompletó "${vademecumMatch.activeIngredient}" desde el Vademecum.`,
+            });
+        }
+
         const formattedItem: Partial<InventoryItem> = {
-            name: toTitleCase(liorenItem.nombre),
+            name: liorenProductName,
             sku: liorenItem.codigo,
             costPrice: liorenItem.preciocompraneto,
             salePrice: liorenItem.precioventabruto,
             unit: toTitleCase(liorenItem.unidad),
             inventoryType: 'Fraccionamiento',
-            activePrinciple: toTitleCase(liorenItem.nombre),
+            activePrinciple: activePrinciple,
             pharmaceuticalForm: '',
             doseValue: 0,
             doseUnit: 'mg',
