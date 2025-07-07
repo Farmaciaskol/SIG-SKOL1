@@ -136,29 +136,6 @@ import { auth } from '@/lib/firebase';
 
 // --- HELPER COMPONENTS (defined outside the main component for clarity and performance) ---
 
-const StatCard = ({ title, value, icon: Icon, onClick, active = false }: { title: string; value: string | number; icon: React.ElementType; onClick: () => void; active?: boolean; }) => {
-  const iconColor = useMemo(() => {
-    if (Number(value) <= 0) return '';
-    if (title === 'Pend. Validación') return 'text-yellow-500';
-    if (title === 'Próximas a Vencer') return 'text-orange-500';
-    if (title === 'Rechazadas') return 'text-red-500';
-    return '';
-  }, [title, value]);
-
-  return (
-    <Card className={cn("hover:shadow-md transition-shadow cursor-pointer", active && "ring-2 ring-primary")} onClick={onClick}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className={cn("h-4 w-4 text-muted-foreground", iconColor)} />
-      </CardHeader>
-      <CardContent className="p-4 pt-0">
-        <p className="text-2xl font-bold">{value}</p>
-      </CardContent>
-    </Card>
-  );
-};
-
-
 const calculateTotalCycles = (recipe: Recipe): number => {
     if (!recipe.dueDate || !recipe.createdAt || !recipe.items?.[0]) {
       return MAX_REPREPARATIONS + 1;
@@ -684,6 +661,44 @@ const MobileRecipeActions = ({ recipe, onReprepare, onCancel, onDelete, onArchiv
     const router = useRouter();
     const canReprepare = recipe.status === RecipeStatus.Dispensed && !(recipe.dueDate ? new Date(recipe.dueDate) < new Date() : false) && (recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0) < calculateTotalCycles(recipe);
     
+    const ActionButtonLocal = () => {
+      switch (recipe.status) {
+        case RecipeStatus.PendingValidation:
+          return null;
+        case RecipeStatus.Validated:
+          return recipe.supplySource === 'Insumos de Skol' 
+            ? <Button size="sm" asChild><Link href="/dispatch-management"><Truck className="mr-2 h-4 w-4 text-white" />Ir a Despacho</Link></Button>
+            : <Button size="sm" onClick={() => onSend(recipe)}><Send className="mr-2 h-4 w-4 text-white" />Enviar</Button>;
+        case RecipeStatus.SentToExternal:
+          return <Button size="sm" onClick={() => onReceive(recipe)}><PackageCheck className="mr-2 h-4 w-4 text-white" />Recepcionar</Button>;
+        case RecipeStatus.ReceivedAtSkol:
+          return <Button size="sm" onClick={() => onReadyForPickup(recipe)}><Package className="mr-2 h-4 w-4 text-white" />Marcar Retiro</Button>;
+        case RecipeStatus.ReadyForPickup:
+          return <Button size="sm" onClick={() => onDispense(recipe)}><CheckCheck className="mr-2 h-4 w-4 text-white" />Dispensar</Button>;
+        case RecipeStatus.Dispensed:
+          return (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span tabIndex={0}>
+                    <Button size="sm" onClick={() => onReprepare(recipe)} disabled={!canReprepare}>
+                      <Copy className="mr-2 h-4 w-4" />Re-preparar
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                {!canReprepare && (
+                  <TooltipContent>
+                    <p>No se puede re-preparar (receta vencida o límite de ciclos alcanzado)</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
+          );
+        default:
+          return <Button size="sm" onClick={() => onView(recipe)}><Eye className="mr-2 h-4 w-4" />Ver Detalle</Button>;
+      }
+    };
+    
     return (
       <div className="flex justify-end items-center w-full gap-2">
         {recipe.status === RecipeStatus.PendingValidation ? (
@@ -699,15 +714,7 @@ const MobileRecipeActions = ({ recipe, onReprepare, onCancel, onDelete, onArchiv
           </>
         ) : (
           <div className="flex-1">
-            <ActionButton 
-                recipe={recipe} 
-                onSend={onSend}
-                onReceive={onReceive}
-                onReadyForPickup={onReadyForPickup}
-                onDispense={onDispense}
-                onReprepare={onReprepare}
-                onView={onView}
-            />
+            <ActionButtonLocal />
           </div>
         )}
         
@@ -1093,34 +1100,6 @@ export function RecipesClient({
         setIsSubmitting(false);
     }
   };
-  
-  const stats = useMemo(() => {
-    const now = new Date();
-    const thirtyDaysFromNow = new Date();
-    thirtyDaysFromNow.setDate(now.getDate() + 30);
-
-    const activeRecipes = initialRecipes.filter(r => 
-        ![RecipeStatus.Dispensed, RecipeStatus.Cancelled, RecipeStatus.Rejected, RecipeStatus.Archived].includes(r.status)
-    );
-    
-    const expiringOrExpiredCount = activeRecipes.filter(r => {
-        if (!r.dueDate) return false;
-        try {
-            const dueDate = parseISO(r.dueDate);
-            return dueDate < thirtyDaysFromNow;
-        } catch (e) {
-            return false;
-        }
-    }).length;
-
-    return {
-      pendingValidation: initialRecipes.filter(r => r.status === RecipeStatus.PendingValidation).length,
-      inPreparation: initialRecipes.filter(r => r.status === RecipeStatus.Preparation || r.status === RecipeStatus.SentToExternal).length,
-      readyForPickup: initialRecipes.filter(r => r.status === RecipeStatus.ReadyForPickup || r.status === RecipeStatus.ReceivedAtSkol).length,
-      rejected: initialRecipes.filter(r => r.status === RecipeStatus.Rejected).length,
-      expiringOrExpired: expiringOrExpiredCount,
-    };
-  }, [initialRecipes]);
 
   const filteredRecipes = useMemo(() => {
     return recipes
@@ -1174,7 +1153,7 @@ export function RecipesClient({
       return searchMatch && statusMatch && doctorMatch && pharmacyMatch && dateMatch;
     })
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [recipes, searchTerm, statusFilter, doctorFilter, pharmacyFilter, dateRange, getPatientName]);
+  }, [recipes, searchTerm, statusFilter, doctorFilter, pharmacyFilter, dateRange, patients, getPatientName]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -1203,22 +1182,6 @@ export function RecipesClient({
       prev.includes(id) ? prev.filter(rId => rId !== id) : [...prev, id]
     );
   }
-  
-  const ReprepareMessage = () => {
-    if (daysSinceDispensation === null) {
-      return <DialogDescription>¿Está seguro que desea iniciar un nuevo ciclo para esta receta? La receta volverá al estado 'Pendiente Validación'.</DialogDescription>;
-    }
-    if (urgencyStatus === 'early') {
-      return <p className="text-amber-600 font-semibold">Alerta: Han pasado solo {daysSinceDispensation} día(s) desde la última dispensación. ¿Continuar de todas formas?</p>;
-    }
-    if (urgencyStatus === 'normal') {
-      return <p className="text-green-600 font-semibold">Han pasado {daysSinceDispensation} día(s). Es un buen momento para preparar el siguiente ciclo. ¿Desea continuar?</p>;
-    }
-    if (urgencyStatus === 'urgent') {
-      return <p className="text-red-600 font-semibold">Urgente: Han pasado {daysSinceDispensation} día(s) desde la última dispensación. Esta solicitud se marcará como urgente.</p>;
-    }
-    return null;
-  };
 
   return (
     <>
@@ -1235,45 +1198,7 @@ export function RecipesClient({
             </Link>
         </Button>
       </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 mt-6">
-        <StatCard 
-          title="Pend. Validación" 
-          value={stats.pendingValidation} 
-          icon={FileClock}
-          onClick={() => setStatusFilter(RecipeStatus.PendingValidation)}
-          active={statusFilter === RecipeStatus.PendingValidation}
-        />
-        <StatCard 
-          title="En Preparación" 
-          value={stats.inPreparation} 
-          icon={FlaskConical}
-          onClick={() => setStatusFilter(RecipeStatus.Preparation)}
-          active={statusFilter === RecipeStatus.Preparation}
-        />
-        <StatCard 
-          title="Para Retiro" 
-          value={stats.readyForPickup} 
-          icon={Package}
-          onClick={() => setStatusFilter(RecipeStatus.ReadyForPickup)}
-          active={statusFilter === RecipeStatus.ReadyForPickup}
-        />
-        <StatCard 
-          title="Próximas a Vencer" 
-          value={stats.expiringOrExpired} 
-          icon={AlertTriangle}
-          onClick={() => setStatusFilter('expiring')}
-          active={statusFilter === 'expiring'}
-        />
-        <StatCard 
-          title="Rechazadas" 
-          value={stats.rejected} 
-          icon={XCircle}
-          onClick={() => setStatusFilter(RecipeStatus.Rejected)}
-          active={statusFilter === RecipeStatus.Rejected}
-        />
-      </div>
-
+      
       <Card className="mt-6">
         <CardContent className="p-4">
           <Collapsible
@@ -1346,6 +1271,7 @@ export function RecipesClient({
           </Collapsible>
         </CardContent>
       </Card>
+
 
       {filteredRecipes.length === 0 ? (
         <Card className="w-full py-16 mt-8 shadow-none border-dashed">
@@ -1441,7 +1367,7 @@ export function RecipesClient({
                                     </div>
                                 </TableCell>
                                 <TableCell className="text-right">
-                                    <RecipeActions
+                                    <RecipeActions 
                                         recipe={recipe} 
                                         onReprepare={setRecipeToReprepare} 
                                         onCancel={setRecipeToCancel} 
@@ -1580,7 +1506,7 @@ export function RecipesClient({
       <Dialog open={!!recipeToReprepare} onOpenChange={(open) => { if (!open) { setRecipeToReprepare(null); setControlledFolio(''); setDaysSinceDispensation(null); } }}><DialogContent>
           <DialogHeader><DialogTitle className="text-xl font-semibold">Re-preparar Receta: {recipeToReprepare?.id}</DialogTitle></DialogHeader>
           <div className="py-2">
-            <ReprepareMessage />
+            <ReprepareMessageDialog daysSinceDispensation={daysSinceDispensation} urgencyStatus={urgencyStatus} />
           </div>
           {recipeToReprepare?.isControlled && (
             <div className="grid gap-2 py-2">
