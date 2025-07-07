@@ -31,7 +31,6 @@ import {
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
-  AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
@@ -297,6 +296,7 @@ export function InventoryClient({ initialInventory }: {
     const [loading, setLoading] = useState(false);
     const [isSearchingLioren, setIsSearchingLioren] = useState(false);
     const [liorenSearchTerm, setLiorenSearchTerm] = useState('');
+    const [hasSearchedLioren, setHasSearchedLioren] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState<FilterStatus>('all');
     const { toast } = useToast();
@@ -339,12 +339,17 @@ export function InventoryClient({ initialInventory }: {
     };
     
     const handleSearchLioren = async () => {
+        if (!liorenSearchTerm.trim()) {
+            toast({ title: 'Búsqueda vacía', description: 'Por favor, ingrese un término de búsqueda.'});
+            return;
+        }
         setIsSearchingLioren(true);
+        setHasSearchedLioren(true);
         setLiorenCurrentPage(1);
         try {
             const results = await fetchRawInventoryFromLioren(liorenSearchTerm);
             setLiorenInventory(results);
-             if(results.length === 0 && liorenSearchTerm) {
+             if(results.length === 0) {
               toast({ title: 'Sin resultados', description: 'La búsqueda en Lioren no arrojó resultados para su término.', variant: 'default' });
             }
         } catch (error) {
@@ -673,8 +678,10 @@ export function InventoryClient({ initialInventory }: {
                                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                                     <p className="ml-2 text-muted-foreground">Buscando en Lioren...</p>
                                 </div>
-                            ) : liorenInventory.length === 0 ? (
+                            ) : !hasSearchedLioren ? (
                                 <div className="text-center py-16">Realice una búsqueda para ver los datos de Lioren.</div>
+                            ) : liorenInventory.length === 0 ? (
+                                <div className="text-center py-16">La búsqueda no arrojó resultados.</div>
                             ) : (
                                 <div className="overflow-x-auto">
                                     <Table>
@@ -762,4 +769,3 @@ export function InventoryClient({ initialInventory }: {
         </>
     );
 }
-

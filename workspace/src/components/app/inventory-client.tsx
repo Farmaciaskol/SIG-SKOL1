@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription }
 import { Input } from '@/components/ui/input';
 import { getInventory, addInventoryItem, updateInventoryItem, deleteInventoryItem, addLotToInventoryItem } from '@/lib/data';
 import type { InventoryItem, LotDetail } from '@/lib/types';
-import { PlusCircle, Search, Edit, History, PackagePlus, Trash2, MoreVertical, DollarSign, Package, PackageX, AlertTriangle, Star, Box, ChevronDown, Loader2, Calendar as CalendarIcon, Snowflake, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, RefreshCw } from 'lucide-react';
+import { PlusCircle, Search, Edit, History, PackagePlus, Trash2, MoreVertical, DollarSign, Package, PackageX, AlertTriangle, Star, Box, ChevronDown, Loader2, Calendar as CalendarIcon, Snowflake, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from 'lucide-react';
 import { format, differenceInDays, isBefore, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
@@ -17,6 +17,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -30,7 +31,6 @@ import {
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
-  AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
@@ -288,14 +288,15 @@ function LotManagementDialog({
   )
 }
 
-export function InventoryClient({ initialInventory, initialLiorenInventory }: { 
+export function InventoryClient({ initialInventory }: { 
   initialInventory: InventoryItem[];
-  initialLiorenInventory: LiorenProduct[];
 }) {
     const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory);
-    const [liorenInventory, setLiorenInventory] = useState<LiorenProduct[]>(initialLiorenInventory);
+    const [liorenInventory, setLiorenInventory] = useState<LiorenProduct[]>([]);
     const [loading, setLoading] = useState(false);
-    const [isSyncing, setIsSyncing] = useState(false);
+    const [isSearchingLioren, setIsSearchingLioren] = useState(false);
+    const [liorenSearchTerm, setLiorenSearchTerm] = useState('');
+    const [hasSearchedLioren, setHasSearchedLioren] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState<FilterStatus>('all');
     const { toast } = useToast();
@@ -307,6 +308,9 @@ export function InventoryClient({ initialInventory, initialLiorenInventory }: {
 
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 20;
+    
+    const [liorenCurrentPage, setLiorenCurrentPage] = useState(1);
+    const LIOREN_ITEMS_PER_PAGE = 15;
 
     const [openRows, setOpenRows] = useState<Set<string>>(new Set());
 
@@ -334,17 +338,24 @@ export function InventoryClient({ initialInventory, initialLiorenInventory }: {
         }
     };
     
-    const handleSyncWithLioren = async () => {
-        setIsSyncing(true);
-        toast({ title: 'Sincronizando...', description: 'Obteniendo los últimos datos de Lioren.' });
+    const handleSearchLioren = async () => {
+        if (!liorenSearchTerm.trim()) {
+            toast({ title: 'Búsqueda vacía', description: 'Por favor, ingrese un término de búsqueda.'});
+            return;
+        }
+        setIsSearchingLioren(true);
+        setHasSearchedLioren(true);
+        setLiorenCurrentPage(1);
         try {
-            const liorenData = await fetchRawInventoryFromLioren();
-            setLiorenInventory(liorenData);
-            toast({ title: 'Sincronización Completa', description: 'La vista de Lioren ha sido actualizada.' });
+            const results = await fetchRawInventoryFromLioren(liorenSearchTerm);
+            setLiorenInventory(results);
+             if(results.length === 0) {
+              toast({ title: 'Sin resultados', description: 'La búsqueda en Lioren no arrojó resultados para su término.', variant: 'default' });
+            }
         } catch (error) {
-            toast({ title: 'Error de Sincronización', description: `No se pudo conectar con la API de Lioren. ${error instanceof Error ? error.message : ''}`, variant: 'destructive' });
+            toast({ title: 'Error de búsqueda en Lioren', description: `Hubo un problema al buscar en Lioren. ${error instanceof Error ? error.message : ''}`, variant: 'destructive' });
         } finally {
-            setIsSyncing(false);
+            setIsSearchingLioren(false);
         }
     };
 
@@ -436,6 +447,13 @@ export function InventoryClient({ initialInventory, initialLiorenInventory }: {
         const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
         return filteredInventory.slice(startIndex, startIndex + ITEMS_PER_PAGE);
     }, [filteredInventory, currentPage]);
+    
+    const totalLiorenPages = Math.ceil(liorenInventory.length / LIOREN_ITEMS_PER_PAGE);
+
+    const paginatedLiorenInventory = useMemo(() => {
+        const startIndex = (liorenCurrentPage - 1) * LIOREN_ITEMS_PER_PAGE;
+        return liorenInventory.slice(startIndex, startIndex + LIOREN_ITEMS_PER_PAGE);
+    }, [liorenInventory, liorenCurrentPage]);
 
     useEffect(() => {
         setCurrentPage(1);
@@ -504,20 +522,16 @@ export function InventoryClient({ initialInventory, initialLiorenInventory }: {
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button onClick={handleSyncWithLioren} disabled={isSyncing} variant="outline">
-                        {isSyncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                        Sincronizar Lioren
-                    </Button>
                     <Button onClick={() => handleOpenForm(null)}>
-                        <PlusCircle className="mr-2 h-4 w-4" /> Crear Producto
+                        <PlusCircle className="mr-2 h-4 w-4" /> Crear Producto Local
                     </Button>
                 </div>
             </div>
             
             <Tabs defaultValue="skol-inventory">
                 <TabsList className="grid w-full grid-cols-2 mb-6">
-                    <TabsTrigger value="skol-inventory">Inventario Skol</TabsTrigger>
-                    <TabsTrigger value="lioren-api">Vista API Lioren</TabsTrigger>
+                    <TabsTrigger value="skol-inventory">Inventario Skol (Local)</TabsTrigger>
+                    <TabsTrigger value="lioren-api">Buscar en API Lioren</TabsTrigger>
                 </TabsList>
                 <TabsContent value="skol-inventory">
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-6">
@@ -642,14 +656,32 @@ export function InventoryClient({ initialInventory, initialLiorenInventory }: {
                 <TabsContent value="lioren-api">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Datos Crudos de la API de Lioren</CardTitle>
-                            <CardDescription>Esta es la información tal como la entrega la API de Lioren, en modo de solo lectura.</CardDescription>
+                            <CardTitle>Buscar en API de Lioren</CardTitle>
+                            <CardDescription>Busque productos directamente en la API de Lioren para ver su información en tiempo real.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            {isSyncing && !liorenInventory.length ? (
-                                <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                           <div className="flex gap-2 mb-4">
+                                <Input 
+                                    placeholder="Buscar por nombre o SKU en Lioren..."
+                                    value={liorenSearchTerm}
+                                    onChange={(e) => setLiorenSearchTerm(e.target.value)}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') handleSearchLioren() }}
+                                />
+                                <Button onClick={handleSearchLioren} disabled={isSearchingLioren}>
+                                    {isSearchingLioren ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Search className="mr-2 h-4 w-4"/>}
+                                    Buscar
+                                </Button>
+                            </div>
+
+                            {isSearchingLioren ? (
+                                <div className="flex items-center justify-center h-64">
+                                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                    <p className="ml-2 text-muted-foreground">Buscando en Lioren...</p>
+                                </div>
+                            ) : !hasSearchedLioren ? (
+                                <div className="text-center py-16">Realice una búsqueda para ver los datos de Lioren.</div>
                             ) : liorenInventory.length === 0 ? (
-                                <div className="text-center py-16">No se encontraron productos en Lioren o la API no respondió.</div>
+                                <div className="text-center py-16">La búsqueda no arrojó resultados.</div>
                             ) : (
                                 <div className="overflow-x-auto">
                                     <Table>
@@ -664,8 +696,8 @@ export function InventoryClient({ initialInventory, initialLiorenInventory }: {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {liorenInventory.map(item => {
-                                                const totalStock = item.stocks?.reduce((sum, s) => sum + s.stock, 0) ?? 0;
+                                            {paginatedLiorenInventory.map(item => {
+                                                const totalStock = item.stocks?.reduce((sum, s) => sum + (Number(s.stock) || 0), 0) ?? 0;
                                                 const hasBreakdown = item.stocks && item.stocks.length > 0;
                                                 const isRowOpen = openRows.has(item.id.toString());
                                                 return (
@@ -718,6 +750,19 @@ export function InventoryClient({ initialInventory, initialLiorenInventory }: {
                                 </div>
                             )}
                         </CardContent>
+                         {totalLiorenPages > 1 && (
+                            <CardFooter className="flex items-center justify-between px-4 py-3 border-t">
+                                <div className="text-xs text-muted-foreground">
+                                    Página {liorenCurrentPage} de {totalLiorenPages}
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <Button variant="outline" size="sm" onClick={() => setLiorenCurrentPage(1)} disabled={liorenCurrentPage === 1}><ChevronsLeft /></Button>
+                                    <Button variant="outline" size="sm" onClick={() => setLiorenCurrentPage(prev => Math.max(prev - 1, 1))} disabled={liorenCurrentPage === 1}><ChevronLeft /></Button>
+                                    <Button variant="outline" size="sm" onClick={() => setLiorenCurrentPage(prev => Math.min(prev + 1, totalLiorenPages))} disabled={liorenCurrentPage === totalLiorenPages}><ChevronRight /></Button>
+                                    <Button variant="outline" size="sm" onClick={() => setLiorenCurrentPage(totalLiorenPages)} disabled={liorenCurrentPage === totalLiorenPages}><ChevronsRight /></Button>
+                                </div>
+                            </CardFooter>
+                         )}
                     </Card>
                 </TabsContent>
             </Tabs>
