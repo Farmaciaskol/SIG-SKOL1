@@ -179,30 +179,45 @@ export const getMonthlyDispensationBox = async (id: string): Promise<MonthlyDisp
 // Optimized Count Functions
 export const getRecipesCountByStatus = async (status: RecipeStatus): Promise<number> => {
     if (!db) return 0;
-    const q = query(collection(db, "recipes"), where("status", "==", status));
-    const snapshot = await getCountFromServer(q);
-    return snapshot.data().count;
+    try {
+        const q = query(collection(db, "recipes"), where("status", "==", status));
+        const snapshot = await getCountFromServer(q);
+        return snapshot.data().count;
+    } catch (error) {
+        console.error("Error fetching recipes count by status:", error);
+        return 0;
+    }
 };
 
 export const getPendingPortalItemsCount = async (): Promise<number> => {
     if (!db) return 0;
     
-    const recipesQuery = query(collection(db, "recipes"), where("status", "==", RecipeStatus.PendingReviewPortal));
-    const recipesSnapshot = await getCountFromServer(recipesQuery);
-    const recipeCount = recipesSnapshot.data().count;
-    
-    const requestsQuery = query(collection(db, "userRequests"), where("status", "==", UserRequestStatus.Pending));
-    const requestsSnapshot = await getCountFromServer(requestsQuery);
-    const requestCount = requestsSnapshot.data().count;
-    
-    return recipeCount + requestCount;
+    try {
+        const recipesQuery = query(collection(db, "recipes"), where("status", "==", RecipeStatus.PendingReviewPortal));
+        const recipesSnapshot = await getCountFromServer(recipesQuery);
+        const recipeCount = recipesSnapshot.data().count;
+        
+        const requestsQuery = query(collection(db, "userRequests"), where("status", "==", UserRequestStatus.Pending));
+        const requestsSnapshot = await getCountFromServer(requestsQuery);
+        const requestCount = requestsSnapshot.data().count;
+        
+        return recipeCount + requestCount;
+    } catch (error) {
+        console.error("Error fetching pending portal items count:", error);
+        return 0; // Return 0 on error
+    }
 };
 
 export const getItemsToDispatchCount = async (): Promise<number> => {
     if (!db) return 0;
-    const q = query(collection(db, "recipes"), where("status", "==", RecipeStatus.Validated), where("supplySource", "==", "Insumos de Skol"));
-    const snapshot = await getCountFromServer(q);
-    return snapshot.data().count;
+    try {
+        const q = query(collection(db, "recipes"), where("status", "==", RecipeStatus.Validated), where("supplySource", "==", "Insumos de Skol"));
+        const snapshot = await getCountFromServer(q);
+        return snapshot.data().count;
+    } catch (error) {
+        console.error("Error fetching items to dispatch count:", error);
+        return 0; // Return 0 on error
+    }
 };
 
 export const getLowStockInventoryCount = async (): Promise<number> => {
@@ -212,9 +227,14 @@ export const getLowStockInventoryCount = async (): Promise<number> => {
 
 export const getUnreadPatientMessagesCount = async (): Promise<number> => {
     if (!db) return 0;
-    const q = query(collection(db, "patientMessages"), where("sender", "==", "patient"), where("read", "==", false));
-    const snapshot = await getCountFromServer(q);
-    return snapshot.data().count;
+    try {
+        const q = query(collection(db, "patientMessages"), where("sender", "==", "patient"), where("read", "==", false));
+        const snapshot = await getCountFromServer(q);
+        return snapshot.data().count;
+    } catch (error) {
+        console.error("Error fetching unread patient messages count:", error);
+        return 0; // Return 0 on error
+    }
 };
 
 export const deleteRecipe = async (id: string): Promise<void> => {
@@ -968,3 +988,4 @@ export const rejectUserRequest = async (requestId: string, reason: string): Prom
         rejectionReason: reason
     });
 };
+
