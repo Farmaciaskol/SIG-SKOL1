@@ -46,14 +46,10 @@ export async function fetchRawInventoryFromLioren(searchTerm?: string): Promise<
     return [];
   }
 
-  const url = new URL('https://www.lioren.cl/api/productos');
-  if (searchTerm && searchTerm.trim() !== '') {
-    // API might accept 'nombre' or 'codigo' for search
-    url.searchParams.append('nombre', searchTerm);
-  }
+  const url = 'https://www.lioren.cl/api/productos';
 
   try {
-    const response = await fetch(url.toString(), {
+    const response = await fetch(url, {
       headers: { 
         'Authorization': `Bearer ${apiKey}`,
         'Accept': 'application/json'
@@ -68,19 +64,28 @@ export async function fetchRawInventoryFromLioren(searchTerm?: string): Promise<
 
     const data = await response.json();
     
-    // The API might return a direct array or an object with a '*' key.
+    let allProducts: LiorenProduct[] = [];
     if (Array.isArray(data)) {
-      console.log(`[PRUEBA DE CONEXIÓN] ¡Éxito! Se obtuvieron ${data.length} productos desde la API de Lioren (respuesta directa).`);
-      return data as LiorenProduct[];
+      allProducts = data as LiorenProduct[];
+    } else if (data && Array.isArray(data['*'])) {
+      allProducts = data['*'] as LiorenProduct[];
+    } else {
+       console.warn("[PRUEBA DE CONEXIÓN] La API de Lioren respondió correctamente, pero no se encontró la lista de productos (ni directa ni en clave '*'). Respuesta recibida:", data);
+       return [];
     }
     
-    if (data && Array.isArray(data['*'])) {
-      console.log(`[PRUEBA DE CONEXIÓN] ¡Éxito! Se obtuvieron ${data['*'].length} productos desde la API de Lioren (clave '*').`);
-      return data['*'] as LiorenProduct[];
+    // Filter the results on our side to allow for partial matches
+    if (searchTerm && searchTerm.trim() !== '') {
+        const lowerCaseSearchTerm = searchTerm.toLowerCase();
+        return allProducts.filter(product => 
+            product.nombre.toLowerCase().includes(lowerCaseSearchTerm) ||
+            product.codigo.toLowerCase().includes(lowerCaseSearchTerm)
+        );
     }
     
-    console.warn("[PRUEBA DE CONEXIÓN] La API de Lioren respondió correctamente, pero no se encontró la lista de productos (ni directa ni en clave '*'). Respuesta recibida:", data);
-    return [];
+    // If no search term, return all products. 
+    // The UI should ideally prevent this for performance reasons.
+    return allProducts;
 
   } catch (error) {
     console.warn("[PRUEBA DE CONEXIÓN] Fallo al conectar con la API de Lioren. Puede ser un problema de red o de la API misma.", error);
