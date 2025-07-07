@@ -39,6 +39,8 @@ import {
   SidebarMenu,
   SidebarProvider,
   useSidebar,
+  SidebarGroup,
+  SidebarGroupLabel,
 } from '@/components/ui/sidebar';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
@@ -51,7 +53,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '../ui/button';
 import React from 'react';
@@ -181,9 +182,6 @@ function MainNavContent({
   const [appUser, setAppUser] = React.useState<AppUser | null>(null);
   const { state, toggleSidebar, isMobile } = useSidebar();
   
-  const defaultOpenGroup = menuGroups.find(group => group.items.some(item => pathname.startsWith(item.href)))?.title || 'Principal';
-  const [openItems, setOpenItems] = React.useState([defaultOpenGroup]);
-
   const fetchAppUser = React.useCallback(async () => {
     if (user?.email) {
       const allUsers = await getUsers();
@@ -209,13 +207,6 @@ function MainNavContent({
   const handleLogout = async () => {
     await signOut(auth);
   };
-
-  React.useEffect(() => {
-    const activeGroup = menuGroups.find(group => group.items.some(item => pathname.startsWith(item.href)))?.title;
-    if (activeGroup && !openItems.includes(activeGroup)) {
-      setOpenItems(prev => [...prev, activeGroup]);
-    }
-  }, [pathname, openItems]);
 
   const DisplayAvatar = appUser?.avatar 
     ? getAvatar(appUser.avatar) 
@@ -333,42 +324,36 @@ function MainNavContent({
         {/* Sidebar */}
         <Sidebar className="border-r bg-card" collapsible="icon">
           <SidebarContent className="p-0 flex-1 pt-4">
-            <Accordion type="multiple" value={openItems} onValueChange={setOpenItems} className="w-full px-2">
+            <div className="flex flex-col gap-2 px-2">
               {menuGroups.map((group) => (
-                <AccordionItem key={group.title} value={group.title} className="border-b-0">
-                  <AccordionTrigger
-                      className="py-2 px-2 hover:no-underline hover:bg-accent rounded-md text-foreground/80 data-[state=open]:text-primary data-[state=open]:bg-accent group-data-[collapsible=icon]:h-12 group-data-[collapsible=icon]:w-12 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:py-0 group-data-[collapsible=icon]:px-0"
-                  >
-                    <div className="flex items-center gap-2">
-                        <group.icon className="h-5 w-5" />
-                        <span className="group-data-[collapsible=icon]:hidden">{group.title}</span>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="pl-4 pt-1 pb-1">
-                    <SidebarMenu>
-                      {group.items.map((item) => (
-                        <SidebarMenuItem key={item.href}>
-                          <SidebarMenuButton
-                            asChild
-                            isActive={pathname.startsWith(item.href)}
-                            tooltip={item.label}
-                            className={cn(pathname.startsWith(item.href) && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground")}
-                          >
-                            <Link href={item.href}>
-                              <item.icon className="h-4 w-4" />
-                              <span className="flex-1 group-data-[collapsible=icon]:hidden">{item.label}</span>
-                              {item.href === '/portal-inbox' && portalInboxCount > 0 && (
-                                <Badge className="h-5 group-data-[collapsible=icon]:hidden">{portalInboxCount}</Badge>
-                              )}
-                            </Link>
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      ))}
-                    </SidebarMenu>
-                  </AccordionContent>
-                </AccordionItem>
+                <SidebarGroup key={group.title}>
+                  <SidebarGroupLabel className="flex items-center gap-2 text-sm text-foreground/80 font-semibold h-9">
+                    <group.icon className="h-5 w-5" />
+                    <span className="group-data-[collapsible=icon]:hidden">{group.title}</span>
+                  </SidebarGroupLabel>
+                  <SidebarMenu>
+                    {group.items.map((item) => (
+                      <SidebarMenuItem key={item.href}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))}
+                          tooltip={item.label}
+                          className={cn( (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground")}
+                        >
+                          <Link href={item.href}>
+                            <item.icon className="h-4 w-4" />
+                            <span className="flex-1 group-data-[collapsible=icon]:hidden">{item.label}</span>
+                            {item.href === '/portal-inbox' && portalInboxCount > 0 && (
+                              <Badge variant="destructive" className="h-5 group-data-[collapsible=icon]:hidden">{portalInboxCount}</Badge>
+                            )}
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroup>
               ))}
-            </Accordion>
+            </div>
           </SidebarContent>
         </Sidebar>
         
