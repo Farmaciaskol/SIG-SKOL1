@@ -201,11 +201,11 @@ const SendToPharmacyDialog = ({ recipe, pharmacy, patients, isOpen, onClose, onC
 
     const descriptiveFilename = useMemo(() => {
         if (!recipe) return 'receta.jpg';
-        const sanitize = (str: string) => str.replace(/ /g, '_').replace(/[^\w-.]/g, '');
+        const sanitize = (str: string) => str.replace(/ /g, '_').replace(/[^\\w-.]/g, '');
         const patientName = sanitize(patients.find(p => p.id === recipe.patientId)?.name || 'paciente');
         const activeIngredient = sanitize(recipe.items[0]?.principalActiveIngredient || 'preparado');
         const url = recipe.prescriptionImageUrl || '';
-        const extensionMatch = url.match(/\.(jpg|jpeg|png|pdf|webp)/i);
+        const extensionMatch = url.match(/\\.(jpg|jpeg|png|pdf|webp)/i);
         const extension = extensionMatch ? extensionMatch[1] : 'jpg';
         return `${patientName}_${activeIngredient}.${extension}`;
     }, [recipe, patients]);
@@ -220,9 +220,9 @@ const SendToPharmacyDialog = ({ recipe, pharmacy, patients, isOpen, onClose, onC
         if (!recipe || !pharmacy) return '';
         const patient = patients.find(p => p.id === recipe.patientId);
         const item = recipe.items[0];
-        const safetyStockLine = item.safetyStockDays && item.safetyStockDays > 0 ? `\n- Incluye dosis de seguridad para ${item.safetyStockDays} día(s) adicional(es).` : '';
-        const urgencyLine = recipe.isUrgentRepreparation ? `\n\n**NOTA URGENTE: Por favor, priorizar esta preparación. El tiempo de entrega límite es de 48 horas.**` : '';
-        return `Estimados ${pharmacy.name},\n\nSolicitamos la preparación del siguiente preparado magistral:\n\n- Paciente: ${patient?.name || 'N/A'}\n- Receta ID: ${recipe.id}\n- Preparado: ${item.principalActiveIngredient} ${item.concentrationValue}${item.concentrationUnit}\n- Posología: ${item.usageInstructions}\n- Cantidad a preparar: ${item.totalQuantityValue} ${item.totalQuantityUnit}${safetyStockLine}${urgencyLine}\n\nPor favor, encontrar la receta adjunta.\n\nSaludos cordiales,\nEquipo Farmacia Skol`;
+        const safetyStockLine = item.safetyStockDays && item.safetyStockDays > 0 ? `\\n- Incluye dosis de seguridad para ${item.safetyStockDays} día(s) adicional(es).` : '';
+        const urgencyLine = recipe.isUrgentRepreparation ? `\\n\\n**NOTA URGENTE: Por favor, priorizar esta preparación. El tiempo de entrega límite es de 48 horas.**` : '';
+        return `Estimados ${pharmacy.name},\\n\\nSolicitamos la preparación del siguiente preparado magistral:\\n\\n- Paciente: ${patient?.name || 'N/A'}\\n- Receta ID: ${recipe.id}\\n- Preparado: ${item.principalActiveIngredient} ${item.concentrationValue}${item.concentrationUnit}\\n- Posología: ${item.usageInstructions}\\n- Cantidad a preparar: ${item.totalQuantityValue} ${item.totalQuantityUnit}${safetyStockLine}${urgencyLine}\\n\\nPor favor, encontrar la receta adjunta.\\n\\nSaludos cordiales,\\nEquipo Farmacia Skol`;
     }, [recipe, pharmacy, patients]);
 
     const copyToClipboard = (text: string) => {
