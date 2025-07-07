@@ -1,3 +1,4 @@
+
 import { config } from 'dotenv';
 config();
 
@@ -7,3 +8,5 @@ import '@/ai/tools/vademecum.ts';
 import '@/ai/flows/validate-active-ingredient.ts';
 import '@/ai/flows/analyze-patient-proactive-alerts.ts';
 import '@/ai/flows/simplify-medication-info.ts';
+import '@/ai/flows/check-medication-interactions.ts';
+

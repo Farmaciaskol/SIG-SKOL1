@@ -1,23 +1,23 @@
+
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { usePatientAuth } from '@/components/app/patient-auth-provider';
 import { getRecipes } from '@/lib/data';
-import { requestRepreparationFromPortal, getMedicationInfo } from '@/lib/patient-actions';
+import { requestRepreparationFromPortal, getMedicationInfo, analyzePatientInteractions } from '@/lib/patient-actions';
 import { Recipe, RecipeStatus } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { ChevronLeft, Loader2, Pill, Info, Copy, AlertTriangle } from 'lucide-react';
+import { Loader2, Pill, Info, Copy, AlertTriangle, ShieldCheck, HeartPulse } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
-import { format, parseISO } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
 import { MAX_REPREPARATIONS } from '@/lib/constants';
 import { Separator } from '@/components/ui/separator';
+import type { CheckMedicationInteractionsOutput } from '@/ai/flows/check-medication-interactions';
 
 const MagistralRecipeManager = ({ recipe }: { recipe: Recipe }) => {
     const { toast } = useToast();
@@ -61,63 +61,57 @@ const MagistralRecipeManager = ({ recipe }: { recipe: Recipe }) => {
                      </Button>
                  </div>
              ) : (
-                <div className="w-full">
-                     <p className="font-semibold text-muted-foreground">No se puede solicitar una nueva preparación por el siguiente motivo:</p>
-                    {recipe.status !== RecipeStatus.Dispensed && <p className="text-sm text-amber-700">- La preparación anterior aún no ha sido dispensada.</p>}
-                    {isExpired && <p className="text-sm text-amber-700">- La receta original ha vencido.</p>}
-                    {cycleLimitReached && <p className="text-sm text-amber-700">- Se ha alcanzado el límite de {MAX_REPREPARATIONS} preparaciones para esta receta.</p>}
+                <div className="w-full p-3 rounded-md bg-muted/50 text-sm">
+                     <p className="font-semibold text-muted-foreground mb-1">No se puede solicitar una nueva preparación por el siguiente motivo:</p>
+                    {recipe.status !== RecipeStatus.Dispensed && <p className="text-amber-700">- La preparación anterior aún no ha sido dispensada.</p>}
+                    {isExpired && <p className="text-amber-700">- La receta original ha vencido.</p>}
+                    {cycleLimitReached && <p className="text-amber-700">- Se ha alcanzado el límite de {MAX_REPREPARATIONS} preparaciones para esta receta.</p>}
                 </div>
              )}
         </CardFooter>
     );
 }
 
-const CommercialMedInfo = ({ medName }: { medName: string }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const [info, setInfo] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const { toast } = useToast();
-
-    const handleFetchInfo = async () => {
-        if (info) {
-            setIsOpen(true);
-            return;
-        }
-        setIsLoading(true);
-        setIsOpen(true);
-        try {
-            const result = await getMedicationInfo(medName);
-            setInfo(result);
-        } catch(e) {
-            toast({ title: 'Error', description: 'No se pudo obtener la información del medicamento.', variant: 'destructive' });
-        } finally {
-            setIsLoading(false);
-        }
-    }
-
+const InteractionDialog = ({ isOpen, onOpenChange, analysisResult }: { isOpen: boolean, onOpenChange: (open: boolean) => void, analysisResult: CheckMedicationInteractionsOutput | null }) => {
     return (
-        <>
-            <Button variant="outline" size="sm" onClick={handleFetchInfo}>
-                <Info className="mr-2 h-4 w-4" /> Más Info (IA)
-            </Button>
-            <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>{medName}</DialogTitle>
-                        <DialogDescription>Información simplificada generada por IA.</DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4">
-                        {isLoading ? (
-                             <div className="flex items-center justify-center h-24">
-                                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                            </div>
-                        ) : (
-                            <p className="whitespace-pre-wrap">{info}</p>
-                        )}
-                    </div>
-                </DialogContent>
-            </Dialog>
-        </>
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Análisis de Interacciones (IA)</DialogTitle>
+                    <DialogDescription>Posibles interacciones entre tus medicamentos y alergias. Consulta siempre a tu médico o farmacéutico.</DialogDescription>
+                </DialogHeader>
+                <div className="py-4 max-h-[60vh] overflow-y-auto space-y-4">
+                    {analysisResult?.drugInteractions && analysisResult.drugInteractions.length > 0 && (
+                        <div>
+                            <h3 className="font-semibold mb-2 text-destructive">Interacciones entre Medicamentos</h3>
+                            {analysisResult.drugInteractions.map((interaction, index) => (
+                                <div key={`drug-${index}`} className="p-3 mb-2 border-l-4 border-destructive bg-destructive/10 rounded-r-md">
+                                    <p className="font-bold">{interaction.medicationsInvolved.join(' + ')}</p>
+                                    <p><Badge variant="destructive">{interaction.severity}</Badge> {interaction.explanation}</p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                     {analysisResult?.allergyInteractions && analysisResult.allergyInteractions.length > 0 && (
+                        <div>
+                            <h3 className="font-semibold mb-2 text-orange-600">Posibles Reacciones Alérgicas</h3>
+                             {analysisResult.allergyInteractions.map((interaction, index) => (
+                                <div key={`allergy-${index}`} className="p-3 mb-2 border-l-4 border-orange-500 bg-orange-500/10 rounded-r-md">
+                                    <p className="font-bold">{interaction.medication} y Alergia a {interaction.allergy}</p>
+                                    <p>{interaction.explanation}</p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                     {(!analysisResult?.drugInteractions || analysisResult.drugInteractions.length === 0) && (!analysisResult?.allergyInteractions || analysisResult.allergyInteractions.length === 0) && (
+                        <div className="text-center py-8">
+                            <ShieldCheck className="h-10 w-10 text-green-500 mx-auto mb-2" />
+                            <p className="font-semibold">No se encontraron interacciones significativas.</p>
+                        </div>
+                     )}
+                </div>
+            </DialogContent>
+        </Dialog>
     )
 }
 
@@ -125,9 +119,13 @@ export default function TreatmentsPage() {
     const { patient, loading: patientLoading } = usePatientAuth();
     const [recipes, setRecipes] = useState<Recipe[]>([]);
     const [loadingData, setLoadingData] = useState(true);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [analysisResult, setAnalysisResult] = useState<CheckMedicationInteractionsOutput | null>(null);
+    const [isInteractionDialogOpen, setIsInteractionDialogOpen] = useState(false);
+    const { toast } = useToast();
 
     const activeMagistralRecipes = useMemo(() => {
-        return recipes.filter(r => r.status !== RecipeStatus.Cancelled && r.status !== RecipeStatus.Rejected && r.status !== RecipeStatus.Archived);
+        return recipes.filter(r => ![RecipeStatus.Cancelled, RecipeStatus.Rejected, RecipeStatus.Archived].includes(r.status));
     }, [recipes]);
     
     const fetchData = useCallback(async () => {
@@ -146,8 +144,29 @@ export default function TreatmentsPage() {
         }
     }, [patient, patientLoading, fetchData]);
 
+    const handleAnalyzeInteractions = async () => {
+        if (!patient) return;
+        setIsAnalyzing(true);
+        try {
+            const magistralMeds = activeMagistralRecipes.map(r => `${r.items[0]?.principalActiveIngredient || ''} ${r.items[0]?.concentrationValue || ''}${r.items[0]?.concentrationUnit || ''}`);
+            const commercialMeds = patient.commercialMedications || [];
+            const allMeds = [...magistralMeds, ...commercialMeds].filter(Boolean);
+
+            const result = await analyzePatientInteractions({
+                medications: allMeds,
+                allergies: patient.allergies || [],
+            });
+            setAnalysisResult(result);
+            setIsInteractionDialogOpen(true);
+        } catch (error) {
+            toast({ title: "Error en Análisis", description: "No se pudo completar el análisis de interacciones.", variant: "destructive" });
+        } finally {
+            setIsAnalyzing(false);
+        }
+    }
+
     if (loadingData || patientLoading) {
-        return <div className="flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>
+        return <div className="flex items-center justify-center pt-16"><Loader2 className="h-8 w-8 animate-spin" /></div>
     }
 
     if (!patient) {
@@ -155,18 +174,28 @@ export default function TreatmentsPage() {
     }
 
     return (
+        <>
+        <InteractionDialog isOpen={isInteractionDialogOpen} onOpenChange={setIsInteractionDialogOpen} analysisResult={analysisResult} />
         <div className="space-y-8">
-            <div className="flex items-center gap-4">
-                <Button variant="outline" size="icon" asChild>
-                    <Link href="/patient-portal/dashboard">
-                        <ChevronLeft className="h-4 w-4" />
-                    </Link>
-                </Button>
-                <h1 className="text-3xl font-bold font-headline">Mis Tratamientos</h1>
+            <div className="flex items-center justify-between">
+                <h1 className="text-2xl md:text-3xl font-bold font-headline">Mis Tratamientos</h1>
             </div>
 
+            <Card>
+                <CardHeader>
+                    <CardTitle>Análisis de Seguridad</CardTitle>
+                    <CardDescription>Utiliza nuestra IA para revisar posibles interacciones entre tus medicamentos y alergias. Esta herramienta es una ayuda y no reemplaza el consejo médico.</CardDescription>
+                </CardHeader>
+                <CardFooter>
+                     <Button onClick={handleAnalyzeInteractions} disabled={isAnalyzing}>
+                        {isAnalyzing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <HeartPulse className="mr-2 h-4 w-4"/>}
+                        Verificar Interacciones (IA)
+                    </Button>
+                </CardFooter>
+            </Card>
+
             <section>
-                <h2 className="text-2xl font-semibold mb-4 border-b pb-2">Preparados Magistrales</h2>
+                <h2 className="text-xl font-semibold mb-4 border-b pb-2">Preparados Magistrales</h2>
                  {activeMagistralRecipes.length > 0 ? (
                      <div className="space-y-4">
                         {activeMagistralRecipes.map(recipe => (
@@ -174,7 +203,7 @@ export default function TreatmentsPage() {
                                 <CardHeader>
                                     <div className="flex justify-between items-start">
                                         <CardTitle>{recipe.items[0]?.principalActiveIngredient || 'Preparado Magistral'}</CardTitle>
-                                        <Badge variant="secondary">{recipe.status}</Badge>
+                                        <Badge variant={recipe.status === 'Dispensada' ? 'default' : 'secondary'}>{recipe.status}</Badge>
                                     </div>
                                     <CardDescription>Vence el: {format(parseISO(recipe.dueDate), 'dd MMMM, yyyy', {locale: es})}</CardDescription>
                                 </CardHeader>
@@ -195,14 +224,14 @@ export default function TreatmentsPage() {
             <Separator />
             
              <section>
-                <h2 className="text-2xl font-semibold mb-4 border-b pb-2">Medicamentos Comerciales</h2>
+                <h2 className="text-xl font-semibold mb-4 border-b pb-2">Medicamentos Comerciales</h2>
                 {(patient.commercialMedications && patient.commercialMedications.length > 0) ? (
                      <div className="space-y-4">
                         {patient.commercialMedications.map(med => (
                             <Card key={med}>
                                 <CardHeader className="flex flex-row items-center justify-between">
                                     <CardTitle>{med}</CardTitle>
-                                    <CommercialMedInfo medName={med} />
+                                    {/* Link to external info or IA simple explainer could go here */}
                                 </CardHeader>
                             </Card>
                         ))}
@@ -213,5 +242,6 @@ export default function TreatmentsPage() {
             </section>
 
         </div>
+        </>
     );
 }

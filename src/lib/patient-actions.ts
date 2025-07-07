@@ -15,6 +15,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { doc, collection, setDoc } from 'firebase/firestore';
 import { addMonths } from 'date-fns';
 import { MAX_REPREPARATIONS } from './constants';
+import { checkMedicationInteractions, CheckMedicationInteractionsInput, CheckMedicationInteractionsOutput } from '@/ai/flows/check-medication-interactions';
 
 
 // --- PATIENT PORTAL ACTIONS ---
@@ -29,6 +30,16 @@ export async function getDashboardData(patientId: string) {
 
 export async function getMedicationInfo(medicationName: string) {
     return await simplifyMedicationInfo(medicationName);
+}
+
+export async function analyzePatientInteractions(input: CheckMedicationInteractionsInput): Promise<CheckMedicationInteractionsOutput> {
+  try {
+    const result = await checkMedicationInteractions(input);
+    return result;
+  } catch (error) {
+    console.error("AI interaction analysis failed:", error);
+    throw new Error("No se pudo completar el análisis de interacciones.");
+  }
 }
 
 export async function sendMessageFromPatient(patientId: string, content: string): Promise<PatientMessage> {

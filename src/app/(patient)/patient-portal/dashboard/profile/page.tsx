@@ -5,21 +5,23 @@ import { usePatientAuth } from '@/components/app/patient-auth-provider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Mail, Phone, MapPin, AlertTriangle, ChevronLeft, User, Heart, ShieldAlert, Pill, Stethoscope, Loader2, Palette, Save, Home } from 'lucide-react';
+import { Mail, Phone, MapPin, AlertTriangle, User, Heart, ShieldAlert, Pill, Stethoscope, Loader2, Palette, Save, Home, LogOut, DollarSign } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useEffect, useState } from 'react';
 import { Doctor } from '@/lib/types';
 import { getDoctor, updatePatient } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
-import { Avatar } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { PREDEFINED_AVATARS, getAvatar } from '@/components/app/predefined-avatars';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 
 
 export default function PatientProfilePage() {
-  const { patient, refreshPatient } = usePatientAuth();
+  const { patient, refreshPatient, logout } = usePatientAuth();
+  const router = useRouter();
   const { toast } = useToast();
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loadingDoctors, setLoadingDoctors] = useState(true);
@@ -69,72 +71,61 @@ export default function PatientProfilePage() {
 
 
   if (!patient) {
-    return null; 
+    return <div className="flex items-center justify-center pt-16"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 
-  const hasClinicalInfo = (patient.allergies && patient.allergies.length > 0) ||
-                          (patient.adverseReactions && patient.adverseReactions.length > 0) ||
-                          (patient.commercialMedications && patient.commercialMedications.length > 0);
-  
-  const DisplayAvatar = patient.avatar ? getAvatar(patient.avatar) : (<span className="text-5xl font-bold">{patient.name.charAt(0)}</span>);
+  const DisplayAvatar = patient.avatar ? getAvatar(patient.avatar) : (<AvatarFallback className="text-3xl font-bold">{patient.name.charAt(0)}</AvatarFallback>);
 
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" asChild>
-          <Link href="/patient-portal/dashboard">
-            <ChevronLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold font-headline">Mi Perfil</h1>
-          <p className="text-muted-foreground">Aquí puedes revisar toda tu información registrada en nuestro sistema.</p>
-        </div>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+          <h1 className="text-2xl md:text-3xl font-bold font-headline">Mi Perfil</h1>
       </div>
 
       <Card>
         <CardHeader className="items-center text-center">
-            <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
-                <div className="relative group">
-                    <Avatar className="w-24 h-24 text-3xl mb-4 border-2 border-primary/20">
-                        {DisplayAvatar}
-                    </Avatar>
+            <div className="relative group">
+                <Avatar className="w-24 h-24 text-3xl mb-4 border-2 border-primary/20">
+                    {DisplayAvatar}
+                </Avatar>
+                <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="absolute bottom-4 -right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Palette className="mr-2 h-4 w-4"/> Cambiar
+                        <Button variant="outline" size="icon" className="absolute bottom-4 -right-2 h-8 w-8 rounded-full">
+                            <Palette className="h-4 w-4"/>
                         </Button>
                     </DialogTrigger>
-                </div>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Elige tu Avatar</DialogTitle>
-                        <DialogDescription>Selecciona una imagen de la lista para personalizar tu perfil.</DialogDescription>
-                    </DialogHeader>
-                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 py-4">
-                        {Object.entries(PREDEFINED_AVATARS).map(([id, svg]) => (
-                            <div
-                                key={id}
-                                onClick={() => setSelectedAvatar(id)}
-                                className={cn(
-                                    "p-2 border-2 rounded-lg cursor-pointer transition-all",
-                                    selectedAvatar === id ? "border-primary ring-2 ring-primary" : "border-transparent hover:border-muted-foreground/50"
-                                )}
-                            >
-                            <div className="aspect-square">{svg}</div>
-                            </div>
-                        ))}
-                    </div>
-                    <DialogFooter>
-                        <Button variant="ghost" onClick={() => setIsAvatarDialogOpen(false)}>Cancelar</Button>
-                        <Button onClick={handleSaveAvatar} disabled={isSaving}>
-                            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                            <Save className="mr-2 h-4 w-4"/>
-                            Guardar Avatar
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Elige tu Avatar</DialogTitle>
+                            <DialogDescription>Selecciona una imagen de la lista para personalizar tu perfil.</DialogDescription>
+                        </DialogHeader>
+                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 py-4">
+                            {Object.entries(PREDEFINED_AVATARS).map(([id, svg]) => (
+                                <div
+                                    key={id}
+                                    onClick={() => setSelectedAvatar(id)}
+                                    className={cn(
+                                        "p-2 border-2 rounded-lg cursor-pointer transition-all",
+                                        selectedAvatar === id ? "border-primary ring-2 ring-primary" : "border-transparent hover:border-muted-foreground/50"
+                                    )}
+                                >
+                                <div className="aspect-square">{svg}</div>
+                                </div>
+                            ))}
+                        </div>
+                        <DialogFooter>
+                            <Button variant="ghost" onClick={() => setIsAvatarDialogOpen(false)}>Cancelar</Button>
+                            <Button onClick={handleSaveAvatar} disabled={isSaving}>
+                                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                                <Save className="mr-2 h-4 w-4"/>
+                                Guardar Avatar
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </div>
+            
           <CardTitle className="text-2xl">{patient.name}</CardTitle>
           <CardDescription>RUT: {patient.rut}</CardDescription>
         </CardHeader>
@@ -147,95 +138,86 @@ export default function PatientProfilePage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2"><Phone className="h-5 w-5 text-primary"/> Información de Contacto</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div className="flex items-center gap-3"><Mail className="h-4 w-4 text-muted-foreground" /><span className="text-foreground">{patient.email || 'No registrado'}</span></div>
-            <div className="flex items-center gap-3"><Phone className="h-4 w-4 text-muted-foreground" /><span className="text-foreground">{patient.phone || 'No registrado'}</span></div>
-            {patient.address && <div className="flex items-start gap-3"><MapPin className="h-4 w-4 text-muted-foreground mt-1" /><span className="text-foreground">{patient.address}</span></div>}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2"><Stethoscope className="h-5 w-5 text-primary"/> Médicos Tratantes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loadingDoctors ? (
-              <div className="flex items-center justify-center h-16">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="space-y-3">
+        <Link href="/patient-portal/dashboard/payments" className="block">
+          <Card className="hover:bg-muted/50 transition-colors">
+            <CardHeader className="flex flex-row items-center justify-between p-4">
+              <div className="flex items-center gap-3">
+                <DollarSign className="h-5 w-5 text-primary"/>
+                <p className="font-semibold">Pagos y Costos</p>
               </div>
-            ) : doctors.length > 0 ? (
-              <ul className="space-y-3">
-                {doctors.map(doctor => (
-                  <li key={doctor.id} className="flex flex-col p-3 bg-muted/50 rounded-lg">
-                    <p className="font-semibold text-foreground">{doctor.name}</p>
-                    <p className="text-xs text-muted-foreground">{doctor.specialty}</p>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-muted-foreground">No tienes médicos tratantes asociados a tu perfil.</p>
-            )}
-          </CardContent>
+            </CardHeader>
+          </Card>
+        </Link>
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between p-4 cursor-pointer" onClick={() => { logout(); router.push('/patient-portal/login'); }}>
+              <div className="flex items-center gap-3">
+                <LogOut className="h-5 w-5 text-destructive"/>
+                <p className="font-semibold text-destructive">Cerrar Sesión</p>
+              </div>
+            </CardHeader>
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2"><ShieldAlert className="h-5 w-5 text-primary" /> Información Clínica</CardTitle>
-        </CardHeader>
-        <CardContent>
-            {hasClinicalInfo ? (
-              <div className="space-y-4">
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-3"><AlertTriangle className="h-4 w-4 text-muted-foreground" />Alergias Conocidas</div>
-                  {patient.allergies && patient.allergies.length > 0 ? (
-                        <div className="flex flex-wrap gap-2 pl-7">
-                            {patient.allergies.map((allergy) => <Badge key={allergy} variant="destructive">{allergy}</Badge>)}
-                        </div>
-                    ) : (
-                        <p className="text-muted-foreground pl-7 text-xs">No hay alergias registradas.</p>
-                    )}
-                </div>
+       <Accordion type="multiple" defaultValue={['contact', 'clinical', 'doctors']} className="w-full space-y-4">
+         <Card>
+           <AccordionItem value="contact" className="border-b-0">
+              <AccordionTrigger className="text-lg font-semibold hover:no-underline p-4">Información de Contacto</AccordionTrigger>
+              <AccordionContent className="p-4 pt-0 space-y-3 text-sm">
+                <div className="flex items-center gap-3"><Mail className="h-4 w-4 text-muted-foreground" /><span className="text-foreground">{patient.email || 'No registrado'}</span></div>
+                <div className="flex items-center gap-3"><Phone className="h-4 w-4 text-muted-foreground" /><span className="text-foreground">{patient.phone || 'No registrado'}</span></div>
+                {patient.address && <div className="flex items-start gap-3"><MapPin className="h-4 w-4 text-muted-foreground mt-1" /><span className="text-foreground">{patient.address}</span></div>}
+              </AccordionContent>
+           </AccordionItem>
+         </Card>
+         <Card>
+            <AccordionItem value="clinical" className="border-b-0">
+               <AccordionTrigger className="text-lg font-semibold hover:no-underline p-4">Información Clínica</AccordionTrigger>
+               <AccordionContent className="p-4 pt-0 space-y-4">
+                  <div className="space-y-2 text-sm">
+                    <p className="font-medium flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-muted-foreground" />Alergias Conocidas</p>
+                    {patient.allergies && patient.allergies.length > 0 ? (
+                          <div className="flex flex-wrap gap-2 pl-7">
+                              {patient.allergies.map((allergy) => <Badge key={allergy} variant="destructive">{allergy}</Badge>)}
+                          </div>
+                      ) : (
+                          <p className="text-muted-foreground pl-7 text-xs">No hay alergias registradas.</p>
+                      )}
+                  </div>
+                  <Separator />
+                   <div className="space-y-2 text-sm">
+                    <p className="font-medium flex items-center gap-2"><ShieldAlert className="h-4 w-4 text-muted-foreground" />Reacciones Adversas</p>
+                    {patient.adverseReactions && patient.adverseReactions.length > 0 ? (
+                          <ul className="list-disc pl-12 space-y-1">
+                            {patient.adverseReactions.map((reaction, index) => (
+                              <li key={index} className="text-foreground">A <span className="font-semibold">{reaction.medication}</span>: {reaction.description}</li>
+                            ))}
+                          </ul>
+                      ) : ( <p className="text-muted-foreground pl-7 text-xs">No hay reacciones adversas registradas.</p> )}
+                  </div>
+               </AccordionContent>
+            </AccordionItem>
+         </Card>
+          <Card>
+            <AccordionItem value="doctors" className="border-b-0">
+               <AccordionTrigger className="text-lg font-semibold hover:no-underline p-4">Médicos Tratantes</AccordionTrigger>
+               <AccordionContent className="p-4 pt-0">
+                  {loadingDoctors ? ( <div className="flex items-center justify-center h-16"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+                  ) : doctors.length > 0 ? (
+                    <ul className="space-y-3">
+                      {doctors.map(doctor => (
+                        <li key={doctor.id} className="flex flex-col p-3 bg-muted/50 rounded-lg">
+                          <p className="font-semibold text-foreground">{doctor.name}</p>
+                          <p className="text-xs text-muted-foreground">{doctor.specialty}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : ( <p className="text-sm text-muted-foreground text-center py-4">No tienes médicos tratantes asociados.</p> )}
+               </AccordionContent>
+            </AccordionItem>
+         </Card>
+       </Accordion>
 
-                <Separator />
-
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-3"><ShieldAlert className="h-4 w-4 text-muted-foreground" />Reacciones Adversas Registradas</div>
-                  {patient.adverseReactions && patient.adverseReactions.length > 0 ? (
-                        <ul className="list-disc pl-12 space-y-1">
-                          {patient.adverseReactions.map((reaction, index) => (
-                            <li key={index} className="text-foreground">
-                              A <span className="font-semibold">{reaction.medication}</span>: {reaction.description}
-                            </li>
-                          ))}
-                        </ul>
-                    ) : (
-                        <p className="text-muted-foreground pl-7 text-xs">No hay reacciones adversas registradas.</p>
-                    )}
-                </div>
-
-                <Separator />
-
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-3"><Pill className="h-4 w-4 text-muted-foreground" />Medicamentos Comerciales en Tratamiento</div>
-                  {patient.commercialMedications && patient.commercialMedications.length > 0 ? (
-                        <div className="flex flex-wrap gap-2 pl-7">
-                            {patient.commercialMedications.map((med) => <Badge key={med} variant="secondary">{med}</Badge>)}
-                        </div>
-                    ) : (
-                        <p className="text-muted-foreground pl-7 text-xs">No hay medicamentos comerciales registrados.</p>
-                    )}
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">No hay información clínica adicional registrada.</p>
-            )}
-        </CardContent>
-      </Card>
     </div>
   );
 }
