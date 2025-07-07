@@ -5,7 +5,7 @@
 import { db, storage, auth } from './firebase';
 import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc, deleteDoc, writeBatch, query, where, limit,getCountFromServer } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, ControlledLogEntryType, ProactivePatientStatus, PatientActionNeeded, MonthlyDispensationBoxStatus, DispensationItemStatus, PharmacovigilanceReportStatus, type Recipe, type Doctor, type InventoryItem, type User, type Role, type ExternalPharmacy, type Patient, type PharmacovigilanceReport, type AppData, type AuditTrailEntry, type DispatchNote, type DispatchItem, type ControlledSubstanceLogEntry, type LotDetail, type AppSettings, type MonthlyDispensationBox, type PatientMessage } from './types';
+import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, ControlledLogEntryType, ProactivePatientStatus, PatientActionNeeded, MonthlyDispensationBoxStatus, DispensationItemStatus, PharmacovigilanceReportStatus, UserRequestStatus, type Recipe, type Doctor, type InventoryItem, type User, type Role, type ExternalPharmacy, type Patient, type PharmacovigilanceReport, type AppData, type AuditTrailEntry, type DispatchNote, type DispatchItem, type ControlledSubstanceLogEntry, type LotDetail, type AppSettings, type MonthlyDispensationBox, type PatientMessage, type UserRequest } from './types';
 import { MAX_REPREPARATIONS } from './constants';
 import { addMonths } from 'date-fns';
 
@@ -72,6 +72,7 @@ export const getInventory = async (): Promise<InventoryItem[]> => {
 
 export const getUsers = async (): Promise<User[]> => fetchCollection<User>('users');
 export const getRoles = async (): Promise<Role[]> => fetchCollection<Role>('roles');
+export const getUserRequests = async (): Promise<UserRequest[]> => fetchCollection<UserRequest>('userRequests');
 export const getPharmacovigilanceReports = async (): Promise<PharmacovigilanceReport[]> => fetchCollection<PharmacovigilanceReport>('pharmacovigilanceReports');
 export const getDispatchNotes = async (): Promise<DispatchNote[]> => fetchCollection<DispatchNote>('dispatchNotes');
 export const getControlledSubstanceLog = async (): Promise<ControlledSubstanceLogEntry[]> => fetchCollection<ControlledSubstanceLogEntry>('controlledSubstanceLog');
@@ -179,6 +180,20 @@ export const getRecipesCountByStatus = async (status: RecipeStatus): Promise<num
     const q = query(collection(db, "recipes"), where("status", "==", status));
     const snapshot = await getCountFromServer(q);
     return snapshot.data().count;
+};
+
+export const getPendingPortalItemsCount = async (): Promise<number> => {
+    if (!db) return 0;
+    
+    const recipesQuery = query(collection(db, "recipes"), where("status", "==", RecipeStatus.PendingReviewPortal));
+    const recipesSnapshot = await getCountFromServer(recipesQuery);
+    const recipeCount = recipesSnapshot.data().count;
+    
+    const requestsQuery = query(collection(db, "userRequests"), where("status", "==", UserRequestStatus.Pending));
+    const requestsSnapshot = await getCountFromServer(requestsQuery);
+    const requestCount = requestsSnapshot.data().count;
+    
+    return recipeCount + requestCount;
 };
 
 export const getItemsToDispatchCount = async (): Promise<number> => {
@@ -908,4 +923,68 @@ export const deleteRole = async (id: string): Promise<void> => {
         throw new Error("No se puede eliminar el rol porque está asignado a uno o más usuarios.");
     }
     await deleteDoc(doc(db, 'roles', id));
+};
+
+export const addUserRequest = async (request: Omit<UserRequest, 'id' | 'status' | 'requestedAt'>): Promise<void> => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    const requestData: Omit<UserRequest, 'id'> = {
+        ...request,
+        status: UserRequestStatus.Pending,
+        requestedAt: new Date().toISOString(),
+    };
+    await addDoc(collection(db, 'userRequests'), requestData);
+};
+
+export const approveUserRequest = async (requestId: string): Promise<void> => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    
+    const requestRef = doc(db, 'userRequests', requestId);
+    const requestSnap = await getDoc(requestRef);
+    if (!requestSnap.exists()) {
+        throw new Error("Solicitud de usuario no encontrada.");
+    }
+    const requestData = requestSnap.data() as UserRequest;
+    
+    // Check if patient already exists by RUT or Email
+    const rutQuery = query(collection(db, "patients"), where("rut", "==", requestData.rut), limit(1));
+    const emailQuery = query(collection(db, "patients"), where("email", "==", requestData.email), limit(1));
+    
+    const [rutSnapshot, emailSnapshot] = await Promise.all([getDocs(rutQuery), getDocs(emailQuery)]);
+    
+    const existingPatientDoc = rutSnapshot.docs[0] || emailSnapshot.docs[0];
+
+    const batch = writeBatch(db);
+
+    if (existingPatientDoc) {
+        // Patient exists, link the firebaseUid
+        batch.update(existingPatientDoc.ref, { firebaseUid: requestData.firebaseUid });
+    } else {
+        // Patient does not exist, create a new one
+        const newPatientRef = doc(collection(db, 'patients'));
+        const newPatientData: Omit<Patient, 'id'> = {
+            name: requestData.name,
+            rut: requestData.rut,
+            email: requestData.email,
+            firebaseUid: requestData.firebaseUid,
+            isChronic: false, // Default value
+            proactiveStatus: ProactivePatientStatus.OK,
+            proactiveMessage: 'No requiere acción.',
+            actionNeeded: PatientActionNeeded.NONE,
+        };
+        batch.set(newPatientRef, newPatientData);
+    }
+
+    // Mark request as approved
+    batch.update(requestRef, { status: UserRequestStatus.Approved });
+    
+    await batch.commit();
+};
+
+export const rejectUserRequest = async (requestId: string, reason: string): Promise<void> => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    const requestRef = doc(db, 'userRequests', requestId);
+    await updateDoc(requestRef, {
+        status: UserRequestStatus.Rejected,
+        rejectionReason: reason
+    });
 };

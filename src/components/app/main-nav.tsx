@@ -255,7 +255,7 @@ function MainNavContent({
                         alt="Skol Pharmacy Logo"
                         width={120}
                         height={33}
-                        className="object-contain h-full w-auto transition-opacity duration-300 group-data-[state=collapsed]:opacity-0"
+                        className="object-contain h-full w-auto transition-opacity duration-300 group-data-[state=expanded]:opacity-100 group-data-[state=collapsed]:opacity-0"
                         priority
                     />
                     {/* Imagotipo: visible when collapsed */}
