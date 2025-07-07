@@ -112,7 +112,16 @@ export default function FinancialManagementPage() {
     return pharmacies.map(pharmacy => {
       const pharmacyRecipes = recipes.filter(r => r.externalPharmacyId === pharmacy.id);
       
-      const pendingRecipes = pharmacyRecipes.filter(r => r.paymentStatus === 'Pendiente' && r.status !== RecipeStatus.Cancelled && r.status !== RecipeStatus.Rejected);
+      const pendingRecipes = pharmacyRecipes.filter(r =>
+        r.paymentStatus !== 'Pagado' &&
+        [
+          RecipeStatus.SentToExternal,
+          RecipeStatus.ReceivedAtSkol,
+          RecipeStatus.ReadyForPickup,
+          RecipeStatus.Dispensed
+        ].includes(r.status)
+      );
+      
       const totalPreparationCost = pendingRecipes.reduce((acc, r) => acc + (r.preparationCost || 0), 0);
       const totalTransportCost = pendingRecipes.reduce((acc, r) => acc + (r.transportCost || 0), 0);
       const pendingBalance = totalPreparationCost + totalTransportCost;
