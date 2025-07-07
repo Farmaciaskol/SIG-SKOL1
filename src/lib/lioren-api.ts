@@ -29,14 +29,14 @@ export async function fetchRawInventoryFromLioren(): Promise<LiorenProduct[]> {
       headers: { 
         'Authorization': `Bearer ${apiKey}`,
         'Accept': 'application/json'
-      }
+      },
+      cache: 'no-store' // Prevent caching of failed requests
     });
 
     if (!response.ok) {
-      console.error(`Lioren API error: ${response.status} ${response.statusText}`);
-      const errorBody = await response.text();
-      console.error("Error body:", errorBody);
-      throw new Error(`Error al conectar con la API de Lioren: ${response.statusText}`);
+      // Log as a warning, not a critical error
+      console.warn(`Lioren API error: ${response.status} ${response.statusText}`);
+      return []; // Return empty array to prevent crash
     }
 
     const data = await response.json();
@@ -45,13 +45,14 @@ export async function fetchRawInventoryFromLioren(): Promise<LiorenProduct[]> {
     if (data && Array.isArray(data.productos)) {
       return data.productos as LiorenProduct[];
     } else {
-      console.warn("Lioren API response did not contain a 'productos' array.", {responseData: data});
+      console.warn("Lioren API response did not contain a 'productos' array.");
       return [];
     }
 
   } catch (error) {
-    console.error("Failed to fetch inventory from Lioren:", error);
-    // Return empty array on error to prevent crashing the app
+    // This will catch network errors like 'fetch failed'
+    console.warn("Failed to fetch inventory from Lioren. The API might be unreachable or there's a network issue.");
+    // Return empty array to prevent the page from crashing.
     return [];
   }
 }
