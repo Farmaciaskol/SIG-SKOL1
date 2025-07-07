@@ -786,34 +786,6 @@ export const RecipesClient = ({
     }
   };
   
-  const stats = useMemo(() => {
-    const now = new Date();
-    const thirtyDaysFromNow = new Date();
-    thirtyDaysFromNow.setDate(now.getDate() + 30);
-
-    const activeRecipes = initialRecipes.filter(r => 
-        ![RecipeStatus.Dispensed, RecipeStatus.Cancelled, RecipeStatus.Rejected, RecipeStatus.Archived].includes(r.status)
-    );
-    
-    const expiringOrExpiredCount = activeRecipes.filter(r => {
-        if (!r.dueDate) return false;
-        try {
-            const dueDate = parseISO(r.dueDate);
-            return dueDate < thirtyDaysFromNow;
-        } catch (e) {
-            return false;
-        }
-    }).length;
-
-    return {
-      pendingValidation: initialRecipes.filter(r => r.status === RecipeStatus.PendingValidation).length,
-      inPreparation: initialRecipes.filter(r => r.status === RecipeStatus.Preparation || r.status === RecipeStatus.SentToExternal).length,
-      readyForPickup: initialRecipes.filter(r => r.status === RecipeStatus.ReadyForPickup || r.status === RecipeStatus.ReceivedAtSkol).length,
-      rejected: initialRecipes.filter(r => r.status === RecipeStatus.Rejected).length,
-      expiringOrExpired: expiringOrExpiredCount,
-    };
-  }, [initialRecipes]);
-
   const filteredRecipes = useMemo(() => {
     return recipes
     .filter((recipe) => {
@@ -1147,7 +1119,7 @@ export const RecipesClient = ({
             </Link>
         </Button>
       </div>
-
+      
       <Card className="mt-6">
         <CardContent className="p-4">
           <Collapsible
