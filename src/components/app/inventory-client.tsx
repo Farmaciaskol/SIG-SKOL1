@@ -15,7 +15,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -647,8 +646,11 @@ export function InventoryClient({ initialInventory, initialLiorenInventory }: {
                             <CardDescription>Esta es la información tal como la entrega la API de Lioren, en modo de solo lectura.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            {isSyncing && !liorenInventory.length ? (
-                                <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                           {isSyncing ? (
+                                <div className="flex items-center justify-center h-64">
+                                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                    <p className="ml-2 text-muted-foreground">Sincronizando con Lioren...</p>
+                                </div>
                             ) : liorenInventory.length === 0 ? (
                                 <div className="text-center py-16">No se encontraron productos en Lioren o la API no respondió.</div>
                             ) : (
