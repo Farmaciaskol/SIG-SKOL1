@@ -2,18 +2,34 @@
 'use server';
 
 // Define a type for the raw product from Lioren API
-export interface LiorenProduct {
-  id: string;
+export interface LiorenStock {
+  sucursal_id: number;
   nombre: string;
+  stock: number;
+}
+export interface LiorenProduct {
+  id: number;
+  nombre: string;
+  exento: number;
   codigo: string; // SKU
+  unidad: string;
+  param1: string;
+  param2: string;
+  param3: string;
+  param4: string;
   descripcion?: string;
-  precio_venta: number;
-  costo: number;
-  stock_actual: number;
-  familia?: {
-    nombre: string;
-  };
-  // Add other fields from the API as needed
+  activo: number;
+  preciocompraneto: number;
+  precioventabruto: number;
+  cod_imp_venta: string;
+  cod_imp_compra: string;
+  peso: number;
+  largo: string;
+  ancho: string;
+  alto: string;
+  stocks: LiorenStock[];
+  atributos: any[];
+  otrosprecios: any[];
 }
 
 export async function fetchRawInventoryFromLioren(): Promise<LiorenProduct[]> {
@@ -25,26 +41,34 @@ export async function fetchRawInventoryFromLioren(): Promise<LiorenProduct[]> {
   }
 
   try {
-    const response = await fetch('https://api.lioren.cl/v1/productos', {
+    const response = await fetch('https://www.lioren.cl/api/productos', {
       headers: { 
         'Authorization': `Bearer ${apiKey}`,
         'Accept': 'application/json'
-      }
+      },
+      cache: 'no-store' // Prevent caching of failed requests
     });
 
     if (!response.ok) {
-      console.error(`Lioren API error: ${response.status} ${response.statusText}`);
-      const errorBody = await response.text();
-      console.error("Error body:", errorBody);
-      throw new Error(`Error al conectar con la API de Lioren: ${response.statusText}`);
+      // Log as a warning, not a critical error
+      console.warn(`Lioren API error: ${response.status} ${response.statusText}`);
+      return []; // Return empty array to prevent crash
     }
 
     const data = await response.json();
-    // Assuming the products are in a 'productos' array in the response
-    return data.productos as LiorenProduct[];
+    
+    // The API returns the list of products under the key "*"
+    if (data && Array.isArray(data['*'])) {
+      return data['*'] as LiorenProduct[];
+    } else {
+      console.warn("Lioren API response did not contain a '*' array key for products.");
+      return [];
+    }
+
   } catch (error) {
-    console.error("Failed to fetch inventory from Lioren:", error);
-    // Return empty array on error to prevent crashing the app
+    // This will catch network errors like 'fetch failed'
+    console.warn("Failed to fetch inventory from Lioren. The API might be unreachable or there's a network issue.");
+    // Return empty array to prevent the page from crashing.
     return [];
   }
 }

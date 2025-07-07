@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription }
 import { Input } from '@/components/ui/input';
 import { getInventory, addInventoryItem, updateInventoryItem, deleteInventoryItem, addLotToInventoryItem } from '@/lib/data';
 import type { InventoryItem, LotDetail } from '@/lib/types';
-import { PlusCircle, Search, Edit, History, PackagePlus, Trash2, MoreVertical, DollarSign, Package, PackageX, AlertTriangle, Star, Box, ChevronDown, Loader2, Calendar as CalendarIcon, Snowflake, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from 'lucide-react';
+import { PlusCircle, Search, Edit, History, PackagePlus, Trash2, MoreVertical, DollarSign, Package, PackageX, AlertTriangle, Star, Box, ChevronDown, Loader2, Calendar as CalendarIcon, Snowflake, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, RefreshCw } from 'lucide-react';
 import { format, differenceInDays, isBefore, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
@@ -288,45 +288,65 @@ function LotManagementDialog({
   )
 }
 
-export function InventoryClient({ initialInventory }: { initialInventory: InventoryItem[] }) {
-    const [loading, setLoading] = useState(false);
+export function InventoryClient({ initialInventory, initialLiorenInventory }: { 
+  initialInventory: InventoryItem[];
+  initialLiorenInventory: LiorenProduct[];
+}) {
     const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory);
-    const [liorenInventory, setLiorenInventory] = useState<LiorenProduct[]>([]);
-    const [loadingLioren, setLoadingLioren] = useState(true);
+    const [liorenInventory, setLiorenInventory] = useState<LiorenProduct[]>(initialLiorenInventory);
+    const [loading, setLoading] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState<FilterStatus>('all');
     const { toast } = useToast();
 
-    // Dialog States
     const [managingLotsFor, setManagingLotsFor] = useState<InventoryItemWithStats | null>(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
     const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null);
 
-    // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 20;
 
-    const refreshData = async () => {
+    const [openRows, setOpenRows] = useState<Set<string>>(new Set());
+
+    const toggleRow = (id: string) => {
+        setOpenRows(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(id)) {
+            newSet.delete(id);
+        } else {
+            newSet.add(id);
+        }
+        return newSet;
+        });
+    };
+
+    const refreshLocalData = async () => {
         setLoading(true);
-        setLoadingLioren(true);
         try {
             const data = await getInventory();
             setInventory(data);
-            const liorenData = await fetchRawInventoryFromLioren();
-            setLiorenInventory(liorenData);
         } catch (error) {
-            toast({ title: "Error", description: "No se pudo actualizar el inventario.", variant: "destructive" });
+            toast({ title: "Error", description: "No se pudo actualizar el inventario local.", variant: "destructive" });
         } finally {
             setLoading(false);
-            setLoadingLioren(false);
         }
     };
     
-    useEffect(() => {
-        refreshData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    const handleSyncWithLioren = async () => {
+        setIsSyncing(true);
+        toast({ title: 'Sincronizando...', description: 'Obteniendo los últimos datos de Lioren.' });
+        try {
+            const liorenData = await fetchRawInventoryFromLioren();
+            setLiorenInventory(liorenData);
+            toast({ title: 'Sincronización Completa', description: 'La vista de Lioren ha sido actualizada.' });
+        } catch (error) {
+            toast({ title: 'Error de Sincronización', description: `No se pudo conectar con la API de Lioren. ${error instanceof Error ? error.message : ''}`, variant: 'destructive' });
+        } finally {
+            setIsSyncing(false);
+        }
+    };
 
     const handleOpenForm = (item: InventoryItem | null) => {
         setEditingItem(item);
@@ -336,7 +356,7 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
     const handleFormFinished = () => {
         setIsFormOpen(false);
         setEditingItem(null);
-        refreshData();
+        refreshLocalData();
     };
 
     const handleDeleteItem = async () => {
@@ -345,7 +365,7 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
             await deleteInventoryItem(itemToDelete.id);
             toast({ title: "Producto Eliminado", description: "El producto ha sido eliminado de la base de datos local." });
             setItemToDelete(null);
-            refreshData();
+            refreshLocalData();
         } catch (error) {
             toast({ title: "Error", description: "No se pudo eliminar el producto.", variant: "destructive" });
         }
@@ -446,7 +466,7 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
                 item={managingLotsFor}
                 isOpen={!!managingLotsFor}
                 onOpenChange={(open) => { if (!open) setManagingLotsFor(null); }}
-                onLotAdded={refreshData}
+                onLotAdded={refreshLocalData}
             />
             
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
@@ -483,9 +503,15 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
                         Control logístico y trazabilidad de los insumos de la farmacia.
                     </p>
                 </div>
-                 <Button onClick={() => handleOpenForm(null)}>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Crear Producto
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button onClick={handleSyncWithLioren} disabled={isSyncing} variant="outline">
+                        {isSyncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                        Sincronizar Lioren
+                    </Button>
+                    <Button onClick={() => handleOpenForm(null)}>
+                        <PlusCircle className="mr-2 h-4 w-4" /> Crear Producto
+                    </Button>
+                </div>
             </div>
             
             <Tabs defaultValue="skol-inventory">
@@ -620,7 +646,7 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
                             <CardDescription>Esta es la información tal como la entrega la API de Lioren, en modo de solo lectura.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            {loadingLioren ? (
+                            {isSyncing && !liorenInventory.length ? (
                                 <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
                             ) : liorenInventory.length === 0 ? (
                                 <div className="text-center py-16">No se encontraron productos en Lioren o la API no respondió.</div>
@@ -629,23 +655,64 @@ export function InventoryClient({ initialInventory }: { initialInventory: Invent
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
+                                                <TableHead className="w-12"></TableHead>
                                                 <TableHead>Nombre</TableHead>
                                                 <TableHead>SKU/Código</TableHead>
-                                                <TableHead>Stock</TableHead>
+                                                <TableHead>Stock Total</TableHead>
                                                 <TableHead className="text-right">Precio Venta</TableHead>
                                                 <TableHead className="text-right">Costo</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {liorenInventory.map(item => (
-                                                <TableRow key={item.id}>
-                                                    <TableCell className="font-medium">{item.nombre}</TableCell>
-                                                    <TableCell className="font-mono">{item.codigo}</TableCell>
-                                                    <TableCell>{item.stock_actual}</TableCell>
-                                                    <TableCell className="text-right">${item.precio_venta?.toLocaleString('es-CL') || '0'}</TableCell>
-                                                    <TableCell className="text-right">${item.costo?.toLocaleString('es-CL') || '0'}</TableCell>
-                                                </TableRow>
-                                            ))}
+                                            {liorenInventory.map(item => {
+                                                const totalStock = item.stocks?.reduce((sum, s) => sum + s.stock, 0) ?? 0;
+                                                const hasBreakdown = item.stocks && item.stocks.length > 0;
+                                                const isRowOpen = openRows.has(item.id.toString());
+                                                return (
+                                                    <React.Fragment key={item.id}>
+                                                        <TableRow>
+                                                            <TableCell>
+                                                                {hasBreakdown && (
+                                                                    <Button variant="ghost" size="icon" className="-ml-2 h-8 w-8" onClick={() => toggleRow(item.id.toString())}>
+                                                                        <ChevronDown className={cn("h-4 w-4 transition-transform", isRowOpen && "rotate-180")} />
+                                                                    </Button>
+                                                                )}
+                                                            </TableCell>
+                                                            <TableCell className="font-medium">{item.nombre}</TableCell>
+                                                            <TableCell className="font-mono">{item.codigo}</TableCell>
+                                                            <TableCell>{totalStock}</TableCell>
+                                                            <TableCell className="text-right">${item.precioventabruto?.toLocaleString('es-CL') || '0'}</TableCell>
+                                                            <TableCell className="text-right">${item.preciocompraneto?.toLocaleString('es-CL') || '0'}</TableCell>
+                                                        </TableRow>
+                                                        {hasBreakdown && isRowOpen && (
+                                                            <TableRow className="bg-muted/50 hover:bg-muted/80">
+                                                                <TableCell />
+                                                                <TableCell colSpan={5} className="p-0">
+                                                                    <div className="p-4">
+                                                                        <h4 className="font-semibold text-xs mb-2">Desglose de Stock por Bodega</h4>
+                                                                        <Table>
+                                                                            <TableHeader>
+                                                                                <TableRow className="border-b-0">
+                                                                                    <TableHead className="h-8">Bodega</TableHead>
+                                                                                    <TableHead className="h-8 text-right">Stock</TableHead>
+                                                                                </TableRow>
+                                                                            </TableHeader>
+                                                                            <TableBody>
+                                                                                {item.stocks.map((stock, index) => (
+                                                                                    <TableRow key={index} className="border-b-0 hover:bg-muted/90">
+                                                                                        <TableCell className="py-1">{stock.nombre}</TableCell>
+                                                                                        <TableCell className="py-1 text-right">{stock.stock}</TableCell>
+                                                                                    </TableRow>
+                                                                                ))}
+                                                                            </TableBody>
+                                                                        </Table>
+                                                                    </div>
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        )}
+                                                    </React.Fragment>
+                                                )
+                                            })}
                                         </TableBody>
                                     </Table>
                                 </div>
