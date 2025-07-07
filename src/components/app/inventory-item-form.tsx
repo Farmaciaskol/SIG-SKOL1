@@ -152,8 +152,7 @@ export function InventoryItemForm({ itemToEdit, onFinished }: InventoryItemFormP
                         render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Precio Costo</FormLabel>
-                                <FormControl><Input type="number" {...field} disabled /></FormControl>
-                                <FormDescription className="text-xs">Sincronizado desde Lioren.</FormDescription>
+                                <FormControl><Input type="number" {...field} /></FormControl>
                                 <FormMessage />
                             </FormItem>
                         )}
@@ -164,8 +163,7 @@ export function InventoryItemForm({ itemToEdit, onFinished }: InventoryItemFormP
                         render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Precio Venta</FormLabel>
-                                <FormControl><Input type="number" {...field} disabled /></FormControl>
-                                <FormDescription className="text-xs">Sincronizado desde Lioren.</FormDescription>
+                                <FormControl><Input type="number" {...field} /></FormControl>
                                 <FormMessage />
                             </FormItem>
                         )}

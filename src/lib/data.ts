@@ -8,7 +8,6 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, ControlledLogEntryType, ProactivePatientStatus, PatientActionNeeded, MonthlyDispensationBoxStatus, DispensationItemStatus, PharmacovigilanceReportStatus, UserRequestStatus, type Recipe, type Doctor, type InventoryItem, type User, type Role, type ExternalPharmacy, type Patient, type PharmacovigilanceReport, type AppData, type AuditTrailEntry, type DispatchNote, type DispatchItem, type ControlledSubstanceLogEntry, type LotDetail, type AppSettings, type MonthlyDispensationBox, type PatientMessage, type UserRequest } from './types';
 import { MAX_REPREPARATIONS } from './constants';
 import { addMonths } from 'date-fns';
-import { fetchInventoryFromLioren } from './lioren-api';
 
 // Helper function to recursively convert Firestore Timestamps to ISO strings
 function deepConvertTimestamps(obj: any): any {
@@ -68,39 +67,7 @@ export const getDoctors = async (): Promise<Doctor[]> => fetchCollection<Doctor>
 export const getExternalPharmacies = async (): Promise<ExternalPharmacy[]> => fetchCollection<ExternalPharmacy>('externalPharmacies');
 
 export const getInventory = async (): Promise<InventoryItem[]> => {
-    if (!db) {
-        console.error("Firestore is not initialized. Cannot get local inventory.");
-        return [];
-    }
-    try {
-        const localInventory = await fetchCollection<InventoryItem>('inventory');
-        const liorenInventory = await fetchInventoryFromLioren();
-
-        const liorenMap = new Map(liorenInventory.map(item => [item.sku, item]));
-
-        const mergedInventory = localInventory.map(localItem => {
-            const liorenItem = localItem.sku ? liorenMap.get(localItem.sku) : undefined;
-            if (liorenItem) {
-                // Update stock and lots from Lioren, keep local enriched data
-                return {
-                    ...localItem,
-                    quantity: liorenItem.quantity,
-                    lots: liorenItem.lots,
-                    costPrice: liorenItem.costPrice,
-                    salePrice: liorenItem.salePrice,
-                };
-            }
-            // If not found in Lioren, return the local item as is (stock might be stale)
-            return localItem;
-        });
-
-        return mergedInventory;
-
-    } catch (error) {
-        console.error("Error merging inventories:", error);
-        // Fallback to local inventory if Lioren fails
-        return fetchCollection<InventoryItem>('inventory');
-    }
+    return fetchCollection<InventoryItem>('inventory');
 };
 
 export const getUsers = async (): Promise<User[]> => fetchCollection<User>('users');
@@ -253,7 +220,7 @@ export const getItemsToDispatchCount = async (): Promise<number> => {
 
 export const getLowStockInventoryCount = async (): Promise<number> => {
     try {
-        const allItems = await getInventory(); // Now fetches from Lioren
+        const allItems = await getInventory(); // Fetches from local DB now
         return allItems.filter(item => item.quantity < item.lowStockThreshold).length;
     } catch (error) {
         console.error("Error fetching low stock inventory count:", error);
@@ -456,7 +423,7 @@ export const deleteInventoryItem = async (id: string): Promise<void> => {
     await deleteDoc(doc(db, 'inventory', id));
 };
 
-export const updateInventoryItem = async (id: string, updates: Partial<Omit<InventoryItem, 'id' | 'quantity' | 'lots'>>): Promise<void> => {
+export const updateInventoryItem = async (id: string, updates: Partial<Omit<InventoryItem, 'id'>>): Promise<void> => {
     if (!db) throw new Error("Firestore is not initialized.");
     await updateDoc(doc(db, 'inventory', id), updates);
 };
@@ -470,8 +437,12 @@ export const addLotToInventoryItem = async (itemId: string, newLot: LotDetail): 
     const itemData = itemSnap.data() as InventoryItem;
     const existingLots = itemData.lots || [];
 
+    if (existingLots.some(lot => lot.lotNumber === newLot.lotNumber)) {
+        throw new Error(`El lote número ${newLot.lotNumber} ya existe para este producto.`);
+    }
+
     const updatedLots = [...existingLots, newLot];
-    const newTotalQuantity = updatedLots.reduce((sum, lot) => sum + lot.quantity, 0);
+    const newTotalQuantity = updatedLots.reduce((sum, lot) => sum + (lot.quantity || 0), 0);
     
     await updateDoc(itemRef, {
         lots: updatedLots,
@@ -614,15 +585,10 @@ export const logDirectSaleDispensation = async (
     const lot = inventoryData.lots[lotIndex];
     if (lot.quantity < quantity) throw new Error(`Not enough stock for lot ${lotNumber}. Required: ${quantity}, Available: ${lot.quantity}`);
     
-    // In a real integration, this stock update would happen via an API call to Lioren.
-    // For now, we are commenting out the direct modification of our local copy.
-    // The next call to getInventory() will fetch the updated state from Lioren's (mock) API.
-    /*
     const newLots = [...inventoryData.lots];
     newLots[lotIndex] = { ...lot, quantity: lot.quantity - quantity };
     const newTotalQuantity = inventoryData.quantity - quantity;
     batch.update(inventoryRef, { lots: newLots, quantity: newTotalQuantity });
-    */
 
     const logSnapshot = await getDocs(query(logCol, where("entryType", "==", ControlledLogEntryType.DirectSale)));
     const newFolioNumber = logSnapshot.size + 1;
