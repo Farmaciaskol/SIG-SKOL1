@@ -67,7 +67,6 @@ const userFormSchema = z.object({
 });
 type UserFormValues = z.infer<typeof userFormSchema>;
 
-
 const StatCard = ({ title, value, icon: Icon }: { title: string; value: string | number; icon: React.ElementType }) => (
     <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -273,6 +272,20 @@ const RoleManagerDialog = ({ roles, isOpen, onOpenChange, onSuccess }: {
     );
 };
 
+const UserActions = ({ user, onEdit, onDelete }: { user: User, onEdit: (u: User) => void, onDelete: (u: User) => void }) => (
+    <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+        <Button aria-haspopup="true" size="icon" variant="ghost">
+            <MoreHorizontal className="h-4 w-4" />
+            <span className="sr-only">Menú</span>
+        </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onEdit(user)}><Pencil className="mr-2 h-4 w-4" />Editar</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onDelete(user)} className="text-red-600 focus:text-red-600"><Trash2 className="mr-2 h-4 w-4" />Eliminar</DropdownMenuItem>
+        </DropdownMenuContent>
+    </DropdownMenu>
+);
 
 export default function UserManagementPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -354,21 +367,6 @@ export default function UserManagementPage() {
     );
   }, [users, searchTerm]);
 
-  const UserActions = ({ user }: { user: User }) => (
-    <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-        <Button aria-haspopup="true" size="icon" variant="ghost">
-            <MoreHorizontal className="h-4 w-4" />
-            <span className="sr-only">Menú</span>
-        </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => handleOpenUserForm(user)}><Pencil className="mr-2 h-4 w-4" />Editar</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setUserToDelete(user)} className="text-red-600 focus:text-red-600"><Trash2 className="mr-2 h-4 w-4" />Eliminar</DropdownMenuItem>
-        </DropdownMenuContent>
-    </DropdownMenu>
-  );
-
   return (
     <>
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
@@ -441,7 +439,7 @@ export default function UserManagementPage() {
                                     <Badge variant="secondary">{getRoleName(user.roleId)}</Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        <UserActions user={user} />
+                                        <UserActions user={user} onEdit={handleOpenUserForm} onDelete={setUserToDelete} />
                                     </TableCell>
                                 </TableRow>
                             )
@@ -466,7 +464,7 @@ export default function UserManagementPage() {
                                             <p className="text-xs text-muted-foreground">{user.email}</p>
                                         </div>
                                     </div>
-                                    <UserActions user={user} />
+                                    <UserActions user={user} onEdit={handleOpenUserForm} onDelete={setUserToDelete} />
                                 </div>
                             </CardHeader>
                             <CardContent className="px-4 pb-4 pt-0">

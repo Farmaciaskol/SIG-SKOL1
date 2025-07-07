@@ -183,7 +183,7 @@ const PrintableDispatchNote = ({ note, pharmacy, onClose, getInventoryItem, getP
             </DialogContent>
         </Dialog>
     );
-}
+};
 
 export default function DispatchManagementPage() {
   const { toast } = useToast();

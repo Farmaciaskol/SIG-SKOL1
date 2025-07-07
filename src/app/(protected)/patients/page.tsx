@@ -47,12 +47,23 @@ const statusStyles: Record<ProactivePatientStatus, { border: string; icon: React
   [ProactivePatientStatus.OK]: { border: 'border-l-4 border-green-500', icon: CheckCircle2, iconColor: 'text-green-500' },
 };
 
-const actionButtonConfig: Record<PatientActionNeeded, { text: string; icon: React.ElementType }> = {
-  [PatientActionNeeded.CREATE_NEW_RECIPE]: { text: 'Crear Receta', icon: FileText },
-  [PatientActionNeeded.REPREPARE_CYCLE]: { text: 'Re-preparar Ciclo', icon: Repeat },
-  [PatientActionNeeded.DISPENSE_COMMERCIAL]: { text: 'Gestionar Dispensación', icon: Truck },
-  [PatientActionNeeded.NONE]: { text: 'Ver Ficha', icon: User },
-};
+const PatientRowActions = ({ patient, onEdit, onDelete }: { patient: Patient, onEdit: (p: Patient) => void, onDelete: (p: Patient) => void }) => (
+    <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+        <Button aria-haspopup="true" size="icon" variant="ghost">
+            <MoreHorizontal className="h-4 w-4" />
+            <span className="sr-only">Menú</span>
+        </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+            <DropdownMenuItem asChild><Link href={`/patients/${patient.id}`}><User className="mr-2 h-4 w-4" />Ver Ficha</Link></DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onEdit(patient)}><Pencil className="mr-2 h-4 w-4" />Editar</DropdownMenuItem>
+            <DropdownMenuItem asChild><Link href={`/recipes/new?patientId=${patient.id}`}><FileText className="mr-2 h-4 w-4" />Nueva Receta</Link></DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => onDelete(patient)}><Trash2 className="mr-2 h-4 w-4" />Eliminar</DropdownMenuItem>
+        </DropdownMenuContent>
+    </DropdownMenu>
+);
 
 type FilterStatus = 'all' | ProactivePatientStatus | 'homecare';
 
@@ -201,24 +212,6 @@ export default function PatientsPage() {
     );
   }
 
-  const PatientRowActions = ({ patient }: { patient: Patient }) => (
-    <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-        <Button aria-haspopup="true" size="icon" variant="ghost">
-            <MoreHorizontal className="h-4 w-4" />
-            <span className="sr-only">Menú</span>
-        </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-            <DropdownMenuItem asChild><Link href={`/patients/${patient.id}`}><User className="mr-2 h-4 w-4" />Ver Ficha</Link></DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleOpenForm(patient)}><Pencil className="mr-2 h-4 w-4" />Editar</DropdownMenuItem>
-            <DropdownMenuItem asChild><Link href={`/recipes/new?patientId=${patient.id}`}><FileText className="mr-2 h-4 w-4" />Nueva Receta</Link></DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => setPatientToDelete(patient)}><Trash2 className="mr-2 h-4 w-4" />Eliminar</DropdownMenuItem>
-        </DropdownMenuContent>
-    </DropdownMenu>
-  );
-
   return (
     <>
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
@@ -347,7 +340,7 @@ export default function PatientsPage() {
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        <PatientRowActions patient={patient} />
+                                        <PatientRowActions patient={patient} onEdit={handleOpenForm} onDelete={setPatientToDelete} />
                                     </TableCell>
                                 </TableRow>
                                 )
@@ -383,7 +376,7 @@ export default function PatientsPage() {
                                     </div>
                                 </CardContent>
                                 <CardFooter className="bg-muted/50 p-2 flex justify-end">
-                                    <PatientRowActions patient={patient}/>
+                                    <PatientRowActions patient={patient} onEdit={handleOpenForm} onDelete={setPatientToDelete} />
                                 </CardFooter>
                             </Card>
                         )
