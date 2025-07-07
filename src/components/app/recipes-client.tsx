@@ -1183,6 +1183,22 @@ export function RecipesClient({
     );
   }
 
+  const ReprepareMessage = () => {
+    if (daysSinceDispensation === null) {
+      return <DialogDescription>¿Está seguro que desea iniciar un nuevo ciclo para esta receta? La receta volverá al estado 'Pendiente Validación'.</DialogDescription>;
+    }
+    if (urgencyStatus === 'early') {
+      return <p className="text-amber-600 font-semibold">Alerta: Han pasado solo {daysSinceDispensation} día(s) desde la última dispensación. ¿Continuar de todas formas?</p>;
+    }
+    if (urgencyStatus === 'normal') {
+      return <p className="text-green-600 font-semibold">Han pasado {daysSinceDispensation} día(s). Es un buen momento para preparar el siguiente ciclo. ¿Desea continuar?</p>;
+    }
+    if (urgencyStatus === 'urgent') {
+      return <p className="text-red-600 font-semibold">Urgente: Han pasado {daysSinceDispensation} día(s) desde la última dispensación. Esta solicitud se marcará como urgente.</p>;
+    }
+    return null;
+  };
+
   return (
     <>
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
@@ -1506,7 +1522,7 @@ export function RecipesClient({
       <Dialog open={!!recipeToReprepare} onOpenChange={(open) => { if (!open) { setRecipeToReprepare(null); setControlledFolio(''); setDaysSinceDispensation(null); } }}><DialogContent>
           <DialogHeader><DialogTitle className="text-xl font-semibold">Re-preparar Receta: {recipeToReprepare?.id}</DialogTitle></DialogHeader>
           <div className="py-2">
-            <ReprepareMessageDialog daysSinceDispensation={daysSinceDispensation} urgencyStatus={urgencyStatus} />
+            <ReprepareMessage />
           </div>
           {recipeToReprepare?.isControlled && (
             <div className="grid gap-2 py-2">
