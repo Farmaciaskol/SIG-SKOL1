@@ -19,7 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { PlusCircle, Eye, HeartPulse, Clock, CalendarPlus, CheckCircle, FileWarning } from 'lucide-react';
-import { Bar, BarChart, Pie, PieChart, Cell } from 'recharts';
+import { Bar, BarChart, Pie, PieChart } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 import { useToast } from '@/hooks/use-toast';
 import { differenceInDays, isThisMonth, format, parseISO } from 'date-fns';

@@ -62,6 +62,106 @@ const doctorFormSchema = z.object({
 
 type DoctorFormValues = z.infer<typeof doctorFormSchema>;
 
+const DoctorCard = ({ doctor }: { doctor: DoctorWithStats }) => {
+    const { toast } = useToast();
+    const getProgressColor = (value: number) => {
+      if (isNaN(value)) return 'bg-gray-300';
+      const roundedValue = Math.round(value);
+      if (roundedValue >= 90) return 'bg-green-500';
+      if (roundedValue >= 50) return 'bg-yellow-400';
+      return 'bg-red-500';
+    };
+
+    const formatPercentage = (value: number) => {
+      if (isNaN(value)) return 'N/A';
+      return `${Math.round(value)}%`;
+    }
+
+    // These would be defined outside or passed as props in a real implementation
+    const openFormForEdit = (doctor: Doctor) => { /* Logic to open edit form */ console.log('Edit', doctor.id); };
+    const setDoctorToDelete = (doctor: Doctor) => { /* Logic to set doctor for deletion */ console.log('Delete', doctor.id); };
+
+
+    return (
+        <Card className="flex flex-col">
+            <CardHeader className="p-4">
+            <CardTitle className="text-lg font-bold text-foreground truncate" title={doctor.name}>{doctor.name}</CardTitle>
+            <p className="text-sm font-medium text-primary truncate" title={doctor.specialty}>{doctor.specialty}</p>
+            </CardHeader>
+            <CardContent className="flex-grow space-y-4 p-4">
+            <div>
+                <p className="text-xs text-muted-foreground">Reg: {doctor.license || 'N/A'} | RUT: {doctor.rut || 'N/A'}</p>
+                <div className="mt-4 space-y-2">
+                {doctor.phone && (
+                    <div className="flex items-center gap-3 text-sm">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-foreground">{doctor.phone}</span>
+                    </div>
+                )}
+                {doctor.email && (
+                    <div className="flex items-center gap-3 text-sm">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-foreground">{doctor.email}</span>
+                    </div>
+                )}
+                </div>
+            </div>
+            <div className="border-t pt-4">
+                <div className="grid grid-cols-2 gap-4 text-center">
+                <div>
+                    <p className="text-2xl font-bold text-foreground">{doctor.patientsAssociated}</p>
+                    <p className="text-xs text-muted-foreground">Pacientes Asociados</p>
+                </div>
+                <div>
+                    <p className="text-2xl font-bold text-foreground">{doctor.activeRecipes}</p>
+                    <p className="text-xs text-muted-foreground">Recetas Activas</p>
+                </div>
+                </div>
+            </div>
+            <div className="border-t pt-4 space-y-4">
+                <h3 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
+                Calidad y Cumplimiento
+                </h3>
+                <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                    <p className="text-muted-foreground">Emisión Correcta</p>
+                    <p className="font-semibold text-foreground">{formatPercentage(doctor.correctEmissionRate)}</p>
+                </div>
+                <Progress
+                    value={isNaN(doctor.correctEmissionRate) ? 0 : doctor.correctEmissionRate}
+                    aria-label={`${formatPercentage(doctor.correctEmissionRate)} de emisión correcta`}
+                    indicatorClassName={getProgressColor(doctor.correctEmissionRate)}
+                />
+                </div>
+                <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                    <p className="text-muted-foreground">Cumplimiento Crónicos</p>
+                    <p className="font-semibold text-foreground">{formatPercentage(doctor.chronicComplianceRate)}</p>
+                </div>
+                <Progress
+                    value={isNaN(doctor.chronicComplianceRate) ? 0 : doctor.chronicComplianceRate}
+                    aria-label={`${formatPercentage(doctor.chronicComplianceRate)} de cumplimiento crónico`}
+                    indicatorClassName={getProgressColor(doctor.chronicComplianceRate)}
+                />
+                </div>
+            </div>
+            </CardContent>
+            <CardFooter className="bg-muted/50 p-4 flex justify-between items-center">
+                 <Button asChild>
+                    <Link href={`/doctors/${doctor.id}`}>Ver Detalle</Link>
+                </Button>
+                <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openFormForEdit(doctor)}>
+                        <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-red-100 hover:text-red-600" onClick={() => setDoctorToDelete(doctor)}>
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                </div>
+            </CardFooter>
+        </Card>
+    );
+};
 
 export default function DoctorsPage() {
   const [loading, setLoading] = useState(true);
@@ -208,101 +308,6 @@ export default function DoctorsPage() {
     return <div className="flex items-center justify-center h-full"><p className="text-muted-foreground">Cargando médicos...</p></div>;
   }
   
-  const DoctorCard = ({ doctor }: { doctor: DoctorWithStats }) => {
-    const getProgressColor = (value: number) => {
-      if (isNaN(value)) return 'bg-gray-300';
-      const roundedValue = Math.round(value);
-      if (roundedValue >= 90) return 'bg-green-500';
-      if (roundedValue >= 50) return 'bg-yellow-400';
-      return 'bg-red-500';
-    };
-
-    const formatPercentage = (value: number) => {
-      if (isNaN(value)) return 'N/A';
-      return `${Math.round(value)}%`;
-    }
-
-    return (
-        <Card className="flex flex-col">
-            <CardHeader className="p-4">
-            <CardTitle className="text-lg font-bold text-foreground truncate" title={doctor.name}>{doctor.name}</CardTitle>
-            <p className="text-sm font-medium text-primary truncate" title={doctor.specialty}>{doctor.specialty}</p>
-            </CardHeader>
-            <CardContent className="flex-grow space-y-4 p-4">
-            <div>
-                <p className="text-xs text-muted-foreground">Reg: {doctor.license || 'N/A'} | RUT: {doctor.rut || 'N/A'}</p>
-                <div className="mt-4 space-y-2">
-                {doctor.phone && (
-                    <div className="flex items-center gap-3 text-sm">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-foreground">{doctor.phone}</span>
-                    </div>
-                )}
-                {doctor.email && (
-                    <div className="flex items-center gap-3 text-sm">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-foreground">{doctor.email}</span>
-                    </div>
-                )}
-                </div>
-            </div>
-            <div className="border-t pt-4">
-                <div className="grid grid-cols-2 gap-4 text-center">
-                <div>
-                    <p className="text-2xl font-bold text-foreground">{doctor.patientsAssociated}</p>
-                    <p className="text-xs text-muted-foreground">Pacientes Asociados</p>
-                </div>
-                <div>
-                    <p className="text-2xl font-bold text-foreground">{doctor.activeRecipes}</p>
-                    <p className="text-xs text-muted-foreground">Recetas Activas</p>
-                </div>
-                </div>
-            </div>
-            <div className="border-t pt-4 space-y-4">
-                <h3 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
-                Calidad y Cumplimiento
-                </h3>
-                <div className="space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                    <p className="text-muted-foreground">Emisión Correcta</p>
-                    <p className="font-semibold text-foreground">{formatPercentage(doctor.correctEmissionRate)}</p>
-                </div>
-                <Progress
-                    value={isNaN(doctor.correctEmissionRate) ? 0 : doctor.correctEmissionRate}
-                    aria-label={`${formatPercentage(doctor.correctEmissionRate)} de emisión correcta`}
-                    indicatorClassName={getProgressColor(doctor.correctEmissionRate)}
-                />
-                </div>
-                <div className="space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                    <p className="text-muted-foreground">Cumplimiento Crónicos</p>
-                    <p className="font-semibold text-foreground">{formatPercentage(doctor.chronicComplianceRate)}</p>
-                </div>
-                <Progress
-                    value={isNaN(doctor.chronicComplianceRate) ? 0 : doctor.chronicComplianceRate}
-                    aria-label={`${formatPercentage(doctor.chronicComplianceRate)} de cumplimiento crónico`}
-                    indicatorClassName={getProgressColor(doctor.chronicComplianceRate)}
-                />
-                </div>
-            </div>
-            </CardContent>
-            <CardFooter className="bg-muted/50 p-4 flex justify-between items-center">
-                 <Button asChild>
-                    <Link href={`/doctors/${doctor.id}`}>Ver Detalle</Link>
-                </Button>
-                <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openFormForEdit(doctor)}>
-                        <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-red-100 hover:text-red-600" onClick={() => setDoctorToDelete(doctor)}>
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
-                </div>
-            </CardFooter>
-        </Card>
-    );
-    };
-
   return (
     <Dialog open={isFormOpen} onOpenChange={(open) => {
       if (!open) setEditingDoctor(null);
