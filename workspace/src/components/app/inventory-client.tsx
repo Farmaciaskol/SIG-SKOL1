@@ -46,6 +46,7 @@ import { Calendar } from '../ui/calendar';
 import { Label } from '../ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { fetchRawInventoryFromLioren, type LiorenProduct } from '@/lib/lioren-api';
+import { VADEMECUM_DATA } from '@/lib/constants';
 
 
 const EXPIRY_THRESHOLD_DAYS = 90;
@@ -135,10 +136,7 @@ const ProductCard = ({
             <CardHeader className="pb-4">
                  <div className="flex justify-between items-start">
                     <h3 className="text-lg font-bold text-primary truncate" title={item.name}>{item.name}</h3>
-                    <div className="flex items-center gap-2">
-                        {item.requiresRefrigeration && <Snowflake className="h-5 w-5 text-blue-500" title="Requiere Cadena de Frío" />}
-                        {item.isControlled && <Star className="h-5 w-5 text-amber-500" title="Sustancia Controlada" />}
-                    </div>
+                    <Badge variant={item.inventoryType === 'Fraccionamiento' ? 'default' : 'secondary'}>{item.inventoryType}</Badge>
                  </div>
                  <p className="text-xs text-muted-foreground">SKU: {item.sku || 'N/A'}</p>
             </CardHeader>
@@ -383,6 +381,55 @@ export function InventoryClient({ initialInventory }: {
         }
     };
 
+    const toTitleCase = (str: string): string => {
+        if (!str) return '';
+        return str.toLowerCase().replace(/(?:^|\s)\w/g, (match) => match.toUpperCase());
+    };
+
+    const handleImportLiorenItem = (liorenItem: LiorenProduct) => {
+        const liorenProductName = toTitleCase(liorenItem.nombre);
+        const lowerLiorenName = liorenProductName.toLowerCase().trim();
+
+        // Improved Vademecum lookup logic
+        const vademecumMatch = VADEMECUM_DATA.find(drug => {
+            // Check if the Lioren product name starts with a known base drug name from Vademecum
+            const drugBaseName = drug.productName.split(' ')[0].toLowerCase();
+            return lowerLiorenName.startsWith(drugBaseName);
+        });
+
+        const activePrinciple = vademecumMatch 
+            ? vademecumMatch.activeIngredient 
+            : liorenProductName;
+
+        if (vademecumMatch) {
+            toast({
+                title: "Principio Activo Encontrado",
+                description: `Se autocompletó "${vademecumMatch.activeIngredient}" desde el Vademecum.`,
+            });
+        }
+
+        const formattedItem: Partial<InventoryItem> = {
+            name: liorenProductName,
+            sku: liorenItem.codigo,
+            costPrice: liorenItem.preciocompraneto,
+            salePrice: liorenItem.precioventabruto,
+            unit: toTitleCase(liorenItem.unidad),
+            inventoryType: 'Fraccionamiento',
+            activePrinciple: activePrinciple,
+            pharmaceuticalForm: '',
+            doseValue: 0,
+            doseUnit: 'mg',
+            itemsPerBaseUnit: 1,
+            lowStockThreshold: 5,
+            isControlled: false,
+            requiresRefrigeration: false,
+            internalNotes: `Importado desde Lioren. ID: ${liorenItem.id}`,
+        };
+        setEditingItem(formattedItem as InventoryItem);
+        setIsFormOpen(true);
+    };
+
+
     const inventoryWithStats = useMemo<InventoryItemWithStats[]>(() => {
         return inventory.map(item => {
             const now = new Date();
@@ -588,6 +635,7 @@ export function InventoryClient({ initialInventory }: {
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead>Producto</TableHead>
+                                            <TableHead>Tipo</TableHead>
                                             <TableHead>Stock Total</TableHead>
                                             <TableHead>Próximo Vto.</TableHead>
                                             <TableHead>Estado</TableHead>
@@ -609,6 +657,7 @@ export function InventoryClient({ initialInventory }: {
                                                     <div className="font-medium text-foreground">{item.name}</div>
                                                     <div className="text-xs text-muted-foreground">SKU: {item.sku || 'N/A'}</div>
                                                 </TableCell>
+                                                <TableCell><Badge variant={item.inventoryType === 'Fraccionamiento' ? 'default' : 'secondary'}>{item.inventoryType}</Badge></TableCell>
                                                 <TableCell>
                                                     <div className="flex items-center gap-2">
                                                         <span className="font-semibold text-lg text-foreground">{item.quantity}</span>
@@ -694,6 +743,7 @@ export function InventoryClient({ initialInventory }: {
                                                 <TableHead>Stock Total</TableHead>
                                                 <TableHead className="text-right">Precio Venta</TableHead>
                                                 <TableHead className="text-right">Costo</TableHead>
+                                                <TableHead className="text-right">Acciones</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -716,11 +766,21 @@ export function InventoryClient({ initialInventory }: {
                                                             <TableCell>{totalStock}</TableCell>
                                                             <TableCell className="text-right">${item.precioventabruto?.toLocaleString('es-CL') || '0'}</TableCell>
                                                             <TableCell className="text-right">${item.preciocompraneto?.toLocaleString('es-CL') || '0'}</TableCell>
+                                                            <TableCell className="text-right">
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => handleImportLiorenItem(item)}
+                                                                >
+                                                                    <PackagePlus className="mr-2 h-4 w-4" />
+                                                                    Crear p/ Fracc.
+                                                                </Button>
+                                                            </TableCell>
                                                         </TableRow>
                                                         {hasBreakdown && isRowOpen && (
                                                             <TableRow className="bg-muted/50 hover:bg-muted/80">
                                                                 <TableCell />
-                                                                <TableCell colSpan={5} className="p-0">
+                                                                <TableCell colSpan={6} className="p-0">
                                                                     <div className="p-4">
                                                                         <h4 className="font-semibold text-xs mb-2">Desglose de Stock por Bodega</h4>
                                                                         <Table>
