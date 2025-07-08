@@ -30,7 +30,7 @@ import {
   type Patient,
 } from '@/lib/data';
 import { RecipeStatus } from '@/lib/types';
-import { cn } from '@/lib/utils';
+import { cn, normalizeString } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { addMonths, format, isValid, parseISO } from 'date-fns';
 import { Bot, Calendar as CalendarIcon, Image as ImageIcon, Loader2, PlusCircle, Trash2, Wand2, ZoomIn, X as XIcon, Check, ZoomOut } from 'lucide-react';
@@ -656,7 +656,7 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
           const inventoryMatch = inventory.find(invItem => 
             invItem.inventoryType === 'Fraccionamiento' &&
             typeof invItem.activePrinciple === 'string' &&
-            invItem.activePrinciple.trim().toLowerCase() === item.principalActiveIngredient.trim().toLowerCase()
+            normalizeString(invItem.activePrinciple) === normalizeString(item.principalActiveIngredient)
           );
 
           if (inventoryMatch) {

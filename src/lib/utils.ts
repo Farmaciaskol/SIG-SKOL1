@@ -19,3 +19,12 @@ export function addBusinessDays(startDate: Date, days: number): Date {
   }
   return date;
 }
+
+export function normalizeString(str: string): string {
+    if (!str) return '';
+    return str
+        .trim()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+}
