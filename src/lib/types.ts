@@ -167,7 +167,6 @@ export interface RecipeItem {
   usageInstructions: string;
   safetyStockDays?: number;
   isRefrigerated?: boolean;
-  requiresFractionation?: boolean;
   sourceInventoryItemId?: string;
 }
 

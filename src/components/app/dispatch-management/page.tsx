@@ -259,7 +259,7 @@ export default function DispatchManagementPage() {
       }
 
       for (const recipeItem of recipe.items) {
-        if (!recipeItem?.principalActiveIngredient || !recipeItem.requiresFractionation || !recipeItem.sourceInventoryItemId) continue;
+        if (!recipeItem?.principalActiveIngredient) continue;
 
         const isAlreadyInActiveDispatch = dispatchNotes.some(dn => 
             dn.status === DispatchStatus.Active &&
@@ -267,6 +267,11 @@ export default function DispatchManagementPage() {
         );
 
         if (isAlreadyInActiveDispatch) continue;
+        
+        if (!recipeItem.sourceInventoryItemId) {
+          items.push({ recipe, patient, inventoryItem: undefined, recipeItem, error: 'Insumo no vinculado. Edite y guarde la receta para vincular.' });
+          continue;
+        }
         
         const inventoryItem = inventory.find(i => i.id === recipeItem.sourceInventoryItemId);
 
@@ -816,4 +821,3 @@ export default function DispatchManagementPage() {
   );
 }
 
-    

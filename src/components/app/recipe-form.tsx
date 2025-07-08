@@ -63,7 +63,6 @@ const recipeItemSchema = z.object({
   totalQuantityUnit: z.string().min(1, "La unidad de la Cantidad Total es requerida."),
   usageInstructions: z.string().min(1, "Las Instrucciones de Uso son requeridas."),
   isRefrigerated: z.boolean().default(false),
-  requiresFractionation: z.boolean().default(false),
   sourceInventoryItemId: z.string().optional(),
 });
 
@@ -140,7 +139,6 @@ const defaultItem = {
   totalQuantityUnit: '',
   usageInstructions: '',
   isRefrigerated: false,
-  requiresFractionation: false,
 };
 
 const RecipeItemCard = ({
@@ -310,12 +308,6 @@ const RecipeItemCard = ({
           )} />
 
             <div className="md:col-span-3 flex items-center space-x-6 pt-2">
-                <FormField control={control} name={`items.${index}.requiresFractionation`} render={({ field }) => (
-                    <FormItem className="flex items-center space-x-2 space-y-0">
-                        <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                        <FormLabel className="!mt-0 font-medium">Requiere Fraccionamiento</FormLabel>
-                    </FormItem>
-                )}/>
                 <FormField control={control} name={`items.${index}.isRefrigerated`} render={({ field }) => (
                     <FormItem className="flex items-center space-x-2 space-y-0">
                         <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
@@ -659,7 +651,7 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
       
       // Auto-link inventory items before saving
       for (const item of data.items) {
-        if (data.supplySource === 'Insumos de Skol' && item.requiresFractionation) {
+        if (data.supplySource === 'Insumos de Skol') {
             const inventoryMatch = inventory.find(invItem => 
                 invItem.activePrinciple?.trim().toLowerCase() === item.principalActiveIngredient.trim().toLowerCase()
             );
