@@ -1,4 +1,3 @@
-
 'use server';
 
 // Define a type for the raw product from Lioren API
