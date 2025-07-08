@@ -201,7 +201,9 @@ export const RecipesClient = ({
         userId: user.uid,
         notes: notes || `Estado cambiado a ${statusConfig[newStatus].text}`
       };
-      const updatedAuditTrail = [...(recipe.auditTrail || []), newAuditEntry];
+      
+      const existingTrail = Array.isArray(recipe.auditTrail) ? recipe.auditTrail : [];
+      const updatedAuditTrail = [...existingTrail, newAuditEntry];
       
       const updates: Partial<Recipe> = { 
         status: newStatus, 
@@ -550,8 +552,8 @@ export const RecipesClient = ({
     onReadyForPickup: (recipe: Recipe) => handleUpdateStatus(recipe, RecipeStatus.ReadyForPickup),
     onDispense: (recipe: Recipe) => handleUpdateStatus(recipe, RecipeStatus.Dispensed),
     onPrint: setRecipeToPrint,
-    onValidate: () => handleUpdateStatus(recipeToReject!, RecipeStatus.Validated, 'Receta validada por farmacéutico.'),
-    onReject: () => setRecipeToReject(recipeToReject!),
+    onValidate: (recipe: Recipe) => handleUpdateStatus(recipe, RecipeStatus.Validated, 'Receta validada por farmacéutico.'),
+    onReject: (recipe: Recipe) => setRecipeToReject(recipe),
   };
 
   return (
