@@ -311,14 +311,21 @@ const LiorenInventoryTab = ({ products, onCreateLocal }: { products: LiorenProdu
   }, [productsWithPA, searchTerm]);
   
   const filteredProducts = useMemo(() => {
-    if (!searchTerm) return products;
     const lowerSearchTerm = searchTerm.toLowerCase();
+    const exactMatch = productsWithPA.find(p => p.nombre.toLowerCase() === lowerSearchTerm);
+
+    if (exactMatch) {
+      return [exactMatch];
+    }
+    
+    if (!searchTerm) return productsWithPA;
+
     return productsWithPA.filter(p => 
       p.nombre.toLowerCase().includes(lowerSearchTerm) ||
       (p.activeIngredient && p.activeIngredient.toLowerCase().includes(lowerSearchTerm)) ||
       (p.codigo && p.codigo.toLowerCase().includes(lowerSearchTerm))
     );
-  }, [products, productsWithPA, searchTerm]);
+  }, [productsWithPA, searchTerm]);
 
   return (
     <div className="space-y-6">
@@ -390,7 +397,7 @@ const LiorenInventoryTab = ({ products, onCreateLocal }: { products: LiorenProdu
             <TableBody>
               {filteredProducts.length > 0 ? (
                 filteredProducts.map(product => {
-                  const totalStock = product.stocks.reduce((acc, s) => acc + s.stock, 0);
+                  const totalStock = product.stocks?.reduce((acc, s) => acc + Number(s.stock || 0), 0) ?? 0;
                   return (
                     <TableRow key={product.id}>
                       <TableCell className="font-medium">{product.nombre}</TableCell>
