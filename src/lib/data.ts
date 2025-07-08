@@ -32,6 +32,23 @@ function deepConvertTimestamps(obj: any): any {
   return newObj;
 }
 
+/**
+ * Removes properties with `undefined` values from an object.
+ * Firestore does not allow `undefined` values.
+ */
+function cleanUndefined(obj: any): any {
+  if (obj === null || typeof obj !== 'object') {
+    return obj;
+  }
+  const newObj: { [key: string]: any } = {};
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key) && obj[key] !== undefined) {
+      newObj[key] = obj[key];
+    }
+  }
+  return newObj;
+}
+
 
 async function fetchCollection<T extends { id: string }>(collectionName: keyof AppData & string, q?: any): Promise<T[]> {
   if (!db) {
@@ -230,11 +247,8 @@ export const getItemsToDispatchCount = async (): Promise<number> => {
 };
 
 export const getLowStockInventoryCount = async (): Promise<number> => {
+    if (!db) return 0;
     try {
-        // IMPORTANT: This function must only fetch from the local Firestore DB
-        // to prevent a failing network request from crashing the main app layout.
-        // It directly calls fetchCollection instead of getInventory to ensure
-        // no other logic (like external API calls) is ever introduced here.
         const allItems = await fetchCollection<InventoryItem>('inventory');
         return allItems.filter(item => item.quantity < item.lowStockThreshold).length;
     } catch (error) {
@@ -296,7 +310,7 @@ export const addUser = async (user: Omit<User, 'id'>): Promise<string> => {
 export const updateUser = async (id: string, updates: Partial<User>): Promise<void> => {
     if (!db) throw new Error("Firestore is not initialized.");
     const userRef = doc(db, 'users', id);
-    await updateDoc(userRef, updates);
+    await updateDoc(userRef, cleanUndefined(updates));
 };
 
 export const deleteUser = async (id: string): Promise<void> => {
@@ -319,7 +333,7 @@ export const addExternalPharmacy = async (pharmacy: Omit<ExternalPharmacy, 'id'>
         standardPreparationTime: pharmacy.standardPreparationTime || undefined,
         skolSuppliedPreparationTime: pharmacy.skolSuppliedPreparationTime || undefined,
     };
-    const docRef = await addDoc(collection(db, 'externalPharmacies'), pharmacyData);
+    const docRef = await addDoc(collection(db, 'externalPharmacies'), cleanUndefined(pharmacyData));
     return docRef.id;
 };
 
@@ -327,8 +341,7 @@ export const updateRecipe = async (id: string, updates: Partial<Recipe>): Promis
     if (!db) throw new Error("Firestore is not initialized.");
     const recipeRef = doc(db, 'recipes', id);
     const dataToUpdate = { ...updates, updatedAt: new Date().toISOString() };
-    Object.keys(dataToUpdate).forEach(key => { if ((dataToUpdate as any)[key] === undefined) delete (dataToUpdate as any)[key]; });
-    await updateDoc(recipeRef, dataToUpdate as any);
+    await updateDoc(recipeRef, cleanUndefined(dataToUpdate));
 };
 
 export const saveRecipe = async (data: any, imageFile: File | null, userId: string, recipeId?: string): Promise<string> => {
@@ -345,9 +358,12 @@ export const saveRecipe = async (data: any, imageFile: File | null, userId: stri
         if (!querySnapshot.empty) {
             patientId = querySnapshot.docs[0].id;
         } else {
-             const newPatientRef = doc(collection(db, 'patients'));
-            patientId = newPatientRef.id;
-            await setDoc(newPatientRef, { name: data.newPatientName, rut: data.newPatientRut, email: '', phone: '', isChronic: data.isChronic || false, chronicDisease: data.chronicDisease || '', proactiveStatus: 'OK', proactiveMessage: 'No requiere acción.', actionNeeded: 'NONE' });
+            const newPatientData = {
+                name: data.newPatientName,
+                rut: data.newPatientRut,
+                isChronic: false,
+            };
+            patientId = await addPatient(newPatientData);
         }
     }
 
@@ -396,6 +412,8 @@ export const saveRecipe = async (data: any, imageFile: File | null, userId: stri
         recipeDataForUpdate.skolSuppliedItemsDispatchStatus = SkolSuppliedItemsDispatchStatus.Pending;
     }
 
+    const cleanedRecipeData = cleanUndefined(recipeDataForUpdate);
+
     if (recipeId) { // Editing
         const recipeRef = doc(db, 'recipes', recipeId);
         const existingRecipe = await getRecipe(recipeId);
@@ -408,17 +426,17 @@ export const saveRecipe = async (data: any, imageFile: File | null, userId: stri
                     ? 'Receta corregida y reenviada para validación.'
                     : 'Receta del portal revisada y enviada a validación.'
             };
-            recipeDataForUpdate.status = RecipeStatus.PendingValidation;
-            recipeDataForUpdate.rejectionReason = '';
-            recipeDataForUpdate.auditTrail = [...(existingRecipe.auditTrail || []), newAuditTrailEntry];
+            cleanedRecipeData.status = RecipeStatus.PendingValidation;
+            cleanedRecipeData.rejectionReason = '';
+            cleanedRecipeData.auditTrail = [...(existingRecipe.auditTrail || []), newAuditTrailEntry];
         }
-        await updateDoc(recipeRef, recipeDataForUpdate as any);
+        await updateDoc(recipeRef, cleanedRecipeData);
         return recipeId;
     } else { // Creating
         const recipeRef = doc(collection(db, 'recipes'));
         const newId = recipeRef.id;
         const firstAuditEntry: AuditTrailEntry = { status: RecipeStatus.PendingValidation, date: new Date().toISOString(), userId: userId, notes: 'Receta creada en el sistema.' };
-        const recipeDataForCreate: Omit<Recipe, 'id'> = { ...recipeDataForUpdate, status: RecipeStatus.PendingValidation, paymentStatus: 'N/A', createdAt: new Date().toISOString(), auditTrail: [firstAuditEntry] } as Omit<Recipe, 'id'>;
+        const recipeDataForCreate: Omit<Recipe, 'id'> = { ...cleanedRecipeData, status: RecipeStatus.PendingValidation, paymentStatus: 'N/A', createdAt: new Date().toISOString(), auditTrail: [firstAuditEntry] } as Omit<Recipe, 'id'>;
         await setDoc(doc(db, 'recipes', newId), recipeDataForCreate);
         return newId;
     }
@@ -441,7 +459,7 @@ export const deleteInventoryItem = async (id: string): Promise<void> => {
 
 export const updateInventoryItem = async (id: string, updates: Partial<Omit<InventoryItem, 'id'>>): Promise<void> => {
     if (!db) throw new Error("Firestore is not initialized.");
-    await updateDoc(doc(db, 'inventory', id), updates);
+    await updateDoc(doc(db, 'inventory', id), cleanUndefined(updates));
 };
 
 export const addLotToInventoryItem = async (itemId: string, newLot: LotDetail): Promise<void> => {
@@ -522,7 +540,7 @@ export const processDispatch = async (pharmacyId: string, dispatchItems: Dispatc
         dispatcherId,
         dispatcherName,
     };
-    batch.set(dispatchNoteRef, newDispatchNote as any);
+    batch.set(dispatchNoteRef, cleanUndefined(newDispatchNote));
     await batch.commit();
     return dispatchNoteRef.id;
 };
@@ -556,7 +574,7 @@ export const logControlledMagistralDispensation = async (recipe: Recipe, patient
             retrievedBy_RUT: patient.rut,
             prescriptionImageUrl: recipe.prescriptionImageUrl,
         };
-        batch.set(doc(logCol), newLogEntry);
+        batch.set(doc(logCol), cleanUndefined(newLogEntry));
     }
     await batch.commit();
 };
@@ -657,34 +675,45 @@ export const logDirectSaleDispensation = async (
         retrievedBy_RUT: patient.rut,
         prescriptionImageUrl: finalImageUrl,
     };
-    batch.set(newLogEntryRef, newLogEntry);
+    batch.set(newLogEntryRef, cleanUndefined(newLogEntry));
     
     await batch.commit();
 };
 
 export const updatePatient = async (id: string, updates: Partial<Patient>): Promise<void> => {
     if (!db) throw new Error("Firestore is not initialized.");
-    await updateDoc(doc(db, 'patients', id), updates as any);
+    await updateDoc(doc(db, 'patients', id), cleanUndefined(updates));
 };
 
 
-export const addPatient = async (patient: Omit<Patient, 'id' | 'proactiveStatus' | 'proactiveMessage' | 'actionNeeded' | 'commercialMedications' | 'firebaseUid'>): Promise<string> => {
+export const addPatient = async (patient: Partial<Omit<Patient, 'id' | 'proactiveStatus' | 'proactiveMessage' | 'actionNeeded' | 'commercialMedications' | 'firebaseUid'>>): Promise<string> => {
     if (!db) throw new Error("Firestore is not initialized.");
     
-    const q = query(collection(db, "patients"), where("rut", "==", patient.rut), limit(1));
-    const querySnapshot = await getDocs(q);
-    if (!querySnapshot.empty) {
-        throw new Error('Ya existe un paciente con este RUT.');
+    if (patient.rut) {
+        const q = query(collection(db, "patients"), where("rut", "==", patient.rut), limit(1));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+            throw new Error('Ya existe un paciente con este RUT.');
+        }
     }
     
     const dataToSave: Omit<Patient, 'id'> = {
-        ...patient,
+        name: patient.name || '',
+        rut: patient.rut || '',
+        email: patient.email || '',
+        phone: patient.phone || '',
+        address: patient.address || '',
+        gender: patient.gender || 'Otro',
+        isChronic: patient.isChronic || false,
+        chronicDisease: patient.chronicDisease || '',
+        isHomeCare: patient.isHomeCare || false,
         proactiveStatus: ProactivePatientStatus.OK,
         proactiveMessage: 'No requiere acción.',
         actionNeeded: PatientActionNeeded.NONE,
-        commercialMedications: []
+        commercialMedications: [],
+        allergies: [],
     };
-    const docRef = await addDoc(collection(db, 'patients'), dataToSave as any);
+    const docRef = await addDoc(collection(db, 'patients'), cleanUndefined(dataToSave));
     return docRef.id;
 };
 
@@ -702,7 +731,7 @@ export const updatePharmacovigilanceReport = async (id: string, updates: Partial
     if (!db) throw new Error("Firestore is not initialized.");
     const reportRef = doc(db, 'pharmacovigilanceReports', id);
     const dataToUpdate = { ...updates, updatedAt: new Date().toISOString() };
-    await updateDoc(reportRef, dataToUpdate);
+    await updateDoc(reportRef, cleanUndefined(dataToUpdate));
 };
 
 export const addPharmacovigilanceReport = async (reportData: Omit<PharmacovigilanceReport, 'id' | 'reportedAt' | 'updatedAt' | 'status' | 'involvedMedications'>): Promise<string> => {
@@ -714,13 +743,13 @@ export const addPharmacovigilanceReport = async (reportData: Omit<Pharmacovigila
         updatedAt: new Date().toISOString(),
         involvedMedications: reportData.suspectedMedicationName, // For backwards compatibility with charts
     };
-    const docRef = await addDoc(collection(db, 'pharmacovigilanceReports'), newReport as any);
+    const docRef = await addDoc(collection(db, 'pharmacovigilanceReports'), cleanUndefined(newReport));
     return docRef.id;
 };
 
 export const updateExternalPharmacy = async (id: string, updates: Partial<ExternalPharmacy>): Promise<void> => {
     if (!db) throw new Error("Firestore is not initialized.");
-    await updateDoc(doc(db, 'externalPharmacies', id), updates as any);
+    await updateDoc(doc(db, 'externalPharmacies', id), cleanUndefined(updates));
 };
 
 export const deleteExternalPharmacy = async (id: string): Promise<void> => {
@@ -846,13 +875,13 @@ export const updateMonthlyDispensationBox = async (boxId: string, updates: Parti
   if (!db) throw new Error("Firestore is not initialized.");
   const boxRef = doc(db, 'monthlyDispensations', boxId);
   const dataToUpdate = { ...updates, updatedAt: new Date().toISOString() };
-  await updateDoc(boxRef, dataToUpdate as any);
+  await updateDoc(boxRef, cleanUndefined(dataToUpdate));
 };
 
 export const updateAppSettings = async (updates: Partial<AppSettings>): Promise<void> => {
     if (!db) throw new Error("Firestore is not initialized.");
     const settingsRef = doc(db, 'appSettings', 'global');
-    await updateDoc(settingsRef, updates);
+    await updateDoc(settingsRef, cleanUndefined(updates));
 };
 
 export const batchSendRecipesToExternal = async (recipeIds: string[], userId: string): Promise<void> => {
@@ -900,7 +929,7 @@ export async function sendMessageFromPharmacist(patientId: string, content: stri
     };
     
     const { id, ...dataToSave } = newMessage;
-    await setDoc(messageRef, dataToSave);
+    await setDoc(messageRef, cleanUndefined(dataToSave));
     
     return newMessage;
 };
@@ -943,7 +972,7 @@ export const addRole = async (role: Omit<Role, 'id'>): Promise<string> => {
 
 export const updateRole = async (id: string, updates: Partial<Role>): Promise<void> => {
     if (!db) throw new Error("Firestore is not initialized.");
-    await updateDoc(doc(db, 'roles', id), updates);
+    await updateDoc(doc(db, 'roles', id), cleanUndefined(updates));
 };
 
 export const deleteRole = async (id: string): Promise<void> => {
@@ -963,7 +992,7 @@ export const addUserRequest = async (request: Omit<UserRequest, 'id' | 'status' 
         status: UserRequestStatus.Pending,
         requestedAt: new Date().toISOString(),
     };
-    await addDoc(collection(db, 'userRequests'), requestData);
+    await addDoc(collection(db, 'userRequests'), cleanUndefined(requestData));
 };
 
 export const approveUserRequest = async (requestId: string): Promise<void> => {
@@ -1002,7 +1031,7 @@ export const approveUserRequest = async (requestId: string): Promise<void> => {
             proactiveMessage: 'No requiere acción.',
             actionNeeded: PatientActionNeeded.NONE,
         };
-        batch.set(newPatientRef, newPatientData);
+        batch.set(newPatientRef, cleanUndefined(newPatientData));
     }
 
     // Mark request as approved
@@ -1061,14 +1090,14 @@ export async function placeOrder(
     prescriptionImageUrl,
   };
   
-  await setDoc(orderRef, newOrder);
+  await setDoc(orderRef, cleanUndefined(newOrder));
   
   return orderId;
 }
 
 export const updateOrder = async (id: string, updates: Partial<Order>): Promise<void> => {
   if (!db) throw new Error("Firestore is not initialized.");
-  await updateDoc(doc(db, 'orders', id), updates as any);
+  await updateDoc(doc(db, 'orders', id), cleanUndefined(updates));
 };
 
 export const attachControlledPrescriptionToItem = async (boxId: string, recipeId: string, newFolio: string): Promise<void> => {
