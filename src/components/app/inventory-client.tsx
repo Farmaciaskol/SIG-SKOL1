@@ -536,10 +536,10 @@ export function InventoryClient({
                                                             <div className="flex flex-wrap gap-1">
                                                                 {Array.isArray(product.stocks) && product.stocks.length > 0 ? (
                                                                     product.stocks.map(stock => {
-                                                                        const stockValue = Number(stock.stock);
+                                                                        const stockValue = stock.stock;
                                                                         return (
                                                                             <Badge key={stock.sucursal_id} variant="secondary" className="font-normal">
-                                                                                {stock.nombre}: {isNaN(stockValue) ? 'N/D' : stockValue}
+                                                                                {stock.nombre}: {stockValue ?? 'N/D'}
                                                                             </Badge>
                                                                         );
                                                                     })
