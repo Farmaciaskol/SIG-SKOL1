@@ -226,7 +226,7 @@ function MainNavContent({
         {menuGroups.map((group) => (
           <div key={group.title} className="px-2 mb-2">
             <h3 className={cn(
-              "text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 transition-opacity duration-300 font-sans",
+              "text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 transition-opacity duration-300 font-sans",
               (isSidebarOpen || isMobileMenuOpen) ? "opacity-100 px-3" : "opacity-0 h-0"
             )}>{group.title}</h3>
             <div className="flex flex-col gap-1">
@@ -235,8 +235,8 @@ function MainNavContent({
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    'flex items-center gap-3 rounded-lg px-3 py-2 text-foreground/70 transition-all hover:bg-accent hover:text-foreground',
-                    (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) && 'bg-accent text-foreground font-semibold',
+                    'flex items-center gap-3 rounded-lg px-3 py-2 text-slate-200 transition-all hover:bg-slate-700 hover:text-slate-50',
+                    (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) && 'bg-slate-50 text-slate-900 font-semibold',
                     !(isSidebarOpen || isMobileMenuOpen) && 'justify-center'
                   )}
                   title={(isSidebarOpen || isMobileMenuOpen) ? '' : item.label}
@@ -255,186 +255,159 @@ function MainNavContent({
   return (
     <div className={cn(
         "grid min-h-svh w-full",
-        isSidebarOpen ? "md:grid-cols-[250px_1fr] lg:grid-cols-[280px_1fr]" : "md:grid-cols-[72px_1fr]"
+        isSidebarOpen ? "md:grid-cols-[280px_1fr]" : "md:grid-cols-[72px_1fr]"
     )}>
-      <nav className="hidden border-r bg-background md:block">
-        <div className="flex h-full max-h-screen flex-col gap-2">
-          <div className={cn(
-              "flex h-16 items-center border-b px-4",
-              isSidebarOpen ? "justify-between" : "justify-center"
-          )}>
-            <Link href="/dashboard" className={cn("flex items-center gap-2 font-semibold", !isSidebarOpen && "hidden")}>
-                <Image
-                    src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=1a612d04-0f27-4317-bfd6-06b48f019a24"
-                    alt="Skol Pharmacy Logo"
-                    width={120}
-                    height={33}
-                    priority
-                />
-            </Link>
-            <Link href="/dashboard" className={cn(!isSidebarOpen && "flex items-center gap-2 font-semibold")}>
-                 <Image
-                    src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/ISOTIPO%20FARMACIA%20SKOL_COLOR.png?alt=media&token=737b67b3-7649-4113-b51f-50b5ca320392"
-                    alt="Skol Pharmacy Logo"
-                    width={32}
-                    height={32}
-                    priority
-                    className={cn(isSidebarOpen && "hidden")}
-                />
-            </Link>
-          </div>
-          <div className="flex-1 overflow-auto py-2">
+      <nav className="hidden border-r border-slate-700 bg-slate-800 text-slate-50 md:flex md:flex-col">
+        <div className="flex h-16 shrink-0 items-center border-b border-slate-700 px-4">
+             <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-300 hover:bg-slate-700 hover:text-slate-50" onClick={toggleSidebar}>
+                <CustomMenuIcon />
+            </Button>
+        </div>
+        <div className="flex-1 overflow-auto py-4">
             {navContent}
-          </div>
-          <div className="mt-auto p-4 border-t">
-              <Button variant="ghost" className="w-full justify-start gap-3" onClick={toggleSidebar}>
-                  <CustomMenuIcon />
-                  <span className={cn(!isSidebarOpen && "hidden")}>Colapsar Menú</span>
-              </Button>
-          </div>
         </div>
       </nav>
       <div className="flex flex-1 flex-col">
-        <header className="flex h-16 items-center justify-between gap-4 px-6">
-          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-            <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="shrink-0 md:hidden"
-              >
-                <CustomMenuIcon />
-                <span className="sr-only">Toggle navigation menu</span>
-              </Button>
-            </SheetTrigger>
-             <SheetContent side="left" className="w-[250px] p-0 flex flex-col">
-                <SheetHeader className="p-4 border-b">
-                    <SheetTitle className="sr-only">Menú</SheetTitle>
-                    <SheetDescription className="sr-only">Navegación principal de la aplicación.</SheetDescription>
-                    <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
-                        <Image
-                            src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=1a612d04-0f27-4317-bfd6-06b48f019a24"
-                            alt="Skol Pharmacy Logo"
-                            width={120}
-                            height={33}
-                            priority
-                        />
-                    </Link>
-                </SheetHeader>
-                <div className="flex-1 overflow-auto py-2">
-                    {navContent}
-                </div>
-            </SheetContent>
-          </Sheet>
-          <div className="w-full flex-1">
-            <CommandPalette />
-          </div>
-          <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" size="icon" className="relative h-9 w-9 rounded-full">
-               <Link href="/portal-inbox">
-                <Inbox className="h-5 w-5" />
-                {portalInboxCount > 0 && (
-                  <Badge variant="destructive" className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full p-0">
-                    {portalInboxCount}
-                  </Badge>
-                )}
-                <span className="sr-only">Bandeja de Entrada del Portal</span>
-              </Link>
-            </Button>
-            <Button asChild variant="ghost" size="icon" className="relative h-9 w-9 rounded-full">
-              <Link href="/messaging">
-                <MessageSquare className="h-5 w-5" />
-                {unreadMessagesCount > 0 && (
-                  <Badge variant="destructive" className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full p-0">
-                    {unreadMessagesCount}
-                  </Badge>
-                )}
-                <span className="sr-only">Mensajería</span>
-              </Link>
-            </Button>
-            <AlertsBell 
-              itemsToDispatchCount={itemsToDispatchCount} 
-              lowStockCount={lowStockCount} 
-            />
-            <Dialog>
-                <DialogTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
-                        <Settings className="h-5 w-5" />
-                        <span className="sr-only">Configuración</span>
+        <main className="flex-1 p-6 md:p-8 overflow-auto bg-background">
+          <header className="flex h-16 items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-4">
+               <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+                  <SheetTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="shrink-0 md:hidden"
+                    >
+                      <Menu className="h-5 w-5" />
+                      <span className="sr-only">Toggle navigation menu</span>
                     </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Configuración</DialogTitle>
-                        <DialogDescription>
-                            Seleccione una sección para administrar.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4 space-y-4">
-                        <DialogClose asChild>
-                            <Link href="/settings" className="block">
-                                <Card className="hover:bg-muted/50 transition-colors">
-                                    <CardHeader className="flex flex-row items-center gap-4 p-4">
-                                        <Settings className="h-6 w-6 text-primary"/>
-                                        <div>
-                                            <h3 className="font-semibold">General</h3>
-                                            <p className="text-sm text-muted-foreground">Listas, parámetros y ajustes de la aplicación.</p>
-                                        </div>
-                                    </CardHeader>
-                                </Card>
-                            </Link>
-                        </DialogClose>
-                        <DialogClose asChild>
-                            <Link href="/settings" className="block">
-                                <Card className="hover:bg-muted/50 transition-colors">
-                                     <CardHeader className="flex flex-row items-center gap-4 p-4">
-                                        <Users className="h-6 w-6 text-primary"/>
-                                        <div>
-                                            <h3 className="font-semibold">Usuarios y Roles</h3>
-                                            <p className="text-sm text-muted-foreground">Administre accesos y permisos del sistema.</p>
-                                        </div>
-                                    </CardHeader>
-                                </Card>
-                            </Link>
-                        </DialogClose>
-                    </div>
-                </DialogContent>
-            </Dialog>
-            {user && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                    <Avatar className="h-9 w-9">
-                      {DisplayAvatar}
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
-                  <DropdownMenuLabel className="font-normal">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">{appUser?.name || user.displayName || "Usuario"}</p>
-                      <p className="text-xs leading-none text-muted-foreground">
-                        {user.email}
-                      </p>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/profile" className="cursor-pointer">
-                      <User className="mr-2 h-4 w-4" />
-                      <span>Mi Perfil</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Cerrar Sesión</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-          </div>
-        </header>
-        <main className="flex-1 p-6 md:p-8 overflow-auto bg-muted/40 rounded-tl-2xl">
+                  </SheetTrigger>
+                   <SheetContent side="left" className="w-[280px] p-0 flex flex-col bg-slate-800 text-slate-50 border-r-0">
+                      <SheetHeader className="p-4 border-b border-slate-700 text-left">
+                          <SheetTitle className="text-white">Menú</SheetTitle>
+                           <SheetDescription className="sr-only">Navegación principal de la aplicación.</SheetDescription>
+                      </SheetHeader>
+                      <div className="flex-1 overflow-auto py-2">
+                          {navContent}
+                      </div>
+                  </SheetContent>
+                </Sheet>
+                 <Link href="/dashboard">
+                    <Image
+                        src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=1a612d04-0f27-4317-bfd6-06b48f019a24"
+                        alt="Skol Pharmacy Logo"
+                        width={120}
+                        height={33}
+                        priority
+                    />
+                </Link>
+            </div>
+            <div className="flex items-center gap-2">
+                <div className="w-full max-w-sm hidden md:block"><CommandPalette /></div>
+                <Button asChild variant="ghost" size="icon" className="relative h-9 w-9 rounded-full">
+                <Link href="/portal-inbox">
+                    <Inbox className="h-5 w-5" />
+                    {portalInboxCount > 0 && (
+                    <Badge variant="destructive" className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full p-0">
+                        {portalInboxCount}
+                    </Badge>
+                    )}
+                    <span className="sr-only">Bandeja de Entrada del Portal</span>
+                </Link>
+                </Button>
+                <Button asChild variant="ghost" size="icon" className="relative h-9 w-9 rounded-full">
+                <Link href="/messaging">
+                    <MessageSquare className="h-5 w-5" />
+                    {unreadMessagesCount > 0 && (
+                    <Badge variant="destructive" className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full p-0">
+                        {unreadMessagesCount}
+                    </Badge>
+                    )}
+                    <span className="sr-only">Mensajería</span>
+                </Link>
+                </Button>
+                <AlertsBell 
+                itemsToDispatchCount={itemsToDispatchCount} 
+                lowStockCount={lowStockCount} 
+                />
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
+                            <Settings className="h-5 w-5" />
+                            <span className="sr-only">Configuración</span>
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>Configuración</DialogTitle>
+                            <DialogDescription>
+                                Seleccione una sección para administrar.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4 space-y-4">
+                            <DialogClose asChild>
+                                <Link href="/settings" className="block">
+                                    <Card className="hover:bg-muted/50 transition-colors">
+                                        <CardHeader className="flex flex-row items-center gap-4 p-4">
+                                            <Settings className="h-6 w-6 text-primary"/>
+                                            <div>
+                                                <h3 className="font-semibold">General</h3>
+                                                <p className="text-sm text-muted-foreground">Listas, parámetros y ajustes de la aplicación.</p>
+                                            </div>
+                                        </CardHeader>
+                                    </Card>
+                                </Link>
+                            </DialogClose>
+                            <DialogClose asChild>
+                                <Link href="/settings" className="block">
+                                    <Card className="hover:bg-muted/50 transition-colors">
+                                        <CardHeader className="flex flex-row items-center gap-4 p-4">
+                                            <Users className="h-6 w-6 text-primary"/>
+                                            <div>
+                                                <h3 className="font-semibold">Usuarios y Roles</h3>
+                                                <p className="text-sm text-muted-foreground">Administre accesos y permisos del sistema.</p>
+                                            </div>
+                                        </CardHeader>
+                                    </Card>
+                                </Link>
+                            </DialogClose>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+                {user && (
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                        <Avatar className="h-9 w-9">
+                        {DisplayAvatar}
+                        </Avatar>
+                    </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56" align="end" forceMount>
+                    <DropdownMenuLabel className="font-normal">
+                        <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium leading-none">{appUser?.name || user.displayName || "Usuario"}</p>
+                        <p className="text-xs leading-none text-muted-foreground">
+                            {user.email}
+                        </p>
+                        </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                        <Link href="/profile" className="cursor-pointer">
+                        <User className="mr-2 h-4 w-4" />
+                        <span>Mi Perfil</span>
+                        </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>Cerrar Sesión</span>
+                    </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+                )}
+            </div>
+          </header>
           {children}
         </main>
       </div>

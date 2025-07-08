@@ -13,14 +13,14 @@ export default async function ProtectedLayout({ children }: { children: React.Re
 
   return (
       <AuthProvider>
-        <MainNav 
-          portalInboxCount={portalInboxCount}
-          lowStockCount={lowStockCount}
-          unreadMessagesCount={unreadMessagesCount}
-          itemsToDispatchCount={itemsToDispatchCount}
-        >
-          {children}
-        </MainNav>
+          <MainNav 
+            portalInboxCount={portalInboxCount}
+            lowStockCount={lowStockCount}
+            unreadMessagesCount={unreadMessagesCount}
+            itemsToDispatchCount={itemsToDispatchCount}
+          >
+            {children}
+          </MainNav>
       </AuthProvider>
   );
 }
