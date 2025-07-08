@@ -112,7 +112,7 @@ function AlertsBell({ itemsToDispatchCount, lowStockCount }: Omit<MainNavProps, 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-full text-slate-50 hover:bg-slate-700 hover:text-slate-50">
+        <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-full text-muted-foreground hover:bg-accent">
           <Bell className="h-5 w-5" />
           {totalAlerts > 0 && (
             <Badge variant="destructive" className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full p-0">
@@ -226,7 +226,7 @@ function MainNavContent({
         {menuGroups.map((group) => (
           <div key={group.title} className="px-2 mb-2">
             <h3 className={cn(
-              "text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 transition-opacity duration-300 font-sans",
+              "text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 transition-opacity duration-300 font-sans",
               (isSidebarOpen || isMobileMenuOpen) ? "opacity-100 px-3" : "opacity-0 h-0"
             )}>{group.title}</h3>
             <div className="flex flex-col gap-1">
@@ -235,8 +235,8 @@ function MainNavContent({
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    'flex items-center gap-3 rounded-lg px-3 py-2 text-slate-200 transition-all hover:bg-slate-700 hover:text-slate-50',
-                    (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) && 'bg-slate-50 text-slate-900 font-semibold',
+                    'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-accent hover:text-foreground',
+                    (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) && 'bg-secondary text-secondary-foreground font-semibold',
                     !(isSidebarOpen || isMobileMenuOpen) && 'justify-center'
                   )}
                   title={(isSidebarOpen || isMobileMenuOpen) ? '' : item.label}
@@ -257,18 +257,40 @@ function MainNavContent({
         "grid min-h-svh w-full",
         isSidebarOpen ? "md:grid-cols-[280px_1fr]" : "md:grid-cols-[72px_1fr]"
     )}>
-      <nav className="hidden bg-slate-800 text-slate-50 md:flex md:flex-col">
-        <div className="flex h-16 shrink-0 items-center px-4">
-             <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-300 hover:bg-slate-700 hover:text-slate-50" onClick={toggleSidebar}>
-                <CustomMenuIcon />
-            </Button>
+      <nav className="hidden bg-background md:flex md:flex-col">
+        <div className="flex h-16 shrink-0 items-center border-b px-4">
+            <Link href="/dashboard" className="flex items-center gap-2 font-semibold text-foreground">
+                {isSidebarOpen ? (
+                     <Image
+                        src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
+                        alt="Skol Pharmacy Logo"
+                        width={120}
+                        height={33}
+                        priority
+                    />
+                ) : (
+                    <Image
+                        src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/ISOTIPO%20SKOL%20(1).png?alt=media&token=1d32ffa2-e3e9-4e78-92a2-32b00a70183e"
+                        alt="Skol Pharmacy Isotype"
+                        width={32}
+                        height={32}
+                        priority
+                    />
+                )}
+            </Link>
         </div>
         <div className="flex-1 overflow-auto py-4">
             {navContent}
         </div>
+        <div className="mt-auto p-4 border-t">
+            <Button variant="ghost" className="w-full justify-start gap-3" onClick={toggleSidebar}>
+                <CustomMenuIcon />
+                <span className={cn(isSidebarOpen ? 'opacity-100' : 'opacity-0')}>Colapsar Menú</span>
+            </Button>
+        </div>
       </nav>
       <div className="flex flex-1 flex-col">
-          <header className="flex h-16 shrink-0 items-center border-b border-slate-200 bg-background px-4 lg:px-6">
+          <header className="flex h-16 shrink-0 items-center border-b bg-background px-4 lg:px-6">
             <div className="flex h-16 items-center justify-between gap-4 w-full">
                 <div className="flex items-center gap-4">
                    <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -276,15 +298,23 @@ function MainNavContent({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="shrink-0 md:hidden text-slate-50 hover:bg-slate-700 hover:text-slate-50"
+                          className="shrink-0 md:hidden"
                         >
                           <Menu className="h-5 w-5" />
                           <span className="sr-only">Toggle navigation menu</span>
                         </Button>
                       </SheetTrigger>
-                       <SheetContent side="left" className="w-[280px] p-0 flex flex-col bg-slate-800 text-slate-50 border-r-0">
-                          <SheetHeader className="p-4 text-left">
-                              <SheetTitle className="text-white sr-only">Menú</SheetTitle>
+                       <SheetContent side="left" className="w-[280px] p-0 flex flex-col bg-background text-foreground border-r">
+                          <SheetHeader className="p-4 text-left border-b">
+                              <SheetTitle>
+                                <Image
+                                    src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
+                                    alt="Skol Pharmacy Logo"
+                                    width={120}
+                                    height={33}
+                                    priority
+                                />
+                              </SheetTitle>
                                <SheetDescription className="sr-only">Navegación principal de la aplicación.</SheetDescription>
                           </SheetHeader>
                           <div className="flex-1 overflow-auto py-2">
@@ -292,19 +322,10 @@ function MainNavContent({
                           </div>
                       </SheetContent>
                     </Sheet>
-                     <Link href="/dashboard" className="hidden md:block">
-                        <Image
-                            src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20BLANCO.png?alt=media&token=86794695-4654-4113-9110-8582f3575b7f"
-                            alt="Skol Pharmacy Logo"
-                            width={120}
-                            height={33}
-                            priority
-                        />
-                    </Link>
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="w-full max-w-sm"><CommandPalette /></div>
-                    <Button asChild variant="ghost" size="icon" className="relative h-9 w-9 rounded-full text-slate-50 hover:bg-slate-700 hover:text-slate-50">
+                    <Button asChild variant="ghost" size="icon" className="relative h-9 w-9 rounded-full text-muted-foreground hover:bg-accent">
                     <Link href="/portal-inbox">
                         <Inbox className="h-5 w-5" />
                         {portalInboxCount > 0 && (
@@ -315,7 +336,7 @@ function MainNavContent({
                         <span className="sr-only">Bandeja de Entrada del Portal</span>
                     </Link>
                     </Button>
-                    <Button asChild variant="ghost" size="icon" className="relative h-9 w-9 rounded-full text-slate-50 hover:bg-slate-700 hover:text-slate-50">
+                    <Button asChild variant="ghost" size="icon" className="relative h-9 w-9 rounded-full text-muted-foreground hover:bg-accent">
                     <Link href="/messaging">
                         <MessageSquare className="h-5 w-5" />
                         {unreadMessagesCount > 0 && (
@@ -332,7 +353,7 @@ function MainNavContent({
                     />
                     <Dialog>
                         <DialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-slate-50 hover:bg-slate-700 hover:text-slate-50">
+                            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-muted-foreground hover:bg-accent">
                                 <Settings className="h-5 w-5" />
                                 <span className="sr-only">Configuración</span>
                             </Button>
@@ -377,7 +398,7 @@ function MainNavContent({
                     {user && (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="relative h-9 w-9 rounded-full text-slate-50 hover:bg-slate-700 hover:text-slate-50">
+                        <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                             <Avatar className="h-9 w-9">
                             {DisplayAvatar}
                             </Avatar>
@@ -409,7 +430,7 @@ function MainNavContent({
                 </div>
               </div>
           </header>
-        <main className="flex-1 p-6 md:p-8 overflow-auto bg-background">
+        <main className="flex-1 p-6 md:p-8 overflow-auto bg-card rounded-tl-xl">
           {children}
         </main>
       </div>
