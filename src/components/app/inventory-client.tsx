@@ -418,7 +418,9 @@ const LiorenInventoryTab = ({ products, onCreateLocal, liorenError }: {
               <TableBody>
                 {filteredProducts.length > 0 ? (
                   filteredProducts.map(product => {
-                    const totalStock = product.stocks?.reduce((acc, s) => acc + Number(s.stock || 0), 0) ?? 0;
+                    const totalStock = (Array.isArray(product.stocks) ? product.stocks : []).reduce((acc, s) => acc + Number(s.stock || 0), 0);
+                    const price = Number(product.precioventabruto);
+
                     return (
                       <TableRow key={product.id}>
                         <TableCell className="font-medium">{product.nombre}</TableCell>
@@ -428,7 +430,7 @@ const LiorenInventoryTab = ({ products, onCreateLocal, liorenError }: {
                             {totalStock} {product.unidad}
                           </Badge>
                         </TableCell>
-                        <TableCell>${product.precioventabruto.toLocaleString('es-CL')}</TableCell>
+                        <TableCell>{!isNaN(price) ? `$${price.toLocaleString('es-CL')}` : 'N/A'}</TableCell>
                         <TableCell className="text-right">
                           <Button variant="outline" size="sm" onClick={() => onCreateLocal(product)}>
                             <PackagePlus className="mr-2 h-4 w-4" />
