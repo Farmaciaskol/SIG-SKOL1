@@ -802,6 +802,9 @@ export const createMonthlyDispensationBox = async (patientId: string, period: st
             if (!inventoryItem) {
                 status = DispensationItemStatus.DoNotInclude;
                 reason = `Medicamento "${medName}" no encontrado en inventario.`;
+            } else if (inventoryItem.isControlled) {
+                status = DispensationItemStatus.RequiresAttention;
+                reason = "Requiere receta controlada física/digital.";
             } else if (inventoryItem.quantity <= 0) {
                 status = DispensationItemStatus.RequiresAttention;
                 reason = "Stock insuficiente (0 unidades).";
@@ -1087,4 +1090,26 @@ export const attachControlledPrescriptionToItem = async (boxId: string, recipeId
     batch.update(recipeRef, { controlledRecipeFolio: newFolio });
 
     await batch.commit();
+};
+
+export const unlockCommercialControlledItemInBox = async (boxId: string, itemId: string, newFolio: string): Promise<void> => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    
+    const boxRef = doc(db, 'monthlyDispensations', boxId);
+    const boxSnap = await getDoc(boxRef);
+    if (!boxSnap.exists()) throw new Error("Dispensation box not found.");
+    
+    const boxData = boxSnap.data() as MonthlyDispensationBox;
+    const itemIndex = boxData.items.findIndex(item => item.id === itemId && item.type === 'commercial');
+    if (itemIndex === -1) throw new Error("Commercial item not found in dispensation box.");
+
+    const updatedItems = [...boxData.items];
+    updatedItems[itemIndex] = {
+        ...updatedItems[itemIndex],
+        status: DispensationItemStatus.OkToInclude,
+        reason: `Receta controlada adjuntada. Folio: ${newFolio}`,
+        pharmacistNotes: `Folio adjuntado: ${newFolio}`
+    };
+
+    await updateDoc(boxRef, { items: updatedItems, updatedAt: new Date().toISOString() });
 };

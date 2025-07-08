@@ -9,6 +9,7 @@ import {
   updateMonthlyDispensationBox,
   getPatient,
   attachControlledPrescriptionToItem,
+  unlockCommercialControlledItemInBox,
 } from '@/lib/data';
 import type {
   MonthlyDispensationBox,
@@ -185,7 +186,7 @@ const ControlledRecipeDialog = ({
                 <DialogHeader>
                     <DialogTitle>Adjuntar Receta Controlada</DialogTitle>
                     <DialogDescription>
-                        Ingrese el folio de la nueva receta controlada para el preparado: <span className="font-semibold text-foreground">{item.name}</span>.
+                        Ingrese el folio de la nueva receta controlada para el producto: <span className="font-semibold text-foreground">{item.name}</span>.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="py-4 space-y-2">
@@ -327,18 +328,22 @@ export default function DispensationDetailPage() {
     }
   }
   
-  const handleAttachControlled = async (newFolio: string) => {
+  const handleUnlockItem = async (newFolio: string) => {
     if (!box || !attachingControlledItem) return;
     try {
-        await attachControlledPrescriptionToItem(box.id, attachingControlledItem.id, newFolio);
+        if (attachingControlledItem.type === 'magistral') {
+            await attachControlledPrescriptionToItem(box.id, attachingControlledItem.id, newFolio);
+        } else {
+            await unlockCommercialControlledItemInBox(box.id, attachingControlledItem.id, newFolio);
+        }
         toast({ title: 'Receta Adjuntada', description: 'El ítem ha sido desbloqueado para preparación.' });
         setAttachingControlledItem(null);
         fetchData();
     } catch (error) {
-        console.error('Failed to attach controlled prescription:', error);
+        console.error('Failed to unlock item:', error);
         toast({ title: 'Error', description: 'No se pudo adjuntar la receta controlada.', variant: 'destructive' });
     }
-  }
+  };
 
   if (loading) {
     return (
@@ -382,7 +387,7 @@ export default function DispensationDetailPage() {
         item={attachingControlledItem}
         isOpen={!!attachingControlledItem}
         onOpenChange={() => setAttachingControlledItem(null)}
-        onConfirm={handleAttachControlled}
+        onConfirm={handleUnlockItem}
       />
 
     <div className="space-y-6">
@@ -419,7 +424,7 @@ export default function DispensationDetailPage() {
                                       const originalItem = originalBox?.items.find(i => i.id === item.id);
                                       const isOverridden = originalItem && originalItem.status !== item.status;
                                       const isFormDisabled = box.status !== MonthlyDispensationBoxStatus.InPreparation;
-                                      const isPendingControlled = item.status === DispensationItemStatus.RequiresAttention && item.reason?.includes('controlada');
+                                      const isPendingControlled = item.status === DispensationItemStatus.RequiresAttention && item.reason?.toLowerCase().includes('controlada');
 
                                       return (
                                         <TableRow key={item.id} className={isFormDisabled ? 'bg-muted/30' : ''}>
