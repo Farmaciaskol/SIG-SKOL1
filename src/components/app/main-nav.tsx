@@ -279,7 +279,7 @@ function MainNavContent({
             <Button
                 variant="outline"
                 size="icon"
-                className="absolute top-5 -translate-y-1/2 z-20 h-7 w-7 rounded-full bg-card shadow-md transition-all duration-300 ease-in-out hover:scale-110"
+                className="absolute top-24 -translate-y-1/2 z-20 h-7 w-7 rounded-full bg-card shadow-md transition-all duration-300 ease-in-out hover:scale-110"
                 style={{
                     left: state === 'expanded' ? 'var(--sidebar-width)' : 'var(--sidebar-width-icon)',
                     marginLeft: '-0.875rem' // Centers the button on the line
