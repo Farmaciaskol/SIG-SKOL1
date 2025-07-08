@@ -535,10 +535,10 @@ export function InventoryClient({
                                                         <TableCell>
                                                             <div className="flex flex-wrap gap-1">
                                                                 {Array.isArray(product.stocks) && product.stocks.length > 0 ? (
-                                                                    product.stocks.map(stock => {
+                                                                    product.stocks.map((stock, index) => {
                                                                         const stockValue = stock.stock;
                                                                         return (
-                                                                            <Badge key={stock.sucursal_id} variant="secondary" className="font-normal">
+                                                                            <Badge key={`${product.id}-${stock.sucursal_id}-${index}`} variant="secondary" className="font-normal">
                                                                                 {stock.nombre}: {stockValue ?? 'N/D'}
                                                                             </Badge>
                                                                         );
