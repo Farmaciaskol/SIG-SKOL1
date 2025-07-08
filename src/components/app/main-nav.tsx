@@ -47,6 +47,9 @@ import {
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { Card, CardHeader } from '@/components/ui/card';
@@ -67,6 +70,7 @@ const menuGroups = [
       title: 'Principal',
       items: [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { href: '/portal-inbox', label: 'Portal', icon: Inbox },
         { href: '/recipes', label: 'Recetas', icon: FileText },
       ],
     },
@@ -254,6 +258,9 @@ function MainNavContent({
                     >
                       <item.icon className="h-4 w-4" />
                       <span className={cn(!isSidebarOpen && "hidden")}>{item.label}</span>
+                       {item.href === '/portal-inbox' && portalInboxCount > 0 && (
+                            <Badge variant="destructive" className={cn("ml-auto", !isSidebarOpen && "absolute top-1 right-1 h-2 w-2 p-0 justify-center")}>{isSidebarOpen ? portalInboxCount : ''}</Badge>
+                       )}
                        {item.href === '/inventory' && lowStockCount > 0 && (
                             <Badge variant="destructive" className={cn("ml-auto", !isSidebarOpen && "absolute top-1 right-1 h-2 w-2 p-0 justify-center")}>{isSidebarOpen ? lowStockCount : ''}</Badge>
                        )}
@@ -292,6 +299,10 @@ function MainNavContent({
                     </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="w-[250px] p-0 bg-muted">
+                    <SheetHeader className="sr-only">
+                        <SheetTitle>Menú Principal</SheetTitle>
+                        <SheetDescription>Navegación principal de la aplicación.</SheetDescription>
+                    </SheetHeader>
                     <div className="flex h-16 items-center px-4">
                         <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
                             <Image
@@ -322,6 +333,9 @@ function MainNavContent({
                                 >
                                   <item.icon className="h-4 w-4" />
                                   <span>{item.label}</span>
+                                   {item.href === '/portal-inbox' && portalInboxCount > 0 && (
+                                        <Badge variant="destructive" className="ml-auto">{portalInboxCount}</Badge>
+                                   )}
                                    {item.href === '/inventory' && lowStockCount > 0 && (
                                         <Badge variant="destructive" className="ml-auto">{lowStockCount}</Badge>
                                    )}
@@ -341,17 +355,6 @@ function MainNavContent({
              <CommandPalette />
           </div>
           <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" size="icon" className="relative h-9 w-9 rounded-full">
-                <Link href="/portal-inbox">
-                    <Inbox className="h-5 w-5" />
-                    {portalInboxCount > 0 && (
-                        <Badge variant="destructive" className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full p-0">
-                            {portalInboxCount}
-                        </Badge>
-                    )}
-                    <span className="sr-only">Portal Inbox</span>
-                </Link>
-            </Button>
             <Button asChild variant="ghost" size="icon" className="relative h-9 w-9 rounded-full">
               <Link href="/messaging">
                 <MessageSquare className="h-5 w-5" />
