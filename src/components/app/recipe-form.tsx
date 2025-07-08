@@ -374,12 +374,21 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
 
   React.useEffect(() => {
     if (patientSelectionType === 'existing' && watchedPatientId) {
-      const selectedPatient = patients.find(p => p.id === watchedPatientId);
-      if (selectedPatient?.address) {
-        form.setValue('dispatchAddress', selectedPatient.address, { shouldValidate: true });
-      }
+        const selectedPatient = patients.find(p => p.id === watchedPatientId);
+        if (selectedPatient) {
+            if (selectedPatient.address) {
+                form.setValue('dispatchAddress', selectedPatient.address, { shouldValidate: true });
+            }
+            if (selectedPatient.chronicDisease && selectedPatient.chronicDisease.toLowerCase().includes('diabetes')) {
+                form.setValue('isSugarFree', true);
+                toast({
+                    title: "Paciente Diabético Detectado",
+                    description: "Se ha marcado automáticamente la opción 'Preparado Sin Azúcar'.",
+                });
+            }
+        }
     }
-  }, [watchedPatientId, patientSelectionType, patients, form]);
+}, [watchedPatientId, patientSelectionType, patients, form, toast]);
   
   const prescriptionDate = useWatch({ control: form.control, name: 'prescriptionDate' });
   const prevPrescriptionDateRef = React.useRef<string | undefined>();

@@ -46,6 +46,7 @@ const patientFormSchema = z.object({
   address: z.string().optional(),
   gender: z.enum(['Masculino', 'Femenino', 'Otro']),
   isChronic: z.boolean().default(false),
+  chronicDisease: z.string().optional(),
   isHomeCare: z.boolean().default(false),
   allergies: z.string().optional(),
 });
@@ -68,7 +69,7 @@ export function PatientFormDialog({ patient, isOpen, onOpenChange, onSuccess }: 
         resolver: zodResolver(patientFormSchema),
         defaultValues: {
             name: '', rut: '', email: '', phone: '', address: '',
-            gender: 'Masculino', isChronic: false, isHomeCare: false, allergies: ''
+            gender: 'Masculino', isChronic: false, chronicDisease: '', isHomeCare: false, allergies: ''
         },
     });
 
@@ -82,13 +83,14 @@ export function PatientFormDialog({ patient, isOpen, onOpenChange, onSuccess }: 
                 address: patient.address || '',
                 gender: patient.gender || 'Masculino',
                 isChronic: patient.isChronic || false,
+                chronicDisease: patient.chronicDisease || '',
                 isHomeCare: patient.isHomeCare || false,
                 allergies: patient.allergies?.join(', ') || '',
             });
         } else if (isOpen && !patient) {
             form.reset({
                 name: '', rut: '', email: '', phone: '', address: '',
-                gender: 'Masculino', isChronic: false, isHomeCare: false, allergies: ''
+                gender: 'Masculino', isChronic: false, chronicDisease: '', isHomeCare: false, allergies: ''
             });
         }
     }, [isOpen, patient, form]);
@@ -181,6 +183,18 @@ export function PatientFormDialog({ patient, isOpen, onOpenChange, onSuccess }: 
                                 </FormItem>
                             )}/>
                         </div>
+                        
+                        <FormField
+                            control={form.control}
+                            name="chronicDisease"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Enfermedad Crónica Principal (Opcional)</FormLabel>
+                                <FormControl><Input placeholder="Ej: Diabetes, Hipertensión" {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
                        
                         <FormField control={form.control} name="allergies" render={({ field }) => (
                             <FormItem><FormLabel>Alergias Conocidas</FormLabel><FormControl><Textarea placeholder="Separadas por comas. Ej: Penicilina, AINEs" {...field} /></FormControl><FormMessage /></FormItem>
