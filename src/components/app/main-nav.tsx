@@ -57,7 +57,7 @@ import { Badge } from '../ui/badge';
 import { getAvatar } from '@/components/app/predefined-avatars';
 import { User as AppUser } from '@/lib/types';
 import { CommandPalette } from './command-palette';
-
+import { getUsers } from '@/lib/data';
 
 const menuGroups = [
     {
