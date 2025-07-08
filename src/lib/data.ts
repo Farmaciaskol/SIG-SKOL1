@@ -432,21 +432,7 @@ export const saveRecipe = async (data: any, userId: string, recipeId?: string): 
 
 export const addInventoryItem = async (item: Partial<Omit<InventoryItem, 'id' | 'quantity' | 'lots'>>): Promise<string> => {
     if (!db) throw new Error("Firestore is not initialized.");
-    
     const dataToSave = { ...item, quantity: 0, lots: [] };
-    
-    if (dataToSave.inventoryType !== 'Fraccionamiento') {
-        dataToSave.activePrinciple = undefined;
-        dataToSave.pharmaceuticalForm = undefined;
-        dataToSave.doseValue = undefined;
-        dataToSave.doseUnit = undefined;
-        dataToSave.itemsPerBaseUnit = undefined;
-    }
-     if (dataToSave.inventoryType !== 'Suministro Paciente') {
-        dataToSave.patientOwnerId = undefined;
-        dataToSave.patientOwnerName = undefined;
-    }
-
     const docRef = await addDoc(collection(db, 'inventory'), cleanUndefined(dataToSave));
     return docRef.id;
 };
@@ -458,19 +444,7 @@ export const deleteInventoryItem = async (id: string): Promise<void> => {
 
 export const updateInventoryItem = async (id: string, updates: Partial<Omit<InventoryItem, 'id'>>): Promise<void> => {
     if (!db) throw new Error("Firestore is not initialized.");
-    const dataToSave = { ...updates };
-    if (dataToSave.inventoryType !== 'Fraccionamiento') {
-        dataToSave.activePrinciple = undefined;
-        dataToSave.pharmaceuticalForm = undefined;
-        dataToSave.doseValue = undefined;
-        dataToSave.doseUnit = undefined;
-        dataToSave.itemsPerBaseUnit = undefined;
-    }
-    if (dataToSave.inventoryType !== 'Suministro Paciente') {
-        dataToSave.patientOwnerId = undefined;
-        dataToSave.patientOwnerName = undefined;
-    }
-    await updateDoc(doc(db, 'inventory', id), cleanUndefined(dataToSave));
+    await updateDoc(doc(db, 'inventory', id), cleanUndefined(updates));
 };
 
 export const addLotToInventoryItem = async (itemId: string, newLot: LotDetail): Promise<void> => {
@@ -1162,3 +1136,4 @@ export const unlockCommercialControlledItemInBox = async (boxId: string, itemId:
 
     await updateDoc(boxRef, cleanUndefined({ items: updatedItems, updatedAt: new Date().toISOString() }));
 };
+

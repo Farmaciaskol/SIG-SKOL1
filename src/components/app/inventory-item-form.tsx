@@ -42,7 +42,7 @@ const inventoryItemSchema = z.object({
   patientOwnerName: z.string().optional(),
 
 }).superRefine((data, ctx) => {
-    if (data.inventoryType === 'Fraccionamiento') {
+    if (data.inventoryType === 'Fraccionamiento' || data.inventoryType === 'Suministro Paciente') {
         if (!data.activePrinciple?.trim()) {
             ctx.addIssue({ code: "custom", message: "Principio activo es requerido.", path: ["activePrinciple"] });
         }
@@ -101,23 +101,17 @@ export function InventoryItemForm({ itemToEdit, onFinished, patients }: Inventor
             });
         }
     }, [itemToEdit, form]);
+    
+    useEffect(() => {
+        if (inventoryType === 'Suministro Paciente') {
+            form.setValue('costPrice', 0);
+            form.setValue('salePrice', 0);
+        }
+    }, [inventoryType, form]);
 
     const onSubmit = async (values: InventoryFormValues) => {
         try {
             const dataToSave: Partial<InventoryItem> = { ...values };
-
-            // Clean up fields based on type
-            if (values.inventoryType === 'Venta Directa' || values.inventoryType === 'Suministro Paciente') {
-                delete dataToSave.activePrinciple;
-                delete dataToSave.pharmaceuticalForm;
-                delete dataToSave.doseValue;
-                delete dataToSave.doseUnit;
-                delete dataToSave.itemsPerBaseUnit;
-            }
-             if (values.inventoryType !== 'Suministro Paciente') {
-                delete dataToSave.patientOwnerId;
-                delete dataToSave.patientOwnerName;
-            }
 
             if (isEditMode && itemToEdit && 'id' in itemToEdit) {
                 await updateInventoryItem(itemToEdit.id, dataToSave);
@@ -157,7 +151,7 @@ export function InventoryItemForm({ itemToEdit, onFinished, patients }: Inventor
                     <FormItem><FormLabel>Nombre del Producto *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
 
-                {inventoryType === 'Fraccionamiento' && (
+                {(inventoryType === 'Fraccionamiento' || inventoryType === 'Suministro Paciente') && (
                     <Card className="p-4 bg-muted/30"><CardHeader className="p-0 pb-4"><CardTitle className="text-base text-primary">Datos para Fraccionamiento</CardTitle></CardHeader>
                         <CardContent className="p-0 space-y-4">
                              <FormField control={form.control} name="activePrinciple" render={({ field }) => (<FormItem><FormLabel>Principio Activo *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
@@ -174,8 +168,8 @@ export function InventoryItemForm({ itemToEdit, onFinished, patients }: Inventor
                 )}
 
                 {inventoryType === 'Suministro Paciente' && (
-                     <Card className="p-4 bg-muted/30"><CardHeader className="p-0 pb-4"><CardTitle className="text-base text-primary">Datos del Suministro</CardTitle></CardHeader>
-                        <CardContent className="p-0 space-y-4">
+                     <Card className="p-4 bg-muted/30"><CardHeader className="p-0 pb-4"><CardTitle className="text-base text-primary">Datos del Paciente Propietario</CardTitle></CardHeader>
+                        <CardContent className="p-0 space-y-4 pt-4">
                              <FormField control={form.control} name="patientOwnerId" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Paciente Propietario *</FormLabel>
@@ -199,9 +193,9 @@ export function InventoryItemForm({ itemToEdit, onFinished, patients }: Inventor
                     <FormField control={form.control} name="lowStockThreshold" render={({ field }) => (<FormItem><FormLabel>Umbral Stock Bajo *</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                 </div>
                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <FormField control={form.control} name="sku" render={({ field }) => (<FormItem><FormLabel>SKU</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                    <FormField control={form.control} name="costPrice" render={({ field }) => (<FormItem><FormLabel>Precio Costo</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                    <FormField control={form.control} name="salePrice" render={({ field }) => (<FormItem><FormLabel>Precio Venta</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                    <FormField control={form.control} name="sku" render={({ field }) => (<FormItem><FormLabel>SKU / Código de Barras</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                    <FormField control={form.control} name="costPrice" render={({ field }) => (<FormItem><FormLabel>Precio Costo</FormLabel><FormControl><Input type="number" disabled={inventoryType === 'Suministro Paciente'} {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                    <FormField control={form.control} name="salePrice" render={({ field }) => (<FormItem><FormLabel>Precio Venta</FormLabel><FormControl><Input type="number" disabled={inventoryType === 'Suministro Paciente'} {...field} /></FormControl><FormMessage /></FormItem>)}/>
                 </div>
                 <div className="flex items-center space-x-6 pt-2">
                      <FormField control={form.control} name="isControlled" render={({ field }) => (<FormItem className="flex items-center space-x-2 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel className="!mt-0">Es Controlado</FormLabel></FormItem>)}/>
