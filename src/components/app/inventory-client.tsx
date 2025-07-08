@@ -294,7 +294,7 @@ export function InventoryClient({
     const handleImportFromLioren = (liorenProduct: LiorenProduct) => {
       const productToImport: Partial<InventoryItem> = {
         name: liorenProduct.nombre,
-        sku: liorenProduct.codigo,
+        barcode: liorenProduct.codigo,
         salePrice: liorenProduct.precioventabruto,
         costPrice: liorenProduct.preciocompraneto,
         unit: liorenProduct.unidad,

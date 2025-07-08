@@ -1161,7 +1161,7 @@ export async function syncFraccionamientoStock(): Promise<{ success: boolean; up
 
     const liorenMap = new Map<string, LiorenProduct>();
     for (const product of liorenProducts) {
-      if (product.codigo) {
+      if (product.codigo) { // 'codigo' from Lioren is the barcode
         liorenMap.set(product.codigo, product);
       }
     }
@@ -1170,8 +1170,9 @@ export async function syncFraccionamientoStock(): Promise<{ success: boolean; up
     let updatedCount = 0;
 
     for (const localItem of fraccionamientoItems) {
-      if (localItem.sku && liorenMap.has(localItem.sku)) {
-        const liorenProduct = liorenMap.get(localItem.sku)!;
+      // Use barcode for matching instead of SKU
+      if (localItem.barcode && liorenMap.has(localItem.barcode)) {
+        const liorenProduct = liorenMap.get(localItem.barcode)!;
         const liorenTotalStock = liorenProduct.stocks.reduce((sum, stock) => sum + stock.stock, 0);
 
         if (localItem.quantity !== liorenTotalStock) {
