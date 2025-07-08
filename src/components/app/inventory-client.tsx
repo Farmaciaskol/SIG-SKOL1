@@ -46,6 +46,7 @@ import { Calendar } from '../ui/calendar';
 import { Label } from '../ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { VADEMECUM_DATA } from '@/lib/constants';
+import { Command, CommandItem, CommandList } from '../ui/command';
 
 
 const EXPIRY_THRESHOLD_DAYS = 90;
@@ -287,14 +288,37 @@ function LotManagementDialog({
 
 const LiorenInventoryTab = ({ products, onCreateLocal }: { products: LiorenProduct[]; onCreateLocal: (product: LiorenProduct) => void; }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
 
+  const productsWithPA = useMemo(() => {
+    return products.map(p => {
+        const vademecumEntry = VADEMECUM_DATA.find(v => v.productName.toLowerCase() === p.nombre.toLowerCase());
+        return {
+            ...p,
+            activeIngredient: vademecumEntry?.activeIngredient
+        };
+    });
+  }, [products]);
+
+  const suggestions = useMemo(() => {
+    if (searchTerm.length < 2) return [];
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    return productsWithPA.filter(p =>
+        p.nombre.toLowerCase().includes(lowerSearchTerm) ||
+        (p.activeIngredient && p.activeIngredient.toLowerCase().includes(lowerSearchTerm)) ||
+        (p.codigo && p.codigo.toLowerCase().includes(lowerSearchTerm))
+    ).slice(0, 7);
+  }, [productsWithPA, searchTerm]);
+  
   const filteredProducts = useMemo(() => {
     if (!searchTerm) return products;
-    return products.filter(p => 
-      p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (p.codigo && p.codigo.toLowerCase().includes(searchTerm.toLowerCase()))
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    return productsWithPA.filter(p => 
+      p.nombre.toLowerCase().includes(lowerSearchTerm) ||
+      (p.activeIngredient && p.activeIngredient.toLowerCase().includes(lowerSearchTerm)) ||
+      (p.codigo && p.codigo.toLowerCase().includes(lowerSearchTerm))
     );
-  }, [products, searchTerm]);
+  }, [products, productsWithPA, searchTerm]);
 
   return (
     <div className="space-y-6">
@@ -306,15 +330,48 @@ const LiorenInventoryTab = ({ products, onCreateLocal }: { products: LiorenProdu
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="relative">
-            <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por nombre o SKU en Lioren..."
-              className="pl-8"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+          <Popover open={isSuggestionsOpen} onOpenChange={setIsSuggestionsOpen}>
+            <PopoverTrigger asChild>
+                <div className="relative">
+                    <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar por nombre, principio activo o SKU..."
+                      className="pl-8"
+                      value={searchTerm}
+                      onChange={(e) => {
+                          setSearchTerm(e.target.value);
+                          if (!isSuggestionsOpen && e.target.value.length > 1) {
+                              setIsSuggestionsOpen(true);
+                          } else if (isSuggestionsOpen && e.target.value.length <= 1) {
+                              setIsSuggestionsOpen(false);
+                          }
+                      }}
+                      onKeyDown={(e) => { if (e.key === 'Escape') setIsSuggestionsOpen(false) }}
+                    />
+                </div>
+            </PopoverTrigger>
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+                <Command>
+                    <CommandList>
+                       {suggestions.length === 0 && searchTerm.length > 1 ? (
+                          <div className="p-4 text-sm text-center text-muted-foreground">No se encontraron sugerencias.</div>
+                       ) : (
+                          suggestions.map(product => (
+                              <CommandItem key={product.id} value={product.nombre} onSelect={() => {
+                                  setSearchTerm(product.nombre);
+                                  setIsSuggestionsOpen(false);
+                              }}>
+                                  <div className="w-full">
+                                      <p className="font-medium text-foreground">{product.nombre}</p>
+                                      {product.activeIngredient && <p className="text-xs text-muted-foreground">{product.activeIngredient}</p>}
+                                  </div>
+                              </CommandItem>
+                          ))
+                       )}
+                    </CommandList>
+                </Command>
+            </PopoverContent>
+          </Popover>
         </CardContent>
       </Card>
       
@@ -356,7 +413,7 @@ const LiorenInventoryTab = ({ products, onCreateLocal }: { products: LiorenProdu
               ) : (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center h-24">
-                    No se encontraron productos en Lioren.
+                    {searchTerm ? "No se encontraron productos para su búsqueda." : "No se encontraron productos en Lioren."}
                   </TableCell>
                 </TableRow>
               )}
