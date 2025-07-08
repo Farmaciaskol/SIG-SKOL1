@@ -45,6 +45,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
 import { Label } from '../ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { VADEMECUM_DATA } from '@/lib/constants';
 
 
 const EXPIRY_THRESHOLD_DAYS = 90;
@@ -284,7 +285,7 @@ function LotManagementDialog({
   )
 }
 
-const LiorenInventoryTab = ({ products }: { products: LiorenProduct[] }) => {
+const LiorenInventoryTab = ({ products, onCreateLocal }: { products: LiorenProduct[]; onCreateLocal: (product: LiorenProduct) => void; }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredProducts = useMemo(() => {
@@ -325,7 +326,8 @@ const LiorenInventoryTab = ({ products }: { products: LiorenProduct[] }) => {
                 <TableHead>Producto</TableHead>
                 <TableHead>SKU</TableHead>
                 <TableHead>Stock Total</TableHead>
-                <TableHead className="text-right">Precio Venta</TableHead>
+                <TableHead>Precio Venta</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -341,13 +343,19 @@ const LiorenInventoryTab = ({ products }: { products: LiorenProduct[] }) => {
                           {totalStock} {product.unidad}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right">${product.precioventabruto.toLocaleString('es-CL')}</TableCell>
+                      <TableCell>${product.precioventabruto.toLocaleString('es-CL')}</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="outline" size="sm" onClick={() => onCreateLocal(product)}>
+                           <PackagePlus className="mr-2 h-4 w-4" />
+                           Crear para Fraccionar
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   );
                 })
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center h-24">
+                  <TableCell colSpan={5} className="text-center h-24">
                     No se encontraron productos en Lioren.
                   </TableCell>
                 </TableRow>
@@ -373,7 +381,7 @@ export function InventoryClient({ initialInventory, liorenInventory }: {
 
     const [managingLotsFor, setManagingLotsFor] = useState<InventoryItemWithStats | null>(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
-    const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+    const [editingItem, setEditingItem] = useState<InventoryItem | Partial<InventoryItem> | null>(null);
     const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null);
 
     const [currentPage, setCurrentPage] = useState(1);
@@ -391,7 +399,7 @@ export function InventoryClient({ initialInventory, liorenInventory }: {
         }
     };
 
-    const handleOpenForm = (item: InventoryItem | null) => {
+    const handleOpenForm = (item: InventoryItem | Partial<InventoryItem> | null) => {
         setEditingItem(item);
         setIsFormOpen(true);
     };
@@ -503,6 +511,22 @@ export function InventoryClient({ initialInventory, liorenInventory }: {
         setManagingLotsFor(item);
     };
 
+    const handleCreateLocalFromLioren = (product: LiorenProduct) => {
+        const prefillData: Partial<InventoryItem> = {
+            name: product.nombre,
+            inventoryType: 'Fraccionamiento',
+            sku: product.codigo,
+            unit: product.unidad,
+            costPrice: product.preciocompraneto,
+            salePrice: product.precioventabruto,
+            isControlled: VADEMECUM_DATA.some(v => v.productName.toLowerCase() === product.nombre.toLowerCase() && v.isControlled),
+            requiresRefrigeration: false,
+            internalNotes: `Creado desde Lioren. Producto original: ${product.nombre} (SKU: ${product.codigo})`,
+        };
+        handleOpenForm(prefillData);
+    };
+
+
     return (
         <>
             <LotManagementDialog 
@@ -515,9 +539,9 @@ export function InventoryClient({ initialInventory, liorenInventory }: {
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
               <DialogContent className="sm:max-w-3xl">
                 <DialogHeader>
-                    <DialogTitle>{editingItem ? 'Editar Producto' : 'Crear Nuevo Producto'}</DialogTitle>
+                    <DialogTitle>{(editingItem && 'id' in editingItem) ? 'Editar Producto' : 'Crear Nuevo Producto'}</DialogTitle>
                     <DialogDescription>
-                        {editingItem ? 'Modifique los detalles del producto en la base de datos local.' : 'Añada un nuevo producto a la base de datos interna.'}
+                        { (editingItem && 'id' in editingItem) ? 'Modifique los detalles del producto en la base de datos local.' : 'Añada un nuevo producto a la base de datos interna.'}
                     </DialogDescription>
                 </DialogHeader>
                 <InventoryItemForm onFinished={handleFormFinished} itemToEdit={editingItem || undefined} />
@@ -683,7 +707,7 @@ export function InventoryClient({ initialInventory, liorenInventory }: {
                     </div>
                 </TabsContent>
                 <TabsContent value="lioren" className="mt-6">
-                    <LiorenInventoryTab products={liorenInventory} />
+                    <LiorenInventoryTab products={liorenInventory} onCreateLocal={handleCreateLocalFromLioren} />
                 </TabsContent>
             </Tabs>
         </>

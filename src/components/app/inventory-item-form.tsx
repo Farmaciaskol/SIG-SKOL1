@@ -55,13 +55,13 @@ const inventoryItemSchema = z.object({
 type InventoryFormValues = z.infer<typeof inventoryItemSchema>;
 
 interface InventoryItemFormProps {
-  itemToEdit?: InventoryItem;
+  itemToEdit?: InventoryItem | Partial<InventoryItem>;
   onFinished: () => void;
 }
 
 export function InventoryItemForm({ itemToEdit, onFinished }: InventoryItemFormProps) {
     const { toast } = useToast();
-    const isEditMode = !!itemToEdit;
+    const isEditMode = !!(itemToEdit && 'id' in itemToEdit);
 
     const form = useForm<InventoryFormValues>({
         resolver: zodResolver(inventoryItemSchema),
@@ -117,7 +117,24 @@ export function InventoryItemForm({ itemToEdit, onFinished }: InventoryItemFormP
                 controlledType: itemToEdit.controlledType || '',
             });
         } else {
-            form.reset();
+            form.reset({
+                 name: '',
+                inventoryType: 'Fraccionamiento',
+                activePrinciple: '',
+                sku: '',
+                pharmaceuticalForm: '',
+                doseValue: 0,
+                doseUnit: 'mg',
+                itemsPerBaseUnit: 1,
+                unit: 'Caja',
+                lowStockThreshold: 5,
+                costPrice: 0,
+                salePrice: 0,
+                isControlled: false,
+                controlledType: '',
+                requiresRefrigeration: false,
+                internalNotes: '',
+            });
         }
     }, [itemToEdit, form]);
 
@@ -132,7 +149,7 @@ export function InventoryItemForm({ itemToEdit, onFinished }: InventoryItemFormP
                 delete dataToSave.itemsPerBaseUnit;
             }
 
-            if (isEditMode && itemToEdit) {
+            if (isEditMode && itemToEdit && 'id' in itemToEdit) {
                 await updateInventoryItem(itemToEdit.id, dataToSave);
                 toast({ title: 'Producto Actualizado', description: 'Los cambios se han guardado en la base de datos local.' });
             } else {
