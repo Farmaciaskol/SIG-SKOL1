@@ -238,7 +238,7 @@ function MainNavContent({
           </Link>
         </SidebarHeader>
         <SidebarContent className="p-2 flex-1">
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 group-data-[collapsible=icon]:gap-0">
             {menuGroups.map((group) => (
               <SidebarGroup key={group.title} className="p-0">
                 <SidebarGroupLabel className="p-0 px-2 pb-1">
