@@ -245,8 +245,7 @@ export default function DispatchManagementPage() {
     
     const recipesToProcess = recipes.filter(r => 
         r.status === RecipeStatus.Validated &&
-        r.supplySource === 'Insumos de Skol' &&
-        r.skolSuppliedItemsDispatchStatus !== SkolSuppliedItemsDispatchStatus.Dispatched
+        r.supplySource === 'Insumos de Skol'
     );
     
     for (const recipe of recipesToProcess) {
@@ -610,8 +609,8 @@ export default function DispatchManagementPage() {
                                     if (item.error || !item.inventoryItem) {
                                         return (
                                             <Card key={`${item.recipe.id}-${item.recipeItem.principalActiveIngredient}`} className="p-4 bg-red-50 border-red-200">
-                                                <div className="flex items-center gap-4">
-                                                    <AlertTriangle className="h-8 w-8 text-red-500 flex-shrink-0" />
+                                                <div className="flex items-start gap-4">
+                                                    <AlertTriangle className="h-8 w-8 text-red-500 flex-shrink-0 mt-1" />
                                                     <div>
                                                         <p className="font-bold text-foreground">{item.recipeItem.principalActiveIngredient} (Receta: {item.recipe.id})</p>
                                                         <p className="text-sm text-red-700 font-semibold">{item.error || 'Error desconocido.'}</p>
@@ -631,15 +630,15 @@ export default function DispatchManagementPage() {
                                         validationStatus === 'valid' ? 'bg-green-50 border-green-200' : 
                                         validationStatus === 'invalid' ? 'bg-red-50 border-red-200' : ''
                                     )}>
-                                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
-                                            <div className="md:col-span-2 space-y-1">
+                                        <div className="flex flex-col md:flex-row md:items-start md:gap-6">
+                                            <div className="flex-1 space-y-1 mb-4 md:mb-0">
                                                 <p className="text-lg font-bold text-foreground flex items-center gap-2">
                                                     {item.inventoryItem.name}
                                                     {item.inventoryItem.requiresRefrigeration && (
                                                         <TooltipProvider>
                                                             <Tooltip>
-                                                                <TooltipTrigger>
-                                                                    <Snowflake className="h-5 w-5 text-blue-500" />
+                                                                <TooltipTrigger asChild>
+                                                                    <button type="button" className="cursor-default"><Snowflake className="h-5 w-5 text-blue-500" /></button>
                                                                 </TooltipTrigger>
                                                                 <TooltipContent>
                                                                     <p>¡Atención! Insumo requiere cadena de frío.</p>
@@ -648,40 +647,45 @@ export default function DispatchManagementPage() {
                                                         </TooltipProvider>
                                                     )}
                                                 </p>
-                                                <p className="text-sm text-muted-foreground">Receta: <span className="font-mono text-primary">{item.recipe.id}</span> ({item.recipeItem.principalActiveIngredient})</p>
-                                                <p className="text-sm text-muted-foreground">Paciente: {item.patient?.name || 'Desconocido'}</p>
+                                                <p className="text-sm text-muted-foreground">Receta: <Link href={`/recipes/${item.recipe.id}`} className="font-mono text-primary hover:underline">{item.recipe.id}</Link> ({item.recipeItem.principalActiveIngredient})</p>
+                                                <p className="text-sm text-muted-foreground">Paciente: <Link href={`/patients/${item.recipe.patientId}`} className="hover:underline">{item.patient?.name || 'Desconocido'}</Link></p>
                                                 <p className="text-base font-bold mt-1 text-foreground">Despachar: {item.quantityToDispatch} {item.inventoryItem.unit}</p>
                                             </div>
-                                            <div className="md:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
-                                               <div className="space-y-1">
-                                                    <p className="text-xs font-medium text-muted-foreground">Lote (FEFO)</p>
-                                                    <Select onValueChange={(lot) => handleLotChange(itemId, lot)} disabled={validationStatus === 'valid'}>
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Seleccionar lote..." />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {sortedLots?.filter(l => l.quantity > 0).map(lot => (
-                                                                <SelectItem key={lot.lotNumber} value={lot.lotNumber}>
-                                                                    {lot.lotNumber} (Disp: {lot.quantity}, Vto: {format(parseISO(lot.expiryDate), 'dd-MM-yy')})
-                                                                </SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
+                                            
+                                            <Separator className="md:hidden my-4" />
+
+                                            <div className="flex-shrink-0 md:w-7/12 space-y-3">
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <div className="space-y-1">
+                                                        <p className="text-xs font-medium text-muted-foreground">Lote (FEFO)</p>
+                                                        <Select onValueChange={(lot) => handleLotChange(itemId, lot)} disabled={validationStatus === 'valid'} value={validationState[itemId]?.lotNumber || ''}>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Seleccionar lote..." />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {sortedLots?.filter(l => l.quantity > 0).map(lot => (
+                                                                    <SelectItem key={lot.lotNumber} value={lot.lotNumber}>
+                                                                        {lot.lotNumber} (Disp: {lot.quantity}, Vto: {format(parseISO(lot.expiryDate), 'dd-MM-yy')})
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <p className="text-xs font-medium text-muted-foreground">Escanear Código de Barras *</p>
+                                                        <Input 
+                                                            placeholder="Escanear o tipear código..." 
+                                                            onChange={(e) => handleBarcodeInputChange(itemId, e.target.value)} 
+                                                            disabled={validationStatus === 'valid'}
+                                                            value={validationState[itemId]?.barcodeInput || ''}
+                                                        />
+                                                    </div>
                                                 </div>
-                                                <div className="space-y-1">
-                                                     <p className="text-xs font-medium text-muted-foreground">Escanear Código de Barras *</p>
-                                                    <Input 
-                                                        placeholder="Escanear o tipear código..." 
-                                                        onChange={(e) => handleBarcodeInputChange(itemId, e.target.value)} 
-                                                        disabled={validationStatus === 'valid'}
-                                                        value={validationState[itemId]?.barcodeInput || ''}
-                                                    />
-                                                </div>
-                                                <Button onClick={() => handleValidateItem(item)} disabled={!validationState[itemId]?.lotNumber || validationStatus === 'valid'}>
+                                                <Button onClick={() => handleValidateItem(item)} disabled={!validationState[itemId]?.lotNumber || validationStatus === 'valid'} className="w-full">
                                                     {validationStatus === 'valid' ? <Check className="mr-2 h-4 w-4" /> :
-                                                     validationStatus === 'invalid' ? <XCircle className="mr-2 h-4 w-4" /> :
-                                                     <ShieldCheck className="mr-2 h-4 w-4" />}
-                                                    Validar
+                                                    validationStatus === 'invalid' ? <XCircle className="mr-2 h-4 w-4" /> :
+                                                    <ShieldCheck className="mr-2 h-4 w-4" />}
+                                                    {validationStatus === 'valid' ? 'Validado' : 'Validar'}
                                                 </Button>
                                             </div>
                                         </div>
