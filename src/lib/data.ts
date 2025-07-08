@@ -285,13 +285,13 @@ export const addDoctor = async (doctor: Omit<Doctor, 'id'>): Promise<string> => 
         }
     }
     
-    const docRef = await addDoc(collection(db, 'doctors'), doctor);
+    const docRef = await addDoc(collection(db, 'doctors'), cleanUndefined(doctor));
     return docRef.id;
 };
 
 export const updateDoctor = async (id: string, updates: Partial<Doctor>): Promise<void> => {
     if (!db) throw new Error("Firestore is not initialized.");
-    await updateDoc(doc(db, 'doctors', id), updates);
+    await updateDoc(doc(db, 'doctors', id), cleanUndefined(updates));
 };
 
 export const deleteDoctor = async (id: string): Promise<void> => {
@@ -303,7 +303,7 @@ export const addUser = async (user: Omit<User, 'id'>): Promise<string> => {
     if (!db) throw new Error("Firestore is not initialized.");
     // NOTE: This only adds the user to the Firestore collection for display purposes.
     // Real user creation should be handled via Firebase Authentication SDKs.
-    const docRef = await addDoc(collection(db, 'users'), user);
+    const docRef = await addDoc(collection(db, 'users'), cleanUndefined(user));
     return docRef.id;
 };
 
@@ -358,10 +358,9 @@ export const saveRecipe = async (data: any, imageFile: File | null, userId: stri
         if (!querySnapshot.empty) {
             patientId = querySnapshot.docs[0].id;
         } else {
-            const newPatientData = {
+            const newPatientData: Partial<Omit<Patient, 'id'>> = {
                 name: data.newPatientName,
                 rut: data.newPatientRut,
-                isChronic: false,
             };
             patientId = await addPatient(newPatientData);
         }
@@ -444,11 +443,11 @@ export const saveRecipe = async (data: any, imageFile: File | null, userId: stri
 
 export const addInventoryItem = async (item: Omit<InventoryItem, 'id' | 'quantity' | 'lots'>): Promise<string> => {
     if (!db) throw new Error("Firestore is not initialized.");
-    const docRef = await addDoc(collection(db, 'inventory'), {
+    const docRef = await addDoc(collection(db, 'inventory'), cleanUndefined({
         ...item,
         quantity: 0,
         lots: []
-    });
+    }));
     return docRef.id;
 };
 
@@ -478,10 +477,10 @@ export const addLotToInventoryItem = async (itemId: string, newLot: LotDetail): 
     const updatedLots = [...existingLots, newLot];
     const newTotalQuantity = updatedLots.reduce((sum, lot) => sum + (lot.quantity || 0), 0);
     
-    await updateDoc(itemRef, {
+    await updateDoc(itemRef, cleanUndefined({
         lots: updatedLots,
         quantity: newTotalQuantity
-    });
+    }));
 };
 
 
@@ -513,7 +512,7 @@ export const processDispatch = async (pharmacyId: string, dispatchItems: Dispatc
 
         lot.quantity -= item.quantity;
         inventoryData.quantity -= item.quantity;
-        batch.update(inventoryRef, { lots: inventoryData.lots, quantity: inventoryData.quantity });
+        batch.update(inventoryRef, cleanUndefined({ lots: inventoryData.lots, quantity: inventoryData.quantity }));
 
         if (!recipeUpdates[item.recipeId]) {
             const recipeSnap = await getDoc(doc(db, 'recipes', item.recipeId));
@@ -528,7 +527,7 @@ export const processDispatch = async (pharmacyId: string, dispatchItems: Dispatc
     for (const [recipeId, counts] of Object.entries(recipeUpdates)) {
         const recipeRef = doc(db, 'recipes', recipeId);
         const newStatus = counts.dispatchedItems >= counts.itemsToDispatch ? SkolSuppliedItemsDispatchStatus.Dispatched : SkolSuppliedItemsDispatchStatus.PartiallyDispatched;
-        batch.update(recipeRef, { skolSuppliedItemsDispatchStatus: newStatus });
+        batch.update(recipeRef, cleanUndefined({ skolSuppliedItemsDispatchStatus: newStatus }));
     }
 
     const newDispatchNote: Omit<DispatchNote, 'id'> = {
@@ -625,7 +624,7 @@ export const logDirectSaleDispensation = async (
     const newLots = [...inventoryData.lots];
     newLots[lotIndex] = { ...lot, quantity: lot.quantity - quantity };
     const newTotalQuantity = inventoryData.quantity - quantity;
-    batch.update(inventoryRef, { lots: newLots, quantity: newTotalQuantity });
+    batch.update(inventoryRef, cleanUndefined({ lots: newLots, quantity: newTotalQuantity }));
 
     const logSnapshot = await getDocs(query(logCol, where("entryType", "==", ControlledLogEntryType.DirectSale)));
     const newFolioNumber = logSnapshot.size + 1;
@@ -867,7 +866,7 @@ export const createMonthlyDispensationBox = async (patientId: string, period: st
         updatedAt: new Date().toISOString(),
     };
 
-    const docRef = await addDoc(collection(db, 'monthlyDispensations'), newBox);
+    const docRef = await addDoc(collection(db, 'monthlyDispensations'), cleanUndefined(newBox));
     return docRef.id;
 };
 
@@ -903,11 +902,11 @@ export const batchSendRecipesToExternal = async (recipeIds: string[], userId: st
         const recipeSnap = await getDoc(recipeRef);
         if (recipeSnap.exists()) {
             const recipeData = recipeSnap.data() as Recipe;
-            batch.update(recipeRef, {
+            batch.update(recipeRef, cleanUndefined({
                 status: RecipeStatus.SentToExternal,
                 updatedAt: now,
                 auditTrail: [...(recipeData.auditTrail || []), newAuditEntry],
-            });
+            }));
         }
     }
 
@@ -966,7 +965,7 @@ export const addRole = async (role: Omit<Role, 'id'>): Promise<string> => {
     if (!querySnapshot.empty) {
         throw new Error(`El rol "${role.name}" ya existe.`);
     }
-    const docRef = await addDoc(collection(db, 'roles'), role);
+    const docRef = await addDoc(collection(db, 'roles'), cleanUndefined(role));
     return docRef.id;
 };
 
@@ -1122,11 +1121,11 @@ export const attachControlledPrescriptionToItem = async (boxId: string, recipeId
         pharmacistNotes: `Folio adjuntado: ${newFolio}`
     };
 
-    batch.update(boxRef, { items: updatedItems });
+    batch.update(boxRef, cleanUndefined({ items: updatedItems }));
 
     // 2. Update the original Recipe
     const recipeRef = doc(db, 'recipes', recipeId);
-    batch.update(recipeRef, { controlledRecipeFolio: newFolio });
+    batch.update(recipeRef, cleanUndefined({ controlledRecipeFolio: newFolio }));
 
     await batch.commit();
 };
@@ -1150,5 +1149,5 @@ export const unlockCommercialControlledItemInBox = async (boxId: string, itemId:
         pharmacistNotes: `Folio adjuntado: ${newFolio}`
     };
 
-    await updateDoc(boxRef, { items: updatedItems, updatedAt: new Date().toISOString() });
+    await updateDoc(boxRef, cleanUndefined({ items: updatedItems, updatedAt: new Date().toISOString() }));
 };
