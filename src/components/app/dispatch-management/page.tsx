@@ -67,7 +67,9 @@ import { Separator } from '@/components/ui/separator';
 type ItemForDispatch = {
   recipe: Recipe;
   patient?: Patient;
+  inventoryItem?: InventoryItem;
   recipeItem: RecipeItem;
+  quantityToDispatch?: number;
   error?: string;
 };
 
@@ -257,7 +259,7 @@ export default function DispatchManagementPage() {
       }
 
       for (const recipeItem of recipe.items) {
-        if (!recipeItem?.principalActiveIngredient) continue;
+        if (!recipeItem?.principalActiveIngredient || !recipeItem.requiresFractionation || !recipeItem.sourceInventoryItemId) continue;
 
         const isAlreadyInActiveDispatch = dispatchNotes.some(dn => 
             dn.status === DispatchStatus.Active &&
@@ -265,12 +267,38 @@ export default function DispatchManagementPage() {
         );
 
         if (isAlreadyInActiveDispatch) continue;
+        
+        const inventoryItem = inventory.find(i => i.id === recipeItem.sourceInventoryItemId);
 
-        items.push({ recipe, patient, recipeItem });
+        if (inventoryItem) {
+            if (inventoryItem.quantity <= 0) {
+                items.push({ recipe, patient, inventoryItem, recipeItem, error: `Stock insuficiente (0) para ${inventoryItem.name}.` });
+                continue;
+            }
+            if (inventoryItem.itemsPerBaseUnit && inventoryItem.doseValue) {
+                const recipeTotalPA = Number(recipeItem.concentrationValue) * Number(recipeItem.totalQuantityValue);
+                const inventoryTotalPAperUnit = inventoryItem.doseValue * inventoryItem.itemsPerBaseUnit;
+
+                if (isNaN(recipeTotalPA) || inventoryTotalPAperUnit <= 0) {
+                    items.push({ recipe, patient, inventoryItem, recipeItem, error: 'Valores inválidos en receta o insumo para calcular fraccionamiento.' });
+                } else {
+                    const quantityToDispatch = Math.ceil(recipeTotalPA / inventoryTotalPAperUnit);
+                    if (inventoryItem.quantity < quantityToDispatch) {
+                        items.push({ recipe, patient, inventoryItem, recipeItem, quantityToDispatch, error: `Stock insuficiente. Se requieren ${quantityToDispatch}, disponibles: ${inventoryItem.quantity}.` });
+                    } else {
+                        items.push({ recipe, patient, inventoryItem, recipeItem, quantityToDispatch });
+                    }
+                }
+            } else {
+                 items.push({ recipe, patient, inventoryItem, recipeItem, error: 'Insumo no configurado para fraccionamiento (P.A. o Unidades/Envase).' });
+            }
+        } else {
+            items.push({ recipe, patient, inventoryItem: undefined, recipeItem, error: 'Insumo base no encontrado en el inventario. Verifique la configuración de la receta.' });
+        }
       }
     }
     return items;
-  }, [loading, recipes, patients, dispatchNotes]);
+  }, [loading, recipes, patients, inventory, dispatchNotes]);
 
 
   const itemsToDispatchGroupedByPharmacy = useMemo<GroupedItems>(() => {
@@ -308,31 +336,31 @@ export default function DispatchManagementPage() {
     }));
   };
   
-  const handleValidateItem = (inventoryItem: InventoryItem, recipeId: string) => {
-    if (!inventoryItem) return;
-    const itemId = `${recipeId}-${inventoryItem.id}`;
+  const handleValidateItem = (item: ItemForDispatch) => {
+    if (!item.inventoryItem) return;
+    const itemId = `${item.recipe.id}-${item.inventoryItem.id}`;
     const state = validationState[itemId];
     if (!state?.barcodeInput || !state?.lotNumber) {
         toast({ title: "Información Faltante", description: "Seleccione un lote y escanee el código de barras del producto.", variant: "destructive" });
         return;
     }
 
-    if (state.barcodeInput === inventoryItem.barcode) {
+    if (state.barcodeInput === item.inventoryItem.barcode) {
         setValidationState(prev => ({
             ...prev,
             [itemId]: { ...prev[itemId], isValidated: 'valid' }
         }));
-        toast({ title: "Validación Correcta", description: `${inventoryItem.name} (Lote: ${state.lotNumber}) ha sido validado.`});
+        toast({ title: "Validación Correcta", description: `${item.inventoryItem.name} (Lote: ${state.lotNumber}) ha sido validado.`});
     } else {
          setValidationState(prev => ({
             ...prev,
             [itemId]: { ...prev[itemId], isValidated: 'invalid' }
         }));
-        toast({ title: "Error de Validación", description: `El código de barras escaneado no coincide con el producto ${inventoryItem.name}.`, variant: "destructive" });
+        toast({ title: "Error de Validación", description: `El código de barras escaneado no coincide con el producto ${item.inventoryItem.name}.`, variant: "destructive" });
     }
   };
 
-  const handleGenerateDispatchNote = async (pharmacyId: string, items: { inventoryItem: InventoryItem; quantity: number; recipeId: string; recipeItemName: string }[]) => {
+  const handleGenerateDispatchNote = async (pharmacyId: string, items: ItemForDispatch[]) => {
     if (!user) {
         toast({ title: "Error de autenticación", description: "Debe iniciar sesión para generar una nota de despacho.", variant: "destructive" });
         return;
@@ -340,7 +368,8 @@ export default function DispatchManagementPage() {
     setIsDispatching(true);
     try {
         const validatedItems = items.filter(item => {
-            const itemId = `${item.recipeId}-${item.inventoryItem.id}`;
+            if (!item.inventoryItem) return false;
+            const itemId = `${item.recipe.id}-${item.inventoryItem.id}`;
             return validationState[itemId]?.isValidated === 'valid';
         });
 
@@ -349,18 +378,18 @@ export default function DispatchManagementPage() {
         }
 
         const dispatchItems: DispatchItem[] = validatedItems.map(item => {
-            const itemId = `${item.recipeId}-${item.inventoryItem!.id}`;
+            const itemId = `${item.recipe.id}-${item.inventoryItem!.id}`;
             const state = validationState[itemId];
              if (!state || state.isValidated !== 'valid' || !state.lotNumber) {
                 // This should not happen if called correctly, but as a safeguard.
                 throw new Error(`Ítem ${item.inventoryItem!.name} no está validado.`);
             }
             return {
-                recipeId: item.recipeId,
+                recipeId: item.recipe.id,
                 inventoryItemId: item.inventoryItem!.id,
-                recipeItemName: item.recipeItemName,
+                recipeItemName: item.recipeItem.principalActiveIngredient,
                 lotNumber: state.lotNumber,
-                quantity: item.quantity,
+                quantity: item.quantityToDispatch!,
             }
         });
         
@@ -374,8 +403,10 @@ export default function DispatchManagementPage() {
         // Reset validation state for the dispatched items
         const newValidationState = { ...validationState };
         validatedItems.forEach(item => {
-            const itemId = `${item.recipeId}-${item.inventoryItem.id}`;
-            delete newValidationState[itemId];
+            if (item.inventoryItem) {
+                const itemId = `${item.recipe.id}-${item.inventoryItem.id}`;
+                delete newValidationState[itemId];
+            }
         });
         setValidationState(newValidationState);
 
@@ -541,7 +572,7 @@ export default function DispatchManagementPage() {
 
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground font-headline">Gestión de Despachos</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-primary font-headline">Gestión de Despachos</h1>
           <p className="text-sm text-muted-foreground">
             Control logístico del envío de insumos Skol a recetarios.
           </p>
@@ -555,7 +586,133 @@ export default function DispatchManagementPage() {
         </TabsList>
 
         <TabsContent value="prepare">
-          {/* Content for preparing dispatches will be implemented here */}
+            {Object.keys(itemsToDispatchGroupedByPharmacy).length > 0 ? (
+                 <Accordion type="multiple" defaultValue={Object.keys(itemsToDispatchGroupedByPharmacy)} className="w-full space-y-4">
+                    {Object.entries(itemsToDispatchGroupedByPharmacy).map(([pharmacyId, items]) => {
+                        const validItemsForDispatch = items.filter(item => !item.error && item.inventoryItem);
+                        const validatedItems = validItemsForDispatch.filter(item => {
+                            if (!item.inventoryItem) return false;
+                            const itemId = `${item.recipe.id}-${item.inventoryItem.id}`;
+                            return validationState[itemId]?.isValidated === 'valid';
+                        });
+                        const canGenerateDispatch = validatedItems.length > 0;
+                        const totalItemsCount = items.length;
+
+                        return (
+                            <AccordionItem value={pharmacyId} key={pharmacyId} className="border-b-0">
+                                <Card>
+                                <AccordionTrigger className="text-xl font-semibold text-foreground hover:no-underline p-6">
+                                    {getPharmacyName(pharmacyId)} ({totalItemsCount} ítems)
+                                </AccordionTrigger>
+                                <AccordionContent className="p-6 pt-0 space-y-4">
+                                {items.map((item) => {
+                                    if (item.error || !item.inventoryItem) {
+                                        return (
+                                            <Card key={`${item.recipe.id}-${item.recipeItem.principalActiveIngredient}`} className="p-4 bg-red-50 border-red-200">
+                                                <div className="flex items-center gap-4">
+                                                    <AlertTriangle className="h-8 w-8 text-red-500 flex-shrink-0" />
+                                                    <div>
+                                                        <p className="font-bold text-foreground">{item.recipeItem.principalActiveIngredient} (Receta: {item.recipe.id})</p>
+                                                        <p className="text-sm text-red-700 font-semibold">{item.error || 'Error desconocido.'}</p>
+                                                        <p className="text-xs text-muted-foreground mt-1">Por favor, verifique que el producto exista en el <Link href="/inventory" className="underline font-medium">inventario</Link>, tenga lotes con stock y esté correctamente configurado.</p>
+                                                    </div>
+                                                </div>
+                                            </Card>
+                                        )
+                                    }
+
+                                    const itemId = `${item.recipe.id}-${item.inventoryItem.id}`;
+                                    const validationStatus = validationState[itemId]?.isValidated || 'pending';
+                                    const sortedLots = item.inventoryItem.lots?.sort((a, b) => new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime());
+
+                                    return (
+                                    <Card key={itemId} className={cn('p-4', 
+                                        validationStatus === 'valid' ? 'bg-green-50 border-green-200' : 
+                                        validationStatus === 'invalid' ? 'bg-red-50 border-red-200' : ''
+                                    )}>
+                                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
+                                            <div className="md:col-span-2 space-y-1">
+                                                <p className="text-lg font-bold text-foreground flex items-center gap-2">
+                                                    {item.inventoryItem.name}
+                                                    {item.inventoryItem.requiresRefrigeration && (
+                                                        <TooltipProvider>
+                                                            <Tooltip>
+                                                                <TooltipTrigger>
+                                                                    <Snowflake className="h-5 w-5 text-blue-500" />
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    <p>¡Atención! Insumo requiere cadena de frío.</p>
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
+                                                    )}
+                                                </p>
+                                                <p className="text-sm text-muted-foreground">Receta: <span className="font-mono text-primary">{item.recipe.id}</span> ({item.recipeItem.principalActiveIngredient})</p>
+                                                <p className="text-sm text-muted-foreground">Paciente: {item.patient?.name || 'Desconocido'}</p>
+                                                <p className="text-base font-bold mt-1 text-foreground">Despachar: {item.quantityToDispatch} {item.inventoryItem.unit}</p>
+                                            </div>
+                                            <div className="md:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                                               <div className="space-y-1">
+                                                    <p className="text-xs font-medium text-muted-foreground">Lote (FEFO)</p>
+                                                    <Select onValueChange={(lot) => handleLotChange(itemId, lot)} disabled={validationStatus === 'valid'}>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Seleccionar lote..." />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {sortedLots?.filter(l => l.quantity > 0).map(lot => (
+                                                                <SelectItem key={lot.lotNumber} value={lot.lotNumber}>
+                                                                    {lot.lotNumber} (Disp: {lot.quantity}, Vto: {format(parseISO(lot.expiryDate), 'dd-MM-yy')})
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div className="space-y-1">
+                                                     <p className="text-xs font-medium text-muted-foreground">Escanear Código de Barras *</p>
+                                                    <Input 
+                                                        placeholder="Escanear o tipear código..." 
+                                                        onChange={(e) => handleBarcodeInputChange(itemId, e.target.value)} 
+                                                        disabled={validationStatus === 'valid'}
+                                                        value={validationState[itemId]?.barcodeInput || ''}
+                                                    />
+                                                </div>
+                                                <Button onClick={() => handleValidateItem(item)} disabled={!validationState[itemId]?.lotNumber || validationStatus === 'valid'}>
+                                                    {validationStatus === 'valid' ? <Check className="mr-2 h-4 w-4" /> :
+                                                     validationStatus === 'invalid' ? <XCircle className="mr-2 h-4 w-4" /> :
+                                                     <ShieldCheck className="mr-2 h-4 w-4" />}
+                                                    Validar
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </Card>
+                                )})}
+                                <div className="flex justify-end mt-4">
+                                     <Button
+                                        disabled={!canGenerateDispatch || isDispatching}
+                                        onClick={() => handleGenerateDispatchNote(pharmacyId, items)}
+                                    >
+                                        {isDispatching && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        <Package className="mr-2 h-4 w-4" />
+                                        Generar Nota de Despacho ({validatedItems.length} Ítems)
+                                    </Button>
+                                </div>
+                                </AccordionContent>
+                                </Card>
+                            </AccordionItem>
+                        )
+                    })}
+                </Accordion>
+            ) : (
+                <Card className="text-center py-16 shadow-none border-dashed">
+                    <div className="flex flex-col items-center justify-center">
+                        <PackageCheck className="h-16 w-16 text-muted-foreground mb-4" />
+                        <h2 className="text-xl font-semibold text-foreground">Todo al día</h2>
+                        <p className="text-muted-foreground mt-2 max-w-sm">
+                            No hay insumos pendientes de preparación para ser despachados.
+                        </p>
+                    </div>
+                </Card>
+            )}
         </TabsContent>
 
         <TabsContent value="active">
@@ -658,3 +815,5 @@ export default function DispatchManagementPage() {
     </>
   );
 }
+
+    
