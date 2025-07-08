@@ -343,7 +343,7 @@ export const updateRecipe = async (id: string, updates: Partial<Recipe>): Promis
     await updateDoc(recipeRef, cleanUndefined(dataToUpdate));
 };
 
-export const saveRecipe = async (data: any, imageFile: File | null, userId: string, recipeId?: string): Promise<string> => {
+export const saveRecipe = async (data: any, userId: string, recipeId?: string): Promise<string> => {
     if (!db || !auth) throw new Error("Firestore or Auth is not initialized.");
     
     if (!userId) {
@@ -378,23 +378,8 @@ export const saveRecipe = async (data: any, imageFile: File | null, userId: stri
         }
     }
     
-    let imageUrl: string | undefined = data.prescriptionImageUrl; // Keep existing image url if any
-    const effectiveRecipeId = recipeId || doc(collection(db, 'recipes')).id;
-
-    if (imageFile && storage) {
-        const storageRef = ref(storage, `prescriptions/${userId}/${effectiveRecipeId}`);
-        try {
-            const uploadResult = await uploadBytes(storageRef, imageFile);
-            imageUrl = await getDownloadURL(uploadResult.ref);
-        } catch (storageError: any) {
-            console.error("Firebase Storage upload failed in saveRecipe:", storageError);
-            let userMessage = `Error al subir imagen. Código: ${storageError.code || 'UNKNOWN'}.`;
-            if (storageError.code === 'storage/unauthorized') {
-                userMessage = "Error de autorización: Su usuario no tiene permiso para subir archivos. Por favor, vaya a la consola de Firebase -> Storage -> Rules y asegúrese de que los usuarios autenticados pueden escribir.";
-            }
-            throw new Error(userMessage);
-        }
-    }
+    // The image URL is now passed directly in `data`
+    const imageUrl: string | undefined = data.prescriptionImageUrl;
     
     const recipeDataForUpdate: Partial<Recipe> = {
         patientId: patientId, doctorId: doctorId, dispatchAddress: data.dispatchAddress, items: data.items,

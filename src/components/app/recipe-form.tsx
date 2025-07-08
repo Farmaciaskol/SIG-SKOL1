@@ -42,7 +42,9 @@ import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '@/lib/firebase';
+import { auth, storage } from '@/lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { v4 as uuidv4 } from 'uuid';
 
 
 // Zod schema for form validation
@@ -326,6 +328,7 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
   const [appSettings, setAppSettings] = React.useState<AppSettings | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [isAiExtracting, setIsAiExtracting] = React.useState(false);
+  const [isSaving, setIsSaving] = React.useState(false);
   const [previewImage, setPreviewImage] = React.useState<string | null>(null);
   const [imageFile, setImageFile] = React.useState<File | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -609,9 +612,33 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
       toast({ title: 'Error de Autenticación', description: 'No se pudo verificar el usuario. Por favor, inicie sesión de nuevo.', variant: 'destructive' });
       return;
     }
+    
+    setIsSaving(true);
+    let imageUrl = data.prescriptionImageUrl; // Use existing URL if present
+
+    if (imageFile) {
+        toast({ title: 'Subiendo imagen...', description: 'Por favor espere.' });
+        try {
+            const idForPath = (isEditMode && !copyFromId ? recipeId : uuidv4());
+            if (!storage) throw new Error("Firebase Storage no está inicializado.");
+            const storageRef = ref(storage, `prescriptions/${user.uid}/${idForPath}`);
+            const uploadResult = await uploadBytes(storageRef, imageFile);
+            imageUrl = await getDownloadURL(uploadResult.ref);
+            toast({ title: 'Imagen subida', description: 'La imagen se ha subido correctamente.' });
+        } catch (error) {
+            console.error("Upload failed:", error);
+            toast({ title: 'Error de Subida', description: 'No se pudo subir la imagen de la receta.', variant: 'destructive' });
+            setIsSaving(false);
+            return;
+        }
+    }
+
     try {
       const finalRecipeId = isEditMode && !copyFromId ? recipeId : undefined;
-      await saveRecipe(data, imageFile, user.uid, finalRecipeId);
+      const dataWithImageUrl = { ...data, prescriptionImageUrl: imageUrl };
+      
+      await saveRecipe(dataWithImageUrl, user.uid, finalRecipeId);
+      
       toast({ title: isEditMode && !copyFromId ? 'Receta Actualizada' : 'Receta Creada', description: 'Los datos se han guardado correctamente.' });
       
       if (patientId && !isEditMode) {
@@ -629,6 +656,8 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
             variant: 'destructive',
             duration: 9000,
         });
+    } finally {
+        setIsSaving(false);
     }
   };
 
@@ -864,9 +893,9 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
                       Siguiente
                     </Button>
                 ) : (
-                  <Button type="submit" disabled={form.formState.isSubmitting}>
-                    {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {isEditMode && !copyFromId ? 'Guardar Cambios' : 'Crear Receta'}
+                  <Button type="submit" disabled={isSaving}>
+                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isSaving ? 'Guardando...' : (isEditMode && !copyFromId ? 'Guardar Cambios' : 'Crear Receta')}
                   </Button>
                 )}
               </div>
