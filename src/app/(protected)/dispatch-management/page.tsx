@@ -55,7 +55,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { cn, normalizeString } from '@/lib/utils';
 import Link from 'next/link';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import Image from 'next/image';
@@ -268,37 +268,36 @@ export default function DispatchManagementPage() {
 
         if (isAlreadyInActiveDispatch) continue;
 
-        if (!recipeItem.sourceInventoryItemId) {
-          items.push({ recipe, patient, inventoryItem: undefined, recipeItem, error: 'Insumo no vinculado. Edite y guarde la receta para vincular.' });
-          continue;
-        }
-        
-        const inventoryItem = inventory.find(i => i.id === recipeItem.sourceInventoryItemId);
+        // Perform a live match instead of relying on pre-saved link
+        const inventoryItem = inventory.find(invItem => 
+            invItem.inventoryType === 'Fraccionamiento' &&
+            normalizeString(invItem.activePrinciple || '') === normalizeString(recipeItem.principalActiveIngredient)
+        );
 
         if (inventoryItem) {
-            if (inventoryItem.quantity <= 0) {
-                items.push({ recipe, patient, inventoryItem, recipeItem, error: `Stock insuficiente (0) para ${inventoryItem.name}.` });
-                continue;
-            }
+            let quantityToDispatch: number | undefined = undefined;
             if (inventoryItem.itemsPerBaseUnit && inventoryItem.doseValue) {
                 const recipeTotalPA = Number(recipeItem.concentrationValue) * Number(recipeItem.totalQuantityValue);
                 const inventoryTotalPAperUnit = inventoryItem.doseValue * inventoryItem.itemsPerBaseUnit;
 
                 if (isNaN(recipeTotalPA) || inventoryTotalPAperUnit <= 0) {
                     items.push({ recipe, patient, inventoryItem, recipeItem, error: 'Valores inválidos en receta o insumo para calcular fraccionamiento.' });
-                } else {
-                    const quantityToDispatch = Math.ceil(recipeTotalPA / inventoryTotalPAperUnit);
-                    if (inventoryItem.quantity < quantityToDispatch) {
-                        items.push({ recipe, patient, inventoryItem, recipeItem, quantityToDispatch, error: `Stock insuficiente. Se requieren ${quantityToDispatch}, disponibles: ${inventoryItem.quantity}.` });
-                    } else {
-                        items.push({ recipe, patient, inventoryItem, recipeItem, quantityToDispatch });
-                    }
+                    continue;
                 }
+                quantityToDispatch = Math.ceil(recipeTotalPA / inventoryTotalPAperUnit);
             } else {
                  items.push({ recipe, patient, inventoryItem, recipeItem, error: 'Insumo no configurado para fraccionamiento (P.A. o Unidades/Envase).' });
+                 continue;
+            }
+            
+            if (inventoryItem.quantity < quantityToDispatch) {
+                const errorMessage = `Stock insuficiente. Se requieren ${quantityToDispatch} ${inventoryItem.unit}(s), disponible(s): ${inventoryItem.quantity}.`;
+                items.push({ recipe, patient, inventoryItem, recipeItem, quantityToDispatch, error: errorMessage });
+            } else {
+                items.push({ recipe, patient, inventoryItem, recipeItem, quantityToDispatch });
             }
         } else {
-            items.push({ recipe, patient, inventoryItem: undefined, recipeItem, error: 'Insumo base no encontrado en el inventario. Verifique la configuración de la receta.' });
+            items.push({ recipe, patient, inventoryItem: undefined, recipeItem, error: `Insumo "${recipeItem.principalActiveIngredient}" no encontrado en inventario de Fraccionamiento.` });
         }
       }
     }
