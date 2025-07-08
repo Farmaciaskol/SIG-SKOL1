@@ -284,7 +284,7 @@ export interface InventoryItem {
   manufacturer?: string;
   barcode?: string;
   
-  pharmaceuticalForm: string;
+  pharmaceuticalForm?: string;
   doseValue?: number;
   doseUnit?: string;
   administrationRoute?: string;

@@ -430,13 +430,19 @@ export const saveRecipe = async (data: any, userId: string, recipeId?: string): 
     }
 };
 
-export const addInventoryItem = async (item: Omit<InventoryItem, 'id' | 'quantity' | 'lots'>): Promise<string> => {
+export const addInventoryItem = async (item: Partial<Omit<InventoryItem, 'id' | 'quantity' | 'lots'>>): Promise<string> => {
     if (!db) throw new Error("Firestore is not initialized.");
-    const docRef = await addDoc(collection(db, 'inventory'), cleanUndefined({
-        ...item,
-        quantity: 0,
-        lots: []
-    }));
+    
+    const dataToSave = { ...item, quantity: 0, lots: [] };
+    if (dataToSave.inventoryType === 'Venta Directa') {
+        dataToSave.activePrinciple = undefined;
+        dataToSave.pharmaceuticalForm = undefined;
+        dataToSave.doseValue = undefined;
+        dataToSave.doseUnit = undefined;
+        dataToSave.itemsPerBaseUnit = undefined;
+    }
+
+    const docRef = await addDoc(collection(db, 'inventory'), cleanUndefined(dataToSave));
     return docRef.id;
 };
 
@@ -447,7 +453,15 @@ export const deleteInventoryItem = async (id: string): Promise<void> => {
 
 export const updateInventoryItem = async (id: string, updates: Partial<Omit<InventoryItem, 'id'>>): Promise<void> => {
     if (!db) throw new Error("Firestore is not initialized.");
-    await updateDoc(doc(db, 'inventory', id), cleanUndefined(updates));
+    const dataToSave = { ...updates };
+    if (dataToSave.inventoryType === 'Venta Directa') {
+        dataToSave.activePrinciple = undefined;
+        dataToSave.pharmaceuticalForm = undefined;
+        dataToSave.doseValue = undefined;
+        dataToSave.doseUnit = undefined;
+        dataToSave.itemsPerBaseUnit = undefined;
+    }
+    await updateDoc(doc(db, 'inventory', id), cleanUndefined(dataToSave));
 };
 
 export const addLotToInventoryItem = async (itemId: string, newLot: LotDetail): Promise<void> => {
