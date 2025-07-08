@@ -260,8 +260,9 @@ export function InventoryClient({
         return new Map(liorenWarehouses.map(w => [w.id, w.nombre]));
     }, [liorenWarehouses]);
 
-    const getWarehouseName = (id: number) => {
-        return warehouseMap.get(id) || `ID: ${id}`;
+    const getWarehouseName = (id?: number | null) => {
+        if (id === null || id === undefined) return null;
+        return warehouseMap.get(id);
     };
 
     const handleOpenForm = (item: InventoryItem | Partial<InventoryItem> | null) => {
@@ -557,11 +558,11 @@ export function InventoryClient({
                                                             <div className="flex flex-wrap gap-1">
                                                                 {Array.isArray(product.stocks) && product.stocks.length > 0 ? (
                                                                     product.stocks.map((stock, index) => {
-                                                                        const stockValue = stock.stock;
-                                                                        const warehouseName = getWarehouseName(stock.sucursal_id);
+                                                                        const warehouseName = stock.nombre || getWarehouseName(stock.sucursal_id) || `ID: ${stock.sucursal_id}`;
+                                                                        const stockValue = stock.stock ?? 'N/D';
                                                                         return (
-                                                                            <Badge key={`${product.id}-${stock.sucursal_id}-${index}`} variant="secondary" className="font-normal">
-                                                                                {warehouseName}: {stockValue ?? 'N/D'}
+                                                                            <Badge key={`${product.id}-${warehouseName}-${index}`} variant="secondary" className="font-normal">
+                                                                                {warehouseName}: {stockValue}
                                                                             </Badge>
                                                                         );
                                                                     })
