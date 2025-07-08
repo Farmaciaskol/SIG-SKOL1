@@ -161,14 +161,6 @@ const PlaceholderUserIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const CustomMenuIcon = ({className}: {className?: string}) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={cn("h-5 w-5", className)}>
-        <line x1="3" x2="21" y1="12"></line>
-        <line x1="3" x2="21" y1="6"></line>
-        <line x1="3" x2="21" y1="18"></line>
-    </svg>
-);
-
 
 function MainNavContent({
   className,
@@ -235,8 +227,8 @@ function MainNavContent({
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-accent hover:text-foreground',
-                    (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) && 'bg-secondary text-secondary-foreground font-semibold',
+                    'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-primary/10 hover:text-primary',
+                    (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) && 'bg-primary/10 text-primary font-semibold',
                     !(isSidebarOpen || isMobileMenuOpen) && 'justify-center'
                   )}
                   title={(isSidebarOpen || isMobileMenuOpen) ? '' : item.label}
@@ -254,43 +246,30 @@ function MainNavContent({
 
   return (
     <div className={cn(
-        "grid min-h-svh w-full",
+        "grid min-h-svh w-full bg-muted/40",
         isSidebarOpen ? "md:grid-cols-[280px_1fr]" : "md:grid-cols-[72px_1fr]"
     )}>
-      <nav className="hidden bg-background md:flex md:flex-col">
-        <div className="flex h-16 shrink-0 items-center border-b px-4">
-            <Link href="/dashboard" className="flex items-center gap-2 font-semibold text-foreground">
-                {isSidebarOpen ? (
-                     <Image
-                        src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
-                        alt="Skol Pharmacy Logo"
-                        width={120}
-                        height={33}
-                        priority
-                    />
-                ) : (
-                    <Image
-                        src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/ISOTIPO%20SKOL%20(1).png?alt=media&token=1d32ffa2-e3e9-4e78-92a2-32b00a70183e"
-                        alt="Skol Pharmacy Isotype"
-                        width={32}
-                        height={32}
-                        priority
-                    />
-                )}
+      <nav className="hidden bg-background md:flex md:flex-col border-r">
+        <div className="flex h-16 shrink-0 items-center px-4">
+            <Button variant="ghost" className="h-9 w-9 p-0" onClick={toggleSidebar}>
+                <Menu className="h-5 w-5 text-muted-foreground" />
+            </Button>
+            <Link href="/dashboard" className="flex items-center gap-2 font-semibold text-foreground ml-4">
+                <Image
+                    src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
+                    alt="Skol Pharmacy Logo"
+                    width={120}
+                    height={33}
+                    priority
+                />
             </Link>
         </div>
         <div className="flex-1 overflow-auto py-4">
             {navContent}
         </div>
-        <div className="mt-auto p-4 border-t">
-            <Button variant="ghost" className="w-full justify-start gap-3" onClick={toggleSidebar}>
-                <CustomMenuIcon />
-                <span className={cn(isSidebarOpen ? 'opacity-100' : 'opacity-0')}>Colapsar Menú</span>
-            </Button>
-        </div>
       </nav>
       <div className="flex flex-1 flex-col">
-          <header className="flex h-16 shrink-0 items-center border-b bg-background px-4 lg:px-6">
+          <header className="flex h-16 shrink-0 items-center bg-background px-4 lg:px-6">
             <div className="flex h-16 items-center justify-between gap-4 w-full">
                 <div className="flex items-center gap-4">
                    <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -322,9 +301,10 @@ function MainNavContent({
                           </div>
                       </SheetContent>
                     </Sheet>
+                    <div className="hidden md:block w-full max-w-sm"><CommandPalette /></div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <div className="w-full max-w-sm"><CommandPalette /></div>
+                    <div className="block md:hidden"><CommandPalette /></div>
                     <Button asChild variant="ghost" size="icon" className="relative h-9 w-9 rounded-full text-muted-foreground hover:bg-accent">
                     <Link href="/portal-inbox">
                         <Inbox className="h-5 w-5" />
@@ -430,7 +410,7 @@ function MainNavContent({
                 </div>
               </div>
           </header>
-        <main className="flex-1 p-6 md:p-8 overflow-auto bg-card rounded-tl-xl">
+        <main className="flex-1 p-6 md:p-8 overflow-auto bg-background rounded-tl-2xl">
           {children}
         </main>
       </div>
