@@ -31,7 +31,10 @@ export async function fetchLiorenInventory(): Promise<LiorenProduct[]> {
 
     const data = await response.json();
     
-    // The API might return products in a '*' key or as a direct array.
+    // Check for different possible response structures
+    if (data && Array.isArray(data.productos)) {
+      return data.productos as LiorenProduct[];
+    }
     if (data && Array.isArray(data['*'])) {
       return data['*'] as LiorenProduct[];
     }
