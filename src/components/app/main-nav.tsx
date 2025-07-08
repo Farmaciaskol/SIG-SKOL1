@@ -112,7 +112,7 @@ function AlertsBell({ itemsToDispatchCount, lowStockCount }: Omit<MainNavProps, 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-full">
+        <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-full text-slate-50 hover:bg-slate-700 hover:text-slate-50">
           <Bell className="h-5 w-5" />
           {totalAlerts > 0 && (
             <Badge variant="destructive" className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full p-0">
@@ -268,146 +268,148 @@ function MainNavContent({
         </div>
       </nav>
       <div className="flex flex-1 flex-col">
-        <main className="flex-1 p-6 md:p-8 overflow-auto bg-background">
-          <header className="flex h-16 items-center justify-between gap-4 mb-6">
-            <div className="flex items-center gap-4">
-               <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-                  <SheetTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="shrink-0 md:hidden"
-                    >
-                      <Menu className="h-5 w-5" />
-                      <span className="sr-only">Toggle navigation menu</span>
-                    </Button>
-                  </SheetTrigger>
-                   <SheetContent side="left" className="w-[280px] p-0 flex flex-col bg-slate-800 text-slate-50 border-r-0">
-                      <SheetHeader className="p-4 border-b border-slate-700 text-left">
-                          <SheetTitle className="text-white">Menú</SheetTitle>
-                           <SheetDescription className="sr-only">Navegación principal de la aplicación.</SheetDescription>
-                      </SheetHeader>
-                      <div className="flex-1 overflow-auto py-2">
-                          {navContent}
-                      </div>
-                  </SheetContent>
-                </Sheet>
-                 <Link href="/dashboard">
-                    <Image
-                        src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=1a612d04-0f27-4317-bfd6-06b48f019a24"
-                        alt="Skol Pharmacy Logo"
-                        width={120}
-                        height={33}
-                        priority
-                    />
-                </Link>
-            </div>
-            <div className="flex items-center gap-2">
-                <div className="w-full max-w-sm hidden md:block"><CommandPalette /></div>
-                <Button asChild variant="ghost" size="icon" className="relative h-9 w-9 rounded-full">
-                <Link href="/portal-inbox">
-                    <Inbox className="h-5 w-5" />
-                    {portalInboxCount > 0 && (
-                    <Badge variant="destructive" className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full p-0">
-                        {portalInboxCount}
-                    </Badge>
-                    )}
-                    <span className="sr-only">Bandeja de Entrada del Portal</span>
-                </Link>
-                </Button>
-                <Button asChild variant="ghost" size="icon" className="relative h-9 w-9 rounded-full">
-                <Link href="/messaging">
-                    <MessageSquare className="h-5 w-5" />
-                    {unreadMessagesCount > 0 && (
-                    <Badge variant="destructive" className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full p-0">
-                        {unreadMessagesCount}
-                    </Badge>
-                    )}
-                    <span className="sr-only">Mensajería</span>
-                </Link>
-                </Button>
-                <AlertsBell 
-                itemsToDispatchCount={itemsToDispatchCount} 
-                lowStockCount={lowStockCount} 
-                />
-                <Dialog>
-                    <DialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
-                            <Settings className="h-5 w-5" />
-                            <span className="sr-only">Configuración</span>
+          <header className="flex h-16 shrink-0 items-center border-b border-slate-700 bg-slate-800 px-4 lg:px-6">
+            <div className="flex h-16 items-center justify-between gap-4 w-full">
+                <div className="flex items-center gap-4">
+                   <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+                      <SheetTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="shrink-0 md:hidden text-slate-50 hover:bg-slate-700 hover:text-slate-50"
+                        >
+                          <Menu className="h-5 w-5" />
+                          <span className="sr-only">Toggle navigation menu</span>
                         </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-md">
-                        <DialogHeader>
-                            <DialogTitle>Configuración</DialogTitle>
-                            <DialogDescription>
-                                Seleccione una sección para administrar.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="py-4 space-y-4">
-                            <DialogClose asChild>
-                                <Link href="/settings" className="block">
-                                    <Card className="hover:bg-muted/50 transition-colors">
-                                        <CardHeader className="flex flex-row items-center gap-4 p-4">
-                                            <Settings className="h-6 w-6 text-primary"/>
-                                            <div>
-                                                <h3 className="font-semibold">General</h3>
-                                                <p className="text-sm text-muted-foreground">Listas, parámetros y ajustes de la aplicación.</p>
-                                            </div>
-                                        </CardHeader>
-                                    </Card>
-                                </Link>
-                            </DialogClose>
-                            <DialogClose asChild>
-                                <Link href="/settings" className="block">
-                                    <Card className="hover:bg-muted/50 transition-colors">
-                                        <CardHeader className="flex flex-row items-center gap-4 p-4">
-                                            <Users className="h-6 w-6 text-primary"/>
-                                            <div>
-                                                <h3 className="font-semibold">Usuarios y Roles</h3>
-                                                <p className="text-sm text-muted-foreground">Administre accesos y permisos del sistema.</p>
-                                            </div>
-                                        </CardHeader>
-                                    </Card>
-                                </Link>
-                            </DialogClose>
-                        </div>
-                    </DialogContent>
-                </Dialog>
-                {user && (
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                        <Avatar className="h-9 w-9">
-                        {DisplayAvatar}
-                        </Avatar>
+                      </SheetTrigger>
+                       <SheetContent side="left" className="w-[280px] p-0 flex flex-col bg-slate-800 text-slate-50 border-r-0">
+                          <SheetHeader className="p-4 border-b border-slate-700 text-left">
+                              <SheetTitle className="text-white">Menú</SheetTitle>
+                               <SheetDescription className="sr-only">Navegación principal de la aplicación.</SheetDescription>
+                          </SheetHeader>
+                          <div className="flex-1 overflow-auto py-2">
+                              {navContent}
+                          </div>
+                      </SheetContent>
+                    </Sheet>
+                     <Link href="/dashboard" className="hidden md:block">
+                        <Image
+                            src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20BLANCO.png?alt=media&token=86794695-4654-4113-9110-8582f3575b7f"
+                            alt="Skol Pharmacy Logo"
+                            width={120}
+                            height={33}
+                            priority
+                        />
+                    </Link>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="w-full max-w-sm"><CommandPalette /></div>
+                    <Button asChild variant="ghost" size="icon" className="relative h-9 w-9 rounded-full text-slate-50 hover:bg-slate-700 hover:text-slate-50">
+                    <Link href="/portal-inbox">
+                        <Inbox className="h-5 w-5" />
+                        {portalInboxCount > 0 && (
+                        <Badge variant="destructive" className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full p-0">
+                            {portalInboxCount}
+                        </Badge>
+                        )}
+                        <span className="sr-only">Bandeja de Entrada del Portal</span>
+                    </Link>
                     </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56" align="end" forceMount>
-                    <DropdownMenuLabel className="font-normal">
-                        <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium leading-none">{appUser?.name || user.displayName || "Usuario"}</p>
-                        <p className="text-xs leading-none text-muted-foreground">
-                            {user.email}
-                        </p>
-                        </div>
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                        <Link href="/profile" className="cursor-pointer">
-                        <User className="mr-2 h-4 w-4" />
-                        <span>Mi Perfil</span>
-                        </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
-                        <LogOut className="mr-2 h-4 w-4" />
-                        <span>Cerrar Sesión</span>
-                    </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-                )}
-            </div>
+                    <Button asChild variant="ghost" size="icon" className="relative h-9 w-9 rounded-full text-slate-50 hover:bg-slate-700 hover:text-slate-50">
+                    <Link href="/messaging">
+                        <MessageSquare className="h-5 w-5" />
+                        {unreadMessagesCount > 0 && (
+                        <Badge variant="destructive" className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full p-0">
+                            {unreadMessagesCount}
+                        </Badge>
+                        )}
+                        <span className="sr-only">Mensajería</span>
+                    </Link>
+                    </Button>
+                    <AlertsBell 
+                    itemsToDispatchCount={itemsToDispatchCount} 
+                    lowStockCount={lowStockCount} 
+                    />
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-slate-50 hover:bg-slate-700 hover:text-slate-50">
+                                <Settings className="h-5 w-5" />
+                                <span className="sr-only">Configuración</span>
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-md">
+                            <DialogHeader>
+                                <DialogTitle>Configuración</DialogTitle>
+                                <DialogDescription>
+                                    Seleccione una sección para administrar.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="py-4 space-y-4">
+                                <DialogClose asChild>
+                                    <Link href="/settings" className="block">
+                                        <Card className="hover:bg-muted/50 transition-colors">
+                                            <CardHeader className="flex flex-row items-center gap-4 p-4">
+                                                <Settings className="h-6 w-6 text-primary"/>
+                                                <div>
+                                                    <h3 className="font-semibold">General</h3>
+                                                    <p className="text-sm text-muted-foreground">Listas, parámetros y ajustes de la aplicación.</p>
+                                                </div>
+                                            </CardHeader>
+                                        </Card>
+                                    </Link>
+                                </DialogClose>
+                                <DialogClose asChild>
+                                    <Link href="/settings" className="block">
+                                        <Card className="hover:bg-muted/50 transition-colors">
+                                            <CardHeader className="flex flex-row items-center gap-4 p-4">
+                                                <Users className="h-6 w-6 text-primary"/>
+                                                <div>
+                                                    <h3 className="font-semibold">Usuarios y Roles</h3>
+                                                    <p className="text-sm text-muted-foreground">Administre accesos y permisos del sistema.</p>
+                                                </div>
+                                            </CardHeader>
+                                        </Card>
+                                    </Link>
+                                </DialogClose>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+                    {user && (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="relative h-9 w-9 rounded-full text-slate-50 hover:bg-slate-700 hover:text-slate-50">
+                            <Avatar className="h-9 w-9">
+                            {DisplayAvatar}
+                            </Avatar>
+                        </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-56" align="end" forceMount>
+                        <DropdownMenuLabel className="font-normal">
+                            <div className="flex flex-col space-y-1">
+                            <p className="text-sm font-medium leading-none">{appUser?.name || user.displayName || "Usuario"}</p>
+                            <p className="text-xs leading-none text-muted-foreground">
+                                {user.email}
+                            </p>
+                            </div>
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                            <Link href="/profile" className="cursor-pointer">
+                            <User className="mr-2 h-4 w-4" />
+                            <span>Mi Perfil</span>
+                            </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                            <LogOut className="mr-2 h-4 w-4" />
+                            <span>Cerrar Sesión</span>
+                        </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    )}
+                </div>
+              </div>
           </header>
+        <main className="flex-1 p-6 md:p-8 overflow-auto bg-background">
           {children}
         </main>
       </div>
