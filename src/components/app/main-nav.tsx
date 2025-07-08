@@ -250,22 +250,22 @@ function MainNavContent({
           "hidden md:flex flex-col transition-all duration-300 ease-in-out bg-card",
           isSidebarOpen ? "w-[250px]" : "w-[72px]"
       )}>
-        <div className={cn(
-            "flex h-16 items-center",
-            isSidebarOpen ? "px-4" : "justify-center"
-        )}>
-           <Button variant="ghost" size="icon" className="h-9 w-9" onClick={toggleSidebar}>
-              <Menu className="h-5 w-5" />
-              <span className="sr-only">Toggle Sidebar</span>
-          </Button>
-        </div>
         <div className="flex-1 overflow-auto py-2">
             {navContent}
         </div>
       </nav>
       <div className="flex flex-1 flex-col">
-        <header className="flex h-16 items-center justify-between gap-4 px-6">
-          <div className="flex items-center gap-2">
+        <header className="flex h-16 items-center justify-between gap-4 px-6 border-b">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 hidden md:flex"
+              onClick={toggleSidebar}
+            >
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Toggle Sidebar</span>
+            </Button>
             <div className="md:hidden">
               <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
                 <SheetTrigger asChild>
@@ -300,11 +300,23 @@ function MainNavContent({
                 </SheetContent>
               </Sheet>
             </div>
-          </div>
-          <div className="flex-1 flex justify-center">
-            <div className="w-full max-w-md">
+            
+             <Link href="/dashboard" className="hidden md:block">
+                <Image
+                    src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=1a612d04-0f27-4317-bfd6-06b48f019a24"
+                    alt="Skol Pharmacy Logo"
+                    width={120}
+                    height={33}
+                    priority
+                />
+            </Link>
+
+            <div className="w-full max-w-md hidden md:block">
                 <CommandPalette />
             </div>
+          </div>
+          <div className="flex-1 md:hidden">
+            <CommandPalette />
           </div>
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost" size="icon" className="relative h-9 w-9 rounded-full">
