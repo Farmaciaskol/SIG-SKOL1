@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
@@ -317,13 +316,10 @@ const LiorenInventoryTab = ({ products, onCreateLocal, liorenError }: {
   
   const filteredProducts = useMemo(() => {
     const lowerSearchTerm = searchTerm.toLowerCase();
-    const exactMatch = productsWithPA.find(p => p.nombre.toLowerCase() === lowerSearchTerm);
-
-    if (exactMatch) {
-      return [exactMatch];
-    }
     
-    if (!searchTerm) return productsWithPA;
+    if (!searchTerm) {
+      return productsWithPA;
+    }
 
     return productsWithPA.filter(p => 
       p.nombre.toLowerCase().includes(lowerSearchTerm) ||
@@ -331,6 +327,7 @@ const LiorenInventoryTab = ({ products, onCreateLocal, liorenError }: {
       (p.codigo && p.codigo.toLowerCase().includes(lowerSearchTerm))
     );
   }, [productsWithPA, searchTerm]);
+
 
   return (
     <div className="space-y-6">
