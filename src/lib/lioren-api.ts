@@ -27,7 +27,7 @@ export async function fetchLiorenInventory(): Promise<LiorenProduct[]> {
     });
 
     if (!response.ok) {
-      console.warn(`[PRUEBA DE CONEXIÓN] Lioren API error: ${response.status} ${response.statusText}`);
+      console.warn(`Lioren API error fetching products: ${response.status} ${response.statusText}`);
       return [];
     }
 
@@ -41,11 +41,11 @@ export async function fetchLiorenInventory(): Promise<LiorenProduct[]> {
         return data as LiorenProduct[];
     }
     
-    console.warn("Lioren API response format not recognized.", data);
+    console.warn("Lioren API response format for products not recognized.", data);
     return [];
 
   } catch (error) {
-    console.warn("[PRUEBA DE CONEXIÓN] Fallo al conectar con la API de Lioren. Puede ser un problema de red o de la API misma.", error);
+    console.error("Failed to connect to Lioren API. This could be a network issue or the API itself might be down.", error);
     return [];
   }
 }
@@ -65,7 +65,7 @@ export async function fetchWarehousesFromLioren(): Promise<Bodega[]> {
             cache: 'no-store'
         });
         if (!response.ok) {
-            console.warn(`Lioren API error (warehouses): ${response.status} ${response.statusText}`);
+            console.warn(`Lioren API error fetching warehouses: ${response.status} ${response.statusText}`);
             return [];
         }
         const data = await response.json();
@@ -75,7 +75,7 @@ export async function fetchWarehousesFromLioren(): Promise<Bodega[]> {
         console.warn("Lioren API response for warehouses did not contain a 'bodegas' array. Response received:", data);
         return [];
     } catch (error) {
-        console.warn("Failed to fetch warehouses from Lioren.", error);
+        console.error("Failed to fetch warehouses from Lioren.", error);
         return [];
     }
 }
