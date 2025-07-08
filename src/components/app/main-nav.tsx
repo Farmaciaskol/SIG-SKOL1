@@ -25,6 +25,7 @@ import {
   Boxes,
   HeartPulse,
   Banknote,
+  Home,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -86,6 +87,7 @@ const menuGroups = [
         { href: '/inventory', label: 'Inventario', icon: Boxes },
         { href: '/monthly-dispensing', label: 'Dispensación', icon: CalendarDays },
         { href: '/dispatch-management', label: 'Despachos', icon: Truck },
+        { href: '/delivery-management', label: 'Gestión de Entregas', icon: Home },
         { href: '/pharmacovigilance', label: 'Farmacovigilancia', icon: HeartPulse },
         { href: '/controlled-drugs', label: 'Controlados', icon: Lock },
       ],

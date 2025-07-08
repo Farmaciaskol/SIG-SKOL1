@@ -91,6 +91,7 @@ export enum OrderStatus {
   Pending = 'Pendiente',
   Processing = 'Procesando',
   Shipped = 'Despachado',
+  InTransit = 'En Ruta',
   Delivered = 'Entregado',
   Cancelled = 'Cancelado',
 }

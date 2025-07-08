@@ -17,7 +17,8 @@ import { Separator } from '@/components/ui/separator';
 const statusConfig: Record<OrderStatus, { text: string; badge: string; }> = {
   ['Pendiente']: { text: 'Pendiente', badge: 'bg-yellow-100 text-yellow-800' },
   ['Procesando']: { text: 'Procesando', badge: 'bg-blue-100 text-blue-800' },
-  ['Despachado']: { text: 'Despachado', badge: 'bg-cyan-100 text-cyan-800' },
+  ['Despachado']: { text: 'Listo para Envío', badge: 'bg-indigo-100 text-indigo-800' },
+  ['En Ruta']: { text: 'En Ruta', badge: 'bg-cyan-100 text-cyan-800' },
   ['Entregado']: { text: 'Entregado', badge: 'bg-green-100 text-green-800' },
   ['Cancelado']: { text: 'Cancelado', badge: 'bg-slate-200 text-slate-800' },
 };

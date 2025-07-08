@@ -173,6 +173,7 @@ export const getDoctor = async (id: string): Promise<Doctor | null> => getDocume
 export const getExternalPharmacy = async (id: string): Promise<ExternalPharmacy | null> => getDocument<ExternalPharmacy>('externalPharmacies', id);
 export const getPharmacovigilanceReport = async (id: string): Promise<PharmacovigilanceReport | null> => getDocument<PharmacovigilanceReport>('pharmacovigilanceReports', id);
 export const getMonthlyDispensationBox = async (id: string): Promise<MonthlyDispensationBox | null> => getDocument<MonthlyDispensationBox>('monthlyDispensations', id);
+export const getAllOrders = async (): Promise<Order[]> => fetchCollection<Order>('orders');
 
 // Optimized Count Functions
 export const getRecipesCountByStatus = async (status: RecipeStatus): Promise<number> => {
@@ -1060,6 +1061,11 @@ export async function placeOrder(
   
   return orderId;
 }
+
+export const updateOrder = async (id: string, updates: Partial<Order>): Promise<void> => {
+  if (!db) throw new Error("Firestore is not initialized.");
+  await updateDoc(doc(db, 'orders', id), updates as any);
+};
 
 export const attachControlledPrescriptionToItem = async (boxId: string, recipeId: string, newFolio: string): Promise<void> => {
     if (!db) throw new Error("Firestore is not initialized.");
