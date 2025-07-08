@@ -257,8 +257,8 @@ function MainNavContent({
         "grid min-h-svh w-full",
         isSidebarOpen ? "md:grid-cols-[280px_1fr]" : "md:grid-cols-[72px_1fr]"
     )}>
-      <nav className="hidden border-r border-slate-700 bg-slate-800 text-slate-50 md:flex md:flex-col">
-        <div className="flex h-16 shrink-0 items-center border-b border-slate-700 px-4">
+      <nav className="hidden bg-slate-800 text-slate-50 md:flex md:flex-col">
+        <div className="flex h-16 shrink-0 items-center px-4">
              <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-300 hover:bg-slate-700 hover:text-slate-50" onClick={toggleSidebar}>
                 <CustomMenuIcon />
             </Button>
@@ -268,7 +268,7 @@ function MainNavContent({
         </div>
       </nav>
       <div className="flex flex-1 flex-col">
-          <header className="flex h-16 shrink-0 items-center border-b border-slate-700 bg-slate-800 px-4 lg:px-6">
+          <header className="flex h-16 shrink-0 items-center border-b border-slate-200 bg-background px-4 lg:px-6">
             <div className="flex h-16 items-center justify-between gap-4 w-full">
                 <div className="flex items-center gap-4">
                    <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -283,8 +283,8 @@ function MainNavContent({
                         </Button>
                       </SheetTrigger>
                        <SheetContent side="left" className="w-[280px] p-0 flex flex-col bg-slate-800 text-slate-50 border-r-0">
-                          <SheetHeader className="p-4 border-b border-slate-700 text-left">
-                              <SheetTitle className="text-white">Menú</SheetTitle>
+                          <SheetHeader className="p-4 text-left">
+                              <SheetTitle className="text-white sr-only">Menú</SheetTitle>
                                <SheetDescription className="sr-only">Navegación principal de la aplicación.</SheetDescription>
                           </SheetHeader>
                           <div className="flex-1 overflow-auto py-2">
