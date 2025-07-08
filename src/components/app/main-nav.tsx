@@ -263,20 +263,11 @@ function MainNavContent({
               </div>
             ))}
         </div>
-         <div className="p-2 mt-auto">
-            <Button
-                variant="ghost"
-                className={cn("justify-start w-full", !isSidebarOpen && "justify-center")}
-                onClick={toggleSidebar}
-            >
-                <ChevronLeft className={cn("h-5 w-5 transition-transform", !isSidebarOpen && "rotate-180")} />
-                <span className={cn("ml-2", !isSidebarOpen && "hidden")}>Cerrar Menú</span>
-            </Button>
-        </div>
       </nav>
       <div className="flex flex-1 flex-col">
         <header className="flex h-16 items-center justify-between gap-4 bg-card px-6">
-          <div className="md:hidden">
+          <div className="flex items-center gap-2">
+            <div className="md:hidden">
               <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
                 <SheetTrigger asChild>
                     <Button
@@ -330,10 +321,17 @@ function MainNavContent({
                         ))}
                     </div>
                 </SheetContent>
-            </Sheet>
+              </Sheet>
+            </div>
+            <Button variant="ghost" size="icon" className="h-9 w-9 hidden md:flex" onClick={toggleSidebar}>
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle Sidebar</span>
+            </Button>
           </div>
-          <div className="w-full max-w-md ml-auto md:ml-0">
-             <CommandPalette />
+          <div className="flex-1 flex justify-center">
+            <div className="w-full max-w-md">
+                <CommandPalette />
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost" size="icon" className="relative h-9 w-9 rounded-full">
