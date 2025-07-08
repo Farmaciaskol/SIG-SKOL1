@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
@@ -527,7 +526,7 @@ export function InventoryClient({
                                         <TableHeader><TableRow><TableHead>Nombre</TableHead><TableHead>Código</TableHead><TableHead>Precio</TableHead><TableHead>Stock</TableHead><TableHead className="text-right">Acción</TableHead></TableRow></TableHeader>
                                         <TableBody>
                                             {liorenResults.map(product => {
-                                                const totalStock = product.stocks.reduce((sum, stock) => sum + stock.stock, 0);
+                                                const totalStock = product.stocks.reduce((sum, stock) => sum + (Number(stock.stock) || 0), 0);
                                                 return (
                                                     <TableRow key={product.id}>
                                                         <TableCell className="font-medium">{product.nombre || "N/A"}</TableCell>
