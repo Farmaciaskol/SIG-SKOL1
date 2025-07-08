@@ -77,7 +77,7 @@ const menuGroups = [
       title: 'Operaciones',
       items: [
         { href: '/inventory', label: 'Inventario', icon: Boxes },
-        { href: '/monthly-dispensing', label: 'Dispensación', icon: CalendarDays },
+        { href: '/monthly-dispensing', label: 'Dispensación Mensual', icon: CalendarDays },
         { href: '/dispatch-management', label: 'Despachos', icon: Truck },
         { href: '/pharmacovigilance', label: 'Farmacovigilancia', icon: HeartPulse },
         { href: '/controlled-drugs', label: 'Controlados', icon: Lock },
@@ -86,7 +86,7 @@ const menuGroups = [
     {
       title: 'Administración',
       items: [
-        { href: '/financial-management', label: 'Finanzas', icon: Banknote },
+        { href: '/financial-management', label: 'Gestión Financiera', icon: Banknote },
         { href: '/reports', label: 'Reportes', icon: BarChart2 },
       ],
     },
@@ -209,7 +209,7 @@ function MainNavContent({
   return (
     <div className="flex min-h-svh w-full bg-muted">
       <nav className={cn(
-          "hidden md:flex flex-col gap-4 bg-muted p-2 transition-all duration-300 ease-in-out",
+          "hidden md:flex flex-col bg-muted transition-all duration-300 ease-in-out",
           isSidebarOpen ? "w-[250px]" : "w-[72px]"
       )}>
         <div className={cn(
@@ -229,10 +229,10 @@ function MainNavContent({
         </div>
         <div className="flex-1 overflow-auto">
             {menuGroups.map((group) => (
-              <div key={group.title} className="px-2 mb-2">
+              <div key={group.title} className={cn("px-2", isSidebarOpen && "mb-2")}>
                 <h3 className={cn(
-                  "text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 transition-opacity duration-300",
-                  isSidebarOpen ? "opacity-100" : "opacity-0 text-center text-[10px]"
+                  "text-xs font-normal text-muted-foreground uppercase tracking-wider mb-2 transition-opacity duration-300",
+                  isSidebarOpen ? "opacity-100 px-3" : "opacity-0 text-center text-[10px]"
                 )}>{isSidebarOpen ? group.title : ''}</h3>
                 <div className="flex flex-col gap-1">
                   {group.items.map((item) => (
@@ -240,13 +240,13 @@ function MainNavContent({
                       key={item.href}
                       href={item.href}
                       className={cn(
-                        'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/5',
-                        (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) && 'bg-primary/10 text-primary font-semibold',
+                        'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-accent hover:text-accent-foreground',
+                        (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) && 'bg-accent text-foreground font-medium',
                         !isSidebarOpen && 'justify-center'
                       )}
                       title={isSidebarOpen ? '' : item.label}
                     >
-                      <item.icon className="h-5 w-5" />
+                      <item.icon className="h-4 w-4" />
                       <span className={cn(!isSidebarOpen && "hidden")}>{item.label}</span>
                        {item.href === '/inventory' && lowStockCount > 0 && (
                             <Badge variant="destructive" className={cn("ml-auto", !isSidebarOpen && "absolute top-1 right-1 h-2 w-2 p-0 justify-center")}>{isSidebarOpen ? lowStockCount : ''}</Badge>
