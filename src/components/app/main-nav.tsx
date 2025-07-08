@@ -38,6 +38,7 @@ import {
   useSidebar,
   SidebarGroup,
   SidebarGroupLabel,
+  SidebarFooter,
 } from '@/components/ui/sidebar';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
@@ -211,8 +212,8 @@ function MainNavContent({
   return (
     <div className="flex min-h-svh w-full bg-background group/sidebar" data-state={state}>
       {/* Sidebar is now a direct child of the flex container */}
-      <Sidebar className="bg-card" collapsible="icon">
-        <SidebarHeader className="h-16 flex items-center justify-center p-2 border-b">
+      <Sidebar className="bg-muted" collapsible="icon">
+        <SidebarHeader className="h-16 flex items-center justify-center p-2">
           <Link href="/dashboard" className="block">
             <div className="relative h-10 w-32 flex items-center">
                 {/* Full Logo: visible when expanded */}
@@ -273,24 +274,25 @@ function MainNavContent({
             ))}
           </div>
         </SidebarContent>
+        <SidebarFooter className="p-2 mt-auto">
+            <SidebarMenuButton
+                onClick={toggleSidebar}
+                tooltip="Toggle Sidebar"
+                className="h-9 w-9 self-start justify-center rounded-full hover:bg-accent"
+            >
+                <ChevronLeft className="h-5 w-5 transition-transform duration-300 ease-in-out group-data-[state=collapsed]:rotate-180" />
+                <span className="sr-only">Toggle Sidebar</span>
+            </SidebarMenuButton>
+        </SidebarFooter>
       </Sidebar>
 
       {/* Main content area wrapped in a new div */}
       <div className="flex flex-1 flex-col overflow-hidden relative">
         
         {/* === HEADER === */}
-        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b bg-card px-4 sm:px-6">
-          {/* Header Left Side */}
+        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between bg-muted px-4 sm:px-6">
           <div className="flex items-center gap-2">
-             <Button
-                variant="ghost"
-                size="icon"
-                className="flex h-9 w-9 shrink-0 rounded-full"
-                onClick={toggleSidebar}
-            >
-                <PanelLeft className="h-5 w-5" />
-                <span className="sr-only">Toggle sidebar</span>
-            </Button>
+             {/* This space is now empty */}
           </div>
           
           {/* Header Right Side */}
@@ -349,7 +351,7 @@ function MainNavContent({
         </header>
         
         {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto p-6 md:p-8">
+        <main className="flex-1 overflow-y-auto p-6 md:p-8 bg-background">
           {children}
         </main>
       </div>
