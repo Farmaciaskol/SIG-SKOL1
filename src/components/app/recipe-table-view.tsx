@@ -152,10 +152,10 @@ export function RecipeTableView({ recipes, selectedRecipes, allOnPageSelected, t
                           <TooltipContent><p>Receta subida desde el Portal de Pacientes</p></TooltipContent>
                       </Tooltip></TooltipProvider>
                     )}
-                    {recipe.items.some(item => item.requiresFractionation) && (
+                    {recipe.status === RecipeStatus.Validated && recipe.supplySource === 'Insumos de Skol' && (
                       <TooltipProvider><Tooltip>
                           <TooltipTrigger asChild><span><Split className="h-5 w-5 text-orange-600" /></span></TooltipTrigger>
-                          <TooltipContent><p>Requiere Fraccionamiento</p></TooltipContent>
+                          <TooltipContent><p>Pendiente de Despacho a Recetario</p></TooltipContent>
                       </Tooltip></TooltipProvider>
                     )}
                   </div>

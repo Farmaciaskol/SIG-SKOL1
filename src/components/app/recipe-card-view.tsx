@@ -107,7 +107,7 @@ export function RecipeCardView({ recipes, selectedRecipes, toggleSelectRecipe, g
                   {isExpiringSoon && (<TooltipProvider><Tooltip><TooltipTrigger asChild><span><AlertTriangle className="h-4 w-4 text-orange-500" /></span></TooltipTrigger><TooltipContent><p>Receta vence pronto o está vencida.</p></TooltipContent></Tooltip></TooltipProvider>)}
                   {isPaymentPending && (<TooltipProvider><Tooltip><TooltipTrigger asChild><span><DollarSign className="h-4 w-4 text-amber-600" /></span></TooltipTrigger><TooltipContent><p>Pago pendiente</p></TooltipContent></Tooltip></TooltipProvider>)}
                   {recipe.status === RecipeStatus.PendingReviewPortal && (<TooltipProvider><Tooltip><TooltipTrigger asChild><span><UserSquare className="h-4 w-4 text-purple-600" /></span></TooltipTrigger><TooltipContent><p>Receta del Portal</p></TooltipContent></Tooltip></TooltipProvider>)}
-                  {recipe.items.some(item => item.requiresFractionation) && (<TooltipProvider><Tooltip><TooltipTrigger asChild><span><Split className="h-4 w-4 text-orange-600" /></span></TooltipTrigger><TooltipContent><p>Requiere Fraccionamiento</p></TooltipContent></Tooltip></TooltipProvider>)}
+                  {recipe.status === RecipeStatus.Validated && recipe.supplySource === 'Insumos de Skol' && (<TooltipProvider><Tooltip><TooltipTrigger asChild><span><Split className="h-4 w-4 text-orange-600" /></span></TooltipTrigger><TooltipContent><p>Pendiente de Despacho a Recetario</p></TooltipContent></Tooltip></TooltipProvider>)}
                 </div>
               </div>
             </CardHeader>
