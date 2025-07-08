@@ -88,14 +88,22 @@ export function InventoryItemForm({ itemToEdit, onFinished, patients }: Inventor
     useEffect(() => {
         if (itemToEdit) {
             form.reset({
-                ...itemToEdit,
+                name: itemToEdit.name || '',
                 inventoryType: itemToEdit.inventoryType || 'Venta Directa',
+                activePrinciple: itemToEdit.activePrinciple || '',
+                sku: itemToEdit.sku || '',
+                pharmaceuticalForm: itemToEdit.pharmaceuticalForm || '',
                 doseValue: itemToEdit.doseValue || 0,
+                doseUnit: itemToEdit.doseUnit || 'mg',
                 itemsPerBaseUnit: itemToEdit.itemsPerBaseUnit || 1,
+                unit: itemToEdit.unit || 'Caja',
                 lowStockThreshold: itemToEdit.lowStockThreshold || 5,
                 costPrice: itemToEdit.costPrice || 0,
                 salePrice: itemToEdit.salePrice || 0,
+                isControlled: itemToEdit.isControlled || false,
                 controlledType: itemToEdit.controlledType || '',
+                requiresRefrigeration: itemToEdit.requiresRefrigeration || false,
+                internalNotes: itemToEdit.internalNotes || '',
                 patientOwnerId: itemToEdit.patientOwnerId || '',
                 patientOwnerName: itemToEdit.patientOwnerName || '',
             });
