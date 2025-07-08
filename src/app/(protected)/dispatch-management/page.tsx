@@ -571,7 +571,7 @@ export default function DispatchManagementPage() {
 
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground font-headline">Gestión de Despachos</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-primary font-headline">Gestión de Despachos</h1>
           <p className="text-sm text-muted-foreground">
             Control logístico del envío de insumos Skol a recetarios.
           </p>

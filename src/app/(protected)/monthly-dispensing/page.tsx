@@ -105,7 +105,7 @@ export default function MonthlyDispensingPage() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground font-headline">Dispensación Mensual</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-primary font-headline">Dispensación Mensual</h1>
           <p className="text-sm text-muted-foreground">
             Gestión proactiva y centralizada de tratamientos para pacientes crónicos.
           </p>

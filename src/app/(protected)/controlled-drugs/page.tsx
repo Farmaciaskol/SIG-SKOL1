@@ -88,7 +88,7 @@ export default function ControlledDrugsPage() {
     <>
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-foreground tracking-tight font-headline">Libro de Control de Sustancias</h1>
+          <h1 className="text-3xl font-bold text-primary tracking-tight font-headline">Libro de Control de Sustancias</h1>
           <p className="text-sm text-muted-foreground">
             Registro auditable y seguro de dispensaciones de psicotrópicos y estupefacientes.
           </p>
