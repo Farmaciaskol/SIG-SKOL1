@@ -249,7 +249,7 @@ function MainNavContent({
         "grid min-h-svh w-full",
         isSidebarOpen ? "md:grid-cols-[280px_1fr]" : "md:grid-cols-[72px_1fr]"
     )}>
-      <nav className="hidden md:flex md:flex-col bg-muted border-r">
+      <nav className="hidden md:flex md:flex-col bg-muted">
         <div className="flex h-16 shrink-0 items-center px-4">
             <Button variant="ghost" className="h-9 w-9 p-0" onClick={toggleSidebar}>
                 <Menu className="h-5 w-5 text-muted-foreground" />
@@ -260,7 +260,7 @@ function MainNavContent({
         </div>
       </nav>
       <div className="flex flex-1 flex-col">
-          <header className="flex h-16 shrink-0 items-center px-4 lg:px-6">
+          <header className="flex h-16 shrink-0 items-center border-t px-4 lg:px-6">
             <div className="flex h-16 items-center justify-between gap-4 w-full">
                 <div className="flex items-center gap-4">
                    <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -274,7 +274,7 @@ function MainNavContent({
                           <span className="sr-only">Toggle navigation menu</span>
                         </Button>
                       </SheetTrigger>
-                       <SheetContent side="left" className="w-[280px] p-0 flex flex-col bg-muted text-foreground border-r">
+                       <SheetContent side="left" className="w-[280px] p-0 flex flex-col bg-muted text-foreground">
                           <SheetHeader className="p-4 text-left border-b">
                               <SheetTitle>
                                 <Image
@@ -292,9 +292,9 @@ function MainNavContent({
                           </div>
                       </SheetContent>
                     </Sheet>
-                    <div className="w-full max-w-sm"><CommandPalette /></div>
                 </div>
                 <div className="flex items-center gap-2">
+                    <div className="w-full max-w-sm"><CommandPalette /></div>
                     <Button asChild variant="ghost" size="icon" className="relative h-9 w-9 rounded-full text-muted-foreground hover:bg-accent">
                     <Link href="/portal-inbox">
                         <Inbox className="h-5 w-5" />
