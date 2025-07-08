@@ -99,6 +99,11 @@ export const PHARMACEUTICAL_FORM_DEFAULTS: Record<string, {
     dosageUnit: 'papelillo(s)',
     totalQuantityUnit: 'papelillo(s)',
   },
+  'jarabe': {
+    concentrationUnit: 'mg/mL',
+    dosageUnit: 'mL',
+    totalQuantityUnit: 'mL',
+  },
 };
 
 export const MAX_REPREPARATIONS = 4;

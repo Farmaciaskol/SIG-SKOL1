@@ -121,6 +121,12 @@ export const getAppSettings = async (): Promise<AppSettings | null> => {
             updates.pharmaceuticalForms = forms;
             needsUpdate = true;
         }
+        if (!forms.some(f => f.toLowerCase() === 'jarabe')) {
+            forms.push('Jarabe');
+            updates.pharmaceuticalForms = forms;
+            needsUpdate = true;
+        }
+
 
         const concentrationUnits = settings.concentrationUnits || [];
         if (!concentrationUnits.includes('%')) {
