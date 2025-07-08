@@ -402,7 +402,8 @@ export const saveRecipe = async (data: any, userId: string, recipeId?: string): 
         for (const item of recipeDataForUpdate.items || []) {
             const inventoryMatch = inventory.find(invItem => 
                 invItem.inventoryType === 'Fraccionamiento' &&
-                normalizeString(invItem.activePrinciple || '') === normalizeString(item.principalActiveIngredient)
+                typeof invItem.activePrinciple === 'string' &&
+                normalizeString(invItem.activePrinciple) === normalizeString(item.principalActiveIngredient)
             );
             if (inventoryMatch) {
                 item.sourceInventoryItemId = inventoryMatch.id;
@@ -1170,10 +1171,18 @@ export async function syncFraccionamientoStock(): Promise<{ success: boolean; up
     let updatedCount = 0;
 
     for (const localItem of fraccionamientoItems) {
-      // Use barcode for matching instead of SKU
       if (localItem.barcode && liorenMap.has(localItem.barcode)) {
         const liorenProduct = liorenMap.get(localItem.barcode)!;
-        const liorenTotalStock = liorenProduct.stocks.reduce((sum, stock) => sum + stock.stock, 0);
+        
+        let liorenTotalStock = 0;
+        if (Array.isArray(liorenProduct.stocks)) {
+            for (const stockDetail of liorenProduct.stocks) {
+                const stockValue = Number(stockDetail.stock);
+                if (!isNaN(stockValue)) {
+                    liorenTotalStock += stockValue;
+                }
+            }
+        }
 
         if (localItem.quantity !== liorenTotalStock) {
           const itemRef = doc(db, 'inventory', localItem.id);
