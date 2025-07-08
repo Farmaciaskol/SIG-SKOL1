@@ -17,7 +17,6 @@ import {
   UserCog,
   Settings,
   LogOut,
-  Wand2,
   Stethoscope,
   Building2,
   Package,
@@ -33,6 +32,7 @@ import {
   Boxes,
   HeartPulse,
   Banknote,
+  BriefcaseMedical,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -72,7 +72,6 @@ const menuGroups = [
       title: 'Principal',
       items: [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { href: '/portal-inbox', label: 'Bandeja Portal', icon: Inbox },
         { href: '/recipes', label: 'Recetas', icon: FileText },
       ],
     },
@@ -80,8 +79,8 @@ const menuGroups = [
       title: 'Gestión',
       items: [
         { href: '/patients', label: 'Pacientes', icon: Users },
-        { href: '/doctors', label: 'Médicos', icon: Stethoscope },
-        { href: '/external-prescriptions', label: 'Recetarios', icon: Building2 },
+        { href: '/doctors', label: 'Médicos', icon: BriefcaseMedical },
+        { href: '/external-prescriptions', label: 'Recetarios', icon: FlaskConical },
       ],
     },
     {
@@ -99,7 +98,6 @@ const menuGroups = [
       items: [
         { href: '/financial-management', label: 'Gestión Financiera', icon: Banknote },
         { href: '/reports', label: 'Reportes', icon: BarChart2 },
-        { href: '/user-management', label: 'Gestión Usuarios', icon: UserCog },
         { href: '/settings', label: 'Configuración', icon: Settings },
       ],
     },
@@ -244,6 +242,17 @@ function MainNavContent({
           <div className="w-full max-w-xs ml-auto">
             <CommandPalette />
           </div>
+           <Button asChild variant="ghost" size="icon" className="relative h-9 w-9 rounded-full">
+            <Link href="/portal-inbox">
+                <Inbox className="h-5 w-5" />
+                {portalInboxCount > 0 && (
+                <Badge variant="destructive" className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full p-0">
+                    {portalInboxCount}
+                </Badge>
+                )}
+                <span className="sr-only">Bandeja Portal</span>
+            </Link>
+          </Button>
           <Button asChild variant="ghost" size="icon" className="relative h-9 w-9 rounded-full">
             <Link href="/messaging">
               <MessageSquare className="h-5 w-5" />
@@ -342,9 +351,6 @@ function MainNavContent({
                           <Link href={item.href} className="flex items-center w-full">
                             <item.icon className="h-4 w-4" />
                             <span className="flex-1 ml-2 group-data-[collapsible=icon]:hidden">{item.label}</span>
-                            {item.href === '/portal-inbox' && portalInboxCount > 0 && (
-                              <Badge variant="destructive" className="h-5 w-5 p-0 flex items-center justify-center rounded-full group-data-[collapsible=icon]:hidden">{portalInboxCount}</Badge>
-                            )}
                             {item.href === '/inventory' && lowStockCount > 0 && (
                               <Badge variant="destructive" className="h-5 w-5 p-0 flex items-center justify-center rounded-full group-data-[collapsible=icon]:hidden">{lowStockCount}</Badge>
                             )}
