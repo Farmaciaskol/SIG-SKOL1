@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
@@ -295,13 +296,19 @@ const LiorenInventoryTab = ({ products, onCreateLocal, liorenError }: {
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
 
   const productsWithPA = useMemo(() => {
-    return products.map(p => {
-        const vademecumEntry = VADEMECUM_DATA.find(v => v.productName.toLowerCase() === p.nombre.toLowerCase());
-        return {
-            ...p,
-            activeIngredient: vademecumEntry?.activeIngredient
-        };
-    });
+    if (!Array.isArray(products)) {
+        console.warn("Lioren inventory data is not an array:", products);
+        return [];
+    }
+    return products
+        .filter(p => p && p.nombre)
+        .map(p => {
+            const vademecumEntry = VADEMECUM_DATA.find(v => v.productName.toLowerCase() === p.nombre.toLowerCase());
+            return {
+                ...p,
+                activeIngredient: vademecumEntry?.activeIngredient
+            };
+        });
   }, [products]);
 
   const suggestions = useMemo(() => {
