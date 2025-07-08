@@ -65,7 +65,7 @@ const menuGroups = [
       title: 'Principal',
       items: [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { href: '/portal-inbox', label: 'Bandeja Portal', icon: Inbox },
+        { href: '/portal-inbox', label: 'Portal', icon: Inbox },
         { href: '/recipes', label: 'Recetas', icon: FileText },
       ],
     },
@@ -80,9 +80,9 @@ const menuGroups = [
     {
       title: 'Operaciones',
       items: [
-        { href: '/inventory', label: 'Inventario Skol', icon: Boxes },
-        { href: '/monthly-dispensing', label: 'Dispensación Mensual', icon: CalendarDays },
-        { href: '/dispatch-management', label: 'Gestión Despachos', icon: Truck },
+        { href: '/inventory', label: 'Inventario', icon: Boxes },
+        { href: '/monthly-dispensing', label: 'Dispensación', icon: CalendarDays },
+        { href: '/dispatch-management', label: 'Despachos', icon: Truck },
         { href: '/pharmacovigilance', label: 'Farmacovigilancia', icon: HeartPulse },
         { href: '/controlled-drugs', label: 'Controlados', icon: Lock },
       ],
@@ -90,7 +90,7 @@ const menuGroups = [
     {
       title: 'Administración',
       items: [
-        { href: '/financial-management', label: 'Gestión Financiera', icon: Banknote },
+        { href: '/financial-management', label: 'Finanzas', icon: Banknote },
         { href: '/reports', label: 'Reportes', icon: BarChart2 },
         { href: '/settings', label: 'Configuración', icon: Settings },
       ],
@@ -238,10 +238,10 @@ function MainNavContent({
           </Link>
         </SidebarHeader>
         <SidebarContent className="p-2 flex-1">
-          <div className="flex flex-col gap-1 group-data-[collapsible=icon]:gap-0">
+          <div className="flex flex-col gap-0 group-data-[collapsible=icon]:gap-0">
             {menuGroups.map((group) => (
               <SidebarGroup key={group.title} className="p-0">
-                <SidebarGroupLabel className="p-0 px-2 pb-1">
+                <SidebarGroupLabel className="p-0 px-2 pb-1 font-normal text-xs">
                   {group.title}
                 </SidebarGroupLabel>
                 <SidebarMenu className="gap-1">
