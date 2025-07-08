@@ -167,6 +167,9 @@ function MainNavContent({
   const pathname = usePathname();
   const [user] = useAuthState(auth);
   const [appUser, setAppUser] = React.useState<AppUser | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
+
+  const toggleSidebar = () => setIsSidebarOpen(prev => !prev);
 
   const fetchAppUser = React.useCallback(async () => {
     if (user?.email) {
@@ -204,23 +207,33 @@ function MainNavContent({
 
 
   return (
-    <div className="flex min-h-svh w-full">
-      <nav className="hidden md:flex flex-col gap-4 border-r bg-muted p-2 w-[250px]">
-        <div className="flex h-16 items-center px-4">
+    <div className="flex min-h-svh w-full bg-muted">
+      <nav className={cn(
+          "hidden md:flex flex-col gap-4 bg-muted p-2 transition-all duration-300 ease-in-out",
+          isSidebarOpen ? "w-[250px]" : "w-[72px]"
+      )}>
+        <div className={cn(
+            "flex h-16 items-center",
+            isSidebarOpen ? "px-4" : "px-3 justify-center"
+        )}>
           <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
             <Image
                 src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=1a612d04-0f27-4317-bfd6-06b48f019a24"
                 alt="Skol Pharmacy Logo"
-                width={120}
-                height={33}
+                width={isSidebarOpen ? 120 : 32}
+                height={isSidebarOpen ? 33 : 32}
                 priority
+                className="transition-all duration-300"
             />
           </Link>
         </div>
         <div className="flex-1 overflow-auto">
             {menuGroups.map((group) => (
-              <div key={group.title} className="px-2 mb-4">
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{group.title}</h3>
+              <div key={group.title} className="px-2 mb-2">
+                <h3 className={cn(
+                  "text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 transition-opacity duration-300",
+                  isSidebarOpen ? "opacity-100" : "opacity-0 text-center text-[10px]"
+                )}>{isSidebarOpen ? group.title : ''}</h3>
                 <div className="flex flex-col gap-1">
                   {group.items.map((item) => (
                     <Link
@@ -228,16 +241,18 @@ function MainNavContent({
                       href={item.href}
                       className={cn(
                         'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/5',
-                        (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) && 'bg-primary/10 text-primary font-semibold'
+                        (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) && 'bg-primary/10 text-primary font-semibold',
+                        !isSidebarOpen && 'justify-center'
                       )}
+                      title={isSidebarOpen ? '' : item.label}
                     >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.label}</span>
+                      <item.icon className="h-5 w-5" />
+                      <span className={cn(!isSidebarOpen && "hidden")}>{item.label}</span>
                        {item.href === '/inventory' && lowStockCount > 0 && (
-                            <Badge variant="destructive" className="ml-auto">{lowStockCount}</Badge>
+                            <Badge variant="destructive" className={cn("ml-auto", !isSidebarOpen && "absolute top-1 right-1 h-2 w-2 p-0 justify-center")}>{isSidebarOpen ? lowStockCount : ''}</Badge>
                        )}
                        {item.href === '/dispatch-management' && itemsToDispatchCount > 0 && (
-                            <Badge variant="destructive" className="ml-auto">{itemsToDispatchCount}</Badge>
+                            <Badge variant="destructive" className={cn("ml-auto", !isSidebarOpen && "absolute top-1 right-1 h-2 w-2 p-0 justify-center")}>{isSidebarOpen ? itemsToDispatchCount : ''}</Badge>
                        )}
                     </Link>
                   ))}
@@ -248,15 +263,16 @@ function MainNavContent({
         <div className="mt-auto p-2">
             <Button
                 variant="ghost"
-                className="justify-start w-full"
+                className={cn("justify-start w-full", !isSidebarOpen && "justify-center")}
+                onClick={toggleSidebar}
             >
-                <ChevronLeft className="mr-2 h-4 w-4" />
-                Cerrar Menú
+                <ChevronLeft className={cn("h-5 w-5 transition-transform", !isSidebarOpen && "rotate-180")} />
+                <span className={cn("ml-2", !isSidebarOpen && "hidden")}>Cerrar Menú</span>
             </Button>
         </div>
       </nav>
       <div className="flex flex-1 flex-col">
-        <header className="flex h-16 items-center justify-between gap-4 border-b bg-muted px-6">
+        <header className="flex h-16 items-center justify-between gap-4 bg-muted px-6">
           <div className="md:hidden">
               <Button
                 variant="ghost"
