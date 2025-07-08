@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { getInventory, addInventoryItem, updateInventoryItem, deleteInventoryItem, addLotToInventoryItem, type Patient, syncFraccionamientoStock } from '@/lib/data';
-import type { InventoryItem, LotDetail } from '@/lib/types';
-import { searchLiorenProducts, type LiorenProduct } from '@/lib/lioren-api';
+import type { InventoryItem, LotDetail, Bodega } from '@/lib/types';
+import { searchLiorenProducts, type LiorenProduct, fetchLiorenWarehouses } from '@/lib/lioren-api';
 import { PlusCircle, Search, Edit, Box, Trash2, MoreVertical, DollarSign, Package, PackageX, AlertTriangle, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Loader2, Calendar as CalendarIcon, Snowflake, Download, RefreshCw } from 'lucide-react';
 import { format, differenceInDays, isBefore, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -230,6 +230,7 @@ export function InventoryClient({
     const [isLiorenSearching, setIsLiorenSearching] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
     const [liorenSearchError, setLiorenSearchError] = useState<string | undefined>(undefined);
+    const [liorenWarehouses, setLiorenWarehouses] = useState<Bodega[]>([]);
 
     const refreshLocalData = async () => {
         setLoading(true);
@@ -241,6 +242,26 @@ export function InventoryClient({
         } finally {
             setLoading(false);
         }
+    };
+
+    useEffect(() => {
+        const loadWarehouses = async () => {
+            const { bodegas, error } = await fetchLiorenWarehouses();
+            if (error) {
+                toast({ title: "Error al cargar bodegas", description: error, variant: "destructive" });
+            } else {
+                setLiorenWarehouses(bodegas);
+            }
+        };
+        loadWarehouses();
+    }, [toast]);
+
+    const warehouseMap = useMemo(() => {
+        return new Map(liorenWarehouses.map(w => [w.id, w.nombre]));
+    }, [liorenWarehouses]);
+
+    const getWarehouseName = (id: number) => {
+        return warehouseMap.get(id) || `ID: ${id}`;
     };
 
     const handleOpenForm = (item: InventoryItem | Partial<InventoryItem> | null) => {
@@ -537,9 +558,10 @@ export function InventoryClient({
                                                                 {Array.isArray(product.stocks) && product.stocks.length > 0 ? (
                                                                     product.stocks.map((stock, index) => {
                                                                         const stockValue = stock.stock;
+                                                                        const warehouseName = getWarehouseName(stock.sucursal_id);
                                                                         return (
                                                                             <Badge key={`${product.id}-${stock.sucursal_id}-${index}`} variant="secondary" className="font-normal">
-                                                                                {stock.nombre ?? 'Sin Nombre'}: {stockValue ?? 'N/D'}
+                                                                                {warehouseName}: {stockValue ?? 'N/D'}
                                                                             </Badge>
                                                                         );
                                                                     })
