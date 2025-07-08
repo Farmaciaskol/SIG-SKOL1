@@ -19,13 +19,12 @@ import {
   Bell,
   User,
   MessageSquare,
-  ChevronLeft,
+  Menu,
   BriefcaseMedical,
   FlaskConical,
   Boxes,
   HeartPulse,
   Banknote,
-  Menu,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -41,7 +40,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogClose,
 } from '@/components/ui/dialog';
 import {
@@ -214,9 +212,39 @@ function MainNavContent({
       </AvatarFallback>
     );
 
+  const navContent = (
+      <>
+        {menuGroups.map((group) => (
+          <div key={group.title} className="px-2 mb-2">
+            <h3 className={cn(
+              "text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 transition-opacity duration-300 font-sans",
+              (isSidebarOpen || isMobileMenuOpen) ? "opacity-100 px-3" : "opacity-0 h-0"
+            )}>{group.title}</h3>
+            <div className="flex flex-col gap-1">
+              {group.items.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    'flex items-center gap-3 rounded-lg px-3 py-2 text-foreground/70 transition-all hover:bg-accent hover:text-foreground',
+                    (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) && 'bg-accent text-foreground font-semibold',
+                    !(isSidebarOpen || isMobileMenuOpen) && 'justify-center'
+                  )}
+                  title={(isSidebarOpen || isMobileMenuOpen) ? '' : item.label}
+                  onClick={() => isMobileMenuOpen && setIsMobileMenuOpen(false)}
+                >
+                  <item.icon className="h-4 w-4" />
+                  <span className={cn("font-medium", !(isSidebarOpen || isMobileMenuOpen) && "hidden")}>{item.label}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        ))}
+      </>
+  );
 
   return (
-    <div className="flex min-h-svh w-full bg-muted">
+    <div className="flex min-h-svh w-full bg-background">
       <nav className={cn(
           "hidden md:flex flex-col bg-card transition-all duration-300 ease-in-out",
           isSidebarOpen ? "w-[250px]" : "w-[72px]"
@@ -227,7 +255,9 @@ function MainNavContent({
         )}>
           <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
             <Image
-                src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=1a612d04-0f27-4317-bfd6-06b48f019a24"
+                src={isSidebarOpen 
+                    ? "https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=1a612d04-0f27-4317-bfd6-06b48f019a24" 
+                    : "https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/isotipo.png?alt=media&token=e1c49479-05e8-4b95-a864-7e8c89c89369"}
                 alt="Skol Pharmacy Logo"
                 width={isSidebarOpen ? 120 : 32}
                 height={isSidebarOpen ? 33 : 32}
@@ -236,32 +266,8 @@ function MainNavContent({
             />
           </Link>
         </div>
-        <div className="flex-1 overflow-auto">
-            {menuGroups.map((group) => (
-              <div key={group.title} className="px-2 mb-2">
-                <h3 className={cn(
-                  "text-xs font-normal text-muted-foreground uppercase tracking-wider mb-2 transition-opacity duration-300 font-sans",
-                  isSidebarOpen ? "opacity-100 px-3" : "opacity-0 h-0"
-                )}>{group.title}</h3>
-                <div className="flex flex-col gap-1">
-                  {group.items.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={cn(
-                        'flex items-center gap-3 rounded-lg px-3 py-2 text-foreground/70 transition-all hover:bg-accent hover:text-foreground',
-                        (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) && 'bg-accent text-foreground font-semibold',
-                        !isSidebarOpen && 'justify-center'
-                      )}
-                      title={isSidebarOpen ? '' : item.label}
-                    >
-                      <item.icon className="h-4 w-4" />
-                      <span className={cn("font-medium", !isSidebarOpen && "hidden")}>{item.label}</span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            ))}
+        <div className="flex-1 overflow-auto py-2">
+            {navContent}
         </div>
       </nav>
       <div className="flex flex-1 flex-col">
@@ -295,30 +301,8 @@ function MainNavContent({
                             />
                         </Link>
                     </div>
-                    <div className="flex-1 overflow-auto">
-                        {menuGroups.map((group) => (
-                          <div key={group.title} className="px-2 mb-2">
-                            <h3 className="text-xs font-normal text-muted-foreground uppercase tracking-wider mb-2 px-3">
-                                {group.title}
-                            </h3>
-                            <div className="flex flex-col gap-1">
-                              {group.items.map((item) => (
-                                <Link
-                                  key={item.href}
-                                  href={item.href}
-                                  className={cn(
-                                    'flex items-center gap-3 rounded-lg px-3 py-2 text-foreground/70 transition-all hover:bg-accent hover:text-foreground',
-                                    (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) && 'bg-accent text-foreground font-semibold',
-                                  )}
-                                  onClick={() => setIsMobileMenuOpen(false)}
-                                >
-                                  <item.icon className="h-4 w-4" />
-                                  <span className="font-medium">{item.label}</span>
-                                </Link>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
+                    <div className="flex-1 overflow-auto py-2">
+                      {navContent}
                     </div>
                 </SheetContent>
               </Sheet>
