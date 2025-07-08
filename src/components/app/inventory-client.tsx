@@ -444,10 +444,12 @@ export function InventoryClient({ initialInventory, liorenInventory, liorenError
 
     const filteredLiorenInventory = useMemo(() => {
         if (!liorenInventory) return [];
-        return liorenInventory.filter(p => 
-            (p?.nombre && p.nombre.toLowerCase().includes(liorenSearchTerm.toLowerCase())) ||
-            (p?.codigo && p.codigo.toLowerCase().includes(liorenSearchTerm.toLowerCase()))
-        );
+        return liorenInventory.filter(p => {
+            if (!p) return false;
+            const nameMatch = typeof p.nombre === 'string' && p.nombre.toLowerCase().includes(liorenSearchTerm.toLowerCase());
+            const codeMatch = typeof p.codigo === 'string' && p.codigo.toLowerCase().includes(liorenSearchTerm.toLowerCase());
+            return nameMatch || codeMatch;
+        });
     }, [liorenInventory, liorenSearchTerm]);
 
     return (
