@@ -121,6 +121,10 @@ const PrintLabelDialog = ({
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="printable-label">
+                <DialogHeader className="sr-only">
+                    <DialogTitle>Etiqueta de Caja para Impresión</DialogTitle>
+                    <DialogDescription>Vista previa de la etiqueta para la caja de dispensación mensual.</DialogDescription>
+                </DialogHeader>
                 <div className="p-6 space-y-4">
                      <h2 className="text-xl font-bold text-center">FARMACIA SKOL</h2>
                      <Separator />
