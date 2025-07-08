@@ -238,6 +238,10 @@ export const RecipesClient = ({
     setReason('');
   }
   
+  const handleReceptionChecklistChange = (key: keyof typeof receptionChecklist, value: boolean) => {
+    setReceptionChecklist(prev => ({ ...prev, [key]: value }));
+  };
+  
   const isReceptionChecklistComplete = useMemo(() => {
     if (!recipeToReceive) return false;
     const requiresColdChain = recipeToReceive.items.some(i => i.isRefrigerated);

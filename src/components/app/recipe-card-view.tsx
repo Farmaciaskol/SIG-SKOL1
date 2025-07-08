@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -8,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Snowflake, DollarSign, UserSquare, Split } from 'lucide-react';
+import { Snowflake, DollarSign, UserSquare, Split, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { statusConfig, MAX_REPREPARATIONS } from '@/lib/constants';
 import { Recipe, RecipeStatus } from '@/lib/types';
@@ -71,6 +72,18 @@ export function RecipeCardView({ recipes, selectedRecipes, toggleSelectRecipe, g
         const dispensedCount = recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0;
         const showCycleCount = ![RecipeStatus.Archived, RecipeStatus.Rejected, RecipeStatus.Cancelled].includes(recipe.status);
         const currentCycle = Math.min(dispensedCount + 1, totalCycles);
+        
+        const isActive = ![RecipeStatus.Dispensed, RecipeStatus.Cancelled, RecipeStatus.Rejected, RecipeStatus.Archived].includes(recipe.status);
+        let isExpiringSoon = false;
+        if (isActive && recipe.dueDate) {
+            try {
+                const dueDate = parseISO(recipe.dueDate);
+                const thirtyDaysFromNow = new Date();
+                thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+                isExpiringSoon = dueDate < thirtyDaysFromNow;
+            } catch (e) { /* ignore */ }
+        }
+
         return (
           <Card key={recipe.id} className={cn(selectedRecipes.includes(recipe.id) && "ring-2 ring-primary")}>
             <CardHeader className="p-4">
@@ -91,6 +104,7 @@ export function RecipeCardView({ recipes, selectedRecipes, toggleSelectRecipe, g
                   </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
+                  {isExpiringSoon && (<TooltipProvider><Tooltip><TooltipTrigger asChild><span><AlertTriangle className="h-4 w-4 text-orange-500" /></span></TooltipTrigger><TooltipContent><p>Receta vence pronto o está vencida.</p></TooltipContent></Tooltip></TooltipProvider>)}
                   {isPaymentPending && (<TooltipProvider><Tooltip><TooltipTrigger asChild><span><DollarSign className="h-4 w-4 text-amber-600" /></span></TooltipTrigger><TooltipContent><p>Pago pendiente</p></TooltipContent></Tooltip></TooltipProvider>)}
                   {recipe.status === RecipeStatus.PendingReviewPortal && (<TooltipProvider><Tooltip><TooltipTrigger asChild><span><UserSquare className="h-4 w-4 text-purple-600" /></span></TooltipTrigger><TooltipContent><p>Receta del Portal</p></TooltipContent></Tooltip></TooltipProvider>)}
                   {recipe.items.some(item => item.requiresFractionation) && (<TooltipProvider><Tooltip><TooltipTrigger asChild><span><Split className="h-4 w-4 text-orange-600" /></span></TooltipTrigger><TooltipContent><p>Requiere Fraccionamiento</p></TooltipContent></Tooltip></TooltipProvider>)}

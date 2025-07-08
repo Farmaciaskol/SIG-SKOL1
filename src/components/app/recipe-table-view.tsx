@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Snowflake, DollarSign, UserSquare, Split, FileX } from 'lucide-react';
+import { Snowflake, DollarSign, UserSquare, Split, FileX, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { statusConfig, MAX_REPREPARATIONS } from '@/lib/constants';
 import { Recipe, RecipeStatus } from '@/lib/types';
@@ -88,6 +88,18 @@ export function RecipeTableView({ recipes, selectedRecipes, allOnPageSelected, t
             const totalCycles = calculateTotalCycles(recipe);
             const showCycleCount = ![RecipeStatus.Archived, RecipeStatus.Rejected, RecipeStatus.Cancelled].includes(recipe.status);
             const currentCycle = Math.min(dispensedCount + 1, totalCycles);
+            
+            const isActive = ![RecipeStatus.Dispensed, RecipeStatus.Cancelled, RecipeStatus.Rejected, RecipeStatus.Archived].includes(recipe.status);
+            let isExpiringSoon = false;
+            if (isActive && recipe.dueDate) {
+                try {
+                    const dueDate = parseISO(recipe.dueDate);
+                    const thirtyDaysFromNow = new Date();
+                    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+                    isExpiringSoon = dueDate < thirtyDaysFromNow;
+                } catch (e) { /* ignore */ }
+            }
+
             return (
               <TableRow key={recipe.id} className={cn("hover:bg-muted/50", selectedRecipes.includes(recipe.id) && "bg-muted/50")}>
                 <TableCell className="p-4"><Checkbox onCheckedChange={() => toggleSelectRecipe(recipe.id)} checked={selectedRecipes.includes(recipe.id)} /></TableCell>
@@ -116,6 +128,12 @@ export function RecipeTableView({ recipes, selectedRecipes, allOnPageSelected, t
                       <StatusIcon className="h-3 w-3 mr-1.5" />
                       {statusConfig[recipe.status]?.text || recipe.status}
                     </Badge>
+                    {isExpiringSoon && (
+                      <TooltipProvider><Tooltip>
+                          <TooltipTrigger asChild><span><AlertTriangle className="h-5 w-5 text-orange-500" /></span></TooltipTrigger>
+                          <TooltipContent><p>Receta vence pronto o está vencida.</p></TooltipContent>
+                      </Tooltip></TooltipProvider>
+                    )}
                     {showCycleCount && (
                       <TooltipProvider><Tooltip>
                           <TooltipTrigger asChild><Badge variant="secondary" className="font-mono">{`${currentCycle}/${totalCycles}`}</Badge></TooltipTrigger>
