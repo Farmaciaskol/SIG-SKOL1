@@ -35,7 +35,7 @@ export interface LiorenProduct {
 export interface Bodega {
     id: number;
     nombre: string;
-    sucursal_id: number | null;
+    sucursal_id?: number | null;
 }
 
 
@@ -64,6 +64,8 @@ export async function fetchLiorenWarehouses(): Promise<{ bodegas: Bodega[]; erro
     let warehouses: Bodega[] = [];
     if (data && data.bodegas && Array.isArray(data.bodegas)) {
         warehouses = data.bodegas;
+    } else if (Array.isArray(data)) { // Handle case where the response is a direct array
+        warehouses = data;
     } else {
         console.warn("La respuesta de la API de Bodegas de Lioren no tiene el formato esperado.", data);
     }
