@@ -227,8 +227,8 @@ function MainNavContent({
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-primary/10 hover:text-primary',
-                    (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) && 'bg-primary/10 text-primary font-semibold',
+                    'flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-all hover:bg-secondary hover:text-secondary-foreground',
+                    (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) && 'bg-secondary text-secondary-foreground font-semibold',
                     !(isSidebarOpen || isMobileMenuOpen) && 'justify-center'
                   )}
                   title={(isSidebarOpen || isMobileMenuOpen) ? '' : item.label}
@@ -249,7 +249,7 @@ function MainNavContent({
         "grid min-h-svh w-full",
         isSidebarOpen ? "md:grid-cols-[280px_1fr]" : "md:grid-cols-[72px_1fr]"
     )}>
-      <nav className="hidden md:flex md:flex-col bg-muted/40 border-r">
+      <nav className="hidden md:flex md:flex-col bg-muted border-r">
         <div className="flex h-16 shrink-0 items-center px-4">
             <Button variant="ghost" className="h-9 w-9 p-0" onClick={toggleSidebar}>
                 <Menu className="h-5 w-5 text-muted-foreground" />
@@ -274,7 +274,7 @@ function MainNavContent({
                           <span className="sr-only">Toggle navigation menu</span>
                         </Button>
                       </SheetTrigger>
-                       <SheetContent side="left" className="w-[280px] p-0 flex flex-col bg-background text-foreground border-r">
+                       <SheetContent side="left" className="w-[280px] p-0 flex flex-col bg-muted text-foreground border-r">
                           <SheetHeader className="p-4 text-left border-b">
                               <SheetTitle>
                                 <Image
@@ -400,7 +400,7 @@ function MainNavContent({
                 </div>
               </div>
           </header>
-        <main className="flex-1 p-6 md:p-8 overflow-auto bg-background rounded-tl-2xl">
+        <main className="flex-1 p-6 md:p-8 overflow-auto bg-card rounded-tl-2xl">
           {children}
         </main>
       </div>
