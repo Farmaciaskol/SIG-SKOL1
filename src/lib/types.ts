@@ -477,9 +477,9 @@ export interface LiorenProduct {
 }
 
 export interface Bodega {
-  id: number;
-  nombre: string;
-  sucursal_id?: number | null;
+    id: number;
+    nombre: string;
+    sucursal_id: number | null;
 }
 
 export interface AppData {

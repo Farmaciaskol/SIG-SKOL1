@@ -1136,6 +1136,10 @@ export const unlockCommercialControlledItemInBox = async (boxId: string, itemId:
     await updateDoc(boxRef, cleanUndefined({ items: updatedItems, updatedAt: new Date().toISOString() }));
 };
 
+/**
+ * Syncs the quantity of local 'Fraccionamiento' inventory items
+ * with the total stock from Lioren, using barcode as the key.
+ */
 export async function syncFraccionamientoStock(): Promise<{ success: boolean; updatedCount: number; message: string }> {
   console.log("Starting stock sync with Lioren...");
   
@@ -1160,10 +1164,10 @@ export async function syncFraccionamientoStock(): Promise<{ success: boolean; up
       return { success: true, updatedCount: 0, message: 'No hay productos de fraccionamiento para sincronizar.' };
     }
 
-    const liorenMap = new Map<string, LiorenProduct>();
+    const liorenMapByBarcode = new Map<string, LiorenProduct>();
     for (const product of liorenProducts) {
-      if (product.codigo) { // 'codigo' from Lioren is the barcode
-        liorenMap.set(product.codigo, product);
+      if (product.codigo) {
+        liorenMapByBarcode.set(product.codigo, product);
       }
     }
 
@@ -1171,8 +1175,8 @@ export async function syncFraccionamientoStock(): Promise<{ success: boolean; up
     let updatedCount = 0;
 
     for (const localItem of fraccionamientoItems) {
-      if (localItem.barcode && liorenMap.has(localItem.barcode)) {
-        const liorenProduct = liorenMap.get(localItem.barcode)!;
+      if (localItem.barcode && liorenMapByBarcode.has(localItem.barcode)) {
+        const liorenProduct = liorenMapByBarcode.get(localItem.barcode)!;
         
         let liorenTotalStock = 0;
         if (Array.isArray(liorenProduct.stocks)) {
