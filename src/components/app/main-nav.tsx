@@ -25,7 +25,7 @@ import {
   Boxes,
   HeartPulse,
   Banknote,
-  PanelLeft,
+  Menu,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -211,7 +211,7 @@ function MainNavContent({
 
 
   return (
-    <div className="flex min-h-svh w-full bg-background group/sidebar" data-state={state}>
+    <div className="flex min-h-svh w-full bg-muted group/sidebar" data-state={state}>
       {/* Sidebar is now a direct child of the flex container */}
       <Sidebar className="bg-muted" collapsible="icon">
         <SidebarHeader className="h-16 flex items-center justify-center p-2">
@@ -242,7 +242,7 @@ function MainNavContent({
           <div className="flex flex-col gap-0 group-data-[collapsible=icon]:gap-0">
             {menuGroups.map((group) => (
               <SidebarGroup key={group.title} className="p-0">
-                <SidebarGroupLabel className="p-0 px-2 pb-1 font-normal text-xs">
+                <SidebarGroupLabel className="p-0 px-2 pb-1 font-normal text-xs uppercase">
                   {group.title}
                 </SidebarGroupLabel>
                 <SidebarMenu className="gap-1">
@@ -293,7 +293,15 @@ function MainNavContent({
         {/* === HEADER === */}
         <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between bg-muted px-4 sm:px-6">
           <div className="flex items-center gap-2">
-            {isMobile && <SidebarTrigger />}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 md:hidden"
+              onClick={toggleSidebar}
+            >
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle Sidebar</span>
+            </Button>
           </div>
           
           {/* Header Right Side */}
@@ -352,7 +360,7 @@ function MainNavContent({
         </header>
         
         {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto p-6 md:p-8 bg-background">
+        <main className="flex-1 overflow-y-auto p-6 md:p-8 bg-background rounded-tl-2xl">
           {children}
         </main>
       </div>
