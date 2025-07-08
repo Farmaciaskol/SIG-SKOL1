@@ -524,21 +524,25 @@ export function InventoryClient({
                             ) : liorenResults.length > 0 ? (
                                 <div className="max-h-[70vh] overflow-y-auto">
                                     <Table>
-                                        <TableHeader><TableRow><TableHead>Nombre</TableHead><TableHead>Código</TableHead><TableHead>Precio</TableHead><TableHead className="text-right">Acción</TableHead></TableRow></TableHeader>
+                                        <TableHeader><TableRow><TableHead>Nombre</TableHead><TableHead>Código</TableHead><TableHead>Precio</TableHead><TableHead>Stock</TableHead><TableHead className="text-right">Acción</TableHead></TableRow></TableHeader>
                                         <TableBody>
-                                            {liorenResults.map(product => (
-                                                <TableRow key={product.id}>
-                                                    <TableCell className="font-medium">{product.nombre || "N/A"}</TableCell>
-                                                    <TableCell>{product.codigo || "N/A"}</TableCell>
-                                                    <TableCell>${typeof product.precioventabruto === 'number' ? product.precioventabruto.toLocaleString('es-CL') : 'N/A'}</TableCell>
-                                                    <TableCell className="text-right">
-                                                        <Button size="sm" onClick={() => handleImportFromLioren(product)}>
-                                                            <Download className="mr-2 h-4 w-4" />
-                                                            Importar
-                                                        </Button>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
+                                            {liorenResults.map(product => {
+                                                const totalStock = product.stocks.reduce((sum, stock) => sum + stock.stock, 0);
+                                                return (
+                                                    <TableRow key={product.id}>
+                                                        <TableCell className="font-medium">{product.nombre || "N/A"}</TableCell>
+                                                        <TableCell>{product.codigo || "N/A"}</TableCell>
+                                                        <TableCell>${typeof product.precioventabruto === 'number' ? product.precioventabruto.toLocaleString('es-CL') : 'N/A'}</TableCell>
+                                                        <TableCell>{totalStock}</TableCell>
+                                                        <TableCell className="text-right">
+                                                            <Button size="sm" onClick={() => handleImportFromLioren(product)}>
+                                                                <Download className="mr-2 h-4 w-4" />
+                                                                Importar
+                                                            </Button>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                )
+                                            })}
                                         </TableBody>
                                     </Table>
                                 </div>
