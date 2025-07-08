@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { getInventory, addInventoryItem, updateInventoryItem, deleteInventoryItem, addLotToInventoryItem, Patient } from '@/lib/data';
-import type { InventoryItem, LotDetail, LiorenProduct } from '@/lib/types';
-import { PlusCircle, Search, Edit, Box, Trash2, MoreVertical, DollarSign, Package, PackageX, AlertTriangle, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Loader2, Calendar as CalendarIcon, Download, Info } from 'lucide-react';
+import type { InventoryItem, LotDetail } from '@/lib/types';
+import { PlusCircle, Search, Edit, Box, Trash2, MoreVertical, DollarSign, Package, PackageX, AlertTriangle, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Loader2, Calendar as CalendarIcon, Snowflake } from 'lucide-react';
 import { format, differenceInDays, isBefore, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -21,8 +21,6 @@ import { InventoryItemForm } from './inventory-item-form';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
 import { Label } from '../ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert } from '../ui/alert';
 
 const EXPIRY_THRESHOLD_DAYS = 90;
 
@@ -207,11 +205,9 @@ function LotManagementDialog({
 
 export function InventoryClient({ 
   initialInventory,
-  liorenData,
   patients
 }: { 
   initialInventory: InventoryItem[];
-  liorenData: { products: LiorenProduct[], error: string | null };
   patients: Patient[];
 }) {
     const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory);
@@ -224,7 +220,6 @@ export function InventoryClient({
     const [editingItem, setEditingItem] = useState<InventoryItem | Partial<InventoryItem> | null>(null);
     const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null);
 
-    const [liorenSearchTerm, setLiorenSearchTerm] = useState('');
     const [loading, setLoading] = useState(false);
 
     const refreshLocalData = async () => {
@@ -243,18 +238,6 @@ export function InventoryClient({
         setEditingItem(item);
         setIsFormOpen(true);
     };
-
-    const handleImportFromLioren = (liorenProduct: LiorenProduct) => {
-        const partialItem: Partial<InventoryItem> = {
-            name: liorenProduct.nombre,
-            sku: liorenProduct.codigo,
-            inventoryType: 'Venta Directa',
-            unit: liorenProduct.unidad,
-            costPrice: liorenProduct.preciocompraneto,
-            salePrice: liorenProduct.precioventabruto,
-        };
-        handleOpenForm(partialItem);
-    }
 
     const handleFormFinished = () => {
         setIsFormOpen(false);
@@ -311,13 +294,6 @@ export function InventoryClient({
             return matchesFilter && matchesSearch;
         })
     }, [inventoryWithStats, activeFilter, searchTerm]);
-
-    const filteredLiorenInventory = useMemo(() => {
-        if (!liorenData.products) return [];
-        return liorenData.products.filter(p => 
-            p.nombre && p.nombre.toLowerCase().includes(liorenSearchTerm.toLowerCase())
-        );
-    }, [liorenData.products, liorenSearchTerm]);
 
     const globalStats = useMemo(() => {
         const totalValue = inventory.reduce((sum, item) => sum + (item.quantity * (item.costPrice || 0)), 0);
@@ -381,14 +357,8 @@ export function InventoryClient({
                     </p>
                 </div>
             </div>
-
-            <Tabs defaultValue="local">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="local">Inventario Local (Skol)</TabsTrigger>
-                <TabsTrigger value="external">Inventario Externo (Lioren)</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="local" className="mt-6 space-y-6">
+            
+            <div className="space-y-6">
                 <div className="flex justify-start">
                     <Button onClick={() => handleOpenForm(null)}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Crear Producto Local
@@ -443,48 +413,7 @@ export function InventoryClient({
                         </Table>
                     )}
                 </div>
-              </TabsContent>
-
-              <TabsContent value="external" className="mt-6 space-y-6">
-                {liorenData.error ? (
-                  <Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><CardTitle>Error de Conexión</CardTitle><CardDescription>{liorenData.error}</CardDescription></Alert>
-                ) : (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Catálogo de Productos Lioren</CardTitle>
-                      <CardDescription>Visualice y busque en el catálogo completo de Lioren. Importe productos a su inventario local para gestionarlos.</CardDescription>
-                      <div className="relative pt-4">
-                        <Search className="absolute left-2.5 top-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input placeholder="Buscar en catálogo Lioren..." className="pl-8" value={liorenSearchTerm} onChange={e => setLiorenSearchTerm(e.target.value)} />
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                        {filteredLiorenInventory.length > 0 ? (
-                             <Table>
-                                <TableHeader><TableRow><TableHead>Nombre</TableHead><TableHead>SKU</TableHead><TableHead>Stock Total</TableHead><TableHead className="text-right">Precio Venta</TableHead><TableHead className="text-right">Acción</TableHead></TableRow></TableHeader>
-                                <TableBody>
-                                    {filteredLiorenInventory.slice(0, 100).map(product => ( // Limit display to 100 for performance
-                                        <TableRow key={product.id}>
-                                            <TableCell className="font-medium">{product.nombre || 'N/A'}</TableCell>
-                                            <TableCell>{product.codigo || 'N/A'}</TableCell>
-                                            <TableCell>{product.stocks?.reduce((acc, s) => acc + s.stock, 0) ?? 'N/A'}</TableCell>
-                                            <TableCell className="text-right">${(product.precioventabruto ?? 0).toLocaleString('es-CL')}</TableCell>
-                                            <TableCell className="text-right"><Button variant="outline" size="sm" onClick={() => handleImportFromLioren(product)}><Download className="mr-2 h-4 w-4" />Importar</Button></TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        ) : (
-                            <div className="text-center py-10 text-muted-foreground">No se encontraron productos en Lioren para su búsqueda.</div>
-                        )}
-                        {filteredLiorenInventory.length > 100 && (
-                            <p className="text-center text-sm text-muted-foreground mt-4">Mostrando los primeros 100 resultados. Afine su búsqueda para encontrar más productos.</p>
-                        )}
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
-            </Tabs>
+            </div>
         </>
     );
 }
