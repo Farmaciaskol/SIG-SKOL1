@@ -3,11 +3,30 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // WARNING: These rules are insecure and are for development purposes only.
-    // They allow anyone to upload, read, and delete files in your storage.
-    // You MUST secure your storage before deploying to production.
+
+    // By default, deny all reads and writes
     match /{allPaths=**} {
-      allow read, write: if true;
+      allow read, write: if false;
+    }
+    
+    // Allow public reading of the company logo
+    match /LOGOTIPO FARMACIA SKOL_LOGO COLOR.png {
+      allow read: if true;
+    }
+
+    // Allow authenticated users to upload prescriptions into their own folder structure.
+    // This is used when an admin uploads a recipe on behalf of a user.
+    match /prescriptions/{userId}/{fileName} {
+      allow write: if request.auth.uid != null;
+      // Allow read only by the user who owns it or an admin.
+      // This is more secure than allowing any authenticated user.
+      allow read: if request.auth.uid == userId || exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+    
+    // Allow patients to upload their own prescriptions for orders.
+    match /order-prescriptions/{userId}/{fileName} {
+      allow write: if request.auth.uid == userId;
+      allow read: if request.auth.uid == userId || exists(/databases/$(database)/documents/users/$(request.auth.uid));
     }
   }
 }

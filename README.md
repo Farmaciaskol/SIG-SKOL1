@@ -8,10 +8,14 @@ Este es un proyecto Next.js que sirve como un Sistema de Gestión Integral (SGI)
 - **Lenguaje:** TypeScript
 - **Estilos:** Tailwind CSS
 - **Componentes UI:** shadcn/ui
-- **Base de Datos:** Firestore (Firebase, NoSQL)
+- **Base de Datos:** Firestore (NoSQL, No Relacional)
 - **Autenticación:** Firebase Authentication
 - **Almacenamiento de Archivos:** Firebase Storage
 - **Inteligencia Artificial:** Google AI & Genkit
+
+## Seguridad
+
+La aplicación está protegida por **Reglas de Seguridad de Firestore y Storage**, que aseguran que los usuarios solo puedan acceder a sus propios datos y que las secciones administrativas estén restringidas a usuarios autorizados.
 
 ## Primeros Pasos
 

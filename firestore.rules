@@ -3,11 +3,73 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // WARNING: These rules are insecure and are for development purposes only.
-    // They allow anyone to read and write to your entire database.
-    // You MUST secure your database before deploying to production.
+
+    // Helper function to check if the user is an administrator
+    function isAdmin() {
+      // Assumes there's a 'users' collection where roles are stored.
+      // This is a basic check to see if the user exists in the 'users' collection,
+      // implying they are an internal user of the system.
+      // For higher security, use Firebase Custom Claims with a dedicated admin role.
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    // Default to deny all access
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
+    }
+
+    // Patients can read/update their own data. Admins can R/W all.
+    match /patients/{patientId} {
+      allow read: if request.auth.uid == resource.data.firebaseUid || isAdmin();
+      // Allow patients to update their own profile, and admins to update any.
+      allow update: if request.auth.uid == resource.data.firebaseUid || isAdmin();
+      // Only admins can create or delete patient profiles from the backend.
+      allow create, delete: if isAdmin();
+    }
+    
+    // Anyone can create a request to get an account.
+    match /userRequests/{requestId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Patients can read their own recipes. Admins can R/W all.
+    match /recipes/{recipeId} {
+      allow read: if request.auth.uid == get(/databases/$(database)/documents/patients/$(resource.data.patientId)).data.firebaseUid || isAdmin();
+      allow create, update, delete: if isAdmin();
+      // Patient can create a recipe for themselves via the portal
+      allow create: if request.auth.uid == get(/databases/$(database)/documents/patients/$(request.resource.data.patientId)).data.firebaseUid || isAdmin();
+    }
+    
+    // Patients can read their own orders.
+    match /orders/{orderId} {
+       allow read: if request.auth.uid == get(/databases/$(database)/documents/patients/$(resource.data.patientId)).data.firebaseUid || isAdmin();
+       allow create: if request.auth.uid == get(/databases/$(database)/documents/patients/$(request.resource.data.patientId)).data.firebaseUid;
+       allow update, delete: if isAdmin();
+    }
+    
+    // Patients and pharmacists can read/write to their own message threads.
+    match /patientMessages/{messageId} {
+      allow read: if request.auth.uid == get(/databases/$(database)/documents/patients/$(resource.data.patientId)).data.firebaseUid || isAdmin();
+      allow create: if request.auth.uid == get(/databases/$(database)/documents/patients/$(request.resource.data.patientId)).data.firebaseUid || isAdmin();
+      allow update: if isAdmin(); // Only admins can mark as read for now from backend.
+    }
+
+    // Admin-only collections
+    match /doctors/{docId} { allow read, write: if isAdmin(); }
+    match /inventory/{itemId} { allow read, write: if isAdmin(); }
+    match /users/{userId} { allow read, write: if isAdmin(); }
+    match /roles/{roleId} { allow read, write: if isAdmin(); }
+    match /externalPharmacies/{pharmacyId} { allow read, write: if isAdmin(); }
+    match /dispatchNotes/{noteId} { allow read, write: if isAdmin(); }
+    match /controlledSubstanceLog/{logId} { allow read, write: if isAdmin(); }
+    match /pharmacovigilanceReports/{reportId} { allow read, write: if isAdmin(); }
+    match /monthlyDispensations/{boxId} { allow read, write: if isAdmin(); }
+    
+    // App settings should be readable by all authenticated users, but only writable by admins.
+    match /appSettings/global {
+      allow read: if request.auth.uid != null;
+      allow write: if isAdmin();
     }
   }
 }
