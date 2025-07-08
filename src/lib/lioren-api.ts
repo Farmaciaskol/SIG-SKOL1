@@ -97,3 +97,22 @@ export async function fetchLiorenWarehouses(): Promise<{ bodegas: Bodega[]; erro
         return { bodegas: [], error: message };
     }
 }
+
+/**
+ * Fetches attributes for a specific product from Lioren.
+ * @param productId The ID of the product.
+ * @returns A promise that resolves to the product attributes.
+ */
+export async function fetchLiorenProductAttributes(productId: number): Promise<{ attributes: any[]; error?: string }> {
+    try {
+        const url = `https://www.lioren.cl/api/productos/${productId}/atributos`;
+        const data = await fetchLiorenAPI(url);
+        // The API returns attributes under the key "*"
+        const attributes = data?.data || data?.['*'] || (Array.isArray(data) ? data : []);
+        return { attributes };
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "No se pudo conectar con el servidor de Lioren.";
+        console.error(`Fallo al obtener atributos para el producto ${productId} en Lioren:`, error);
+        return { attributes: [], error: message };
+    }
+}

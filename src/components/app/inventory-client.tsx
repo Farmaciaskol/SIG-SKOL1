@@ -557,12 +557,18 @@ export function InventoryClient({
                                                         <TableCell>
                                                             <div className="flex flex-wrap gap-1">
                                                                 {Array.isArray(product.stocks) && product.stocks.length > 0 ? (
-                                                                    product.stocks.map((stock, index) => {
-                                                                        const warehouseName = stock.nombre || getWarehouseName(stock.sucursal_id) || `ID: ${stock.sucursal_id}`;
-                                                                        const stockValue = stock.stock ?? 'N/D';
+                                                                    product.stocks.map((stockItem, index) => {
+                                                                        if (typeof stockItem !== 'object' || stockItem === null) {
+                                                                            return ( <Badge key={`invalid-stock-${index}`} variant="destructive"> Dato Inválido </Badge> );
+                                                                        }
+                                                                        const warehouseId = stockItem.sucursal_id;
+                                                                        const warehouseName = stockItem.nombre || getWarehouseName(warehouseId);
+                                                                        const stockValue = stockItem.stock;
+                                                                        const key = `${product.id}-${warehouseId !== null && warehouseId !== undefined ? warehouseId : `idx-${index}`}`;
+
                                                                         return (
-                                                                            <Badge key={`${product.id}-${warehouseName}-${index}`} variant="secondary" className="font-normal">
-                                                                                {warehouseName}: {stockValue}
+                                                                            <Badge key={key} variant="secondary" className="font-normal">
+                                                                                {warehouseName || `ID Bodega: ${warehouseId}`}: {stockValue ?? 'N/D'}
                                                                             </Badge>
                                                                         );
                                                                     })
