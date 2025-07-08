@@ -1,5 +1,6 @@
 
 
+
 export enum RecipeStatus {
   PendingReviewPortal = 'Pendiente Revisión - Portal',
   PendingValidation = 'Pendiente Validación',
@@ -275,10 +276,12 @@ export interface LotDetail {
     expiryDate: string; // ISO String
 }
 
+export type InventoryType = 'Fraccionamiento' | 'Venta Directa' | 'Suministro Paciente';
+
 export interface InventoryItem {
   id: string;
   name: string; // Nombre comercial
-  inventoryType: 'Fraccionamiento' | 'Venta Directa';
+  inventoryType: InventoryType;
   activePrinciple?: string;
   sku?: string; // Código Nacional / ISP
   manufacturer?: string;
@@ -300,6 +303,11 @@ export interface InventoryItem {
 
   // For fraccionamiento
   itemsPerBaseUnit?: number;
+
+  // For patient-supplied meds
+  patientOwnerId?: string;
+  patientOwnerName?: string;
+
 
   // Logistics
   unit: string; // Unidad de compra (caja, frasco)

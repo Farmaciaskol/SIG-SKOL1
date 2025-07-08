@@ -2,48 +2,27 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { getInventory, addInventoryItem, updateInventoryItem, deleteInventoryItem, addLotToInventoryItem } from '@/lib/data';
-import type { InventoryItem, LotDetail } from '@/lib/types';
-import { PlusCircle, Search, Edit, History, PackagePlus, Trash2, MoreVertical, DollarSign, Package, PackageX, AlertTriangle, Star, Box, ChevronDown, Loader2, Calendar as CalendarIcon, Snowflake, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from 'lucide-react';
+import { getInventory, addInventoryItem, updateInventoryItem, deleteInventoryItem, addLotToInventoryItem, Patient } from '@/lib/data';
+import type { InventoryItem, LotDetail, LiorenProduct } from '@/lib/types';
+import { PlusCircle, Search, Edit, Box, Trash2, MoreVertical, DollarSign, Package, PackageX, AlertTriangle, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Loader2, Calendar as CalendarIcon, Download, Info } from 'lucide-react';
 import { format, differenceInDays, isBefore, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { InventoryItemForm } from './inventory-item-form';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
 import { Label } from '../ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert } from '../ui/alert';
 
 const EXPIRY_THRESHOLD_DAYS = 90;
 
@@ -104,62 +83,6 @@ const InventoryActions = ({
       </DropdownMenu>
     );
 };
-
-const ProductCard = ({ 
-    item, 
-    onManageLots, 
-    onEdit, 
-    onDelete 
-}: { 
-    item: InventoryItemWithStats; 
-    onManageLots: (item: InventoryItemWithStats) => void;
-    onEdit: (item: InventoryItem) => void;
-    onDelete: (item: InventoryItem) => void;
-}) => {
-    const statusStyles: Record<InventoryItemWithStats['status'], { badge: string; border: string }> = {
-      'OK': { badge: 'bg-green-100 text-green-800', border: 'border-transparent' },
-      'Stock Bajo': { badge: 'bg-yellow-100 text-yellow-800 border-yellow-300', border: 'border-yellow-400' },
-      'Agotado': { badge: 'bg-red-100 text-red-800 border-red-300', border: 'border-red-500' },
-      'Próximo a Vencer': { badge: 'bg-orange-100 text-orange-800 border-orange-300', border: 'border-orange-400' },
-      'Vencido': { badge: 'bg-red-200 text-red-900 font-bold border-red-400', border: 'border-red-500' },
-    };
-    
-    const { badge, border } = statusStyles[item.status] || statusStyles['OK'];
-
-    return (
-        <Card className={cn("flex flex-col transition-all hover:shadow-lg border-2", border)}>
-            <CardHeader className="pb-4">
-                 <div className="flex justify-between items-start">
-                    <h3 className="text-lg font-bold text-primary truncate" title={item.name}>{item.name}</h3>
-                    <Badge variant={item.inventoryType === 'Fraccionamiento' ? 'default' : 'secondary'}>{item.inventoryType}</Badge>
-                 </div>
-                 <p className="text-xs text-muted-foreground">SKU: {item.sku || 'N/A'}</p>
-            </CardHeader>
-            <CardContent className="flex-grow space-y-4">
-                <div className="flex justify-between items-baseline">
-                    <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-bold text-foreground">{item.quantity}</span>
-                        <span className="text-muted-foreground">{item.unit}</span>
-                    </div>
-                    <Badge className={cn("font-semibold", badge)}>{item.status}</Badge>
-                </div>
-                <div className="text-sm">
-                    <p className="text-muted-foreground">Próximo Vencimiento:</p>
-                    <p className="font-medium text-foreground">
-                        {item.nextExpiryDate && !isNaN(parseISO(item.nextExpiryDate).getTime()) ? format(parseISO(item.nextExpiryDate), 'dd-MMMM-yyyy', {locale: es}) : 'N/A'}
-                    </p>
-                </div>
-            </CardContent>
-            <CardFooter className="bg-muted/50 p-3 flex flex-col items-stretch gap-2">
-                <Button onClick={() => onManageLots(item)}>
-                    <Box className="mr-2 h-4 w-4" />
-                    Gestionar Lotes
-                </Button>
-                <InventoryActions item={item} onManageLots={onManageLots} onEdit={onEdit} onDelete={onDelete} />
-            </CardFooter>
-        </Card>
-    )
-}
 
 function LotManagementDialog({ 
   item, 
@@ -282,11 +205,16 @@ function LotManagementDialog({
   )
 }
 
-export function InventoryClient({ initialInventory }: { 
+export function InventoryClient({ 
+  initialInventory,
+  liorenData,
+  patients
+}: { 
   initialInventory: InventoryItem[];
+  liorenData: { products: LiorenProduct[], error: string | null };
+  patients: Patient[];
 }) {
     const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory);
-    const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState<FilterStatus>('all');
     const { toast } = useToast();
@@ -296,8 +224,8 @@ export function InventoryClient({ initialInventory }: {
     const [editingItem, setEditingItem] = useState<InventoryItem | Partial<InventoryItem> | null>(null);
     const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null);
 
-    const [currentPage, setCurrentPage] = useState(1);
-    const ITEMS_PER_PAGE = 20;
+    const [liorenSearchTerm, setLiorenSearchTerm] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const refreshLocalData = async () => {
         setLoading(true);
@@ -316,6 +244,18 @@ export function InventoryClient({ initialInventory }: {
         setIsFormOpen(true);
     };
 
+    const handleImportFromLioren = (liorenProduct: LiorenProduct) => {
+        const partialItem: Partial<InventoryItem> = {
+            name: liorenProduct.nombre,
+            sku: liorenProduct.codigo,
+            inventoryType: 'Venta Directa',
+            unit: liorenProduct.unidad,
+            costPrice: liorenProduct.preciocompraneto,
+            salePrice: liorenProduct.precioventabruto,
+        };
+        handleOpenForm(partialItem);
+    }
+
     const handleFormFinished = () => {
         setIsFormOpen(false);
         setEditingItem(null);
@@ -326,7 +266,7 @@ export function InventoryClient({ initialInventory }: {
         if (!itemToDelete) return;
         try {
             await deleteInventoryItem(itemToDelete.id);
-            toast({ title: "Producto Eliminado", description: "El producto ha sido eliminado de la base de datos local." });
+            toast({ title: "Producto Eliminado", description: "El producto ha sido eliminado del inventario local." });
             setItemToDelete(null);
             refreshLocalData();
         } catch (error) {
@@ -337,19 +277,8 @@ export function InventoryClient({ initialInventory }: {
     const inventoryWithStats = useMemo<InventoryItemWithStats[]>(() => {
         return inventory.map(item => {
             const now = new Date();
-            
             const lots = item.lots || [];
-            const sortedLots = [...lots]
-                .filter(lot => {
-                    if (lot.quantity <= 0 || !lot.expiryDate) return false;
-                    try {
-                        return !isNaN(parseISO(lot.expiryDate).getTime());
-                    } catch {
-                        return false;
-                    }
-                })
-                .sort((a, b) => parseISO(a.expiryDate).getTime() - parseISO(b.expiryDate).getTime());
-            
+            const sortedLots = [...lots].filter(lot => lot.quantity > 0 && lot.expiryDate).sort((a, b) => new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime());
             const nextExpiryDate = sortedLots.length > 0 ? sortedLots[0].expiryDate : undefined;
             
             let isExpired = false;
@@ -360,9 +289,7 @@ export function InventoryClient({ initialInventory }: {
                     const expiryDateObj = parseISO(nextExpiryDate);
                     isExpired = isBefore(expiryDateObj, now);
                     isExpiringSoon = differenceInDays(expiryDateObj, now) <= EXPIRY_THRESHOLD_DAYS && !isExpired;
-                } catch {
-                    // Ignore invalid dates
-                }
+                } catch {}
             }
 
             let status: InventoryItemWithStats['status'] = 'OK';
@@ -371,39 +298,26 @@ export function InventoryClient({ initialInventory }: {
             else if (isExpiringSoon) status = 'Próximo a Vencer';
             else if (item.quantity < item.lowStockThreshold) status = 'Stock Bajo';
             
-            return {
-                ...item,
-                status,
-                nextExpiryDate,
-                isExpiringSoon,
-                isExpired
-            };
+            return { ...item, status, nextExpiryDate, isExpiringSoon, isExpired };
         });
     }, [inventory]);
 
     const filteredInventory = useMemo(() => {
         return inventoryWithStats.filter(item => {
             const matchesFilter = activeFilter === 'all' || item.status === activeFilter;
-            
             const matchesSearch = searchTerm === '' ||
                 item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 (item.sku && item.sku.toLowerCase().includes(searchTerm.toLowerCase()));
-
             return matchesFilter && matchesSearch;
         })
     }, [inventoryWithStats, activeFilter, searchTerm]);
 
-    const totalPages = Math.ceil(filteredInventory.length / ITEMS_PER_PAGE);
-
-    const paginatedInventory = useMemo(() => {
-        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-        return filteredInventory.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-    }, [filteredInventory, currentPage]);
-    
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [searchTerm, activeFilter]);
-
+    const filteredLiorenInventory = useMemo(() => {
+        if (!liorenData.products) return [];
+        return liorenData.products.filter(p => 
+            p.nombre && p.nombre.toLowerCase().includes(liorenSearchTerm.toLowerCase())
+        );
+    }, [liorenData.products, liorenSearchTerm]);
 
     const globalStats = useMemo(() => {
         const totalValue = inventory.reduce((sum, item) => sum + (item.quantity * (item.costPrice || 0)), 0);
@@ -437,10 +351,10 @@ export function InventoryClient({ initialInventory }: {
                 <DialogHeader>
                     <DialogTitle>{(editingItem && 'id' in editingItem) ? 'Editar Producto' : 'Crear Nuevo Producto'}</DialogTitle>
                     <DialogDescription>
-                        { (editingItem && 'id' in editingItem) ? 'Modifique los detalles del producto en la base de datos local.' : 'Añada un nuevo producto a la base de datos interna.'}
+                        { (editingItem && 'id' in editingItem) ? 'Modifique los detalles del producto en el inventario local.' : 'Añada un nuevo producto al inventario local.'}
                     </DialogDescription>
                 </DialogHeader>
-                <InventoryItemForm onFinished={handleFormFinished} itemToEdit={editingItem || undefined} />
+                <InventoryItemForm onFinished={handleFormFinished} itemToEdit={editingItem || undefined} patients={patients} />
               </DialogContent>
             </Dialog>
 
@@ -449,7 +363,7 @@ export function InventoryClient({ initialInventory }: {
                     <AlertDialogHeader>
                         <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Esta acción eliminará permanentemente el producto <span className="font-bold">{itemToDelete?.name}</span> de la base de datos interna.
+                            Esta acción eliminará permanentemente el producto <span className="font-bold">{itemToDelete?.name}</span> del inventario local.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -468,7 +382,13 @@ export function InventoryClient({ initialInventory }: {
                 </div>
             </div>
 
-            <div className="space-y-6">
+            <Tabs defaultValue="local">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="local">Inventario Local (Skol)</TabsTrigger>
+                <TabsTrigger value="external">Inventario Externo (Lioren)</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="local" className="mt-6 space-y-6">
                 <div className="flex justify-start">
                     <Button onClick={() => handleOpenForm(null)}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Crear Producto Local
@@ -486,119 +406,85 @@ export function InventoryClient({ initialInventory }: {
                         <CardContent className="p-4 flex flex-col sm:flex-row gap-4">
                             <div className="relative flex-1">
                                 <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    placeholder="Buscar por nombre o SKU..."
-                                    className="pl-8"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
+                                <Input placeholder="Buscar por nombre o SKU..." className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                             </div>
                             <div className="flex items-center gap-2 overflow-x-auto pb-2">
                                 {(['all', 'OK', 'Stock Bajo', 'Agotado', 'Próximo a Vencer', 'Vencido'] as FilterStatus[]).map(status => (
-                                    <Button 
-                                        key={status}
-                                        variant={activeFilter === status ? 'default' : 'outline'}
-                                        onClick={() => setActiveFilter(status)}
-                                        className="text-xs sm:text-sm whitespace-nowrap"
-                                    >
-                                    {status === 'all' ? 'Todos' : status}
-                                    </Button>
+                                    <Button key={status} variant={activeFilter === status ? 'default' : 'outline'} onClick={() => setActiveFilter(status)} className="text-xs sm:text-sm whitespace-nowrap">{status === 'all' ? 'Todos' : status}</Button>
                                 ))}
                             </div>
                         </CardContent>
                     </Card>
 
-                    {loading ? (
-                        <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
-                    ) : paginatedInventory.length === 0 ? (
-                        <Card className="text-center py-16 mt-8 shadow-none border-dashed">
-                            <div className="flex flex-col items-center justify-center">
-                                <Package className="h-16 w-16 text-muted-foreground mb-4" />
-                                <h2 className="text-xl font-semibold text-foreground">No se encontraron productos</h2>
-                                <p className="text-muted-foreground mt-2 max-w-sm">
-                                    Intenta ajustar tu búsqueda o crea un nuevo producto.
-                                </p>
-                            </div>
-                        </Card>
+                    {loading ? ( <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                    ) : filteredInventory.length === 0 ? (
+                        <Card className="text-center py-16 mt-8 shadow-none border-dashed"><div className="flex flex-col items-center justify-center"><Package className="h-16 w-16 text-muted-foreground mb-4" /><h2 className="text-xl font-semibold text-foreground">No se encontraron productos locales</h2><p className="text-muted-foreground mt-2 max-w-sm">Intenta ajustar tu búsqueda o crea un nuevo producto.</p></div></Card>
                     ) : (
-                        <>
-                            {/* Desktop Table View */}
-                            <Card className="hidden md:block">
-                                <div className="overflow-x-auto">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Producto</TableHead>
-                                            <TableHead>Tipo</TableHead>
-                                            <TableHead>Stock Total</TableHead>
-                                            <TableHead>Próximo Vto.</TableHead>
-                                            <TableHead>Estado</TableHead>
-                                            <TableHead className="text-right">Acciones</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {paginatedInventory.map(item => {
-                                            const statusStyles: Record<InventoryItemWithStats['status'], string> = {
-                                                'OK': 'text-green-600',
-                                                'Stock Bajo': 'text-yellow-600',
-                                                'Agotado': 'text-red-600',
-                                                'Próximo a Vencer': 'text-orange-600',
-                                                'Vencido': 'text-red-700 font-bold',
-                                            };
-                                            return (
-                                            <TableRow key={item.id}>
-                                                <TableCell>
-                                                    <div className="font-medium text-foreground">{item.name}</div>
-                                                    <div className="text-xs text-muted-foreground">SKU: {item.sku || 'N/A'}</div>
-                                                </TableCell>
-                                                <TableCell><Badge variant={item.inventoryType === 'Fraccionamiento' ? 'default' : 'secondary'}>{item.inventoryType}</Badge></TableCell>
-                                                <TableCell>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="font-semibold text-lg text-foreground">{item.quantity}</span>
-                                                        <span className="text-sm text-muted-foreground ml-1">{item.unit}</span>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    {item.nextExpiryDate && !isNaN(parseISO(item.nextExpiryDate).getTime()) ? format(parseISO(item.nextExpiryDate), 'MMM yyyy', {locale: es}) : 'N/A'}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge variant="outline" className={cn("font-semibold", statusStyles[item.status])}>{item.status}</Badge>
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    <InventoryActions item={item} onManageLots={handleManageLots} onEdit={() => handleOpenForm(item)} onDelete={() => setItemToDelete(item)} />
-                                                </TableCell>
-                                            </TableRow>
-                                        )})}
-                                    </TableBody>
-                                </Table>
-                                </div>
-                            </Card>
-
-                            {/* Mobile Card View */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:hidden">
-                                {paginatedInventory.map(item => (
-                                    <ProductCard key={item.id} item={item} onManageLots={handleManageLots} onEdit={() => handleOpenForm(item)} onDelete={() => setItemToDelete(item)} />
-                                ))}
-                            </div>
-
-                            {/* Pagination Controls */}
-                            {totalPages > 1 && (
-                                <div className="flex items-center justify-between mt-6">
-                                    <div className="text-xs text-muted-foreground">
-                                        Página {currentPage} de {totalPages}
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                        <Button variant="outline" size="sm" onClick={() => setCurrentPage(1)} disabled={currentPage === 1}><ChevronsLeft /></Button>
-                                        <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1}><ChevronLeft /></Button>
-                                        <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages}><ChevronRight /></Button>
-                                        <Button variant="outline" size="sm" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}><ChevronsRight /></Button>
-                                    </div>
-                                </div>
-                            )}
-                        </>
+                        <Table>
+                            <TableHeader><TableRow><TableHead>Producto</TableHead><TableHead>Tipo</TableHead><TableHead>Stock Total</TableHead><TableHead>Próximo Vto.</TableHead><TableHead>Estado</TableHead><TableHead className="text-right">Acciones</TableHead></TableRow></TableHeader>
+                            <TableBody>
+                                {filteredInventory.map(item => {
+                                    const statusStyles: Record<InventoryItemWithStats['status'], string> = { 'OK': 'text-green-600', 'Stock Bajo': 'text-yellow-600', 'Agotado': 'text-red-600', 'Próximo a Vencer': 'text-orange-600', 'Vencido': 'text-red-700 font-bold' };
+                                    return (
+                                    <TableRow key={item.id}>
+                                        <TableCell>
+                                            <div className="font-medium text-foreground">{item.name}</div>
+                                            <div className="text-xs text-muted-foreground">SKU: {item.sku || 'N/A'}</div>
+                                            {item.inventoryType === 'Suministro Paciente' && <Badge variant="outline" className="mt-1">Paciente: {item.patientOwnerName}</Badge>}
+                                        </TableCell>
+                                        <TableCell><Badge variant={item.inventoryType === 'Fraccionamiento' ? 'default' : 'secondary'}>{item.inventoryType}</Badge></TableCell>
+                                        <TableCell><div className="flex items-center gap-2"><span className="font-semibold text-lg text-foreground">{item.quantity}</span><span className="text-sm text-muted-foreground ml-1">{item.unit}</span></div></TableCell>
+                                        <TableCell>{item.nextExpiryDate && !isNaN(parseISO(item.nextExpiryDate).getTime()) ? format(parseISO(item.nextExpiryDate), 'MMM yyyy', {locale: es}) : 'N/A'}</TableCell>
+                                        <TableCell><Badge variant="outline" className={cn("font-semibold", statusStyles[item.status])}>{item.status}</Badge></TableCell>
+                                        <TableCell className="text-right"><InventoryActions item={item} onManageLots={handleManageLots} onEdit={() => handleOpenForm(item)} onDelete={() => setItemToDelete(item)} /></TableCell>
+                                    </TableRow>
+                                )})}
+                            </TableBody>
+                        </Table>
                     )}
                 </div>
-            </div>
+              </TabsContent>
+
+              <TabsContent value="external" className="mt-6 space-y-6">
+                {liorenData.error ? (
+                  <Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><CardTitle>Error de Conexión</CardTitle><AlertDescription>{liorenData.error}</AlertDescription></Alert>
+                ) : (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Catálogo de Productos Lioren</CardTitle>
+                      <CardDescription>Visualice y busque en el catálogo completo de Lioren. Importe productos a su inventario local para gestionarlos.</CardDescription>
+                      <div className="relative pt-4">
+                        <Search className="absolute left-2.5 top-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input placeholder="Buscar en catálogo Lioren..." className="pl-8" value={liorenSearchTerm} onChange={e => setLiorenSearchTerm(e.target.value)} />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                        {filteredLiorenInventory.length > 0 ? (
+                             <Table>
+                                <TableHeader><TableRow><TableHead>Nombre</TableHead><TableHead>SKU</TableHead><TableHead>Stock Total</TableHead><TableHead className="text-right">Precio Venta</TableHead><TableHead className="text-right">Acción</TableHead></TableRow></TableHeader>
+                                <TableBody>
+                                    {filteredLiorenInventory.slice(0, 100).map(product => ( // Limit display to 100 for performance
+                                        <TableRow key={product.id}>
+                                            <TableCell className="font-medium">{product.nombre || 'N/A'}</TableCell>
+                                            <TableCell>{product.codigo || 'N/A'}</TableCell>
+                                            <TableCell>{product.stocks?.reduce((acc, s) => acc + s.stock, 0) ?? 'N/A'}</TableCell>
+                                            <TableCell className="text-right">${(product.precioventabruto ?? 0).toLocaleString('es-CL')}</TableCell>
+                                            <TableCell className="text-right"><Button variant="outline" size="sm" onClick={() => handleImportFromLioren(product)}><Download className="mr-2 h-4 w-4" />Importar</Button></TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        ) : (
+                            <div className="text-center py-10 text-muted-foreground">No se encontraron productos en Lioren para su búsqueda.</div>
+                        )}
+                        {filteredLiorenInventory.length > 100 && (
+                            <p className="text-center text-sm text-muted-foreground mt-4">Mostrando los primeros 100 resultados. Afine su búsqueda para encontrar más productos.</p>
+                        )}
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
+            </Tabs>
         </>
     );
 }

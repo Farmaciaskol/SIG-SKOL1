@@ -434,12 +434,17 @@ export const addInventoryItem = async (item: Partial<Omit<InventoryItem, 'id' | 
     if (!db) throw new Error("Firestore is not initialized.");
     
     const dataToSave = { ...item, quantity: 0, lots: [] };
-    if (dataToSave.inventoryType === 'Venta Directa') {
+    
+    if (dataToSave.inventoryType !== 'Fraccionamiento') {
         dataToSave.activePrinciple = undefined;
         dataToSave.pharmaceuticalForm = undefined;
         dataToSave.doseValue = undefined;
         dataToSave.doseUnit = undefined;
         dataToSave.itemsPerBaseUnit = undefined;
+    }
+     if (dataToSave.inventoryType !== 'Suministro Paciente') {
+        dataToSave.patientOwnerId = undefined;
+        dataToSave.patientOwnerName = undefined;
     }
 
     const docRef = await addDoc(collection(db, 'inventory'), cleanUndefined(dataToSave));
@@ -454,12 +459,16 @@ export const deleteInventoryItem = async (id: string): Promise<void> => {
 export const updateInventoryItem = async (id: string, updates: Partial<Omit<InventoryItem, 'id'>>): Promise<void> => {
     if (!db) throw new Error("Firestore is not initialized.");
     const dataToSave = { ...updates };
-    if (dataToSave.inventoryType === 'Venta Directa') {
+    if (dataToSave.inventoryType !== 'Fraccionamiento') {
         dataToSave.activePrinciple = undefined;
         dataToSave.pharmaceuticalForm = undefined;
         dataToSave.doseValue = undefined;
         dataToSave.doseUnit = undefined;
         dataToSave.itemsPerBaseUnit = undefined;
+    }
+    if (dataToSave.inventoryType !== 'Suministro Paciente') {
+        dataToSave.patientOwnerId = undefined;
+        dataToSave.patientOwnerName = undefined;
     }
     await updateDoc(doc(db, 'inventory', id), cleanUndefined(dataToSave));
 };
@@ -614,8 +623,8 @@ export const logDirectSaleDispensation = async (
     const inventoryData = inventorySnap.data() as InventoryItem;
 
     if (!inventoryData.isControlled) throw new Error("This item is not a controlled substance.");
-    if (inventoryData.inventoryType === 'Fraccionamiento') {
-        throw new Error("Este producto es para fraccionamiento y no puede ser vendido directamente en esta modalidad.");
+    if (inventoryData.inventoryType === 'Fraccionamiento' || inventoryData.inventoryType === 'Suministro Paciente') {
+        throw new Error("Este producto es para fraccionamiento o de paciente y no puede ser vendido directamente en esta modalidad.");
     }
 
     const lotIndex = inventoryData.lots?.findIndex(l => l.lotNumber === lotNumber);

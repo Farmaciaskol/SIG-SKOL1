@@ -32,24 +32,22 @@ export async function fetchLiorenInventory(): Promise<{ products: LiorenProduct[
       });
 
       if (!response.ok) {
-        if (response.status === 429) {
+        if (response.status === 429) { // Rate limited
             console.warn("Rate limit hit from Lioren API. Retrying after a short delay...");
             await new Promise(resolve => setTimeout(resolve, 1000));
             continue; 
         }
-
-        if (page > 1) {
-          console.log(`Lioren API: Finished fetching products at page ${page}. Status: ${response.status}`);
-          break; // Not a critical error, just end of pagination.
-        }
         
-        return { products: [], error: `Error de la API de Lioren: ${response.status} ${response.statusText}` };
+        // If it's not a rate limit error, it's likely the end of pagination (e.g., 404 on a page that doesn't exist)
+        // or another API error. We can safely stop here.
+        break;
       }
 
       const data = await response.json();
       
       let productsOnPage: LiorenProduct[] | undefined;
 
+      // Handle different possible response structures from the API
       if (data && Array.isArray(data['*'])) {
           productsOnPage = data['*'];
       } else if (data && Array.isArray(data.productos)) {
@@ -59,10 +57,10 @@ export async function fetchLiorenInventory(): Promise<{ products: LiorenProduct[
       }
 
       if (productsOnPage === undefined) {
-        if (page > 1) {
-            console.log(`Lioren API: Finished fetching products at page ${page}. Response was not a recognized array format.`);
+        if (page > 1) { // It's normal for the last page to not be an array
+            console.log(`Lioren API: Finished fetching products at page ${page}. Response was not in a recognized format.`);
         } else {
-            console.warn('La respuesta de la API de Lioren no contiene un listado de productos en un formato esperado.');
+            console.warn('La respuesta inicial de la API de Lioren no contiene un listado de productos en un formato esperado.');
         }
         break;
       }
@@ -74,6 +72,7 @@ export async function fetchLiorenInventory(): Promise<{ products: LiorenProduct[
       allProducts.push(...productsOnPage);
       page++;
 
+      // Small delay to avoid hitting rate limits
       await new Promise(resolve => setTimeout(resolve, 250)); 
 
     } catch (error) {
