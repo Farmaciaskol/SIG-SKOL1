@@ -44,6 +44,11 @@ import {
   DialogTrigger,
   DialogClose,
 } from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '../ui/button';
@@ -77,7 +82,7 @@ const menuGroups = [
       title: 'Operaciones',
       items: [
         { href: '/inventory', label: 'Inventario', icon: Boxes },
-        { href: '/monthly-dispensing', label: 'Dispensación Mensual', icon: CalendarDays },
+        { href: '/monthly-dispensing', label: 'Dispensación', icon: CalendarDays },
         { href: '/dispatch-management', label: 'Despachos', icon: Truck },
         { href: '/pharmacovigilance', label: 'Farmacovigilancia', icon: HeartPulse },
         { href: '/controlled-drugs', label: 'Controlados', icon: Lock },
@@ -86,7 +91,7 @@ const menuGroups = [
     {
       title: 'Administración',
       items: [
-        { href: '/financial-management', label: 'Gestión Financiera', icon: Banknote },
+        { href: '/financial-management', label: 'Finanzas', icon: Banknote },
         { href: '/reports', label: 'Reportes', icon: BarChart2 },
       ],
     },
@@ -168,6 +173,7 @@ function MainNavContent({
   const [user] = useAuthState(auth);
   const [appUser, setAppUser] = React.useState<AppUser | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
   const toggleSidebar = () => setIsSidebarOpen(prev => !prev);
 
@@ -240,8 +246,8 @@ function MainNavContent({
                       key={item.href}
                       href={item.href}
                       className={cn(
-                        'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-accent hover:text-accent-foreground',
-                        (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) && 'bg-accent text-foreground font-medium',
+                        'flex items-center gap-3 rounded-lg px-3 py-2 text-foreground/70 transition-all hover:bg-accent hover:text-foreground',
+                        (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) && 'bg-accent text-foreground font-semibold',
                         !isSidebarOpen && 'justify-center'
                       )}
                       title={isSidebarOpen ? '' : item.label}
@@ -274,16 +280,64 @@ function MainNavContent({
       <div className="flex flex-1 flex-col">
         <header className="flex h-16 items-center justify-between gap-4 bg-muted px-6">
           <div className="md:hidden">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 md:hidden"
-              >
-                  <Menu className="h-5 w-5" />
-                  <span className="sr-only">Toggle Sidebar</span>
-              </Button>
+              <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+                <SheetTrigger asChild>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9"
+                    >
+                        <Menu className="h-5 w-5" />
+                        <span className="sr-only">Toggle Sidebar</span>
+                    </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[250px] p-0 bg-muted">
+                    <div className="flex h-16 items-center px-4">
+                        <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
+                            <Image
+                                src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=1a612d04-0f27-4317-bfd6-06b48f019a24"
+                                alt="Skol Pharmacy Logo"
+                                width={120}
+                                height={33}
+                                priority
+                            />
+                        </Link>
+                    </div>
+                    <div className="flex-1 overflow-auto">
+                        {menuGroups.map((group) => (
+                          <div key={group.title} className="px-2 mb-2">
+                            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">
+                                {group.title}
+                            </h3>
+                            <div className="flex flex-col gap-1">
+                              {group.items.map((item) => (
+                                <Link
+                                  key={item.href}
+                                  href={item.href}
+                                  className={cn(
+                                    'flex items-center gap-3 rounded-lg px-3 py-2 text-foreground/70 transition-all hover:bg-accent hover:text-foreground',
+                                    (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) && 'bg-accent text-foreground font-semibold',
+                                  )}
+                                  onClick={() => setIsMobileMenuOpen(false)}
+                                >
+                                  <item.icon className="h-4 w-4" />
+                                  <span>{item.label}</span>
+                                   {item.href === '/inventory' && lowStockCount > 0 && (
+                                        <Badge variant="destructive" className="ml-auto">{lowStockCount}</Badge>
+                                   )}
+                                   {item.href === '/dispatch-management' && itemsToDispatchCount > 0 && (
+                                        <Badge variant="destructive" className="ml-auto">{itemsToDispatchCount}</Badge>
+                                   )}
+                                </Link>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                </SheetContent>
+            </Sheet>
           </div>
-          <div className="w-full max-w-md ml-auto">
+          <div className="w-full max-w-md ml-auto md:ml-0">
              <CommandPalette />
           </div>
           <div className="flex items-center gap-2">
