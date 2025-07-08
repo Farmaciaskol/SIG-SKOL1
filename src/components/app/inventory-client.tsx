@@ -445,8 +445,8 @@ export function InventoryClient({ initialInventory, liorenInventory, liorenError
     const filteredLiorenInventory = useMemo(() => {
         if (!liorenInventory) return [];
         return liorenInventory.filter(p => 
-            p.nombre.toLowerCase().includes(liorenSearchTerm.toLowerCase()) ||
-            p.codigo.toLowerCase().includes(liorenSearchTerm.toLowerCase())
+            (p?.nombre && p.nombre.toLowerCase().includes(liorenSearchTerm.toLowerCase())) ||
+            (p?.codigo && p.codigo.toLowerCase().includes(liorenSearchTerm.toLowerCase()))
         );
     }, [liorenInventory, liorenSearchTerm]);
 
@@ -665,25 +665,28 @@ export function InventoryClient({ initialInventory, liorenInventory, liorenError
                                         <TableRow>
                                             <TableHead>Producto (Lioren)</TableHead>
                                             <TableHead>SKU</TableHead>
-                                            <TableHead>Stock (Bodega Central)</TableHead>
+                                            <TableHead>Stock</TableHead>
                                             <TableHead>Precio Venta</TableHead>
                                             <TableHead className="text-right">Acciones</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {filteredLiorenInventory.length > 0 ? filteredLiorenInventory.map(product => {
-                                            const centralStock = product.stocks?.find(s => s.nombre.toLowerCase().includes('central'))?.stock ?? 0;
+                                            if (!product || typeof product !== 'object') return null;
+
+                                            const name = typeof product.nombre === 'string' ? product.nombre : 'Nombre no disponible';
+                                            const sku = typeof product.codigo === 'string' ? product.codigo : 'SKU no disponible';
+                                            const price = typeof product.precioventabruto === 'number' ? `$${product.precioventabruto.toLocaleString('es-CL')}` : 'N/A';
+                                            const totalStock = Array.isArray(product.stocks)
+                                                ? product.stocks.reduce((acc, s) => acc + (s && typeof s.stock === 'number' ? s.stock : 0), 0)
+                                                : 0;
+
                                             return (
                                                 <TableRow key={product.id}>
-                                                    <TableCell className="font-medium">{product.nombre}</TableCell>
-                                                    <TableCell>{product.codigo}</TableCell>
-                                                    <TableCell>{centralStock}</TableCell>
-                                                    <TableCell>
-                                                        {typeof product.precioventabruto === 'number'
-                                                            ? `$${product.precioventabruto.toLocaleString('es-CL')}`
-                                                            : 'N/A'
-                                                        }
-                                                    </TableCell>
+                                                    <TableCell className="font-medium">{name}</TableCell>
+                                                    <TableCell>{sku}</TableCell>
+                                                    <TableCell>{totalStock}</TableCell>
+                                                    <TableCell>{price}</TableCell>
                                                     <TableCell className="text-right">
                                                         <Button variant="outline" size="sm" onClick={() => handleImportFromLioren(product)}>
                                                             <Import className="mr-2 h-4 w-4" />

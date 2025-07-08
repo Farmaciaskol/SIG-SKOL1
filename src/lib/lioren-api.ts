@@ -31,14 +31,12 @@ export async function fetchLiorenInventory(): Promise<LiorenProduct[]> {
       });
 
       if (!response.ok) {
-        // Specific handling for 429 Too Many Requests
         if (response.status === 429) {
-            console.warn("Rate limit hit from Lioren API. Retrying after a longer delay...");
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retrying the same page
-            continue; // Retry the current page without incrementing
+            console.warn("Rate limit hit from Lioren API. Retrying after a short delay...");
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            continue; 
         }
 
-        // If we get another error on a page other than the first, we can assume we've reached the end.
         if (page > 1) {
           console.log(`Lioren API: Finished fetching products at page ${page}. Status: ${response.status}`);
           break;
@@ -48,31 +46,24 @@ export async function fetchLiorenInventory(): Promise<LiorenProduct[]> {
       }
 
       const data = await response.json();
-      let productsOnPage: LiorenProduct[] = [];
       
-      // Check for different possible response structures
-      if (data && Array.isArray(data['*'])) {
-        productsOnPage = data['*'] as LiorenProduct[];
-      } else if (data && typeof data === 'object' && !Array.isArray(data)) {
-        const productArray = Object.values(data);
-        if (productArray.length > 0 && typeof productArray[0] === 'object' && 'id' in (productArray[0] as object) && 'nombre' in (productArray[0] as object)) {
-            productsOnPage = productArray as LiorenProduct[];
+      const productsOnPage = data?.['*'];
+
+      if (!Array.isArray(productsOnPage)) {
+        if (page > 1) {
+            console.log(`Lioren API: Finished fetching products at page ${page}. Response was not an array.`);
+            break;
         }
-      } else if (data && Array.isArray(data.productos)) {
-        productsOnPage = data.productos as LiorenProduct[];
-      } else if (Array.isArray(data)) {
-        productsOnPage = data as LiorenProduct[];
+        throw new Error('La respuesta de la API de Lioren no contiene un listado de productos válido.');
       }
       
       if (productsOnPage.length === 0) {
-        // No more products, break the loop
         break;
       }
       
       allProducts.push(...productsOnPage);
       page++;
 
-      // Add a small delay between successful requests to be a good API citizen
       await new Promise(resolve => setTimeout(resolve, 250)); 
 
     } catch (error) {
