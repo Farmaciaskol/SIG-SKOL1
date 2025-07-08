@@ -55,7 +55,6 @@ import { Button } from '../ui/button';
 import React from 'react';
 import { Badge } from '../ui/badge';
 import { getAvatar } from '@/components/app/predefined-avatars';
-import { getUsers } from '@/lib/data';
 import { User as AppUser } from '@/lib/types';
 import { CommandPalette } from './command-palette';
 
@@ -65,6 +64,7 @@ const menuGroups = [
       title: 'Principal',
       items: [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { href: '/portal-inbox', label: 'Bandeja Portal', icon: Inbox },
         { href: '/recipes', label: 'Recetas', icon: FileText },
       ],
     },
@@ -255,6 +255,9 @@ function MainNavContent({
                         <Link href={item.href} className="flex items-center w-full">
                           <item.icon className="h-4 w-4" />
                           <span className="flex-1 ml-2 group-data-[collapsible=icon]:hidden">{item.label}</span>
+                          {item.href === '/portal-inbox' && portalInboxCount > 0 && (
+                            <Badge variant="destructive" className="h-5 w-5 p-0 flex items-center justify-center rounded-full group-data-[collapsible=icon]:hidden">{portalInboxCount}</Badge>
+                          )}
                           {item.href === '/inventory' && lowStockCount > 0 && (
                             <Badge variant="destructive" className="h-5 w-5 p-0 flex items-center justify-center rounded-full group-data-[collapsible=icon]:hidden">{lowStockCount}</Badge>
                           )}
@@ -295,17 +298,6 @@ function MainNavContent({
             <div className="w-full max-w-xs ml-auto">
               <CommandPalette />
             </div>
-             <Button asChild variant="ghost" size="icon" className="relative h-9 w-9 rounded-full">
-              <Link href="/portal-inbox">
-                  <Inbox className="h-5 w-5" />
-                  {portalInboxCount > 0 && (
-                  <Badge variant="destructive" className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full p-0">
-                      {portalInboxCount}
-                  </Badge>
-                  )}
-                  <span className="sr-only">Bandeja Portal</span>
-              </Link>
-            </Button>
             <Button asChild variant="ghost" size="icon" className="relative h-9 w-9 rounded-full">
               <Link href="/messaging">
                 <MessageSquare className="h-5 w-5" />
