@@ -22,32 +22,32 @@ export type ExtractRecipeDataFromImageInput = z.infer<typeof ExtractRecipeDataFr
 
 const RecipeItemSchema = z.object({
   principalActiveIngredient: z.string().describe("El principio activo principal, corregido a su nombre canónico usando la herramienta `getDrugInfo`. DEBES usar el `canonicalName` retornado por la herramienta. Si la herramienta no encuentra el fármaco, usa tu mejor juicio basado en la imagen."),
-  pharmaceuticalForm: z.string().describe("La forma farmacéutica (ej: 'Cápsulas', 'Crema', 'Solución', 'Papelillos').").optional(),
-  concentrationValue: z.string().describe("La potencia del preparado, ej: '5' para una crema al 5%.").optional(),
-  concentrationUnit: z.string().describe("La unidad para la concentración, ej: '%' para una crema, 'mg' para una cápsula.").optional(),
-  dosageValue: z.string().describe("La cantidad que el paciente toma cada vez, ej: '1' para 1 cápsula.").optional(),
-  dosageUnit: z.string().describe("La unidad para la dosis, ej: 'cápsula(s)', 'aplicación'.").optional(),
-  frequency: z.string().describe("La frecuencia de administración en horas (ej: '24' para diario).").optional(),
-  treatmentDurationValue: z.string().describe("El valor numérico de la duración del tratamiento (ej: '30').").optional(),
-  treatmentDurationUnit: z.string().describe("La unidad para la duración del tratamiento (ej: 'días', 'meses').").optional(),
-  safetyStockDays: z.number().optional().describe("Número de días extra para un stock de seguridad, si se menciona (ej: '5 días de seguridad')."),
-  totalQuantityValue: z.string().describe("El valor numérico de la cantidad total a preparar (ej: '30').").optional(),
-  totalQuantityUnit: z.string().describe("La unidad para la cantidad total (ej: 'cápsulas', 'gramos', 'papelillos').").optional(),
-  usageInstructions: z.string().describe("Las instrucciones detalladas de uso para el paciente.").optional(),
+  pharmaceuticalForm: z.string().describe("La forma farmacéutica (ej: 'Cápsulas', 'Crema', 'Solución', 'Papelillos').").optional().nullable(),
+  concentrationValue: z.string().describe("La potencia del preparado, ej: '5' para una crema al 5%.").optional().nullable(),
+  concentrationUnit: z.string().describe("La unidad para la concentración, ej: '%' para una crema, 'mg' para una cápsula.").optional().nullable(),
+  dosageValue: z.string().describe("La cantidad que el paciente toma cada vez, ej: '1' para 1 cápsula.").optional().nullable(),
+  dosageUnit: z.string().describe("La unidad para la dosis, ej: 'cápsula(s)', 'aplicación'.").optional().nullable(),
+  frequency: z.string().describe("La frecuencia de administración en horas (ej: '24' para diario).").optional().nullable(),
+  treatmentDurationValue: z.string().describe("El valor numérico de la duración del tratamiento (ej: '30').").optional().nullable(),
+  treatmentDurationUnit: z.string().describe("La unidad para la duración del tratamiento (ej: 'días', 'meses').").optional().nullable(),
+  safetyStockDays: z.number().optional().nullable().describe("Número de días extra para un stock de seguridad, si se menciona (ej: '5 días de seguridad')."),
+  totalQuantityValue: z.string().describe("El valor numérico de la cantidad total a preparar (ej: '30').").optional().nullable(),
+  totalQuantityUnit: z.string().describe("La unidad para la cantidad total (ej: 'cápsulas', 'gramos', 'papelillos').").optional().nullable(),
+  usageInstructions: z.string().describe("Las instrucciones detalladas de uso para el paciente.").optional().nullable(),
 });
 
 
 const ExtractRecipeDataFromImageOutputSchema = z.object({
-  patientName: z.string().describe("El nombre completo del paciente.").optional(),
-  patientRut: z.string().describe("El RUT (cédula de identidad) del paciente, si es visible. Debe ser formateado como XX.XXX.XXX-X.").optional(),
-  patientAddress: z.string().describe("La dirección completa del paciente, si es visible.").optional(),
+  patientName: z.string().describe("El nombre completo del paciente.").optional().nullable(),
+  patientRut: z.string().describe("El RUT (cédula de identidad) del paciente, si es visible. Debe ser formateado como XX.XXX.XXX-X.").optional().nullable(),
+  patientAddress: z.string().describe("La dirección completa del paciente, si es visible.").optional().nullable(),
   
-  doctorName: z.string().describe("El nombre completo del médico prescriptor.").optional(),
-  doctorRut: z.string().describe("El RUT (cédula de identidad) del médico, si es visible. Debe ser formateado como XX.XXX.XXX-X.").optional(),
-  doctorLicense: z.string().describe("El número de colegiatura (N° Colegiatura) del médico prescriptor.").optional(),
-  doctorSpecialty: z.string().describe("La especialidad del médico prescriptor.").optional(),
+  doctorName: z.string().describe("El nombre completo del médico prescriptor.").optional().nullable(),
+  doctorRut: z.string().describe("El RUT (cédula de identidad) del médico, si es visible. Debe ser formateado como XX.XXX.XXX-X.").optional().nullable(),
+  doctorLicense: z.string().describe("El número de colegiatura (N° Colegiatura) del médico prescriptor.").optional().nullable(),
+  doctorSpecialty: z.string().describe("La especialidad del médico prescriptor.").optional().nullable(),
 
-  prescriptionDate: z.string().describe("La fecha en que se emitió la receta en formato AAAA-MM-DD.").optional(),
+  prescriptionDate: z.string().describe("La fecha en que se emitió la receta en formato AAAA-MM-DD.").optional().nullable(),
   items: z.array(RecipeItemSchema).describe('Un arreglo de medicamentos o ítems prescritos encontrados en la receta.')
 });
 export type ExtractRecipeDataFromImageOutput = z.infer<typeof ExtractRecipeDataFromImageOutputSchema>;
