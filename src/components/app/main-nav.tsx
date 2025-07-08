@@ -161,6 +161,14 @@ const PlaceholderUserIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+const CustomMenuIcon = ({className}: {className?: string}) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={cn("h-5 w-5", className)}>
+        <line x1="3" x2="21" y1="12"></line>
+        <line x1="3" x2="21" y1="6"></line>
+        <line x1="3" x2="21" y1="18"></line>
+    </svg>
+);
+
 
 function MainNavContent({
   className,
@@ -245,63 +253,17 @@ function MainNavContent({
   );
 
   return (
-    <div className="flex min-h-svh w-full bg-background">
-      <nav className={cn(
-          "hidden md:flex flex-col transition-all duration-300 ease-in-out bg-card",
-          isSidebarOpen ? "w-[250px]" : "w-[72px]"
-      )}>
-        <div className="flex-1 overflow-auto py-2">
-            {navContent}
-        </div>
-      </nav>
-      <div className="flex flex-1 flex-col">
-        <header className="flex h-16 items-center justify-between gap-4 px-6 border-b">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 hidden md:flex"
-              onClick={toggleSidebar}
-            >
-              <Menu className="h-5 w-5" />
-              <span className="sr-only">Toggle Sidebar</span>
-            </Button>
-            <div className="md:hidden">
-              <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-                <SheetTrigger asChild>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-9 w-9"
-                    >
-                        <Menu className="h-5 w-5" />
-                        <span className="sr-only">Toggle Sidebar</span>
-                    </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="w-[250px] p-0 bg-card">
-                    <SheetHeader className="sr-only">
-                        <SheetTitle>Menú Principal</SheetTitle>
-                        <SheetDescription>Navegación principal de la aplicación.</SheetDescription>
-                    </SheetHeader>
-                    <div className="flex h-16 items-center px-4 border-b">
-                        <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
-                            <Image
-                                src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=1a612d04-0f27-4317-bfd6-06b48f019a24"
-                                alt="Skol Pharmacy Logo"
-                                width={120}
-                                height={33}
-                                priority
-                            />
-                        </Link>
-                    </div>
-                    <div className="flex-1 overflow-auto py-2">
-                      {navContent}
-                    </div>
-                </SheetContent>
-              </Sheet>
-            </div>
-            
-             <Link href="/dashboard" className="hidden md:block">
+    <div className={cn(
+        "grid min-h-svh w-full",
+        isSidebarOpen ? "md:grid-cols-[250px_1fr] lg:grid-cols-[280px_1fr]" : "md:grid-cols-[72px_1fr]"
+    )}>
+      <nav className="hidden border-r bg-background md:block">
+        <div className="flex h-full max-h-screen flex-col gap-2">
+          <div className={cn(
+              "flex h-16 items-center border-b px-4",
+              isSidebarOpen ? "justify-between" : "justify-center"
+          )}>
+            <Link href="/dashboard" className={cn("flex items-center gap-2 font-semibold", !isSidebarOpen && "hidden")}>
                 <Image
                     src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=1a612d04-0f27-4317-bfd6-06b48f019a24"
                     alt="Skol Pharmacy Logo"
@@ -310,12 +272,61 @@ function MainNavContent({
                     priority
                 />
             </Link>
-
-            <div className="w-full max-w-md hidden md:block">
-                <CommandPalette />
-            </div>
+            <Link href="/dashboard" className={cn(!isSidebarOpen && "flex items-center gap-2 font-semibold")}>
+                 <Image
+                    src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/ISOTIPO%20FARMACIA%20SKOL_COLOR.png?alt=media&token=737b67b3-7649-4113-b51f-50b5ca320392"
+                    alt="Skol Pharmacy Logo"
+                    width={32}
+                    height={32}
+                    priority
+                    className={cn(isSidebarOpen && "hidden")}
+                />
+            </Link>
           </div>
-          <div className="flex-1 md:hidden">
+          <div className="flex-1 overflow-auto py-2">
+            {navContent}
+          </div>
+          <div className="mt-auto p-4 border-t">
+              <Button variant="ghost" className="w-full justify-start gap-3" onClick={toggleSidebar}>
+                  <CustomMenuIcon />
+                  <span className={cn(!isSidebarOpen && "hidden")}>Colapsar Menú</span>
+              </Button>
+          </div>
+        </div>
+      </nav>
+      <div className="flex flex-1 flex-col">
+        <header className="flex h-16 items-center justify-between gap-4 px-6">
+          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="shrink-0 md:hidden"
+              >
+                <CustomMenuIcon />
+                <span className="sr-only">Toggle navigation menu</span>
+              </Button>
+            </SheetTrigger>
+             <SheetContent side="left" className="w-[250px] p-0 flex flex-col">
+                <SheetHeader className="p-4 border-b">
+                    <SheetTitle className="sr-only">Menú</SheetTitle>
+                    <SheetDescription className="sr-only">Navegación principal de la aplicación.</SheetDescription>
+                    <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
+                        <Image
+                            src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=1a612d04-0f27-4317-bfd6-06b48f019a24"
+                            alt="Skol Pharmacy Logo"
+                            width={120}
+                            height={33}
+                            priority
+                        />
+                    </Link>
+                </SheetHeader>
+                <div className="flex-1 overflow-auto py-2">
+                    {navContent}
+                </div>
+            </SheetContent>
+          </Sheet>
+          <div className="w-full flex-1">
             <CommandPalette />
           </div>
           <div className="flex items-center gap-2">
@@ -423,7 +434,7 @@ function MainNavContent({
             )}
           </div>
         </header>
-        <main className="flex-1 p-6 md:p-8 overflow-auto">
+        <main className="flex-1 p-6 md:p-8 overflow-auto bg-muted/40 rounded-tl-2xl">
           {children}
         </main>
       </div>
