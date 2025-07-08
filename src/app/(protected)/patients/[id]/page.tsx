@@ -289,31 +289,43 @@ export default function PatientDetailPage() {
     fetchData();
   }, [fetchData]);
 
-  const activeTreatments = useMemo<ActiveTreatment[]>(() => {
+  const magistralTreatments = useMemo(() => {
+    if (!patient) return [];
+    return recipes
+      .filter(r => ![
+          RecipeStatus.Dispensed,
+          RecipeStatus.Cancelled,
+          RecipeStatus.Rejected,
+          RecipeStatus.Archived,
+      ].includes(r.status))
+      .map(r => ({
+          type: 'magistral' as const,
+          recipe: r,
+      }))
+      .sort((a, b) => {
+          const nameA = a.recipe.items[0]?.principalActiveIngredient || '';
+          const nameB = b.recipe.items[0]?.principalActiveIngredient || '';
+          return nameA.localeCompare(nameB);
+      });
+  }, [patient, recipes]);
+
+  const commercialTreatments = useMemo(() => {
     if (!patient || !inventory) return [];
-  
-    const activeMagistralRecipes: ActiveTreatment[] = recipes
-        .filter(r => ![
-            RecipeStatus.Dispensed,
-            RecipeStatus.Cancelled,
-            RecipeStatus.Rejected,
-            RecipeStatus.Archived,
-        ].includes(r.status))
-        .map(r => ({
-            type: 'magistral',
-            recipe: r,
-        }));
-    
-    const activeCommercialMeds: ActiveTreatment[] = (patient.commercialMedications || []).map((med, index) => {
+    return (patient.commercialMedications || [])
+      .map((med, index) => {
         const inventoryItem = inventory.find(i => i.name.toLowerCase() === med.toLowerCase());
         return {
-            type: 'commercial',
+            type: 'commercial' as const,
             inventoryItem: inventoryItem || { name: med, id: `comm-${index}` },
         }
-    });
+      })
+      .sort((a, b) => {
+          const nameA = a.inventoryItem.name;
+          const nameB = b.inventoryItem.name;
+          return nameA.localeCompare(nameB);
+      });
+  }, [patient, inventory]);
 
-    return [...activeMagistralRecipes, ...activeCommercialMeds];
-  }, [patient, recipes, inventory]);
 
   const handleAnalyzeHistory = async () => {
     if (!patient) return;
@@ -346,11 +358,11 @@ export default function PatientDetailPage() {
 
     return {
         estimatedMonthlyCost: `$${monthlyCost.toLocaleString('es-CL')}`,
-        activeMedicationsCount: activeTreatments.length,
+        activeMedicationsCount: magistralTreatments.length + commercialTreatments.length,
         historicalRecipesCount: recipes.length,
         lastDispensationDate: lastDispensation?.dispensationDate && isValid(parseISO(lastDispensation.dispensationDate)) ? format(parseISO(lastDispensation.dispensationDate), 'dd-MM-yyyy') : 'N/A'
     };
-  }, [recipes, activeTreatments]);
+  }, [recipes, magistralTreatments, commercialTreatments]);
 
   const handleOpenAssociateModal = () => {
     setDoctorsToAssociate(patient?.associatedDoctorIds || []);
@@ -413,9 +425,6 @@ export default function PatientDetailPage() {
       item.name.toLowerCase().includes(medSearchTerm.toLowerCase())
     );
   }, [inventory, medSearchTerm]);
-
-  const magistralTreatments = useMemo(() => activeTreatments.filter(t => t.type === 'magistral'), [activeTreatments]);
-  const commercialTreatments = useMemo(() => activeTreatments.filter(t => t.type === 'commercial'), [activeTreatments]);
 
 
   if (loading) {
@@ -526,7 +535,7 @@ export default function PatientDetailPage() {
                         </Button>
                     </div>
                     <div className="space-y-6">
-                    {activeTreatments.length > 0 ? (
+                    {(magistralTreatments.length > 0 || commercialTreatments.length > 0) ? (
                         <>
                         <div>
                             <h3 className="text-lg font-semibold text-primary mb-2">Preparados Magistrales</h3>
