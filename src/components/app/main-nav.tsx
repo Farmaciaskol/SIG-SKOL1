@@ -11,28 +11,21 @@ import {
   FileText,
   Users,
   Truck,
-  ShieldAlert,
   Lock,
   BarChart2,
-  UserCog,
   Settings,
   LogOut,
-  Stethoscope,
-  Building2,
-  Package,
   CalendarDays,
-  DollarSign,
   Inbox,
   Bell,
   User,
   MessageSquare,
-  FlaskConical,
-  ChevronDown,
   ChevronLeft,
+  BriefcaseMedical,
+  FlaskConical,
   Boxes,
   HeartPulse,
   Banknote,
-  BriefcaseMedical,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -332,16 +325,16 @@ function MainNavContent({
               </div>
             </Link>
           </SidebarHeader>
-          <SidebarContent className="p-0 flex-1">
-            <div className="flex flex-col gap-2 p-2 pt-4">
+          <SidebarContent className="p-2 flex-1">
+            <div className="flex flex-col gap-4">
               {menuGroups.map((group) => (
-                <SidebarGroup key={group.title}>
-                  <SidebarGroupLabel>
+                <SidebarGroup key={group.title} className="p-0">
+                  <SidebarGroupLabel className="p-0 px-2 pb-2">
                     {group.title}
                   </SidebarGroupLabel>
-                  <SidebarMenu>
+                  <SidebarMenu className="gap-1">
                     {group.items.map((item) => (
-                      <SidebarMenuItem key={item.href}>
+                      <SidebarMenuItem key={item.href} className="p-0">
                         <SidebarMenuButton
                           asChild
                           isActive={pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))}
