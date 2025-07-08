@@ -1,4 +1,3 @@
-
 'use client';
 
 import { extractRecipeDataFromImage } from '@/ai/flows/extract-recipe-data-from-image';
@@ -160,7 +159,6 @@ const RecipeItemCard = ({
   const treatmentDurationValue = useWatch({ control, name: `items.${index}.treatmentDurationValue` });
   const treatmentDurationUnit = useWatch({ control, name: `items.${index}.treatmentDurationUnit` });
   const safetyStockDays = useWatch({ control, name: `items.${index}.safetyStockDays` });
-  const totalQuantityValue = useWatch({ control, name: `items.${index}.totalQuantityValue` });
 
   // Effect to calculate Total Quantity based on duration and safety days
   React.useEffect(() => {
@@ -189,42 +187,6 @@ const RecipeItemCard = ({
       }
     }
   }, [dosageValue, frequency, treatmentDurationValue, treatmentDurationUnit, safetyStockDays, index, setValue, getValues]);
-  
-  // Effect to calculate Safety Days based on total quantity
-  React.useEffect(() => {
-    const dose = parseInt(dosageValue, 10);
-    const freq = parseInt(frequency, 10);
-    const duration = parseInt(treatmentDurationValue, 10);
-    const totalQuantity = parseInt(totalQuantityValue, 10);
-
-    if (isNaN(dose) || dose <= 0 || isNaN(freq) || freq <= 0 || isNaN(duration) || isNaN(totalQuantity)) {
-        return; 
-    }
-    
-    let durationInDays = duration;
-    if (treatmentDurationUnit === 'semanas') {
-      durationInDays = duration * 7;
-    } else if (treatmentDurationUnit === 'meses') {
-      durationInDays = duration * 30;
-    }
-    
-    const administrationsPerDay = 24 / freq;
-    const dailyDose = administrationsPerDay * dose;
-
-    if (dailyDose <= 0) {
-      return;
-    }
-
-    const baseQuantityNeeded = dailyDose * durationInDays;
-    const surplusQuantity = totalQuantity - baseQuantityNeeded;
-    const calculatedSafetyDays = Math.max(0, Math.round(surplusQuantity / dailyDose));
-    
-    const currentSafetyDays = parseInt(String(getValues(`items.${index}.safetyStockDays`)), 10) || 0;
-
-    if (calculatedSafetyDays !== currentSafetyDays) {
-        setValue(`items.${index}.safetyStockDays`, calculatedSafetyDays, { shouldValidate: true });
-    }
-  }, [totalQuantityValue, dosageValue, frequency, treatmentDurationValue, treatmentDurationUnit, index, setValue, getValues]);
 
 
   return (
