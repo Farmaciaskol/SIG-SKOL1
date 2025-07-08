@@ -7,7 +7,7 @@ const apiKey = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIxMTcxIiwianRpIjo
 
 /**
  * Fetches the entire product catalog from Lioren.
- * This version handles pagination to retrieve all products.
+ * This version handles pagination and rate limiting to retrieve all products.
  */
 export async function fetchLiorenInventory(): Promise<LiorenProduct[]> {
   if (!apiKey) {
@@ -31,11 +31,19 @@ export async function fetchLiorenInventory(): Promise<LiorenProduct[]> {
       });
 
       if (!response.ok) {
-        // If we get an error on a page other than the first, we can assume we've reached the end.
+        // Specific handling for 429 Too Many Requests
+        if (response.status === 429) {
+            console.warn("Rate limit hit from Lioren API. Retrying after a longer delay...");
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retrying the same page
+            continue; // Retry the current page without incrementing
+        }
+
+        // If we get another error on a page other than the first, we can assume we've reached the end.
         if (page > 1) {
           console.log(`Lioren API: Finished fetching products at page ${page}. Status: ${response.status}`);
           break;
         }
+        
         throw new Error(`Error de la API de Lioren al buscar productos: ${response.status} ${response.statusText}`);
       }
 
@@ -63,6 +71,9 @@ export async function fetchLiorenInventory(): Promise<LiorenProduct[]> {
       
       allProducts.push(...productsOnPage);
       page++;
+
+      // Add a small delay between successful requests to be a good API citizen
+      await new Promise(resolve => setTimeout(resolve, 250)); 
 
     } catch (error) {
       console.error("Fallo al conectar con la API de Lioren.", error);
