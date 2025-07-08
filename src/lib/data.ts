@@ -97,17 +97,27 @@ export const getAppSettings = async (): Promise<AppSettings | null> => {
     const settings = await getDocument<AppSettings>('appSettings', 'global');
     if (settings && db) {
         let needsUpdate = false;
+        const updates: Partial<AppSettings> = {};
+
         const forms = settings.pharmaceuticalForms || [];
-        
         if (!forms.some(f => f.toLowerCase() === 'papelillo')) {
             forms.push('Papelillo');
-            settings.pharmaceuticalForms = forms;
+            updates.pharmaceuticalForms = forms;
+            needsUpdate = true;
+        }
+
+        const concentrationUnits = settings.concentrationUnits || [];
+        if (!concentrationUnits.includes('%')) {
+            concentrationUnits.push('%');
+            updates.concentrationUnits = concentrationUnits;
             needsUpdate = true;
         }
 
         if (needsUpdate) {
             try {
-                await updateDoc(doc(db, 'appSettings', 'global'), { pharmaceuticalForms: settings.pharmaceuticalForms });
+                await updateDoc(doc(db, 'appSettings', 'global'), updates);
+                // After updating, merge changes into the settings object to be returned for the current request
+                Object.assign(settings, updates);
             } catch (error) {
                 console.error("Failed to auto-update app settings:", error);
             }
@@ -337,7 +347,7 @@ export const saveRecipe = async (data: any, imageFile: File | null, userId: stri
         } else {
              const newPatientRef = doc(collection(db, 'patients'));
             patientId = newPatientRef.id;
-            await setDoc(newPatientRef, { name: data.newPatientName, rut: data.newPatientRut, email: '', phone: '', isChronic: false, proactiveStatus: 'OK', proactiveMessage: 'No requiere acción.', actionNeeded: 'NONE' });
+            await setDoc(newPatientRef, { name: data.newPatientName, rut: data.newPatientRut, email: '', phone: '', isChronic: data.isChronic || false, chronicDisease: data.chronicDisease || '', proactiveStatus: 'OK', proactiveMessage: 'No requiere acción.', actionNeeded: 'NONE' });
         }
     }
 
@@ -374,7 +384,7 @@ export const saveRecipe = async (data: any, imageFile: File | null, userId: stri
     
     const recipeDataForUpdate: Partial<Recipe> = {
         patientId: patientId, doctorId: doctorId, dispatchAddress: data.dispatchAddress, items: data.items,
-        prescriptionDate: data.prescriptionDate, dueDate: data.dueDate, updatedAt: new Date().toISOString(),
+        prescriptionDate: data.prescriptionDate.toISOString(), dueDate: data.dueDate.toISOString(), updatedAt: new Date().toISOString(),
         externalPharmacyId: data.externalPharmacyId, supplySource: data.supplySource, 
         preparationCost: Number(data.preparationCost),
         isSugarFree: data.isSugarFree,
@@ -658,7 +668,7 @@ export const updatePatient = async (id: string, updates: Partial<Patient>): Prom
 };
 
 
-export const addPatient = async (patient: Omit<Patient, 'id' | 'proactiveStatus' | 'proactiveMessage' | 'actionNeeded' | 'commercialMedications'>): Promise<string> => {
+export const addPatient = async (patient: Omit<Patient, 'id' | 'proactiveStatus' | 'proactiveMessage' | 'actionNeeded' | 'commercialMedications' | 'firebaseUid'>): Promise<string> => {
     if (!db) throw new Error("Firestore is not initialized.");
     
     const q = query(collection(db, "patients"), where("rut", "==", patient.rut), limit(1));
@@ -978,7 +988,7 @@ export const approveUserRequest = async (requestId: string): Promise<void> => {
 
     if (existingPatientDoc) {
         // Patient exists, link the firebaseUid
-        batch.update(existingPatientDoc.ref, { firebaseUid: requestData.firebaseUid });
+        batch.update(existingPatientDoc.ref, { firebaseUid: requestData.firebaseUid, email: requestData.email });
     } else {
         // Patient does not exist, create a new one
         const newPatientRef = doc(collection(db, 'patients'));
