@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useMemo } from 'react';
@@ -403,7 +404,35 @@ function ViewRecipeDialog(props: ViewRecipeDialogProps) {
                             <div><h3 className="text-sm font-semibold">Recetario:</h3><p>{getPharmacy(recipeToView?.externalPharmacyId)?.name || 'N/A'}</p></div>
                             <div><h3 className="text-sm font-semibold">Estado:</h3>{recipeToView && <Badge>{statusConfig[recipeToView.status]?.text || recipeToView.status}</Badge>}</div>
                         </div>
-                        <div className="space-y-2"><h3 className="text-sm font-semibold">Items:</h3>{recipeToView?.items.map((item, index) => (<div key={index} className="text-sm p-3 border rounded-md bg-muted/50"><p className="font-medium flex items-center gap-2">{item.principalActiveIngredient} {item.concentrationValue}{item.concentrationUnit} {item.isRefrigerated && <Snowflake className="h-4 w-4 text-blue-500" />}</p><p>{item.usageInstructions}</p></div>))}</div>
+                        <div className="space-y-2">
+                            <h3 className="text-sm font-semibold">Items:</h3>
+                            {recipeToView?.items.map((item, index) => (
+                                <div key={index} className="text-sm p-4 border rounded-lg bg-muted/50 space-y-3">
+                                    <p className="font-bold text-base text-primary flex items-center gap-2">
+                                        {item.principalActiveIngredient} {item.concentrationValue}{item.concentrationUnit}
+                                        {item.isRefrigerated && <Snowflake className="h-4 w-4 text-blue-500" />}
+                                    </p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                                        <div>
+                                            <p className="text-muted-foreground font-semibold">Forma Farmacéutica</p>
+                                            <p className="text-foreground">{item.pharmaceuticalForm}</p>
+                                        </div>
+                                         <div>
+                                            <p className="text-muted-foreground font-semibold">Cantidad a Preparar</p>
+                                            <p className="text-foreground">{item.totalQuantityValue} {item.totalQuantityUnit}</p>
+                                        </div>
+                                        <div className="col-span-2">
+                                            <p className="text-muted-foreground font-semibold">Posología</p>
+                                            <p className="text-foreground">{item.dosageValue} {item.dosageUnit} cada {item.frequency} horas</p>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p className="text-muted-foreground font-semibold text-sm">Instrucciones de Uso</p>
+                                        <p className="text-foreground">{item.usageInstructions}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                         <div className="space-y-2"><h3 className="text-sm font-semibold">Historial de Auditoría:</h3><Table><TableHeader><TableRow><TableHead>Fecha</TableHead><TableHead>Estado</TableHead><TableHead>Notas</TableHead></TableRow></TableHeader><TableBody>{recipeToView?.auditTrail?.slice().reverse().map((entry: AuditTrailEntry, index: number) => (<TableRow key={index}><TableCell>{format(parseISO(entry.date), 'dd-MM-yy HH:mm')}</TableCell><TableCell>{statusConfig[entry.status]?.text || entry.status}</TableCell><TableCell>{entry.notes}</TableCell></TableRow>))}</TableBody></Table></div>
                     </div>
                 </div>
@@ -615,7 +644,7 @@ export function RecipeDialogs(props: RecipeDialogsProps) {
             <ViewRecipeDialog recipeToView={recipeToView} onOpenChange={(open) => !open && setRecipeToView(null)} getPatientName={getPatientName} getDoctorName={getDoctorName} getPharmacy={getPharmacy} />
             <RejectRecipeDialog recipeToReject={recipeToReject} reason={reason} setReason={setReason} onOpenChange={(open) => {if (!open) {setRecipeToReject(null); setReason('');}}} handleConfirmReject={handleConfirmReject} isSubmitting={isSubmitting} />
             <CancelRecipeDialog recipeToCancel={recipeToCancel} reason={reason} setReason={setReason} onOpenChange={(open) => {if (!open) {setRecipeToCancel(null); setReason('');}}} handleConfirmCancel={handleConfirmCancel} isSubmitting={isSubmitting} />
-            <ReprepareDialog recipeToReprepare={recipeToReprepare} onOpenChange={(open) => { if (!open) { setRecipeToReprepare(null); setControlledFolio(''); setDaysSinceDispensation(null); } }} handleConfirmReprepare={handleConfirmReprepare} isSubmitting={isSubmitting} controlledFolio={controlledFolio} setControlledFolio={setControlledFolio} ReprepareMessage={() => <ReprepareMessageDialog daysSinceDispensation={daysSinceDispensation} urgencyStatus={urgencyStatus} />} />
+            <ReprepareDialog recipeToReprepare={recipeToReprepare} onOpenChange={(open) => { if (!open) { setRecipeToReprepare(null); setControlledFolio(''); } }} handleConfirmReprepare={handleConfirmReprepare} isSubmitting={isSubmitting} controlledFolio={controlledFolio} setControlledFolio={setControlledFolio} ReprepareMessage={() => <ReprepareMessageDialog daysSinceDispensation={daysSinceDispensation} urgencyStatus={urgencyStatus} />} />
             <ReceiveDialog recipeToReceive={recipeToReceive} onOpenChange={(open) => {if (!open) { setRecipeToReceive(null); setInternalLot(''); setPreparationExpiry(undefined); setReceptionChecklist({ etiqueta: false, vencimiento: false, aspecto: false, cadenaFrio: false }); setTransportCost('0'); }}} handleConfirmReceive={handleConfirmReceive} isSubmitting={isSubmitting} internalLot={internalLot} setInternalLot={setInternalLot} preparationExpiry={preparationExpiry} setPreparationExpiry={setPreparationExpiry} transportCost={transportCost} setTransportCost={setTransportCost} receptionChecklist={receptionChecklist} handleReceptionChecklistChange={(key, value) => setReceptionChecklist(prev => ({ ...prev, [key]: value }))} isReceptionChecklistComplete={isReceptionChecklistComplete} />
             <PrintDialog recipeToPrint={recipeToPrint} getPatientName={getPatientName} onOpenChange={(open) => !open && setRecipeToPrint(null)} />
             <GenericAlertDialog recipe={recipeToDelete} onOpenChange={(open) => !open && setRecipeToDelete(null)} onConfirm={handleConfirmDelete} isSubmitting={isSubmitting} title="¿Eliminar esta receta?" description={<>Esta acción no se puede deshacer. La receta <span className="font-bold font-mono text-foreground">{recipeToDelete?.id}</span> será eliminada permanentemente.</>} />
