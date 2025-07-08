@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import Link from 'next/link';
@@ -212,7 +211,7 @@ function MainNavContent({
   return (
     <div className="flex min-h-svh w-full bg-background group/sidebar" data-state={state}>
       {/* Sidebar is now a direct child of the flex container */}
-      <Sidebar className="bg-card border-r" collapsible="icon">
+      <Sidebar className="bg-card" collapsible="icon">
         <SidebarHeader className="h-16 flex items-center justify-center p-2 border-b">
           <Link href="/dashboard" className="block">
             <div className="relative h-10 w-32 flex items-center">
@@ -280,7 +279,7 @@ function MainNavContent({
             <Button
                 variant="outline"
                 size="icon"
-                className="absolute top-8 -translate-y-1/2 z-20 h-7 w-7 rounded-full bg-card shadow-md transition-all duration-300 ease-in-out hover:scale-110"
+                className="absolute top-5 -translate-y-1/2 z-20 h-7 w-7 rounded-full bg-card shadow-md transition-all duration-300 ease-in-out hover:scale-110"
                 style={{
                     left: state === 'expanded' ? 'var(--sidebar-width)' : 'var(--sidebar-width-icon)',
                     marginLeft: '-0.875rem' // Centers the button on the line
