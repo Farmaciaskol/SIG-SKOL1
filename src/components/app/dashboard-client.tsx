@@ -316,7 +316,7 @@ export function DashboardClient({ recipes, patients, inventory, calendarEvents }
       { title: 'Bandeja de Entrada Portal', value: recipes.filter(r => r.status === RecipeStatus.PendingReviewPortal).length, icon: Inbox, href: '/portal-inbox' },
       { title: 'En Preparación', value: recipes.filter(r => r.status === RecipeStatus.Preparation).length, icon: FlaskConical, href: '/recipes?status=En+Preparación' },
       { title: 'Ítems con Stock Bajo', value: inventory.filter(i => i.quantity < i.lowStockThreshold).length, icon: Box, href: '/inventory' },
-      { title: 'Recetas por Pagar', value: `$${pendingPayments.toLocaleString('es-CL')}`, icon: DollarSign, href: '/financial-management' },
+      { title: 'Saldo por Pagar', value: `$${pendingPayments.toLocaleString('es-CL')}`, icon: DollarSign, href: '/financial-management' },
     ];
   }, [recipes, inventory]);
 

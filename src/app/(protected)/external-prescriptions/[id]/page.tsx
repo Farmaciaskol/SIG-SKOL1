@@ -19,7 +19,7 @@ import type {
   DispatchNote,
   Patient,
 } from '@/lib/types';
-import { RecipeStatus } from '@/lib/types';
+import { RecipeStatus, DispatchStatus } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
 // UI Components
@@ -92,9 +92,20 @@ export default function ExternalPharmacyDetailPage() {
   const stats = useMemo(() => {
     if (!pharmacy) return { balance: 0, activeRecipes: 0, totalDispatches: 0 };
     
-    const balance = recipes.reduce((acc, r) => acc + (r.preparationCost || 0), 0);
+    const pendingPaymentRecipes = recipes.filter(r => 
+        r.paymentStatus === 'Pendiente' &&
+        [
+            RecipeStatus.SentToExternal,
+            RecipeStatus.ReceivedAtSkol,
+            RecipeStatus.ReadyForPickup,
+            RecipeStatus.Dispensed
+        ].includes(r.status)
+    );
+    const balance = pendingPaymentRecipes.reduce((acc, r) => acc + (r.preparationCost || 0) + (r.transportCost || 0), 0);
+    
     const activeRecipes = recipes.filter(r => r.status !== RecipeStatus.Dispensed && r.status !== RecipeStatus.Cancelled && r.status !== RecipeStatus.Rejected).length;
-    const totalDispatches = dispatches.length;
+    
+    const totalDispatches = dispatches.filter(d => d.status !== DispatchStatus.Cancelled).length;
 
     return {
       balance,
