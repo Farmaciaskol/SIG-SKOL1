@@ -447,7 +447,7 @@ export function InventoryClient({
 
               <TabsContent value="external" className="mt-6 space-y-6">
                 {liorenData.error ? (
-                  <Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><CardTitle>Error de Conexión</CardTitle><AlertDescription>{liorenData.error}</AlertDescription></Alert>
+                  <Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><CardTitle>Error de Conexión</CardTitle><CardDescription>{liorenData.error}</CardDescription></Alert>
                 ) : (
                   <Card>
                     <CardHeader>
