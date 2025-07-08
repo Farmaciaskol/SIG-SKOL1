@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
@@ -26,6 +27,7 @@ import { RecipeDialogs } from './recipe-dialogs';
 import { RecipeActions, MobileRecipeActions } from './recipe-actions';
 import { RecipeTableView } from './recipe-table-view';
 import { RecipeCardView } from './recipe-card-view';
+import { CardHeader, CardTitle } from '../ui/card';
 
 const StatCard = ({ title, value, icon: Icon, onClick, active = false }: { title: string; value: string | number; icon: React.ElementType; onClick: () => void; active?: boolean }) => (
   <Card className={cn("hover:shadow-md transition-shadow cursor-pointer", active && "ring-2 ring-primary")} onClick={onClick}>
@@ -491,6 +493,21 @@ export const RecipesClient = ({
     );
   }
   
+  const actionHandlers = {
+    onView: setRecipeToView,
+    onDelete: setRecipeToDelete,
+    onCancel: setRecipeToCancel,
+    onReprepare: setRecipeToReprepare,
+    onArchive: setRecipeToArchive,
+    onSend: setRecipeToSend,
+    onReceive: setRecipeToReceive,
+    onReadyForPickup: (recipe: Recipe) => handleUpdateStatus(recipe, RecipeStatus.ReadyForPickup),
+    onDispense: (recipe: Recipe) => handleUpdateStatus(recipe, RecipeStatus.Dispensed),
+    onPrint: setRecipeToPrint,
+    onValidate: () => handleUpdateStatus(recipeToReject!, RecipeStatus.Validated, 'Receta validada por farmacéutico.'),
+    onReject: () => setRecipeToReject(recipeToReject!),
+  };
+
   return (
     <>
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
@@ -548,12 +565,20 @@ export const RecipesClient = ({
         <>
             <Card className="hidden w-full md:block mt-6">
               <CardContent className="p-0">
-                <RecipeTableView recipes={paginatedRecipes} selectedRecipes={selectedRecipes} toggleSelectRecipe={toggleSelectRecipe} getPatientName={getPatientName} RecipeActionsComponent={(props: any) => <RecipeActions {...props} onValidate={() => handleUpdateStatus(props.recipe, RecipeStatus.Validated, 'Receta validada por farmacéutico.')} onReject={() => setRecipeToReject(props.recipe)} onSend={setRecipeToSend} onReceive={setRecipeToReceive} onReadyForPickup={() => handleUpdateStatus(props.recipe, RecipeStatus.ReadyForPickup)} onDispense={() => handleUpdateStatus(props.recipe, RecipeStatus.Dispensed)} onReprepare={setRecipeToReprepare} onCancel={setRecipeToCancel} onDelete={setRecipeToDelete} onArchive={setRecipeToArchive} onView={setRecipeToView} onPrint={setRecipeToPrint} />} />
+                <RecipeTableView 
+                  recipes={paginatedRecipes} 
+                  selectedRecipes={selectedRecipes}
+                  allOnPageSelected={allOnPageSelected}
+                  toggleSelectAll={toggleSelectAll}
+                  toggleSelectRecipe={toggleSelectRecipe} 
+                  getPatientName={getPatientName} 
+                  actionHandlers={actionHandlers} 
+                />
               </CardContent>
               <CardFooter className="flex items-center justify-between px-4 py-2 border-t"><div className="text-xs text-muted-foreground">{selectedRecipes.length} de {paginatedRecipes.length} fila(s) seleccionadas.</div><div className="flex items-center space-x-2"><Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1}>Anterior</Button><span className="text-sm">Página {currentPage} de {totalPages}</span><Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages}>Siguiente</Button></div></CardFooter>
             </Card>
 
-            <RecipeCardView recipes={paginatedRecipes} selectedRecipes={selectedRecipes} toggleSelectRecipe={toggleSelectRecipe} getPatientName={getPatientName} RecipeActionsComponent={(props: any) => <MobileRecipeActions {...props} onValidate={() => handleUpdateStatus(props.recipe, RecipeStatus.Validated, 'Receta validada por farmacéutico.')} onReject={() => setRecipeToReject(props.recipe)} onSend={setRecipeToSend} onReceive={setRecipeToReceive} onReadyForPickup={() => handleUpdateStatus(props.recipe, RecipeStatus.ReadyForPickup)} onDispense={() => handleUpdateStatus(props.recipe, RecipeStatus.Dispensed)} onReprepare={setRecipeToReprepare} onCancel={setRecipeToCancel} onDelete={setRecipeToDelete} onArchive={setRecipeToArchive} onView={setRecipeToView} onPrint={setRecipeToPrint} />} />
+            <RecipeCardView recipes={paginatedRecipes} selectedRecipes={selectedRecipes} toggleSelectRecipe={toggleSelectRecipe} getPatientName={getPatientName} actionHandlers={actionHandlers} />
             
             <div className="flex items-center justify-between pt-4 md:hidden"><p className="text-sm text-muted-foreground">{filteredRecipes.length} resultados</p><div className="flex items-center space-x-2"><Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1}>Anterior</Button><span className="text-sm">{currentPage} / {totalPages}</span><Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages}>Siguiente</Button></div></div>
         </>
@@ -577,6 +602,7 @@ export const RecipesClient = ({
         preparationExpiry={preparationExpiry} setPreparationExpiry={setPreparationExpiry}
         transportCost={transportCost} setTransportCost={setTransportCost}
         receptionChecklist={receptionChecklist}
+        setReceptionChecklist={setReceptionChecklist}
         daysSinceDispensation={daysSinceDispensation}
         urgencyStatus={urgencyStatus}
         isDeleteBatchAlertOpen={isDeleteBatchAlertOpen} setIsDeleteBatchAlertOpen={setIsDeleteBatchAlertOpen}

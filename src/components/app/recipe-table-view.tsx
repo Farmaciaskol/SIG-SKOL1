@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -17,6 +18,8 @@ import { RecipeActions } from './recipe-actions';
 type RecipeTableViewProps = {
   recipes: Recipe[];
   selectedRecipes: string[];
+  allOnPageSelected: boolean;
+  toggleSelectAll: () => void;
   toggleSelectRecipe: (id: string) => void;
   getPatientName: (id: string) => string;
   actionHandlers: any;
@@ -62,12 +65,12 @@ const calculateTotalCycles = (recipe: Recipe): number => {
     }
 };
 
-export function RecipeTableView({ recipes, selectedRecipes, toggleSelectRecipe, getPatientName, actionHandlers }: RecipeTableViewProps) {
+export function RecipeTableView({ recipes, selectedRecipes, allOnPageSelected, toggleSelectAll, toggleSelectRecipe, getPatientName, actionHandlers }: RecipeTableViewProps) {
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="p-4"><Checkbox onCheckedChange={() => { const allIds = recipes.map(r => r.id); const allSelected = allIds.every(id => selectedRecipes.includes(id)); if (allSelected) { setSelectedRecipes(prev => prev.filter(id => !allIds.includes(id))) } else { setSelectedRecipes(prev => [...new Set([...prev, ...allIds])) }}} checked={recipes.length > 0 && recipes.every(r => selectedRecipes.includes(r.id))} /></TableHead>
+          <TableHead className="p-4"><Checkbox onCheckedChange={toggleSelectAll} checked={allOnPageSelected} /></TableHead>
           <TableHead>ID Receta</TableHead>
           <TableHead>Paciente</TableHead>
           <TableHead>Preparado</TableHead>
@@ -125,10 +128,16 @@ export function RecipeTableView({ recipes, selectedRecipes, toggleSelectRecipe, 
                     </Tooltip></TooltipProvider>
                   )}
                   {recipe.status === RecipeStatus.PendingReviewPortal && (
-                    <TooltipProvider><Tooltip><TooltipTrigger asChild><span><UserSquare className="h-5 w-5 text-purple-600" /></span></TooltipTrigger><TooltipContent><p>Receta subida desde el Portal de Pacientes</p></TooltipContent></Tooltip></TooltipProvider>
+                    <TooltipProvider><Tooltip>
+                        <TooltipTrigger asChild><span><UserSquare className="h-5 w-5 text-purple-600" /></span></TooltipTrigger>
+                        <TooltipContent><p>Receta subida desde el Portal de Pacientes</p></TooltipContent>
+                    </Tooltip></TooltipProvider>
                   )}
                   {recipe.items.some(item => item.requiresFractionation) && (
-                    <TooltipProvider><Tooltip><TooltipTrigger asChild><span><Split className="h-5 w-5 text-orange-600" /></span></TooltipTrigger><TooltipContent><p>Requiere Fraccionamiento</p></TooltipContent></Tooltip></TooltipProvider>
+                    <TooltipProvider><Tooltip>
+                        <TooltipTrigger asChild><span><Split className="h-5 w-5 text-orange-600" /></span></TooltipTrigger>
+                        <TooltipContent><p>Requiere Fraccionamiento</p></TooltipContent>
+                    </Tooltip></TooltipProvider>
                   )}
                 </div>
               </TableCell>
