@@ -1,13 +1,13 @@
-
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { getInventory, addInventoryItem, updateInventoryItem, deleteInventoryItem, addLotToInventoryItem, Patient } from '@/lib/data';
+import { getInventory, addInventoryItem, updateInventoryItem, deleteInventoryItem, addLotToInventoryItem, type Patient } from '@/lib/data';
 import type { InventoryItem, LotDetail } from '@/lib/types';
-import { PlusCircle, Search, Edit, Box, Trash2, MoreVertical, DollarSign, Package, PackageX, AlertTriangle, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Loader2, Calendar as CalendarIcon, Snowflake } from 'lucide-react';
+import type { LiorenProduct } from '@/lib/lioren-api';
+import { PlusCircle, Search, Edit, Box, Trash2, MoreVertical, DollarSign, Package, PackageX, AlertTriangle, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Loader2, Calendar as CalendarIcon, Snowflake, Download } from 'lucide-react';
 import { format, differenceInDays, isBefore, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -21,6 +21,8 @@ import { InventoryItemForm } from './inventory-item-form';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
 import { Label } from '../ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { Alert } from '../ui/alert';
 
 const EXPIRY_THRESHOLD_DAYS = 90;
 
@@ -205,10 +207,14 @@ function LotManagementDialog({
 
 export function InventoryClient({ 
   initialInventory,
-  patients
+  patients,
+  liorenProducts,
+  liorenError
 }: { 
   initialInventory: InventoryItem[];
   patients: Patient[];
+  liorenProducts: LiorenProduct[];
+  liorenError?: string;
 }) {
     const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory);
     const [searchTerm, setSearchTerm] = useState('');
@@ -219,7 +225,7 @@ export function InventoryClient({
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<InventoryItem | Partial<InventoryItem> | null>(null);
     const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null);
-
+    const [liorenSearchTerm, setLiorenSearchTerm] = useState('');
     const [loading, setLoading] = useState(false);
 
     const refreshLocalData = async () => {
@@ -256,6 +262,18 @@ export function InventoryClient({
             toast({ title: "Error", description: "No se pudo eliminar el producto.", variant: "destructive" });
         }
     };
+
+    const handleImportFromLioren = (liorenProduct: LiorenProduct) => {
+      const productToImport: Partial<InventoryItem> = {
+        name: liorenProduct.nombre,
+        sku: liorenProduct.codigo,
+        salePrice: liorenProduct.precioventabruto,
+        costPrice: liorenProduct.preciocompraneto,
+        unit: liorenProduct.unidad,
+        inventoryType: 'Venta Directa', // Default to this type
+      };
+      handleOpenForm(productToImport);
+    };
     
     const inventoryWithStats = useMemo<InventoryItemWithStats[]>(() => {
         return inventory.map(item => {
@@ -285,7 +303,7 @@ export function InventoryClient({
         });
     }, [inventory]);
 
-    const filteredInventory = useMemo(() => {
+    const filteredLocalInventory = useMemo(() => {
         return inventoryWithStats.filter(item => {
             const matchesFilter = activeFilter === 'all' || item.status === activeFilter;
             const matchesSearch = searchTerm === '' ||
@@ -294,6 +312,15 @@ export function InventoryClient({
             return matchesFilter && matchesSearch;
         })
     }, [inventoryWithStats, activeFilter, searchTerm]);
+
+    const filteredLiorenInventory = useMemo(() => {
+        if (!liorenProducts) return [];
+        return liorenProducts.filter(item => 
+            (item.nombre && item.nombre.toLowerCase().includes(liorenSearchTerm.toLowerCase())) ||
+            (item.codigo && item.codigo.toLowerCase().includes(liorenSearchTerm.toLowerCase()))
+        );
+    }, [liorenProducts, liorenSearchTerm]);
+
 
     const globalStats = useMemo(() => {
         const totalValue = inventory.reduce((sum, item) => sum + (item.quantity * (item.costPrice || 0)), 0);
@@ -358,62 +385,116 @@ export function InventoryClient({
                 </div>
             </div>
             
-            <div className="space-y-6">
-                <div className="flex justify-start">
-                    <Button onClick={() => handleOpenForm(null)}>
-                        <PlusCircle className="mr-2 h-4 w-4" /> Crear Producto Local
-                    </Button>
-                </div>
-                <div>
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-6">
-                        <StatCard title="Valor Total del Inventario" value={globalStats.totalValue} icon={DollarSign} />
-                        <StatCard title="Ítems con Stock Bajo" value={globalStats.lowStockCount} icon={Package} />
-                        <StatCard title="Ítems Agotados" value={globalStats.outOfStockCount} icon={PackageX} />
-                        <StatCard title="Ítems Próximos a Vencer" value={globalStats.expiringSoonCount} icon={AlertTriangle} />
+            <Tabs defaultValue="local" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="local">Inventario Local (Skol)</TabsTrigger>
+                    <TabsTrigger value="external">Inventario Externo (Lioren)</TabsTrigger>
+                </TabsList>
+                <TabsContent value="local" className="mt-6">
+                    <div className="space-y-6">
+                        <div className="flex justify-start">
+                            <Button onClick={() => handleOpenForm(null)}>
+                                <PlusCircle className="mr-2 h-4 w-4" /> Crear Producto Local
+                            </Button>
+                        </div>
+                        <div>
+                            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-6">
+                                <StatCard title="Valor Total del Inventario" value={globalStats.totalValue} icon={DollarSign} />
+                                <StatCard title="Ítems con Stock Bajo" value={globalStats.lowStockCount} icon={Package} />
+                                <StatCard title="Ítems Agotados" value={globalStats.outOfStockCount} icon={PackageX} />
+                                <StatCard title="Ítems Próximos a Vencer" value={globalStats.expiringSoonCount} icon={AlertTriangle} />
+                            </div>
+
+                            <Card className="mb-6">
+                                <CardContent className="p-4 flex flex-col sm:flex-row gap-4">
+                                    <div className="relative flex-1">
+                                        <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
+                                        <Input placeholder="Buscar por nombre o SKU..." className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                                    </div>
+                                    <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                                        {(['all', 'OK', 'Stock Bajo', 'Agotado', 'Próximo a Vencer', 'Vencido'] as FilterStatus[]).map(status => (
+                                            <Button key={status} variant={activeFilter === status ? 'default' : 'outline'} onClick={() => setActiveFilter(status)} className="text-xs sm:text-sm whitespace-nowrap">{status === 'all' ? 'Todos' : status}</Button>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {loading ? ( <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                            ) : filteredLocalInventory.length === 0 ? (
+                                <Card className="text-center py-16 mt-8 shadow-none border-dashed"><div className="flex flex-col items-center justify-center"><Package className="h-16 w-16 text-muted-foreground mb-4" /><h2 className="text-xl font-semibold text-foreground">No se encontraron productos locales</h2><p className="text-muted-foreground mt-2 max-w-sm">Intenta ajustar tu búsqueda o crea un nuevo producto.</p></div></Card>
+                            ) : (
+                                <Table>
+                                    <TableHeader><TableRow><TableHead>Producto</TableHead><TableHead>Tipo</TableHead><TableHead>Stock Total</TableHead><TableHead>Próximo Vto.</TableHead><TableHead>Estado</TableHead><TableHead className="text-right">Acciones</TableHead></TableRow></TableHeader>
+                                    <TableBody>
+                                        {filteredLocalInventory.map(item => {
+                                            const statusStyles: Record<InventoryItemWithStats['status'], string> = { 'OK': 'text-green-600', 'Stock Bajo': 'text-yellow-600', 'Agotado': 'text-red-600', 'Próximo a Vencer': 'text-orange-600', 'Vencido': 'text-red-700 font-bold' };
+                                            return (
+                                            <TableRow key={item.id}>
+                                                <TableCell>
+                                                    <div className="font-medium text-foreground">{item.name}</div>
+                                                    <div className="text-xs text-muted-foreground">SKU: {item.sku || 'N/A'}</div>
+                                                    {item.inventoryType === 'Suministro Paciente' && <Badge variant="outline" className="mt-1">Paciente: {item.patientOwnerName}</Badge>}
+                                                </TableCell>
+                                                <TableCell><Badge variant={item.inventoryType === 'Fraccionamiento' ? 'default' : 'secondary'}>{item.inventoryType}</Badge></TableCell>
+                                                <TableCell><div className="flex items-center gap-2"><span className="font-semibold text-lg text-foreground">{item.quantity}</span><span className="text-sm text-muted-foreground ml-1">{item.unit}</span></div></TableCell>
+                                                <TableCell>{item.nextExpiryDate && !isNaN(parseISO(item.nextExpiryDate).getTime()) ? format(parseISO(item.nextExpiryDate), 'MMM yyyy', {locale: es}) : 'N/A'}</TableCell>
+                                                <TableCell><Badge variant="outline" className={cn("font-semibold", statusStyles[item.status])}>{item.status}</Badge></TableCell>
+                                                <TableCell className="text-right"><InventoryActions item={item} onManageLots={handleManageLots} onEdit={() => handleOpenForm(item)} onDelete={() => setItemToDelete(item)} /></TableCell>
+                                            </TableRow>
+                                        )})}
+                                    </TableBody>
+                                </Table>
+                            )}
+                        </div>
                     </div>
-
-                    <Card className="mb-6">
-                        <CardContent className="p-4 flex flex-col sm:flex-row gap-4">
-                            <div className="relative flex-1">
-                                <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
-                                <Input placeholder="Buscar por nombre o SKU..." className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                            </div>
-                            <div className="flex items-center gap-2 overflow-x-auto pb-2">
-                                {(['all', 'OK', 'Stock Bajo', 'Agotado', 'Próximo a Vencer', 'Vencido'] as FilterStatus[]).map(status => (
-                                    <Button key={status} variant={activeFilter === status ? 'default' : 'outline'} onClick={() => setActiveFilter(status)} className="text-xs sm:text-sm whitespace-nowrap">{status === 'all' ? 'Todos' : status}</Button>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {loading ? ( <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
-                    ) : filteredInventory.length === 0 ? (
-                        <Card className="text-center py-16 mt-8 shadow-none border-dashed"><div className="flex flex-col items-center justify-center"><Package className="h-16 w-16 text-muted-foreground mb-4" /><h2 className="text-xl font-semibold text-foreground">No se encontraron productos locales</h2><p className="text-muted-foreground mt-2 max-w-sm">Intenta ajustar tu búsqueda o crea un nuevo producto.</p></div></Card>
+                </TabsContent>
+                <TabsContent value="external" className="mt-6">
+                    {liorenError ? (
+                        <Alert variant="destructive">
+                            <AlertTriangle className="h-4 w-4" />
+                            <CardTitle>Error de Conexión</CardTitle>
+                            <CardDescription>{liorenError}</CardDescription>
+                        </Alert>
                     ) : (
-                        <Table>
-                            <TableHeader><TableRow><TableHead>Producto</TableHead><TableHead>Tipo</TableHead><TableHead>Stock Total</TableHead><TableHead>Próximo Vto.</TableHead><TableHead>Estado</TableHead><TableHead className="text-right">Acciones</TableHead></TableRow></TableHeader>
-                            <TableBody>
-                                {filteredInventory.map(item => {
-                                    const statusStyles: Record<InventoryItemWithStats['status'], string> = { 'OK': 'text-green-600', 'Stock Bajo': 'text-yellow-600', 'Agotado': 'text-red-600', 'Próximo a Vencer': 'text-orange-600', 'Vencido': 'text-red-700 font-bold' };
-                                    return (
-                                    <TableRow key={item.id}>
-                                        <TableCell>
-                                            <div className="font-medium text-foreground">{item.name}</div>
-                                            <div className="text-xs text-muted-foreground">SKU: {item.sku || 'N/A'}</div>
-                                            {item.inventoryType === 'Suministro Paciente' && <Badge variant="outline" className="mt-1">Paciente: {item.patientOwnerName}</Badge>}
-                                        </TableCell>
-                                        <TableCell><Badge variant={item.inventoryType === 'Fraccionamiento' ? 'default' : 'secondary'}>{item.inventoryType}</Badge></TableCell>
-                                        <TableCell><div className="flex items-center gap-2"><span className="font-semibold text-lg text-foreground">{item.quantity}</span><span className="text-sm text-muted-foreground ml-1">{item.unit}</span></div></TableCell>
-                                        <TableCell>{item.nextExpiryDate && !isNaN(parseISO(item.nextExpiryDate).getTime()) ? format(parseISO(item.nextExpiryDate), 'MMM yyyy', {locale: es}) : 'N/A'}</TableCell>
-                                        <TableCell><Badge variant="outline" className={cn("font-semibold", statusStyles[item.status])}>{item.status}</Badge></TableCell>
-                                        <TableCell className="text-right"><InventoryActions item={item} onManageLots={handleManageLots} onEdit={() => handleOpenForm(item)} onDelete={() => setItemToDelete(item)} /></TableCell>
-                                    </TableRow>
-                                )})}
-                            </TableBody>
-                        </Table>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Catálogo de Productos de Lioren</CardTitle>
+                                <CardDescription>Busque en el inventario de Lioren para importar productos a su inventario local.</CardDescription>
+                                <div className="relative pt-2">
+                                    <Search className="absolute left-2.5 top-5 h-4 w-4 text-muted-foreground" />
+                                    <Input placeholder="Buscar por nombre o código..." className="pl-8" value={liorenSearchTerm} onChange={(e) => setLiorenSearchTerm(e.target.value)} />
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                {filteredLiorenInventory.length > 0 ? (
+                                    <div className="max-h-[70vh] overflow-y-auto">
+                                        <Table>
+                                            <TableHeader><TableRow><TableHead>Nombre</TableHead><TableHead>Código</TableHead><TableHead>Precio</TableHead><TableHead className="text-right">Acción</TableHead></TableRow></TableHeader>
+                                            <TableBody>
+                                                {filteredLiorenInventory.map(product => (
+                                                    <TableRow key={product.id}>
+                                                        <TableCell className="font-medium">{product.nombre || "N/A"}</TableCell>
+                                                        <TableCell>{product.codigo || "N/A"}</TableCell>
+                                                        <TableCell>${typeof product.precioventabruto === 'number' ? product.precioventabruto.toLocaleString('es-CL') : 'N/A'}</TableCell>
+                                                        <TableCell className="text-right">
+                                                            <Button size="sm" onClick={() => handleImportFromLioren(product)}>
+                                                                <Download className="mr-2 h-4 w-4" />
+                                                                Importar
+                                                            </Button>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                ) : (
+                                    <p className="text-center text-muted-foreground py-8">No se encontraron productos en Lioren para su búsqueda.</p>
+                                )}
+                            </CardContent>
+                        </Card>
                     )}
-                </div>
-            </div>
+                </TabsContent>
+            </Tabs>
         </>
     );
 }
