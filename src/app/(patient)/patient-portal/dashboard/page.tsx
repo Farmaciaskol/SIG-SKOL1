@@ -15,7 +15,7 @@ import { statusConfig } from '@/lib/constants';
 
 const QuickActionButton = ({ href, icon: Icon, title, description }: { href: string, icon: React.ElementType, title: string, description: string }) => (
     <Link href={href} className="w-full">
-        <Card className="hover:bg-muted/50 transition-colors h-full text-center p-4 flex flex-col items-center justify-center">
+        <Card className="hover:bg-muted/50 transition-colors h-full text-center p-4 flex flex-col items-center justify-center hover:shadow-lg">
             <Icon className="h-10 w-10 text-primary mb-2"/>
             <p className="font-semibold text-foreground">{title}</p>
             <p className="text-xs text-muted-foreground">{description}</p>
@@ -72,18 +72,18 @@ export default function PatientPortalDashboardPage() {
                 <Alert variant="destructive">
                     <AlertTriangle className="h-4 w-4" />
                     <AlertTitle>¡Atención Urgente!</AlertTitle>
-                    <CardDescription>
+                    <AlertDescription>
                         {patient.proactiveMessage}
-                    </CardDescription>
+                    </AlertDescription>
                 </Alert>
             )}
              {patient.proactiveStatus === ProactivePatientStatus.ATTENTION && (
                 <Alert variant="warning">
                     <AlertTriangle className="h-4 w-4" />
                     <AlertTitle>Atención Requerida</AlertTitle>
-                     <CardDescription>
+                     <AlertDescription>
                         {patient.proactiveMessage}
-                    </CardDescription>
+                    </AlertDescription>
                 </Alert>
             )}
 

@@ -7,7 +7,7 @@ import {
   Clock,
   CheckCircle2,
   Wand2,
-  AlertCircle,
+  AlertTriangle,
   FileText,
   Package,
   PackageCheck,
@@ -117,7 +117,7 @@ function DashboardCalendar({ events }: { events: CalendarEvent[] }) {
                             })}
                         </div>
                     ) : (
-                        <div className="flex items-center justify-center h-full text-sm text-muted-foreground p-4 text-center border-2 border-dashed rounded-md">
+                        <div className="flex items-center justify-center h-full text-sm text-muted-foreground p-4 text-center border-2 border-dashed rounded-lg">
                            No hay eventos para la fecha seleccionada.
                         </div>
                     )}
@@ -129,7 +129,7 @@ function DashboardCalendar({ events }: { events: CalendarEvent[] }) {
 
 const KpiCard = ({ title, value, icon: Icon, href }: { title: string; value: string | number; icon: React.ElementType, href: string; }) => (
   <Link href={href}>
-    <Card className="hover:shadow-md transition-shadow duration-300 cursor-pointer bg-card">
+    <Card className="hover:shadow-lg transition-shadow duration-300 cursor-pointer bg-card">
       <CardContent className="p-4 flex items-center gap-4">
         <div className="p-3 rounded-full bg-primary/10">
           <Icon className="h-6 w-6 text-primary" />
@@ -154,27 +154,6 @@ const ProactiveAlertsCard = ({ patients }: { patients: Patient[] }) => {
       return 0;
   });
 
-  const statusConfigAlerts = {
-    [ProactivePatientStatus.URGENT]: {
-      icon: AlertCircle,
-      color: 'text-red-600',
-      bgColor: 'bg-red-50',
-      borderColor: 'border-red-400',
-    },
-    [ProactivePatientStatus.ATTENTION]: {
-      icon: Clock,
-      color: 'text-yellow-600',
-      bgColor: 'bg-yellow-50',
-      borderColor: 'border-yellow-400',
-    },
-    [ProactivePatientStatus.OK]: {
-      icon: CheckCircle2,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
-      borderColor: 'border-green-400',
-    }
-  };
-
   return (
     <Card>
       <CardHeader className="flex flex-row items-center gap-3 border-b pb-4">
@@ -183,37 +162,25 @@ const ProactiveAlertsCard = ({ patients }: { patients: Patient[] }) => {
       </CardHeader>
       <CardContent className="pt-4 space-y-3">
         {alerts.length > 0 ? (
-          alerts.map((patient) => {
-            const config = statusConfigAlerts[patient.proactiveStatus];
-            if (!config) return null;
-            const Icon = config.icon;
-            return (
-              <div
-                key={patient.id}
-                className={`flex items-start p-3 rounded-lg ${config.bgColor} border-l-4 ${config.borderColor}`}
+          alerts.map((patient) => (
+              <Alert 
+                key={patient.id} 
+                variant={patient.proactiveStatus === ProactivePatientStatus.URGENT ? 'destructive' : 'warning'}
+                className="flex items-center justify-between"
               >
-                <Icon
-                  className={`h-5 w-5 ${config.color} mr-3 mt-0.5 flex-shrink-0`}
-                />
-                <div className="flex-grow">
-                  <p className="font-semibold text-primary">
-                    <Link
-                      href={`/patients/${patient.id}`}
-                      className="hover:underline"
-                    >
-                      Paciente: {patient.name}
-                    </Link>
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {patient.proactiveMessage}
-                  </p>
+                <div className="flex items-start gap-3">
+                    <AlertTriangle className="h-5 w-5 mt-1" />
+                    <div>
+                        <AlertTitle>
+                            <Link href={`/patients/${patient.id}`} className="hover:underline">{patient.name}</Link>
+                        </AlertTitle>
+                        <p className="text-sm">
+                            {patient.proactiveMessage}
+                        </p>
+                    </div>
                 </div>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href={`/patients/${patient.id}`}>Revisar</Link>
-                </Button>
-              </div>
-            );
-          })
+              </Alert>
+          ))
         ) : (
           <div className="flex flex-col items-center text-center text-muted-foreground h-full justify-center py-6">
             <CheckCircle2 className="h-10 w-10 text-green-500 mb-2" />
@@ -360,7 +327,7 @@ export function DashboardClient({ recipes, patients, inventory, calendarEvents }
             <p className="text-sm text-muted-foreground">{capitalizedDate}</p>
         </div>
         <div className="flex items-center space-x-2">
-            <Button variant="outline" asChild className="bg-card hover:bg-muted">
+            <Button variant="outline" asChild>
               <Link href="/patients"><Users className="mr-2 h-4 w-4" /> Ver Pacientes</Link>
             </Button>
             <Button asChild>

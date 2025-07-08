@@ -11,7 +11,7 @@ export default {
     extend: {
       fontFamily: {
         body: ['var(--font-body)'],
-        headline: ['var(--font-headline)'],
+        headline: ['var(--font-body)'],
         code: ['"Source Code Pro"', 'monospace'],
       },
       colors: {

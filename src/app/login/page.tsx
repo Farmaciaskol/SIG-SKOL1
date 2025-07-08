@@ -40,10 +40,10 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen w-full lg:grid lg:grid-cols-2">
       {/* Left Branding Panel */}
-      <div className="hidden bg-blue-600 lg:flex lg:flex-col lg:items-center lg:justify-center lg:p-12 lg:text-center text-white">
+      <div className="hidden bg-muted lg:flex lg:flex-col lg:items-center lg:justify-center lg:p-12 lg:text-center">
         <div className="space-y-4 max-w-md">
           <Image
-            src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20BLANCO.png?alt=media&token=86794695-4654-4113-9110-8582f3575b7f"
+            src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
             alt="Skol Pharmacy Logo"
             width={250}
             height={69}
@@ -60,10 +60,10 @@ export default function LoginPage() {
       </div>
       
       {/* Right Form Panel / Mobile View */}
-      <div className="bg-blue-600 lg:bg-background flex flex-col items-center justify-center p-6 lg:p-4 min-h-screen">
+      <div className="bg-background flex flex-col items-center justify-center p-6 lg:p-4 min-h-screen">
         <div className="lg:hidden mb-8">
             <Image
-                src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20BLANCO.png?alt=media&token=86794695-4654-4113-9110-8582f3575b7f"
+                src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
                 alt="Skol Pharmacy Logo"
                 width={200}
                 height={55}
@@ -72,7 +72,7 @@ export default function LoginPage() {
             />
         </div>
         <div className="w-full max-w-sm space-y-6">
-            <div className="w-full bg-card rounded-xl shadow-lg p-6 sm:p-8 space-y-6">
+            <div className="w-full bg-card rounded-2xl shadow-lg p-6 sm:p-8 space-y-6">
                 <div className="text-center">
                   <h1 className="text-2xl font-bold font-headline text-foreground">
                     Acceso de Administrador
@@ -117,15 +117,15 @@ export default function LoginPage() {
                     </div>
                   </div>
 
-                  <Button type="submit" className="w-full" disabled={loading}>
+                  <Button type="submit" className="w-full h-11 text-base" disabled={loading}>
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {loading ? 'Ingresando...' : 'Ingresar al Sistema'}
                   </Button>
                 </form>
             </div>
-            <p className="px-8 text-center text-sm text-gray-200 lg:text-muted-foreground">
+            <p className="px-8 text-center text-sm text-muted-foreground">
               ¿Es usted un paciente?{' '}
-              <Link href="/patient-portal/login" className="font-semibold text-white lg:text-primary hover:underline">
+              <Link href="/patient-portal/login" className="font-semibold text-primary hover:underline">
                 Ingrese al Portal de Pacientes
               </Link>
             </p>

@@ -89,7 +89,7 @@ export default function PatientPortalRegisterPage() {
                     <CardContent>
                         <p className="text-muted-foreground">¡Gracias por registrarte! Tu solicitud de cuenta ha sido enviada.</p>
                         <p className="mt-2 text-muted-foreground">Nuestro equipo la revisará y recibirás una notificación cuando sea aprobada. Este proceso puede tardar hasta 24 horas hábiles.</p>
-                        <Button asChild className="mt-6 w-full">
+                        <Button asChild className="mt-6 w-full h-11 text-base">
                             <Link href="/patient-portal/login">Volver al Inicio de Sesión</Link>
                         </Button>
                     </CardContent>
@@ -147,7 +147,7 @@ export default function PatientPortalRegisterPage() {
                             <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} disabled={loading} className="pl-10" />
                           </div>
                         </div>
-                        <Button type="submit" className="w-full" disabled={loading}>
+                        <Button type="submit" className="w-full h-11 text-base" disabled={loading}>
                             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Registrarme'}
                         </Button>
                     </form>
