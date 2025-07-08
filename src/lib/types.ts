@@ -1,4 +1,5 @@
 
+
 export enum RecipeStatus {
   PendingReviewPortal = 'Pendiente Revisión - Portal',
   PendingValidation = 'Pendiente Validación',
@@ -195,7 +196,6 @@ export interface Recipe {
   preparationCost?: number;
   transportCost?: number;
   isControlled?: boolean;
-  isSugarFree?: boolean;
   controlledRecipeType?: string;
   controlledRecipeFolio?: string;
   prescriptionImageUrl?: string;
@@ -229,7 +229,6 @@ export interface Patient {
   address?: string;
   gender?: 'Masculino' | 'Femenino' | 'Otro';
   isChronic: boolean;
-  chronicDisease?: string;
   isHomeCare?: boolean;
   preferredDispensationDay?: number;
   allergies?: string[];

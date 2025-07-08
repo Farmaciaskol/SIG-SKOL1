@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { db, storage, auth } from './firebase';
@@ -402,7 +401,6 @@ export const saveRecipe = async (data: any, imageFile: File | null, userId: stri
         prescriptionDate: data.prescriptionDate.toISOString(), dueDate: data.dueDate.toISOString(), updatedAt: new Date().toISOString(),
         externalPharmacyId: data.externalPharmacyId, supplySource: data.supplySource, 
         preparationCost: Number(data.preparationCost),
-        isSugarFree: data.isSugarFree,
         isControlled: data.isControlled, controlledRecipeType: data.controlledRecipeType, controlledRecipeFolio: data.controlledRecipeFolio,
         prescriptionImageUrl: imageUrl,
     };
@@ -704,7 +702,6 @@ export const addPatient = async (patient: Partial<Omit<Patient, 'id' | 'proactiv
         address: patient.address || '',
         gender: patient.gender || 'Otro',
         isChronic: patient.isChronic || false,
-        chronicDisease: patient.chronicDisease || '',
         isHomeCare: patient.isHomeCare || false,
         proactiveStatus: ProactivePatientStatus.OK,
         proactiveMessage: 'No requiere acción.',
