@@ -534,16 +534,17 @@ export function InventoryClient({
                                                         <TableCell>${typeof product.precioventabruto === 'number' ? product.precioventabruto.toLocaleString('es-CL') : 'N/A'}</TableCell>
                                                         <TableCell>
                                                             <div className="flex flex-wrap gap-1">
-                                                                {Array.isArray(product.stocks) && product.stocks.filter(s => Number(s.stock) > 0).length > 0 ? (
-                                                                product.stocks
-                                                                    .filter(stock => Number(stock.stock) > 0)
-                                                                    .map(stock => (
-                                                                    <Badge key={stock.sucursal_id} variant="secondary" className="font-normal">
-                                                                        {stock.nombre}: {Number(stock.stock)}
-                                                                    </Badge>
-                                                                    ))
+                                                                {Array.isArray(product.stocks) && product.stocks.length > 0 ? (
+                                                                    product.stocks.map(stock => {
+                                                                        const stockValue = Number(stock.stock);
+                                                                        return (
+                                                                            <Badge key={stock.sucursal_id} variant="secondary" className="font-normal">
+                                                                                {stock.nombre}: {isNaN(stockValue) ? 'N/D' : stockValue}
+                                                                            </Badge>
+                                                                        );
+                                                                    })
                                                                 ) : (
-                                                                <Badge variant="outline">Sin Stock</Badge>
+                                                                    <Badge variant="outline">Sin Info de Stock</Badge>
                                                                 )}
                                                             </div>
                                                         </TableCell>
