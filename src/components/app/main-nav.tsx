@@ -50,7 +50,6 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
 } from '@/components/ui/sheet';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -70,7 +69,6 @@ const menuGroups = [
       title: 'Principal',
       items: [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { href: '/portal-inbox', label: 'Portal', icon: Inbox },
         { href: '/recipes', label: 'Recetas', icon: FileText },
       ],
     },
@@ -239,11 +237,11 @@ function MainNavContent({
         </div>
         <div className="flex-1 overflow-auto">
             {menuGroups.map((group) => (
-              <div key={group.title} className={cn("px-2", isSidebarOpen && "mb-2")}>
+              <div key={group.title} className="px-2">
                 <h3 className={cn(
-                  "text-xs font-normal text-muted-foreground uppercase tracking-wider mb-2 transition-opacity duration-300",
-                  isSidebarOpen ? "opacity-100 px-3" : "opacity-0 text-center text-[10px]"
-                )}>{isSidebarOpen ? group.title : ''}</h3>
+                  "text-xs font-normal text-muted-foreground uppercase tracking-wider mb-2 transition-opacity duration-300 font-sans",
+                  isSidebarOpen ? "opacity-100 px-3" : "opacity-0 h-0"
+                )}>{group.title}</h3>
                 <div className="flex flex-col gap-1">
                   {group.items.map((item) => (
                     <Link
@@ -257,31 +255,22 @@ function MainNavContent({
                       title={isSidebarOpen ? '' : item.label}
                     >
                       <item.icon className="h-4 w-4" />
-                      <span className={cn(!isSidebarOpen && "hidden")}>{item.label}</span>
-                       {item.href === '/portal-inbox' && portalInboxCount > 0 && (
-                            <Badge variant="destructive" className={cn("ml-auto", !isSidebarOpen && "absolute top-1 right-1 h-2 w-2 p-0 justify-center")}>{isSidebarOpen ? portalInboxCount : ''}</Badge>
-                       )}
-                       {item.href === '/inventory' && lowStockCount > 0 && (
-                            <Badge variant="destructive" className={cn("ml-auto", !isSidebarOpen && "absolute top-1 right-1 h-2 w-2 p-0 justify-center")}>{isSidebarOpen ? lowStockCount : ''}</Badge>
-                       )}
-                       {item.href === '/dispatch-management' && itemsToDispatchCount > 0 && (
-                            <Badge variant="destructive" className={cn("ml-auto", !isSidebarOpen && "absolute top-1 right-1 h-2 w-2 p-0 justify-center")}>{isSidebarOpen ? itemsToDispatchCount : ''}</Badge>
-                       )}
+                      <span className={cn("font-medium", !isSidebarOpen && "hidden")}>{item.label}</span>
                     </Link>
                   ))}
                 </div>
               </div>
             ))}
-        </div>
-        <div className="mt-auto p-2">
-            <Button
-                variant="ghost"
-                className={cn("justify-start w-full", !isSidebarOpen && "justify-center")}
-                onClick={toggleSidebar}
-            >
-                <ChevronLeft className={cn("h-5 w-5 transition-transform", !isSidebarOpen && "rotate-180")} />
-                <span className={cn("ml-2", !isSidebarOpen && "hidden")}>Cerrar Menú</span>
-            </Button>
+             <div className="p-2">
+                <Button
+                    variant="ghost"
+                    className={cn("justify-start w-full", !isSidebarOpen && "justify-center")}
+                    onClick={toggleSidebar}
+                >
+                    <ChevronLeft className={cn("h-5 w-5 transition-transform", !isSidebarOpen && "rotate-180")} />
+                    <span className={cn("ml-2", !isSidebarOpen && "hidden")}>Cerrar Menú</span>
+                </Button>
+            </div>
         </div>
       </nav>
       <div className="flex flex-1 flex-col">
@@ -332,16 +321,7 @@ function MainNavContent({
                                   onClick={() => setIsMobileMenuOpen(false)}
                                 >
                                   <item.icon className="h-4 w-4" />
-                                  <span>{item.label}</span>
-                                   {item.href === '/portal-inbox' && portalInboxCount > 0 && (
-                                        <Badge variant="destructive" className="ml-auto">{portalInboxCount}</Badge>
-                                   )}
-                                   {item.href === '/inventory' && lowStockCount > 0 && (
-                                        <Badge variant="destructive" className="ml-auto">{lowStockCount}</Badge>
-                                   )}
-                                   {item.href === '/dispatch-management' && itemsToDispatchCount > 0 && (
-                                        <Badge variant="destructive" className="ml-auto">{itemsToDispatchCount}</Badge>
-                                   )}
+                                  <span className="font-medium">{item.label}</span>
                                 </Link>
                               ))}
                             </div>
@@ -355,6 +335,17 @@ function MainNavContent({
              <CommandPalette />
           </div>
           <div className="flex items-center gap-2">
+            <Button asChild variant="ghost" size="icon" className="relative h-9 w-9 rounded-full">
+               <Link href="/portal-inbox">
+                <Inbox className="h-5 w-5" />
+                {portalInboxCount > 0 && (
+                  <Badge variant="destructive" className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full p-0">
+                    {portalInboxCount}
+                  </Badge>
+                )}
+                <span className="sr-only">Bandeja de Entrada del Portal</span>
+              </Link>
+            </Button>
             <Button asChild variant="ghost" size="icon" className="relative h-9 w-9 rounded-full">
               <Link href="/messaging">
                 <MessageSquare className="h-5 w-5" />
