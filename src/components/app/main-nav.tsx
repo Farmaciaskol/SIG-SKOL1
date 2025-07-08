@@ -46,10 +46,10 @@ import {
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
+  SheetDescription,
 } from '@/components/ui/sheet';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -172,7 +172,7 @@ function MainNavContent({
   ...props
 }: MainNavProps & { children: React.ReactNode }) {
   const pathname = usePathname();
-  const [user] = useAuthState(auth);
+  const [user, authLoading] = useAuthState(auth);
   const [appUser, setAppUser] = React.useState<AppUser | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
@@ -247,32 +247,24 @@ function MainNavContent({
   return (
     <div className="flex min-h-svh w-full bg-background">
       <nav className={cn(
-          "hidden md:flex flex-col transition-all duration-300 ease-in-out",
+          "hidden md:flex flex-col transition-all duration-300 ease-in-out bg-card",
           isSidebarOpen ? "w-[250px]" : "w-[72px]"
       )}>
         <div className={cn(
-            "flex h-16 items-center border-b",
-            isSidebarOpen ? "px-4" : "px-3 justify-center"
+            "flex h-16 items-center",
+            isSidebarOpen ? "px-4" : "justify-center"
         )}>
-          <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-            <Image
-                src={isSidebarOpen 
-                    ? "https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=1a612d04-0f27-4317-bfd6-06b48f019a24" 
-                    : "https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/isotipo.png?alt=media&token=e1c49479-05e8-4b95-a864-7e8c89c89369"}
-                alt="Skol Pharmacy Logo"
-                width={isSidebarOpen ? 120 : 32}
-                height={isSidebarOpen ? 33 : 32}
-                priority
-                className="transition-all duration-300"
-            />
-          </Link>
+           <Button variant="ghost" size="icon" className="h-9 w-9" onClick={toggleSidebar}>
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Toggle Sidebar</span>
+          </Button>
         </div>
         <div className="flex-1 overflow-auto py-2">
             {navContent}
         </div>
       </nav>
       <div className="flex flex-1 flex-col">
-        <header className="flex h-16 items-center justify-between gap-4 px-6 border-b">
+        <header className="flex h-16 items-center justify-between gap-4 px-6">
           <div className="flex items-center gap-2">
             <div className="md:hidden">
               <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -308,10 +300,6 @@ function MainNavContent({
                 </SheetContent>
               </Sheet>
             </div>
-            <Button variant="ghost" size="icon" className="h-9 w-9 hidden md:flex" onClick={toggleSidebar}>
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle Sidebar</span>
-            </Button>
           </div>
           <div className="flex-1 flex justify-center">
             <div className="w-full max-w-md">
@@ -423,7 +411,7 @@ function MainNavContent({
             )}
           </div>
         </header>
-        <main className="flex-1 p-6 md:p-8 overflow-auto bg-card rounded-tl-2xl">
+        <main className="flex-1 p-6 md:p-8 overflow-auto">
           {children}
         </main>
       </div>
