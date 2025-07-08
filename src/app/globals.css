@@ -15,14 +15,14 @@
     --primary-foreground: 0 0% 100%;
     --secondary: 174 100% 33%; /* Acento Teal */
     --secondary-foreground: 0 0% 100%;
-    --muted: 210 40% 96.1%; /* Gris muy claro para fondos */
+    --muted: 0 0% 100%; /* Fondo Blanco Uniforme */
     --muted-foreground: 215 19% 69%; /* Gris Claro */
-    --accent: 210 40% 94%; /* Azul muy pálido para hovers */
+    --accent: 210 40% 98%; /* Gris muy pálido para hovers */
     --accent-foreground: 215 29% 14%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
+    --border: 210 40% 96.1%;
+    --input: 210 40% 96.1%;
     --ring: 207 100% 42%;
     --radius: 0.75rem;
     --chart-1: 221.2 83.2% 53.3%;
