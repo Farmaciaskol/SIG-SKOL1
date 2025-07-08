@@ -769,6 +769,9 @@ export const createMonthlyDispensationBox = async (patientId: string, period: st
             if (isExpired) {
                 status = DispensationItemStatus.DoNotInclude;
                 reason = "Receta vencida.";
+            } else if (recipe.isControlled) {
+                status = DispensationItemStatus.RequiresAttention;
+                reason = "Receta controlada pendiente de recepción y validación.";
             } else if (dispensationsCount >= MAX_REPREPARATIONS) {
                 status = DispensationItemStatus.RequiresAttention;
                 reason = `Límite de ${MAX_REPREPARATIONS} preparaciones alcanzado. Requiere nueva receta.`;
@@ -1054,3 +1057,34 @@ export async function placeOrder(
   
   return orderId;
 }
+
+export const attachControlledPrescriptionToItem = async (boxId: string, recipeId: string, newFolio: string): Promise<void> => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    
+    const batch = writeBatch(db);
+    
+    // 1. Update the MonthlyDispensationBox
+    const boxRef = doc(db, 'monthlyDispensations', boxId);
+    const boxSnap = await getDoc(boxRef);
+    if (!boxSnap.exists()) throw new Error("Dispensation box not found.");
+    
+    const boxData = boxSnap.data() as MonthlyDispensationBox;
+    const itemIndex = boxData.items.findIndex(item => item.id === recipeId && item.type === 'magistral');
+    if (itemIndex === -1) throw new Error("Item not found in dispensation box.");
+
+    const updatedItems = [...boxData.items];
+    updatedItems[itemIndex] = {
+        ...updatedItems[itemIndex],
+        status: DispensationItemStatus.OkToInclude,
+        reason: `Receta controlada adjuntada. Folio: ${newFolio}`,
+        pharmacistNotes: `Folio adjuntado: ${newFolio}`
+    };
+
+    batch.update(boxRef, { items: updatedItems });
+
+    // 2. Update the original Recipe
+    const recipeRef = doc(db, 'recipes', recipeId);
+    batch.update(recipeRef, { controlledRecipeFolio: newFolio });
+
+    await batch.commit();
+};

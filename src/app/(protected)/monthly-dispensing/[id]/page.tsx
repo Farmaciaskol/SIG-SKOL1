@@ -8,6 +8,7 @@ import {
   getMonthlyDispensationBox,
   updateMonthlyDispensationBox,
   getPatient,
+  attachControlledPrescriptionToItem,
 } from '@/lib/data';
 import type {
   MonthlyDispensationBox,
@@ -28,7 +29,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ChevronLeft, Loader2, User, Calendar, CheckCircle, AlertTriangle, XCircle, Printer, Box, Save, Package, PackageCheck } from 'lucide-react';
+import { ChevronLeft, Loader2, User, Calendar, CheckCircle, AlertTriangle, XCircle, Printer, Box, Save, Package, PackageCheck, Paperclip } from 'lucide-react';
 import { format, parse } from 'date-fns';
 import { es } from 'date-fns/locale';
 import React from 'react';
@@ -149,6 +150,60 @@ const PrintLabelDialog = ({
     );
 }
 
+const ControlledRecipeDialog = ({ 
+    item, 
+    isOpen, 
+    onOpenChange, 
+    onConfirm 
+}: {
+    item: DispensationItem | null;
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
+    onConfirm: (folio: string) => void;
+}) => {
+    const [folio, setFolio] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        if (!isOpen) {
+            setFolio('');
+            setIsSaving(false);
+        }
+    }, [isOpen]);
+    
+    const handleConfirmClick = async () => {
+        setIsSaving(true);
+        await onConfirm(folio);
+        setIsSaving(false);
+    }
+
+    if (!item) return null;
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Adjuntar Receta Controlada</DialogTitle>
+                    <DialogDescription>
+                        Ingrese el folio de la nueva receta controlada para el preparado: <span className="font-semibold text-foreground">{item.name}</span>.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-2">
+                    <Label htmlFor="controlled-folio">Folio de la Nueva Receta *</Label>
+                    <Input id="controlled-folio" value={folio} onChange={e => setFolio(e.target.value)} placeholder="Ej: A12345678"/>
+                </div>
+                <DialogFooter>
+                    <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
+                    <Button onClick={handleConfirmClick} disabled={!folio.trim() || isSaving}>
+                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                        Confirmar y Desbloquear
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 export default function DispensationDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -167,6 +222,7 @@ export default function DispensationDetailPage() {
   const [retrieverName, setRetrieverName] = useState('');
   const [retrieverRut, setRetrieverRut] = useState('');
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+  const [attachingControlledItem, setAttachingControlledItem] = useState<DispensationItem | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!id) return;
@@ -270,6 +326,19 @@ export default function DispensationDetailPage() {
         setIsSaving(false);
     }
   }
+  
+  const handleAttachControlled = async (newFolio: string) => {
+    if (!box || !attachingControlledItem) return;
+    try {
+        await attachControlledPrescriptionToItem(box.id, attachingControlledItem.id, newFolio);
+        toast({ title: 'Receta Adjuntada', description: 'El ítem ha sido desbloqueado para preparación.' });
+        setAttachingControlledItem(null);
+        fetchData();
+    } catch (error) {
+        console.error('Failed to attach controlled prescription:', error);
+        toast({ title: 'Error', description: 'No se pudo adjuntar la receta controlada.', variant: 'destructive' });
+    }
+  }
 
   if (loading) {
     return (
@@ -309,6 +378,13 @@ export default function DispensationDetailPage() {
         box={box}
         patient={patient}
       />
+      <ControlledRecipeDialog 
+        item={attachingControlledItem}
+        isOpen={!!attachingControlledItem}
+        onOpenChange={() => setAttachingControlledItem(null)}
+        onConfirm={handleAttachControlled}
+      />
+
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="outline" size="icon" className="h-10 w-10" asChild>
@@ -343,6 +419,7 @@ export default function DispensationDetailPage() {
                                       const originalItem = originalBox?.items.find(i => i.id === item.id);
                                       const isOverridden = originalItem && originalItem.status !== item.status;
                                       const isFormDisabled = box.status !== MonthlyDispensationBoxStatus.InPreparation;
+                                      const isPendingControlled = item.status === DispensationItemStatus.RequiresAttention && item.reason?.includes('controlada');
 
                                       return (
                                         <TableRow key={item.id} className={isFormDisabled ? 'bg-muted/30' : ''}>
@@ -358,18 +435,22 @@ export default function DispensationDetailPage() {
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex items-center gap-2">
-                                                    <Select 
-                                                      value={item.status} 
-                                                      onValueChange={(value) => handleItemChange(item.id, 'status', value as DispensationItemStatus)}
-                                                      disabled={isFormDisabled}
-                                                    >
-                                                        <SelectTrigger><SelectValue /></SelectTrigger>
-                                                        <SelectContent>
-                                                            {Object.values(DispensationItemStatus).map(s => (
-                                                              <SelectItem key={s} value={s}>{itemStatusConfig[s].text}</SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
+                                                    {isPendingControlled ? (
+                                                        <Button size="sm" onClick={() => setAttachingControlledItem(item)} disabled={isFormDisabled}><Paperclip className="mr-2 h-4 w-4"/>Adjuntar Receta</Button>
+                                                    ) : (
+                                                        <Select 
+                                                          value={item.status} 
+                                                          onValueChange={(value) => handleItemChange(item.id, 'status', value as DispensationItemStatus)}
+                                                          disabled={isFormDisabled}
+                                                        >
+                                                            <SelectTrigger><SelectValue /></SelectTrigger>
+                                                            <SelectContent>
+                                                                {Object.values(DispensationItemStatus).map(s => (
+                                                                  <SelectItem key={s} value={s}>{itemStatusConfig[s].text}</SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    )}
                                                     {isOverridden && <Badge variant="outline">Manual</Badge>}
                                                 </div>
                                             </TableCell>
