@@ -5,19 +5,19 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%; /* Fondo Blanco */
-    --foreground: 215 29% 14%; /* Gris Oscuro */
+    --background: 210 40% 98%;
+    --foreground: 215 29% 14%;
     --card: 0 0% 100%;
     --card-foreground: 215 29% 14%;
     --popover: 0 0% 100%;
     --popover-foreground: 215 29% 14%;
-    --primary: 207 100% 42%; /* Azul Primario */
+    --primary: 207 100% 42%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 174 100% 33%; /* Acento Teal */
+    --secondary: 174 100% 33%;
     --secondary-foreground: 0 0% 100%;
-    --muted: 0 0% 100%; /* Fondo Blanco Uniforme */
-    --muted-foreground: 215 19% 69%; /* Gris Claro */
-    --accent: 210 40% 98%; /* Gris muy pálido para hovers */
+    --muted: 210 40% 98%;
+    --muted-foreground: 215 19% 69%;
+    --accent: 210 40% 96.1%;
     --accent-foreground: 215 29% 14%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
@@ -33,17 +33,17 @@
   }
 
   .dark {
-    --background: 215 29% 14%; /* Gris Oscuro */
-    --foreground: 0 0% 100%; /* Fondo Blanco */
+    --background: 215 29% 10%;
+    --foreground: 0 0% 100%;
     --card: 215 29% 14%;
     --card-foreground: 0 0% 100%;
     --popover: 215 29% 14%;
     --popover-foreground: 0 0% 100%;
-    --primary: 207 100% 65%; /* Azul Primario (aclarado) */
+    --primary: 207 100% 65%;
     --primary-foreground: 215 29% 14%;
-    --secondary: 174 100% 45%; /* Acento Teal (aclarado) */
+    --secondary: 174 100% 45%;
     --secondary-foreground: 215 29% 14%;
-    --muted: 215 29% 20%;
+    --muted: 215 29% 10%;
     --muted-foreground: 215 19% 69%;
     --accent: 215 29% 20%;
     --accent-foreground: 0 0% 100%;

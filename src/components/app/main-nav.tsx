@@ -247,11 +247,11 @@ function MainNavContent({
   return (
     <div className="flex min-h-svh w-full bg-background">
       <nav className={cn(
-          "hidden md:flex flex-col bg-card transition-all duration-300 ease-in-out",
+          "hidden md:flex flex-col transition-all duration-300 ease-in-out",
           isSidebarOpen ? "w-[250px]" : "w-[72px]"
       )}>
         <div className={cn(
-            "flex h-16 items-center",
+            "flex h-16 items-center border-b",
             isSidebarOpen ? "px-4" : "px-3 justify-center"
         )}>
           <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
@@ -272,7 +272,7 @@ function MainNavContent({
         </div>
       </nav>
       <div className="flex flex-1 flex-col">
-        <header className="flex h-16 items-center justify-between gap-4 bg-card px-6">
+        <header className="flex h-16 items-center justify-between gap-4 px-6 border-b">
           <div className="flex items-center gap-2">
             <div className="md:hidden">
               <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -291,7 +291,7 @@ function MainNavContent({
                         <SheetTitle>Menú Principal</SheetTitle>
                         <SheetDescription>Navegación principal de la aplicación.</SheetDescription>
                     </SheetHeader>
-                    <div className="flex h-16 items-center px-4">
+                    <div className="flex h-16 items-center px-4 border-b">
                         <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
                             <Image
                                 src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=1a612d04-0f27-4317-bfd6-06b48f019a24"
@@ -423,7 +423,7 @@ function MainNavContent({
             )}
           </div>
         </header>
-        <main className="flex-1 p-6 md:p-8 overflow-auto bg-background rounded-tl-2xl">
+        <main className="flex-1 p-6 md:p-8 overflow-auto bg-card rounded-tl-2xl">
           {children}
         </main>
       </div>
