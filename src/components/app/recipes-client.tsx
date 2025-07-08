@@ -24,7 +24,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
 import { RecipeDialogs } from './recipe-dialogs';
-import { RecipeActions, MobileRecipeActions } from './recipe-actions';
 import { RecipeTableView } from './recipe-table-view';
 import { RecipeCardView } from './recipe-card-view';
 import { CardHeader, CardTitle } from '../ui/card';

@@ -384,48 +384,50 @@ const LiorenInventoryTab = ({ products, onCreateLocal }: { products: LiorenProdu
       
       <Card>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Producto</TableHead>
-                <TableHead>SKU</TableHead>
-                <TableHead>Stock Total</TableHead>
-                <TableHead>Precio Venta</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredProducts.length > 0 ? (
-                filteredProducts.map(product => {
-                  const totalStock = product.stocks?.reduce((acc, s) => acc + Number(s.stock || 0), 0) ?? 0;
-                  return (
-                    <TableRow key={product.id}>
-                      <TableCell className="font-medium">{product.nombre}</TableCell>
-                      <TableCell>{product.codigo}</TableCell>
-                      <TableCell>
-                        <Badge variant={totalStock > 0 ? 'default' : 'destructive'}>
-                          {totalStock} {product.unidad}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>${product.precioventabruto.toLocaleString('es-CL')}</TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="outline" size="sm" onClick={() => onCreateLocal(product)}>
-                           <PackagePlus className="mr-2 h-4 w-4" />
-                           Crear para Fraccionar
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center h-24">
-                    {searchTerm ? "No se encontraron productos para su búsqueda." : "No se encontraron productos en Lioren."}
-                  </TableCell>
+                  <TableHead>Producto</TableHead>
+                  <TableHead>SKU</TableHead>
+                  <TableHead>Stock Total</TableHead>
+                  <TableHead>Precio Venta</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredProducts.length > 0 ? (
+                  filteredProducts.map(product => {
+                    const totalStock = product.stocks?.reduce((acc, s) => acc + Number(s.stock || 0), 0) ?? 0;
+                    return (
+                      <TableRow key={product.id}>
+                        <TableCell className="font-medium">{product.nombre}</TableCell>
+                        <TableCell>{product.codigo}</TableCell>
+                        <TableCell>
+                          <Badge variant={totalStock > 0 ? 'default' : 'destructive'}>
+                            {totalStock} {product.unidad}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>${product.precioventabruto.toLocaleString('es-CL')}</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="outline" size="sm" onClick={() => onCreateLocal(product)}>
+                            <PackagePlus className="mr-2 h-4 w-4" />
+                            Crear para Fraccionar
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center h-24">
+                      {searchTerm ? "No se encontraron productos para su búsqueda." : "No se encontraron productos en Lioren."}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>
@@ -697,6 +699,7 @@ export function InventoryClient({ initialInventory, liorenInventory }: {
                             <>
                                 {/* Desktop Table View */}
                                 <Card className="hidden md:block">
+                                    <div className="overflow-x-auto">
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
@@ -743,6 +746,7 @@ export function InventoryClient({ initialInventory, liorenInventory }: {
                                             )})}
                                         </TableBody>
                                     </Table>
+                                    </div>
                                 </Card>
 
                                 {/* Mobile Card View */}
