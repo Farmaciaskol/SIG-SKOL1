@@ -47,6 +47,7 @@ import { Label } from '../ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { VADEMECUM_DATA } from '@/lib/constants';
 import { Command, CommandItem, CommandList } from '../ui/command';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 
 const EXPIRY_THRESHOLD_DAYS = 90;
@@ -286,7 +287,11 @@ function LotManagementDialog({
   )
 }
 
-const LiorenInventoryTab = ({ products, onCreateLocal }: { products: LiorenProduct[]; onCreateLocal: (product: LiorenProduct) => void; }) => {
+const LiorenInventoryTab = ({ products, onCreateLocal, liorenError }: { 
+    products: LiorenProduct[]; 
+    onCreateLocal: (product: LiorenProduct) => void;
+    liorenError: string | null;
+}) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
 
@@ -381,6 +386,17 @@ const LiorenInventoryTab = ({ products, onCreateLocal }: { products: LiorenProdu
           </Popover>
         </CardContent>
       </Card>
+
+      {liorenError && (
+        <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Error de Conexión con Lioren</AlertTitle>
+            <AlertDescription>
+                No se pudo cargar el inventario externo. Por favor, verifique la conexión y la API Key.
+                <p className="font-mono text-xs mt-2">{liorenError}</p>
+            </AlertDescription>
+        </Alert>
+      )}
       
       <Card>
         <CardContent className="p-0">
@@ -435,9 +451,10 @@ const LiorenInventoryTab = ({ products, onCreateLocal }: { products: LiorenProdu
 };
 
 
-export function InventoryClient({ initialInventory, liorenInventory }: { 
+export function InventoryClient({ initialInventory, liorenInventory, liorenError }: { 
   initialInventory: InventoryItem[];
   liorenInventory: LiorenProduct[];
+  liorenError: string | null;
 }) {
     const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory);
     const [loading, setLoading] = useState(false);
@@ -778,7 +795,7 @@ export function InventoryClient({ initialInventory, liorenInventory }: {
                     </div>
                 </TabsContent>
                 <TabsContent value="lioren" className="mt-6">
-                    <LiorenInventoryTab products={liorenInventory} onCreateLocal={handleCreateLocalFromLioren} />
+                    <LiorenInventoryTab products={liorenInventory} onCreateLocal={handleCreateLocalFromLioren} liorenError={liorenError} />
                 </TabsContent>
             </Tabs>
         </>
