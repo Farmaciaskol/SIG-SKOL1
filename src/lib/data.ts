@@ -7,6 +7,8 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, ControlledLogEntryType, ProactivePatientStatus, PatientActionNeeded, MonthlyDispensationBoxStatus, DispensationItemStatus, PharmacovigilanceReportStatus, UserRequestStatus, type Recipe, type Doctor, type InventoryItem, type User, type Role, type ExternalPharmacy, type Patient, type PharmacovigilanceReport, type AppData, type AuditTrailEntry, type DispatchNote, type DispatchItem, type ControlledSubstanceLogEntry, type LotDetail, type AppSettings, type MonthlyDispensationBox, type PatientMessage, type UserRequest, type Order, type OrderItem, RecipeItem } from './types';
 import { MAX_REPREPARATIONS } from './constants';
 import { addMonths } from 'date-fns';
+import { fetchAllLiorenProducts, LiorenProduct } from './lioren-api';
+import { normalizeString } from './utils';
 
 // Helper function to recursively convert Firestore Timestamps to ISO strings
 function deepConvertTimestamps(obj: any): any {
@@ -384,7 +386,6 @@ export const saveRecipe = async (data: any, userId: string, recipeId?: string): 
         }
     }
     
-    // The image URL is now passed directly in `data`
     const imageUrl: string | undefined = data.prescriptionImageUrl;
     
     const recipeDataForUpdate: Partial<Recipe> = {
@@ -397,7 +398,18 @@ export const saveRecipe = async (data: any, userId: string, recipeId?: string): 
     };
     
     if (data.supplySource === 'Insumos de Skol') {
-        recipeDataForUpdate.skolSuppliedItemsDispatchStatus = SkolSuppliedItemsDispatchStatus.Pending;
+        const inventory = await getInventory();
+        for (const item of recipeDataForUpdate.items || []) {
+            const inventoryMatch = inventory.find(invItem => 
+                invItem.inventoryType === 'Fraccionamiento' &&
+                normalizeString(invItem.activePrinciple || '') === normalizeString(item.principalActiveIngredient)
+            );
+            if (inventoryMatch) {
+                item.sourceInventoryItemId = inventoryMatch.id;
+            } else {
+                item.sourceInventoryItemId = undefined;
+            }
+        }
     }
 
     const cleanedRecipeData = cleanUndefined(recipeDataForUpdate);
@@ -476,7 +488,6 @@ export const processDispatch = async (pharmacyId: string, dispatchItems: Dispatc
     const batch = writeBatch(db);
     const dispatchNoteRef = doc(collection(db, 'dispatchNotes'));
 
-    // New Folio generation
     const dispatchNotesCollection = collection(db, 'dispatchNotes');
     const dispatchCountSnapshot = await getDocs(query(dispatchNotesCollection));
     const newFolioNumber = dispatchCountSnapshot.size + 1;
@@ -503,8 +514,8 @@ export const processDispatch = async (pharmacyId: string, dispatchItems: Dispatc
         if (!recipeUpdates[item.recipeId]) {
             const recipeSnap = await getDoc(doc(db, 'recipes', item.recipeId));
             const recipeData = recipeSnap.data() as Recipe;
-            const itemsToProcess = Array.isArray(recipeData.items) ? recipeData.items : [];
-            const itemsToDispatch = itemsToProcess.length; // Now all items are for dispatch from Skol
+            const itemsToProcess = Array.isArray(recipeData.items) ? recipeData.items.filter(i => i.sourceInventoryItemId) : [];
+            const itemsToDispatch = itemsToProcess.length;
             recipeUpdates[item.recipeId] = { itemsToDispatch, dispatchedItems: 0 };
         }
         recipeUpdates[item.recipeId].dispatchedItems++;
@@ -624,13 +635,6 @@ export const logDirectSaleDispensation = async (
     if (controlledRecipeFormat === 'physical' && prescriptionImageFile) {
       const storageRef = ref(storage, `prescriptions/${user.uid}/${newLogEntryId}`);
       try {
-        const currentUserForLogging = auth?.currentUser;
-        console.log("Attempting upload for direct sale. Auth state:", { 
-            uid: currentUserForLogging?.uid, 
-            isAnonymous: currentUserForLogging?.isAnonymous,
-            email: currentUserForLogging?.email,
-            providerData: currentUserForLogging?.providerData,
-        });
         const uploadResult = await uploadBytes(storageRef, prescriptionImageFile);
         finalImageUrl = await getDownloadURL(uploadResult.ref);
       } catch (storageError: any) {
@@ -989,7 +993,6 @@ export const approveUserRequest = async (requestId: string): Promise<void> => {
     }
     const requestData = requestSnap.data() as UserRequest;
     
-    // Check if patient already exists by RUT or Email
     const rutQuery = query(collection(db, "patients"), where("rut", "==", requestData.rut), limit(1));
     const emailQuery = query(collection(db, "patients"), where("email", "==", requestData.email), limit(1));
     
@@ -1000,17 +1003,15 @@ export const approveUserRequest = async (requestId: string): Promise<void> => {
     const batch = writeBatch(db);
 
     if (existingPatientDoc) {
-        // Patient exists, link the firebaseUid
         batch.update(existingPatientDoc.ref, { firebaseUid: requestData.firebaseUid, email: requestData.email });
     } else {
-        // Patient does not exist, create a new one
         const newPatientRef = doc(collection(db, 'patients'));
         const newPatientData: Omit<Patient, 'id'> = {
             name: requestData.name,
             rut: requestData.rut,
             email: requestData.email,
             firebaseUid: requestData.firebaseUid,
-            isChronic: false, // Default value
+            isChronic: false, 
             proactiveStatus: ProactivePatientStatus.OK,
             proactiveMessage: 'No requiere acción.',
             actionNeeded: PatientActionNeeded.NONE,
@@ -1018,7 +1019,6 @@ export const approveUserRequest = async (requestId: string): Promise<void> => {
         batch.set(newPatientRef, cleanUndefined(newPatientData));
     }
 
-    // Mark request as approved
     batch.update(requestRef, { status: UserRequestStatus.Approved });
     
     await batch.commit();
@@ -1089,7 +1089,6 @@ export const attachControlledPrescriptionToItem = async (boxId: string, recipeId
     
     const batch = writeBatch(db);
     
-    // 1. Update the MonthlyDispensationBox
     const boxRef = doc(db, 'monthlyDispensations', boxId);
     const boxSnap = await getDoc(boxRef);
     if (!boxSnap.exists()) throw new Error("Dispensation box not found.");
@@ -1108,7 +1107,6 @@ export const attachControlledPrescriptionToItem = async (boxId: string, recipeId
 
     batch.update(boxRef, cleanUndefined({ items: updatedItems }));
 
-    // 2. Update the original Recipe
     const recipeRef = doc(db, 'recipes', recipeId);
     batch.update(recipeRef, cleanUndefined({ controlledRecipeFolio: newFolio }));
 
@@ -1137,3 +1135,63 @@ export const unlockCommercialControlledItemInBox = async (boxId: string, itemId:
     await updateDoc(boxRef, cleanUndefined({ items: updatedItems, updatedAt: new Date().toISOString() }));
 };
 
+export async function syncFraccionamientoStock(): Promise<{ success: boolean; updatedCount: number; message: string }> {
+  console.log("Starting stock sync with Lioren...");
+  
+  if (!db) {
+    return { success: false, updatedCount: 0, message: 'Firestore no está inicializado.' };
+  }
+
+  try {
+    const [liorenResponse, localInventory] = await Promise.all([
+      fetchAllLiorenProducts(),
+      getInventory()
+    ]);
+
+    if (liorenResponse.error) {
+      return { success: false, updatedCount: 0, message: liorenResponse.error };
+    }
+    
+    const liorenProducts = liorenResponse.products;
+    const fraccionamientoItems = localInventory.filter(item => item.inventoryType === 'Fraccionamiento');
+
+    if (fraccionamientoItems.length === 0) {
+      return { success: true, updatedCount: 0, message: 'No hay productos de fraccionamiento para sincronizar.' };
+    }
+
+    const liorenMap = new Map<string, LiorenProduct>();
+    for (const product of liorenProducts) {
+      if (product.codigo) {
+        liorenMap.set(product.codigo, product);
+      }
+    }
+
+    const batch = writeBatch(db);
+    let updatedCount = 0;
+
+    for (const localItem of fraccionamientoItems) {
+      if (localItem.sku && liorenMap.has(localItem.sku)) {
+        const liorenProduct = liorenMap.get(localItem.sku)!;
+        const liorenTotalStock = liorenProduct.stocks.reduce((sum, stock) => sum + stock.stock, 0);
+
+        if (localItem.quantity !== liorenTotalStock) {
+          const itemRef = doc(db, 'inventory', localItem.id);
+          batch.update(itemRef, { quantity: liorenTotalStock });
+          updatedCount++;
+        }
+      }
+    }
+
+    if (updatedCount > 0) {
+      await batch.commit();
+    }
+    
+    console.log(`Sync complete. ${updatedCount} items updated.`);
+    return { success: true, updatedCount, message: `Sincronización completa. Se actualizaron ${updatedCount} productos.` };
+
+  } catch (error) {
+    console.error('Failed to run stock sync:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    return { success: false, updatedCount: 0, message: `La sincronización falló: ${errorMessage}` };
+  }
+}

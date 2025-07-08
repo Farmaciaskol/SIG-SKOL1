@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { usePatientAuth } from '@/components/app/patient-auth-provider';
-import { fetchLiorenInventory, type LiorenProduct } from '@/lib/lioren-api';
+import { searchLiorenProducts, type LiorenProduct } from '@/lib/lioren-api';
 import { VADEMECUM_DATA } from '@/lib/constants';
 import { placePatientOrder } from '@/lib/patient-actions';
 import { useToast } from '@/hooks/use-toast';
@@ -45,8 +46,6 @@ export default function NewOrderPage() {
     const { toast } = useToast();
     const router = useRouter();
 
-    const [allLiorenProducts, setAllLiorenProducts] = useState<LiorenProduct[]>([]);
-    const [isFetchingAll, setIsFetchingAll] = useState(true);
     const [products, setProducts] = useState<LiorenProduct[]>([]);
     const [loadingProducts, setLoadingProducts] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -55,22 +54,7 @@ export default function NewOrderPage() {
     const [prescriptionFile, setPrescriptionFile] = useState<File | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    useEffect(() => {
-        const fetchAll = async () => {
-            setIsFetchingAll(true);
-            try {
-                const allProducts = await fetchLiorenInventory();
-                setAllLiorenProducts(allProducts);
-            } catch (error) {
-                 toast({ title: 'Error', description: 'No se pudieron cargar los productos disponibles.', variant: 'destructive' });
-            } finally {
-                setIsFetchingAll(false);
-            }
-        };
-        fetchAll();
-    }, [toast]);
-
-    const handleSearch = () => {
+    const handleSearch = async () => {
         if (!searchTerm.trim()) {
             setProducts([]);
             setHasSearched(false);
@@ -79,12 +63,17 @@ export default function NewOrderPage() {
         setLoadingProducts(true);
         setHasSearched(true);
         
-        const filtered = allLiorenProducts.filter(p => p.nombre.toLowerCase().includes(searchTerm.toLowerCase()));
-        const availableProducts = filtered.filter(p => p.stocks.some(s => s.stock > 0));
-        setProducts(availableProducts);
+        const result = await searchLiorenProducts(searchTerm);
         
-        if(availableProducts.length === 0) {
-            toast({ title: "Sin resultados", description: "No se encontraron productos con ese nombre." });
+        if (result.error) {
+            toast({ title: "Error de búsqueda", description: result.error, variant: "destructive" });
+            setProducts([]);
+        } else {
+            const availableProducts = result.products.filter(p => p.stocks.some(s => s.stock > 0));
+            setProducts(availableProducts);
+            if(availableProducts.length === 0) {
+                toast({ title: "Sin resultados", description: "No se encontraron productos con ese nombre o no hay stock disponible." });
+            }
         }
         setLoadingProducts(false);
     };
@@ -179,18 +168,18 @@ export default function NewOrderPage() {
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
                                 onKeyDown={e => { if (e.key === 'Enter') handleSearch() }}
-                                disabled={isFetchingAll}
+                                disabled={loadingProducts}
                             />
                         </div>
-                        <Button onClick={handleSearch} disabled={isFetchingAll || loadingProducts} className="h-12">
-                            {isFetchingAll || loadingProducts ? <Loader2 className="h-5 w-5 animate-spin"/> : "Buscar"}
+                        <Button onClick={handleSearch} disabled={loadingProducts} className="h-12">
+                            {loadingProducts ? <Loader2 className="h-5 w-5 animate-spin"/> : "Buscar"}
                         </Button>
                     </div>
                     
-                    {isFetchingAll ? (
+                    {loadingProducts ? (
                         <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg flex flex-col items-center">
                             <Loader2 className="h-8 w-8 animate-spin mb-4"/>
-                            <span>Cargando productos disponibles...</span>
+                            <span>Buscando productos...</span>
                         </div>
                     ) : hasSearched ? (
                         products.length > 0 ? (

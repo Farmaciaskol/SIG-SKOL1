@@ -5,10 +5,10 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { getInventory, addInventoryItem, updateInventoryItem, deleteInventoryItem, addLotToInventoryItem, type Patient } from '@/lib/data';
+import { getInventory, addInventoryItem, updateInventoryItem, deleteInventoryItem, addLotToInventoryItem, type Patient, syncFraccionamientoStock } from '@/lib/data';
 import type { InventoryItem, LotDetail } from '@/lib/types';
-import { fetchLiorenInventory, type LiorenProduct } from '@/lib/lioren-api';
-import { PlusCircle, Search, Edit, Box, Trash2, MoreVertical, DollarSign, Package, PackageX, AlertTriangle, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Loader2, Calendar as CalendarIcon, Snowflake, Download } from 'lucide-react';
+import { searchLiorenProducts, type LiorenProduct } from '@/lib/lioren-api';
+import { PlusCircle, Search, Edit, Box, Trash2, MoreVertical, DollarSign, Package, PackageX, AlertTriangle, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Loader2, Calendar as CalendarIcon, Snowflake, Download, RefreshCw } from 'lucide-react';
 import { format, differenceInDays, isBefore, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -228,6 +228,7 @@ export function InventoryClient({
     const [liorenSearchTerm, setLiorenSearchTerm] = useState('');
     const [liorenResults, setLiorenResults] = useState<LiorenProduct[]>([]);
     const [isLiorenSearching, setIsLiorenSearching] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
     const [liorenSearchError, setLiorenSearchError] = useState<string | undefined>(undefined);
 
     const refreshLocalData = async () => {
@@ -274,7 +275,7 @@ export function InventoryClient({
         setLiorenSearchError(undefined);
         setLiorenResults([]);
         try {
-            const result = await fetchLiorenInventory(liorenSearchTerm);
+            const result = await searchLiorenProducts(liorenSearchTerm);
             if (result.error) {
                 setLiorenSearchError(result.error);
             } else {
@@ -302,6 +303,23 @@ export function InventoryClient({
       handleOpenForm(productToImport);
     };
     
+    const handleSyncStock = async () => {
+        setIsSyncing(true);
+        try {
+            const result = await syncFraccionamientoStock();
+            if (result.success) {
+                toast({ title: 'Sincronización Exitosa', description: result.message });
+                refreshLocalData();
+            } else {
+                toast({ title: 'Error de Sincronización', description: result.message, variant: 'destructive' });
+            }
+        } catch(error) {
+            toast({ title: 'Error Inesperado', description: 'Ocurrió un fallo al intentar sincronizar.', variant: 'destructive' });
+        } finally {
+            setIsSyncing(false);
+        }
+    };
+
     const inventoryWithStats = useMemo<InventoryItemWithStats[]>(() => {
         return inventory.map(item => {
             const now = new Date();
@@ -410,9 +428,13 @@ export function InventoryClient({
                 </TabsList>
                 <TabsContent value="local" className="mt-6">
                     <div className="space-y-6">
-                        <div className="flex justify-start">
+                        <div className="flex items-center gap-2">
                             <Button onClick={() => handleOpenForm(null)}>
                                 <PlusCircle className="mr-2 h-4 w-4" /> Crear Producto Local
+                            </Button>
+                            <Button variant="outline" onClick={handleSyncStock} disabled={isSyncing}>
+                                {isSyncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <RefreshCw className="mr-2 h-4 w-4"/>}
+                                Sincronizar con Lioren
                             </Button>
                         </div>
                         <div>
