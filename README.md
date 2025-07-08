@@ -8,7 +8,7 @@ Este es un proyecto Next.js que sirve como un Sistema de Gestión Integral (SGI)
 - **Lenguaje:** TypeScript
 - **Estilos:** Tailwind CSS
 - **Componentes UI:** shadcn/ui
-- **Base de Datos:** Firestore (Firebase)
+- **Base de Datos:** Firestore (Firebase, NoSQL)
 - **Autenticación:** Firebase Authentication
 - **Almacenamiento de Archivos:** Firebase Storage
 - **Inteligencia Artificial:** Google AI & Genkit
