@@ -267,7 +267,7 @@ export default function DispatchManagementPage() {
         );
 
         if (isAlreadyInActiveDispatch) continue;
-        
+
         if (!recipeItem.sourceInventoryItemId) {
           items.push({ recipe, patient, inventoryItem: undefined, recipeItem, error: 'Insumo no vinculado. Edite y guarde la receta para vincular.' });
           continue;
@@ -276,26 +276,28 @@ export default function DispatchManagementPage() {
         const inventoryItem = inventory.find(i => i.id === recipeItem.sourceInventoryItemId);
 
         if (inventoryItem) {
-            if (inventoryItem.quantity <= 0) {
-                items.push({ recipe, patient, inventoryItem, recipeItem, error: `Stock insuficiente (0) para ${inventoryItem.name}.` });
-                continue;
-            }
+            // NEW: Calculate quantityToDispatch first, regardless of stock
+            let quantityToDispatch: number | undefined = undefined;
             if (inventoryItem.itemsPerBaseUnit && inventoryItem.doseValue) {
                 const recipeTotalPA = Number(recipeItem.concentrationValue) * Number(recipeItem.totalQuantityValue);
                 const inventoryTotalPAperUnit = inventoryItem.doseValue * inventoryItem.itemsPerBaseUnit;
 
                 if (isNaN(recipeTotalPA) || inventoryTotalPAperUnit <= 0) {
                     items.push({ recipe, patient, inventoryItem, recipeItem, error: 'Valores inválidos en receta o insumo para calcular fraccionamiento.' });
-                } else {
-                    const quantityToDispatch = Math.ceil(recipeTotalPA / inventoryTotalPAperUnit);
-                    if (inventoryItem.quantity < quantityToDispatch) {
-                        items.push({ recipe, patient, inventoryItem, recipeItem, quantityToDispatch, error: `Stock insuficiente. Se requieren ${quantityToDispatch}, disponibles: ${inventoryItem.quantity}.` });
-                    } else {
-                        items.push({ recipe, patient, inventoryItem, recipeItem, quantityToDispatch });
-                    }
+                    continue; // Go to next recipe item
                 }
+                quantityToDispatch = Math.ceil(recipeTotalPA / inventoryTotalPAperUnit);
             } else {
                  items.push({ recipe, patient, inventoryItem, recipeItem, error: 'Insumo no configurado para fraccionamiento (P.A. o Unidades/Envase).' });
+                 continue; // Go to next recipe item
+            }
+            
+            // Now, check stock with the calculated quantity
+            if (inventoryItem.quantity < quantityToDispatch) {
+                const errorMessage = `Stock insuficiente. Se requieren ${quantityToDispatch} ${inventoryItem.unit}(s), disponible(s): ${inventoryItem.quantity}.`;
+                items.push({ recipe, patient, inventoryItem, recipeItem, quantityToDispatch, error: errorMessage });
+            } else {
+                items.push({ recipe, patient, inventoryItem, recipeItem, quantityToDispatch });
             }
         } else {
             items.push({ recipe, patient, inventoryItem: undefined, recipeItem, error: 'Insumo base no encontrado en el inventario. Verifique la configuración de la receta.' });
@@ -820,4 +822,3 @@ export default function DispatchManagementPage() {
     </>
   );
 }
-
