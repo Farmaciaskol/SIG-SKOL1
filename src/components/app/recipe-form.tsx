@@ -60,7 +60,6 @@ const recipeItemSchema = z.object({
   totalQuantityValue: z.string().min(1, "El valor de la Cantidad Total es requerido."),
   totalQuantityUnit: z.string().min(1, "La unidad de la Cantidad Total es requerida."),
   usageInstructions: z.string().min(1, "Las Instrucciones de Uso son requeridas."),
-  sourceInventoryItemId: z.string().optional(),
 });
 
 const recipeFormSchema = z.object({
@@ -90,8 +89,8 @@ const recipeFormSchema = z.object({
 }).refine(data => data.patientSelectionType === 'existing' ? !!data.patientId : !!data.newPatientName && !!data.newPatientRut, {
   message: 'Debe seleccionar un paciente existente o ingresar el nombre y RUT de uno nuevo.',
   path: ['patientId'],
-}).refine(data => data.doctorSelectionType === 'existing' ? !!data.doctorId : !!data.newDoctorName && !!data.newDoctorLicense && !!data.newDoctorSpecialty, {
-  message: 'Debe seleccionar un médico existente o ingresar nombre, N° colegiatura y especialidad de uno nuevo.',
+}).refine(data => data.doctorSelectionType === 'existing' ? !!data.doctorId : !!data.newDoctorName && !!data.newDoctorSpecialty, {
+  message: 'Debe seleccionar un médico existente o ingresar nombre y especialidad de uno nuevo.',
   path: ['doctorId']
 }).superRefine((data, ctx) => {
   if (data.isControlled) {
@@ -110,15 +109,6 @@ const recipeFormSchema = z.object({
       });
     }
   }
-  data.items.forEach((item, index) => {
-    if (data.supplySource === 'Insumos de Skol' && !item.sourceInventoryItemId) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Debe seleccionar el insumo base del inventario.",
-        path: [`items.${index}.sourceInventoryItemId`],
-      });
-    }
-  });
 });
 
 
@@ -144,7 +134,6 @@ const defaultItem = {
   totalQuantityValue: '',
   totalQuantityUnit: '',
   usageInstructions: '',
-  sourceInventoryItemId: '',
 };
 
 const RecipeItemCard = ({
@@ -152,14 +141,12 @@ const RecipeItemCard = ({
   remove,
   form,
   appSettings,
-  inventory,
   totalFields,
 }: {
   index: number;
   remove: (index: number) => void;
   form: any;
   appSettings: AppSettings | null;
-  inventory: InventoryItem[];
   totalFields: number;
 }) => {
   const {
@@ -173,8 +160,6 @@ const RecipeItemCard = ({
   const treatmentDurationValue = useWatch({ control, name: `items.${index}.treatmentDurationValue` });
   const treatmentDurationUnit = useWatch({ control, name: `items.${index}.treatmentDurationUnit` });
   const safetyStockDays = useWatch({ control, name: `items.${index}.safetyStockDays` });
-  const principalActiveIngredientValue = useWatch({ control, name: `items.${index}.principalActiveIngredient` });
-  const supplySource = useWatch({ control, name: 'supplySource' });
 
   React.useEffect(() => {
     const dose = parseInt(dosageValue, 10);
@@ -202,24 +187,6 @@ const RecipeItemCard = ({
       }
     }
   }, [dosageValue, frequency, treatmentDurationValue, treatmentDurationUnit, safetyStockDays, index, setValue, getValues]);
-
-
-  const filteredInventoryForPA = React.useMemo(() => {
-    const baseFilter = inventory.filter(invItem => 
-        invItem.inventoryType === 'Fraccionamiento' && 
-        invItem.itemsPerBaseUnit && invItem.itemsPerBaseUnit > 0
-    );
-
-    if (!principalActiveIngredientValue?.trim()) {
-        return baseFilter;
-    }
-    
-    const lowerPAI = principalActiveIngredientValue.toLowerCase();
-    
-    return baseFilter.filter(invItem =>
-        invItem.activePrinciple && invItem.activePrinciple.toLowerCase().includes(lowerPAI)
-    );
-  }, [principalActiveIngredientValue, inventory]);
 
   return (
     <Card className="relative bg-card border-border">
@@ -333,38 +300,6 @@ const RecipeItemCard = ({
             </FormItem>
           )} />
         </div>
-        <div className="space-y-4 pt-4">
-          {supplySource === 'Insumos de Skol' && (
-            <FormField control={control} name={`items.${index}.sourceInventoryItemId`} render={({ field }) => (
-              <FormItem className="md:col-span-4">
-                <FormLabel>Insumo Base de Inventario Skol *</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar el producto a fraccionar..." />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {filteredInventoryForPA.length > 0 ? (
-                      filteredInventoryForPA.map(invItem => (
-                        <SelectItem key={invItem.id} value={invItem.id}>
-                          {invItem.name} (Stock: {invItem.quantity} {invItem.unit})
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <div className="p-2 text-center text-xs text-muted-foreground">
-                        <p>No se encontraron insumos.</p>
-                        <p>Asegúrese de que el producto esté en inventario y sea de tipo "Fraccionamiento".</p>
-                      </div>
-                    )}
-                  </SelectContent>
-                </Select>
-                <FormDescription className="text-xs text-muted-foreground">Seleccione la "caja" o producto base del cual se obtendrá este preparado.</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )} />
-          )}
-        </div>
       </CardContent>
     </Card>
   );
@@ -432,7 +367,6 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
 
   const watchedPatientId = form.watch('patientId');
   const patientSelectionType = form.watch('patientSelectionType');
-  const supplySource = form.watch('supplySource');
 
   React.useEffect(() => {
     if (patientSelectionType === 'existing' && watchedPatientId) {
@@ -616,6 +550,7 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
         form.setValue('doctorSelectionType', 'new');
         form.setValue('newDoctorName', result.doctorName);
         form.setValue('newDoctorLicense', result.doctorLicense || '');
+        form.setValue('newDoctorRut', result.doctorRut || '');
         form.setValue('newDoctorSpecialty', result.doctorSpecialty || '');
       }
 
@@ -807,9 +742,9 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
                           <TabsContent value="new" className="mt-4 space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <FormField control={form.control} name="newDoctorName" render={({ field }) => (<FormItem><FormLabel>Nombre Médico</FormLabel><FormControl><Input placeholder="Nombre Apellido" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                              <FormField control={form.control} name="newDoctorLicense" render={({ field }) => (<FormItem><FormLabel>N° Colegiatura</FormLabel><FormControl><Input placeholder="Ej: 12345" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                              <FormField control={form.control} name="newDoctorRut" render={({ field }) => (<FormItem><FormLabel>RUT Médico (Opcional)</FormLabel><FormControl><Input placeholder="12.345.678-K" {...field} /></FormControl><FormMessage /></FormItem>)} />
                               <FormField control={form.control} name="newDoctorSpecialty" render={({ field }) => (<FormItem><FormLabel>Especialidad Médico</FormLabel><FormControl><Input placeholder="Ej: Cardiología" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                              <FormField control={form.control} name="newDoctorLicense" render={({ field }) => (<FormItem><FormLabel>N° Colegiatura (Opcional)</FormLabel><FormControl><Input placeholder="Ej: 12345" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                              <FormField control={form.control} name="newDoctorRut" render={({ field }) => (<FormItem><FormLabel>RUT Médico (Opcional)</FormLabel><FormControl><Input placeholder="12.345.678-K" {...field} /></FormControl><FormMessage /></FormItem>)} />
                             </div>
                           </TabsContent>
                         </Tabs>
@@ -863,7 +798,7 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
                   </div>
                   <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
                     {fields.map((item, index) => (
-                      <RecipeItemCard key={item.id} index={index} remove={remove} form={form} appSettings={appSettings} inventory={inventory} totalFields={fields.length} />
+                      <RecipeItemCard key={item.id} index={index} remove={remove} form={form} appSettings={appSettings} totalFields={fields.length} />
                     ))}
                   </div>
                   <FormField control={form.control} name="items" render={() => (<FormItem><FormMessage className="mt-4" /></FormItem>)} />

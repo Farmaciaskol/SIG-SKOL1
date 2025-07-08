@@ -5,7 +5,7 @@
 import { db, storage, auth } from './firebase';
 import { collection, getDocs, doc, getDoc, Timestamp, addDoc, updateDoc, setDoc, deleteDoc, writeBatch, query, where, limit,getCountFromServer } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, ControlledLogEntryType, ProactivePatientStatus, PatientActionNeeded, MonthlyDispensationBoxStatus, DispensationItemStatus, PharmacovigilanceReportStatus, UserRequestStatus, type Recipe, type Doctor, type InventoryItem, type User, type Role, type ExternalPharmacy, type Patient, type PharmacovigilanceReport, type AppData, type AuditTrailEntry, type DispatchNote, type DispatchItem, type ControlledSubstanceLogEntry, type LotDetail, type AppSettings, type MonthlyDispensationBox, type PatientMessage, type UserRequest, type Order, type OrderItem } from './types';
+import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, ControlledLogEntryType, ProactivePatientStatus, PatientActionNeeded, MonthlyDispensationBoxStatus, DispensationItemStatus, PharmacovigilanceReportStatus, UserRequestStatus, type Recipe, type Doctor, type InventoryItem, type User, type Role, type ExternalPharmacy, type Patient, type PharmacovigilanceReport, type AppData, type AuditTrailEntry, type DispatchNote, type DispatchItem, type ControlledSubstanceLogEntry, type LotDetail, type AppSettings, type MonthlyDispensationBox, type PatientMessage, type UserRequest, type Order, type OrderItem, RecipeItem } from './types';
 import { MAX_REPREPARATIONS } from './constants';
 import { addMonths } from 'date-fns';
 
@@ -341,15 +341,15 @@ export const saveRecipe = async (data: any, imageFile: File | null, userId: stri
     }
 
     let doctorId = data.doctorId;
-    if (data.doctorSelectionType === 'new' && data.newDoctorName && data.newDoctorLicense) {
-        const q = query(collection(db, "doctors"), where("license", "==", data.newDoctorLicense), limit(1));
+    if (data.doctorSelectionType === 'new' && data.newDoctorName && data.newDoctorSpecialty) {
+        const q = query(collection(db, "doctors"), where("name", "==", data.newDoctorName), limit(1)); // Simple check
         const querySnapshot = await getDocs(q);
         if (!querySnapshot.empty) {
             doctorId = querySnapshot.docs[0].id;
         } else {
             const newDoctorRef = doc(collection(db, 'doctors'));
             doctorId = newDoctorRef.id;
-            await setDoc(newDoctorRef, { name: data.newDoctorName, specialty: data.newDoctorSpecialty || '', license: data.newDoctorLicense, rut: data.newDoctorRut || '' });
+            await setDoc(newDoctorRef, { name: data.newDoctorName, specialty: data.newDoctorSpecialty, license: data.newDoctorLicense || '', rut: data.newDoctorRut || '' });
         }
     }
     
@@ -489,7 +489,7 @@ export const processDispatch = async (pharmacyId: string, dispatchItems: Dispatc
             const recipeSnap = await getDoc(doc(db, 'recipes', item.recipeId));
             const recipeData = recipeSnap.data() as Recipe;
             const itemsToProcess = Array.isArray(recipeData.items) ? recipeData.items : [];
-            const itemsToDispatch = itemsToProcess.filter(i => i.requiresFractionation).length;
+            const itemsToDispatch = itemsToProcess.length; // Now all items are for dispatch from Skol
             recipeUpdates[item.recipeId] = { itemsToDispatch, dispatchedItems: 0 };
         }
         recipeUpdates[item.recipeId].dispatchedItems++;

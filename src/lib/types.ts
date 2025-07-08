@@ -165,9 +165,6 @@ export interface RecipeItem {
   totalQuantityUnit: string;
   usageInstructions: string;
   safetyStockDays?: number;
-  requiresFractionation?: boolean;
-  isRefrigerated?: boolean;
-  sourceInventoryItemId?: string;
 }
 
 export interface AuditTrailEntry {
@@ -204,7 +201,6 @@ export interface Recipe {
   internalPreparationLot?: string;
   compoundingDate?: string; // ISO String
   preparationExpiryDate?: string; // ISO String
-  requiresFractionation?: boolean; // Legacy support
   isUrgentRepreparation?: boolean;
 }
 

@@ -61,27 +61,29 @@ const prompt = ai.definePrompt({
   input: {schema: ExtractRecipeDataFromImageInputSchema},
   output: {schema: ExtractRecipeDataFromImageOutputSchema},
   tools: [getDrugInfo],
-  prompt: `Eres un experto farmacéutico clínico y especialista en ingreso de datos. Tu tarea es extraer meticulosamente información estructurada de la imagen de una receta médica proporcionada. Tu proceso debe ser:
-  1.  **Análisis Inicial**: Lee la receta completa para entender el contexto.
-  2.  **Extracción de Campos**: Identifica y extrae los campos de pacientes y médicos como se indica.
-  3.  **Procesamiento de Ítems de Medicamentos**: Para cada ítem prescrito, realiza los siguientes sub-pasos:
-      a.  **Identificación del Principio Activo**: Extrae el principio activo principal tal como está escrito.
-      b.  **Validación del Principio Activo**: Usa la herramienta \`getDrugInfo\` para encontrar el nombre oficial del ingrediente extraído. **DEBES usar el nombre canónico retornado por la herramienta en el campo \`principalActiveIngredient\` de la salida.** Si la herramienta no encuentra una coincidencia, usa tu mejor juicio basado en la imagen.
-      c.  **Diferenciar Concentración de Dosis**:
-          - **Concentración** es la potencia del producto final preparado (ej., '5%' en una crema, '50mg' por cápsula). Rellena \`concentrationValue\` y \`concentrationUnit\`.
-          - **Dosis** es lo que el paciente toma cada vez (ej., '1' cápsula, '1' aplicación). Rellena \`dosageValue\` y \`dosageUnit\`. No los confundas.
-      d.  **Rellena todos los demás campos** para el ítem basándote en la receta.
+  prompt: `Eres un experto farmacéutico clínico y especialista en ingreso de datos. Tu tarea es extraer meticulosamente toda la información estructurada de la imagen de una receta médica.
 
-  **Instrucciones de Extracción:**
-  - **Capitalización:** Formatea todos los campos de texto con mayúsculas y minúsculas adecuadas (ej., 'Juan Pérez' en lugar de 'JUAN PÉREZ').
-  - **Formato de RUT:** Asegúrate de que todos los RUTs estén formateados como XX.XXX.XXX-X.
-  - **Formato de Fecha:** La fecha de la receta debe estar en formato AAAA-MM-DD. Asume el año actual si no se especifica.
-  - **MUY IMPORTANTE - Omisiones:** Si una pieza de información NO es visible o no se aplica (ej. el paciente no tiene dirección en la receta), DEBES omitir el campo por completo de la salida JSON. NO incluyas campos con valor \`null\`.
-  - **Idioma:** Toda la información extraída y los valores en el JSON de salida deben estar en **español**.
+**Proceso Detallado:**
+1.  **Análisis Inicial**: Lee la receta completa para entender el contexto general.
+2.  **Datos del Paciente y Médico**: Extrae todos los datos del paciente y del médico. Presta especial atención al **RUT del médico** y formatéalo como XX.XXX.XXX-X.
+3.  **Procesamiento de Ítems de Medicamentos**: Para CADA medicamento o preparado en la receta, sigue estos pasos:
+    a.  **Identificar Principio Activo**: Extrae el principio activo principal tal como está escrito.
+    b.  **Validar Principio Activo**: Usa la herramienta \`getDrugInfo\` para validar el principio activo. **DEBES usar el \`canonicalName\` que retorna la herramienta en el campo \`principalActiveIngredient\`**. Si no lo encuentras, usa tu mejor juicio.
+    c.  **Diferenciar CLARAMENTE Concentración de Dosis**:
+        - **Concentración**: Es la **potencia del producto**. Ejemplos: '5' para una crema al '5%', '500' para una cápsula de '500mg'. Rellena \`concentrationValue\` y \`concentrationUnit\`. Es la cantidad de fármaco por unidad de forma farmacéutica.
+        - **Dosis**: Es la **cantidad que el paciente usa cada vez**. Ejemplos: '1' para '1 cápsula', '1' para '1 aplicación'. Rellena \`dosageValue\` y \`dosageUnit\`. NO los confundas.
+    d.  **Extraer todos los demás campos** para el ítem.
 
-  Devuelve un único objeto JSON con todos los campos extraídos.
+**Instrucciones de Formato:**
+- **Capitalización:** Formatea nombres y direcciones con mayúsculas y minúsculas adecuadas (ej., 'Juan Pérez').
+- **RUTs:** Asegúrate de que todos los RUTs (paciente y médico) estén formateados como XX.XXX.XXX-X.
+- **Fechas:** Formato AAAA-MM-DD. Asume el año actual si no se especifica.
+- **Omisiones CRÍTICAS:** Si una pieza de información NO es visible o no aplica (ej., el médico no tiene RUT en la receta), DEBES omitir el campo por completo del JSON. NO incluyas campos con valor \`null\` o \`"N/A"\`.
+- **Idioma:** Toda la información debe estar en **español**.
 
-  Imagen de la Receta: {{media url=photoDataUri}}`,
+Devuelve un único objeto JSON con todos los campos extraídos.
+
+Imagen de la Receta: {{media url=photoDataUri}}`,
 });
 
 const extractRecipeDataFromImageFlow = ai.defineFlow(
