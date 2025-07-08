@@ -8,10 +8,11 @@ const apiKey = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIxMTcxIiwianRpIjo
 /**
  * Fetches the entire product catalog from Lioren.
  * This version handles pagination and rate limiting to retrieve all products.
+ * It does not throw on error, but returns an error message instead.
  */
-export async function fetchLiorenInventory(): Promise<LiorenProduct[]> {
+export async function fetchLiorenInventory(): Promise<{ products: LiorenProduct[], error: string | null }> {
   if (!apiKey) {
-    throw new Error("La API Key de Lioren no está configurada.");
+    return { products: [], error: "La API Key de Lioren no está configurada." };
   }
 
   const allProducts: LiorenProduct[] = [];
@@ -39,17 +40,16 @@ export async function fetchLiorenInventory(): Promise<LiorenProduct[]> {
 
         if (page > 1) {
           console.log(`Lioren API: Finished fetching products at page ${page}. Status: ${response.status}`);
-          break;
+          break; // Not a critical error, just end of pagination.
         }
         
-        throw new Error(`Error de la API de Lioren al buscar productos: ${response.status} ${response.statusText}`);
+        return { products: [], error: `Error de la API de Lioren: ${response.status} ${response.statusText}` };
       }
 
       const data = await response.json();
       
       let productsOnPage: LiorenProduct[] | undefined;
 
-      // Try to find the product list in different possible formats
       if (data && Array.isArray(data['*'])) {
           productsOnPage = data['*'];
       } else if (data && Array.isArray(data.productos)) {
@@ -59,20 +59,16 @@ export async function fetchLiorenInventory(): Promise<LiorenProduct[]> {
       }
 
       if (productsOnPage === undefined) {
-        // We couldn't find an array of products in any known format.
         if (page > 1) {
-            // Probably the end of pagination with an unusual response.
             console.log(`Lioren API: Finished fetching products at page ${page}. Response was not a recognized array format.`);
         } else {
-            // This is the first page and the format is unknown.
-            console.warn('La respuesta de la API de Lioren no contiene un listado de productos en un formato esperado. Respuesta recibida:', JSON.stringify(data, null, 2));
+            console.warn('La respuesta de la API de Lioren no contiene un listado de productos en un formato esperado.');
         }
-        break; // Exit the loop gracefully, we can't process this.
+        break;
       }
       
       if (productsOnPage.length === 0) {
-        // This is a valid empty page, which means we've reached the end of the products.
-        break;
+        break; // End of pagination
       }
       
       allProducts.push(...productsOnPage);
@@ -81,14 +77,14 @@ export async function fetchLiorenInventory(): Promise<LiorenProduct[]> {
       await new Promise(resolve => setTimeout(resolve, 250)); 
 
     } catch (error) {
-      console.error("Fallo al conectar con la API de Lioren.", error);
-      throw new Error(`Fallo de conexión con Lioren: ${error instanceof Error ? error.message : "Error desconocido"}`);
+      console.error("Fallo al conectar con la API de Lioren:", error);
+      const errorMessage = error instanceof Error ? error.message : "Error desconocido";
+      return { products: [], error: `Fallo de conexión con Lioren: ${errorMessage}` };
     }
   }
   
-  return allProducts;
+  return { products: allProducts, error: null };
 }
-
 
 export async function fetchWarehousesFromLioren(): Promise<Bodega[]> {
     if (!apiKey) {
