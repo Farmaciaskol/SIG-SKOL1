@@ -652,12 +652,22 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
       // Auto-link inventory items before saving
       for (const item of data.items) {
         if (data.supplySource === 'Insumos de Skol') {
-            const inventoryMatch = inventory.find(invItem => 
-                invItem.activePrinciple?.trim().toLowerCase() === item.principalActiveIngredient.trim().toLowerCase()
-            );
-            if (inventoryMatch) {
-                item.sourceInventoryItemId = inventoryMatch.id;
-            }
+          // Find an inventory item marked for 'Fraccionamiento' that matches the active principle.
+          const inventoryMatch = inventory.find(invItem => 
+            invItem.inventoryType === 'Fraccionamiento' &&
+            typeof invItem.activePrinciple === 'string' &&
+            invItem.activePrinciple.trim().toLowerCase() === item.principalActiveIngredient.trim().toLowerCase()
+          );
+
+          if (inventoryMatch) {
+            item.sourceInventoryItemId = inventoryMatch.id;
+          } else {
+            // Explicitly set to undefined if no match is found, to clear old links.
+            item.sourceInventoryItemId = undefined;
+          }
+        } else {
+            // If not supplied by Skol, ensure no link exists.
+            item.sourceInventoryItemId = undefined;
         }
       }
 
