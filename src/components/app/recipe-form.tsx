@@ -62,6 +62,9 @@ const recipeItemSchema = z.object({
   totalQuantityValue: z.string().min(1, "El valor de la Cantidad Total es requerido."),
   totalQuantityUnit: z.string().min(1, "La unidad de la Cantidad Total es requerida."),
   usageInstructions: z.string().min(1, "Las Instrucciones de Uso son requeridas."),
+  isRefrigerated: z.boolean().default(false),
+  requiresFractionation: z.boolean().default(false),
+  sourceInventoryItemId: z.string().optional(),
 });
 
 const recipeFormSchema = z.object({
@@ -136,6 +139,8 @@ const defaultItem = {
   totalQuantityValue: '',
   totalQuantityUnit: '',
   usageInstructions: '',
+  isRefrigerated: false,
+  requiresFractionation: false,
 };
 
 const RecipeItemCard = ({
@@ -303,6 +308,22 @@ const RecipeItemCard = ({
               <FormMessage />
             </FormItem>
           )} />
+
+            <div className="md:col-span-3 flex items-center space-x-6 pt-2">
+                <FormField control={control} name={`items.${index}.requiresFractionation`} render={({ field }) => (
+                    <FormItem className="flex items-center space-x-2 space-y-0">
+                        <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        <FormLabel className="!mt-0 font-medium">Requiere Fraccionamiento</FormLabel>
+                    </FormItem>
+                )}/>
+                <FormField control={control} name={`items.${index}.isRefrigerated`} render={({ field }) => (
+                    <FormItem className="flex items-center space-x-2 space-y-0">
+                        <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        <FormLabel className="!mt-0 font-medium">Es Refrigerado</FormLabel>
+                    </FormItem>
+                )}/>
+            </div>
+
         </div>
       </CardContent>
     </Card>
@@ -422,7 +443,7 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
       controlledRecipeType: recipeData.controlledRecipeType ?? '',
       controlledRecipeFolio: recipeData.controlledRecipeFolio ?? '',
       prescriptionImageUrl: recipeData.prescriptionImageUrl ?? '',
-      items: recipeData.items && recipeData.items.length > 0 ? recipeData.items : [defaultItem],
+      items: recipeData.items && recipeData.items.length > 0 ? recipeData.items.map((item: any) => ({...defaultItem, ...item})) : [defaultItem],
     };
     form.reset(valuesToSet);
 
@@ -635,6 +656,19 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
 
     try {
       const finalRecipeId = isEditMode && !copyFromId ? recipeId : undefined;
+      
+      // Auto-link inventory items before saving
+      for (const item of data.items) {
+        if (data.supplySource === 'Insumos de Skol' && item.requiresFractionation) {
+            const inventoryMatch = inventory.find(invItem => 
+                invItem.activePrinciple?.trim().toLowerCase() === item.principalActiveIngredient.trim().toLowerCase()
+            );
+            if (inventoryMatch) {
+                item.sourceInventoryItemId = inventoryMatch.id;
+            }
+        }
+      }
+
       const dataWithImageUrl = { ...data, prescriptionImageUrl: imageUrl };
       
       await saveRecipe(dataWithImageUrl, user.uid, finalRecipeId);
