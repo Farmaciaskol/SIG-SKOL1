@@ -135,7 +135,6 @@ import { auth } from '@/lib/firebase';
 
 
 // --- HELPER COMPONENTS (defined outside the main component for clarity and performance) ---
-
 const StatCard = ({ title, value, icon: Icon, onClick, active = false }: { title: string; value: string | number; icon: React.ElementType; onClick: () => void; active?: boolean; }) => {
   const iconColor = useMemo(() => {
     if (Number(value) <= 0) return '';
@@ -157,7 +156,6 @@ const StatCard = ({ title, value, icon: Icon, onClick, active = false }: { title
     </Card>
   );
 };
-
 
 const calculateTotalCycles = (recipe: Recipe): number => {
     if (!recipe.dueDate || !recipe.createdAt || !recipe.items?.[0]) {
@@ -461,10 +459,295 @@ const SendBatchDialog = ({ recipes: recipesToSend, isOpen, onClose, onConfirm, i
     );
 };
 
+const ReprepareMessageDialog = ({ daysSinceDispensation, urgencyStatus }: {
+  daysSinceDispensation: number | null;
+  urgencyStatus: 'early' | 'normal' | 'urgent';
+}) => {
+    if (daysSinceDispensation === null) {
+      return <DialogDescription>¿Está seguro que desea iniciar un nuevo ciclo para esta receta? La receta volverá al estado 'Pendiente Validación'.</DialogDescription>;
+    }
+    if (urgencyStatus === 'early') {
+      return <p className="text-amber-600 font-semibold">Alerta: Han pasado solo {daysSinceDispensation} día(s) desde la última dispensación. ¿Continuar de todas formas?</p>;
+    }
+    if (urgencyStatus === 'normal') {
+      return <p className="text-green-600 font-semibold">Han pasado {daysSinceDispensation} día(s). Es un buen momento para preparar el siguiente ciclo. ¿Desea continuar?</p>;
+    }
+    if (urgencyStatus === 'urgent') {
+      return <p className="text-red-600 font-semibold">Urgente: Han pasado {daysSinceDispensation} día(s) desde la última dispensación. Esta solicitud se marcará como urgente.</p>;
+    }
+    return null;
+};
+
+const ActionButton = ({ recipe, onSend, onReceive, onReadyForPickup, onDispense, onReprepare, onView }: {
+    recipe: Recipe;
+    onSend: (r: Recipe) => void;
+    onReceive: (r: Recipe) => void;
+    onReadyForPickup: (r: Recipe) => void;
+    onDispense: (r: Recipe) => void;
+    onReprepare: (r: Recipe) => void;
+    onView: (r: Recipe) => void;
+}) => {
+    const totalCycles = calculateTotalCycles(recipe);
+    const dispensedCount = recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0;
+    const isExpired = recipe.dueDate ? new Date(recipe.dueDate) < new Date() : false;
+    const cycleLimitReached = dispensedCount >= totalCycles;
+    const canReprepare = recipe.status === RecipeStatus.Dispensed && !isExpired && !cycleLimitReached;
+    let disabledReprepareTooltip = '';
+    if (isExpired) disabledReprepareTooltip = 'El documento de la receta ha vencido.';
+    else if (cycleLimitReached) disabledReprepareTooltip = `Límite de ${totalCycles} ciclos estimado alcanzado.`;
+
+    switch (recipe.status) {
+        case RecipeStatus.PendingValidation:
+          return null;
+        case RecipeStatus.Validated:
+          return recipe.supplySource === 'Insumos de Skol' 
+            ? <Button size="sm" asChild><Link href="/dispatch-management"><Truck className="mr-2 h-4 w-4 text-white" />Ir a Despacho</Link></Button>
+            : <Button size="sm" onClick={() => onSend(recipe)}><Send className="mr-2 h-4 w-4 text-white" />Enviar</Button>;
+        case RecipeStatus.SentToExternal:
+          return <Button size="sm" onClick={() => onReceive(recipe)}><PackageCheck className="mr-2 h-4 w-4 text-white" />Recepcionar</Button>;
+        case RecipeStatus.ReceivedAtSkol:
+          return <Button size="sm" onClick={() => onReadyForPickup(recipe)}><Package className="mr-2 h-4 w-4 text-white" />Marcar Retiro</Button>;
+        case RecipeStatus.ReadyForPickup:
+          return <Button size="sm" onClick={() => onDispense(recipe)}><CheckCheck className="mr-2 h-4 w-4 text-white" />Dispensar</Button>;
+        case RecipeStatus.Dispensed:
+          return (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span tabIndex={0}>
+                    <Button size="sm" onClick={() => onReprepare(recipe)} disabled={!canReprepare}>
+                      <Copy className="mr-2 h-4 w-4" />Re-preparar
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                {!canReprepare && disabledReprepareTooltip && (
+                  <TooltipContent>
+                    <p>{disabledReprepareTooltip}</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
+          );
+        default:
+          return <Button size="sm" onClick={() => onView(recipe)}><Eye className="mr-2 h-4 w-4" />Ver Detalle</Button>;
+      }
+};
+
+const RecipeActions = ({ recipe, onReprepare, onCancel, onDelete, onArchive, onSend, onView, onReceive, onReadyForPickup, onDispense, onPrint, onValidate, onReject }: {
+  recipe: Recipe;
+  onReprepare: (recipe: Recipe) => void;
+  onCancel: (recipe: Recipe) => void;
+  onDelete: (recipe: Recipe) => void;
+  onArchive: (recipe: Recipe) => void;
+  onSend: (recipe: Recipe) => void;
+  onView: (recipe: Recipe) => void;
+  onReceive: (recipe: Recipe) => void;
+  onReadyForPickup: (recipe: Recipe) => void;
+  onDispense: (recipe: Recipe) => void;
+  onPrint: (recipe: Recipe) => void;
+  onValidate: () => void;
+  onReject: () => void;
+}) => {
+    const totalCycles = calculateTotalCycles(recipe);
+    const dispensedCount = recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0;
+    const isExpired = recipe.dueDate ? new Date(recipe.dueDate) < new Date() : false;
+    const cycleLimitReached = dispensedCount >= totalCycles;
+    const canReprepare = recipe.status === RecipeStatus.Dispensed && !isExpired && !cycleLimitReached;
+    let disabledReprepareTooltip = '';
+    if (isExpired) disabledReprepareTooltip = 'El documento de la receta ha vencido.';
+    else if (cycleLimitReached) disabledReprepareTooltip = `Límite de ${totalCycles} ciclos estimado alcanzado.`;
+
+    const canEdit = recipe.status !== RecipeStatus.Dispensed && recipe.status !== RecipeStatus.Cancelled;
+    const isArchivable = [RecipeStatus.Rejected, RecipeStatus.Cancelled, RecipeStatus.Dispensed].includes(recipe.status) || isExpired;
+
+    return (
+        <div className="flex items-center justify-end gap-1">
+            {recipe.status === RecipeStatus.PendingValidation && (
+                <>
+                    <TooltipProvider><Tooltip><TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onValidate}>
+                            <ShieldCheck className="h-4 w-4 text-green-600" />
+                        </Button>
+                    </TooltipTrigger><TooltipContent><p>Validar</p></TooltipContent></Tooltip></TooltipProvider>
+                    <TooltipProvider><Tooltip><TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onReject}>
+                            <XCircle className="h-4 w-4 text-red-600" />
+                        </Button>
+                    </TooltipTrigger><TooltipContent><p>Rechazar</p></TooltipContent></Tooltip></TooltipProvider>
+                </>
+            )}
+            
+            {recipe.status === RecipeStatus.Validated && (
+                recipe.supplySource === 'Insumos de Skol' ? (
+                     <TooltipProvider><Tooltip><TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                            <Link href={`/dispatch-management`}><Truck className="h-4 w-4 text-blue-600" /></Link>
+                        </Button>
+                    </TooltipTrigger><TooltipContent><p>Ir a Despachos</p></TooltipContent></Tooltip></TooltipProvider>
+                ) : (
+                    <TooltipProvider><Tooltip><TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onSend(recipe)}>
+                            <Send className="h-4 w-4 text-cyan-600" />
+                        </Button>
+                    </TooltipTrigger><TooltipContent><p>Enviar a Recetario</p></TooltipContent></Tooltip></TooltipProvider>
+                )
+            )}
+
+            {recipe.status === RecipeStatus.SentToExternal && (
+                <TooltipProvider><Tooltip><TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onReceive(recipe)}>
+                        <PackageCheck className="h-4 w-4 text-indigo-600" />
+                    </Button>
+                </TooltipTrigger><TooltipContent><p>Recepcionar Preparado</p></TooltipContent></Tooltip></TooltipProvider>
+            )}
+            
+             {recipe.status === RecipeStatus.ReceivedAtSkol && (
+                <TooltipProvider><Tooltip><TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onReadyForPickup(recipe)}>
+                        <Package className="h-4 w-4 text-orange-600" />
+                    </Button>
+                </TooltipTrigger><TooltipContent><p>Marcar para Retiro</p></TooltipContent></Tooltip></TooltipProvider>
+            )}
+
+            {recipe.status === RecipeStatus.ReadyForPickup && (
+                <TooltipProvider><Tooltip><TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onDispense(recipe)}>
+                        <CheckCheck className="h-4 w-4 text-green-600" />
+                    </Button>
+                </TooltipTrigger><TooltipContent><p>Dispensar</p></TooltipContent></Tooltip></TooltipProvider>
+            )}
+            
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => onView(recipe)}><Eye className="mr-2 h-4 w-4" />Ver Detalle</DropdownMenuItem>
+                    <DropdownMenuItem asChild disabled={!canEdit}><Link href={`/recipes/${recipe.id}`} className={!canEdit ? 'pointer-events-none' : ''}><Pencil className="mr-2 h-4 w-4" />Editar</Link></DropdownMenuItem>
+                    {(recipe.status === RecipeStatus.ReceivedAtSkol || recipe.status === RecipeStatus.ReadyForPickup) && (
+                        <DropdownMenuItem onClick={() => onPrint(recipe)}><Printer className="mr-2 h-4 w-4" />Imprimir Etiqueta</DropdownMenuItem>
+                    )}
+                    {recipe.status === RecipeStatus.Dispensed && (
+                         <DropdownMenuItem disabled={!canReprepare} onSelect={() => canReprepare && onReprepare(recipe)}>
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <div className="flex items-center w-full">
+                                            <Copy className="mr-2 h-4 w-4" />
+                                            <span>Re-preparar</span>
+                                        </div>
+                                    </TooltipTrigger>
+                                    {!canReprepare && disabledReprepareTooltip && (
+                                    <TooltipContent>
+                                        <p>{disabledReprepareTooltip}</p>
+                                    </TooltipContent>
+                                    )}
+                                </Tooltip>
+                            </TooltipProvider>
+                         </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                    {isArchivable && (
+                        <DropdownMenuItem className="text-gray-600 focus:text-gray-700 focus:bg-gray-100" onClick={() => onArchive(recipe)}>
+                            <Archive className="mr-2 h-4 w-4" />Archivar
+                        </DropdownMenuItem>
+                    )}
+                    {recipe.status !== RecipeStatus.Cancelled && recipe.status !== RecipeStatus.Dispensed && (
+                        <DropdownMenuItem className="text-amber-600 focus:text-amber-600 focus:bg-amber-50" onClick={() => onCancel(recipe)}><Ban className="mr-2 h-4 w-4" />Anular Receta</DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50" onClick={() => onDelete(recipe)}><Trash2 className="mr-2 h-4 w-4" />Eliminar</DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
+    );
+};
+  
+const MobileRecipeActions = ({ recipe, onReprepare, onCancel, onDelete, onArchive, onSend, onView, onReadyForPickup, onDispense, onPrint, onValidate, onReject, onReceive }: {
+    recipe: Recipe,
+    onReprepare: (recipe: Recipe) => void,
+    onCancel: (recipe: Recipe) => void,
+    onDelete: (recipe: Recipe) => void,
+    onArchive: (recipe: Recipe) => void,
+    onSend: (recipe: Recipe) => void,
+    onView: (recipe: Recipe) => void,
+    onReadyForPickup: (recipe: Recipe) => void,
+    onDispense: (recipe: Recipe) => void,
+    onPrint: (recipe: Recipe) => void,
+    onValidate: () => void,
+    onReject: () => void,
+    onReceive: (recipe: Recipe) => void,
+}) => {
+    const canEdit = recipe.status !== RecipeStatus.Dispensed && recipe.status !== RecipeStatus.Cancelled;
+    const isArchivable = [RecipeStatus.Rejected, RecipeStatus.Cancelled, RecipeStatus.Dispensed].includes(recipe.status) || (recipe.dueDate ? new Date(recipe.dueDate) < new Date() : false);
+    const router = useRouter();
+    const canReprepare = recipe.status === RecipeStatus.Dispensed && !(recipe.dueDate ? new Date(recipe.dueDate) < new Date() : false) && (recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0) < calculateTotalCycles(recipe);
+
+    return (
+      <div className="flex justify-end items-center w-full gap-2">
+        {recipe.status === RecipeStatus.PendingValidation ? (
+          <>
+            <Button size="sm" variant="outline" className="text-red-500 border-red-500 hover:bg-red-50 hover:text-red-600 flex-1" onClick={onReject}>
+              <XCircle className="mr-2 h-4 w-4" />
+              Rechazar
+            </Button>
+            <Button size="sm" className="flex-1" onClick={onValidate}>
+              <ShieldCheck className="mr-2 h-4 w-4 text-white" />
+              Validar
+            </Button>
+          </>
+        ) : (
+          <div className="flex-1">
+             <ActionButton 
+                recipe={recipe}
+                onSend={onSend}
+                onReceive={onReceive}
+                onReadyForPickup={onReadyForPickup}
+                onDispense={onDispense}
+                onReprepare={onReprepare}
+                onView={onView}
+            />
+          </div>
+        )}
+        
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button aria-haspopup="true" size="icon" variant="ghost" className="flex-shrink-0">
+              <MoreHorizontal className="h-4 w-4" />
+              <span className="sr-only">Toggle menu</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onView(recipe)}><Eye className="mr-2 h-4 w-4" />Ver Detalle</DropdownMenuItem>
+            <DropdownMenuItem disabled={!canEdit} onSelect={() => canEdit && router.push(`/recipes/${recipe.id}`)}><Pencil className="mr-2 h-4 w-4" />Editar</DropdownMenuItem>
+            {(recipe.status === RecipeStatus.ReceivedAtSkol || recipe.status === RecipeStatus.ReadyForPickup) && (
+              <DropdownMenuItem onClick={() => onPrint(recipe)}><Printer className="mr-2 h-4 w-4" />Imprimir Etiqueta</DropdownMenuItem>
+            )}
+            {recipe.status === RecipeStatus.Dispensed && (
+              <DropdownMenuItem disabled={!canReprepare} onSelect={() => canReprepare && onReprepare(recipe)}>
+                <Copy className="mr-2 h-4 w-4" />
+                <span>Re-preparar</span>
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            {isArchivable && (
+                <DropdownMenuItem className="text-gray-600 focus:text-gray-700 focus:bg-gray-100" onClick={() => onArchive(recipe)}>
+                    <Archive className="mr-2 h-4 w-4" />Archivar
+                </DropdownMenuItem>
+            )}
+            {recipe.status !== RecipeStatus.Cancelled && recipe.status !== RecipeStatus.Dispensed && (
+              <DropdownMenuItem className="text-amber-600 focus:text-amber-600 focus:bg-amber-50" onClick={() => onCancel(recipe)}><Ban className="mr-2 h-4 w-4" />Anular Receta</DropdownMenuItem>
+            )}
+            <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50" onClick={() => onDelete(recipe)}><Trash2 className="mr-2 h-4 w-4" />Eliminar</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    );
+  };
+  
 
 // --- MAIN COMPONENT ---
 
-export const RecipesClient = ({
+export function RecipesClient({
   initialRecipes,
   initialPatients,
   initialDoctors,
@@ -474,7 +757,7 @@ export const RecipesClient = ({
   initialPatients: Patient[],
   initialDoctors: Doctor[],
   initialExternalPharmacies: ExternalPharmacy[]
-}) => {
+}) {
 
   const { toast } = useToast();
   const router = useRouter();
@@ -530,9 +813,9 @@ export const RecipesClient = ({
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
   
-  const getPatientName = (patientId: string) => patients.find((p) => p.id === patientId)?.name || 'N/A';
-  const getPharmacy = (pharmacyId?: string) => externalPharmacies.find((p) => p.id === pharmacyId);
-  const getDoctorName = (doctorId: string) => doctors.find((d) => d.id === doctorId)?.name || 'N/A';
+  const getPatientName = useCallback((patientId: string) => patients.find((p) => p.id === patientId)?.name || 'N/A', [patients]);
+  const getPharmacy = useCallback((pharmacyId?: string) => externalPharmacies.find((p) => p.id === pharmacyId), [externalPharmacies]);
+  const getDoctorName = useCallback((doctorId: string) => doctors.find((d) => d.id === doctorId)?.name || 'N/A', [doctors]);
   
   useEffect(() => {
     if (recipeToReprepare) {
@@ -558,7 +841,7 @@ export const RecipesClient = ({
     setExternalPharmacies(initialExternalPharmacies);
   }, [initialRecipes, initialPatients, initialDoctors, initialExternalPharmacies]);
 
-  const handleUpdateStatus = async (recipe: Recipe, newStatus: RecipeStatus, notes?: string) => {
+  const handleUpdateStatus = useCallback(async (recipe: Recipe, newStatus: RecipeStatus, notes?: string) => {
     if (!user) {
         toast({ title: 'Error de Autenticación', description: 'Debe iniciar sesión para realizar esta acción.', variant: 'destructive' });
         return;
@@ -602,7 +885,7 @@ export const RecipesClient = ({
     } finally {
         setIsSubmitting(false);
     }
-  }
+  }, [user, patients, toast, router]);
 
   const handleConfirmReject = async () => {
     if (!recipeToReject || !reason) return;
@@ -889,7 +1172,7 @@ export const RecipesClient = ({
       return searchMatch && statusMatch && doctorMatch && pharmacyMatch && dateMatch;
     })
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [recipes, searchTerm, statusFilter, doctorFilter, pharmacyFilter, dateRange, patients]);
+  }, [recipes, searchTerm, statusFilter, doctorFilter, pharmacyFilter, dateRange, patients, getPatientName]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -919,226 +1202,6 @@ export const RecipesClient = ({
     );
   }
 
-  const RecipeActions = ({ recipe }: { recipe: Recipe }) => {
-    const totalCycles = calculateTotalCycles(recipe);
-    const dispensedCount = recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0;
-    const isExpired = recipe.dueDate ? new Date(recipe.dueDate) < new Date() : false;
-    const cycleLimitReached = dispensedCount >= totalCycles;
-    const canReprepare = recipe.status === RecipeStatus.Dispensed && !isExpired && !cycleLimitReached;
-    let disabledReprepareTooltip = '';
-    if (isExpired) disabledReprepareTooltip = 'El documento de la receta ha vencido.';
-    else if (cycleLimitReached) disabledReprepareTooltip = `Límite de ${totalCycles} ciclos estimado alcanzado.`;
-
-    const canEdit = recipe.status !== RecipeStatus.Dispensed && recipe.status !== RecipeStatus.Cancelled;
-    const isArchivable = [RecipeStatus.Rejected, RecipeStatus.Cancelled, RecipeStatus.Dispensed].includes(recipe.status) || isExpired;
-
-    return (
-        <div className="flex items-center justify-end gap-1">
-            {recipe.status === RecipeStatus.PendingValidation && (
-                <>
-                    <TooltipProvider><Tooltip><TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleUpdateStatus(recipe, RecipeStatus.Validated, 'Receta validada por farmacéutico.')}>
-                            <ShieldCheck className="h-4 w-4 text-green-600" />
-                        </Button>
-                    </TooltipTrigger><TooltipContent><p>Validar</p></TooltipContent></Tooltip></TooltipProvider>
-                    <TooltipProvider><Tooltip><TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setRecipeToReject(recipe)}>
-                            <XCircle className="h-4 w-4 text-red-600" />
-                        </Button>
-                    </TooltipTrigger><TooltipContent><p>Rechazar</p></TooltipContent></Tooltip></TooltipProvider>
-                </>
-            )}
-            
-            {recipe.status === RecipeStatus.Validated && (
-                recipe.supplySource === 'Insumos de Skol' ? (
-                     <TooltipProvider><Tooltip><TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                            <Link href={`/dispatch-management`}><Truck className="h-4 w-4 text-blue-600" /></Link>
-                        </Button>
-                    </TooltipTrigger><TooltipContent><p>Ir a Despachos</p></TooltipContent></Tooltip></TooltipProvider>
-                ) : (
-                    <TooltipProvider><Tooltip><TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setRecipeToSend(recipe)}>
-                            <Send className="h-4 w-4 text-cyan-600" />
-                        </Button>
-                    </TooltipTrigger><TooltipContent><p>Enviar a Recetario</p></TooltipContent></Tooltip></TooltipProvider>
-                )
-            )}
-
-            {recipe.status === RecipeStatus.SentToExternal && (
-                <TooltipProvider><Tooltip><TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setRecipeToReceive(recipe)}>
-                        <PackageCheck className="h-4 w-4 text-indigo-600" />
-                    </Button>
-                </TooltipTrigger><TooltipContent><p>Recepcionar Preparado</p></TooltipContent></Tooltip></TooltipProvider>
-            )}
-            
-             {recipe.status === RecipeStatus.ReceivedAtSkol && (
-                <TooltipProvider><Tooltip><TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleUpdateStatus(recipe, RecipeStatus.ReadyForPickup)}>
-                        <Package className="h-4 w-4 text-orange-600" />
-                    </Button>
-                </TooltipTrigger><TooltipContent><p>Marcar para Retiro</p></TooltipContent></Tooltip></TooltipProvider>
-            )}
-
-            {recipe.status === RecipeStatus.ReadyForPickup && (
-                <TooltipProvider><Tooltip><TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleUpdateStatus(recipe, RecipeStatus.Dispensed)}>
-                        <CheckCheck className="h-4 w-4 text-green-600" />
-                    </Button>
-                </TooltipTrigger><TooltipContent><p>Dispensar</p></TooltipContent></Tooltip></TooltipProvider>
-            )}
-            
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setRecipeToView(recipe)}><Eye className="mr-2 h-4 w-4" />Ver Detalle</DropdownMenuItem>
-                    <DropdownMenuItem asChild disabled={!canEdit}><Link href={`/recipes/${recipe.id}`} className={!canEdit ? 'pointer-events-none' : ''}><Pencil className="mr-2 h-4 w-4" />Editar</Link></DropdownMenuItem>
-                    {(recipe.status === RecipeStatus.ReceivedAtSkol || recipe.status === RecipeStatus.ReadyForPickup) && (
-                        <DropdownMenuItem onClick={() => setRecipeToPrint(recipe)}><Printer className="mr-2 h-4 w-4" />Imprimir Etiqueta</DropdownMenuItem>
-                    )}
-                    {recipe.status === RecipeStatus.Dispensed && (
-                         <DropdownMenuItem disabled={!canReprepare} onSelect={() => canReprepare && setRecipeToReprepare(recipe)}>
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <div className="flex items-center w-full">
-                                            <Copy className="mr-2 h-4 w-4" />
-                                            <span>Re-preparar</span>
-                                        </div>
-                                    </TooltipTrigger>
-                                    {!canReprepare && disabledReprepareTooltip && (
-                                    <TooltipContent>
-                                        <p>{disabledReprepareTooltip}</p>
-                                    </TooltipContent>
-                                    )}
-                                </Tooltip>
-                            </TooltipProvider>
-                         </DropdownMenuItem>
-                    )}
-                    <DropdownMenuSeparator />
-                    {isArchivable && (
-                        <DropdownMenuItem className="text-gray-600 focus:text-gray-700 focus:bg-gray-100" onClick={() => setRecipeToArchive(recipe)}>
-                            <Archive className="mr-2 h-4 w-4" />Archivar
-                        </DropdownMenuItem>
-                    )}
-                    {recipe.status !== RecipeStatus.Cancelled && recipe.status !== RecipeStatus.Dispensed && (
-                        <DropdownMenuItem className="text-amber-600 focus:text-amber-600 focus:bg-amber-50" onClick={() => setRecipeToCancel(recipe)}><Ban className="mr-2 h-4 w-4" />Anular Receta</DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50" onClick={() => setRecipeToDelete(recipe)}><Trash2 className="mr-2 h-4 w-4" />Eliminar</DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
-        </div>
-    );
-  };
-
-  const MobileRecipeActions = ({ recipe }: { recipe: Recipe }) => {
-    const totalCycles = calculateTotalCycles(recipe);
-    const dispensedCount = recipe.auditTrail?.filter(e => e.status === RecipeStatus.Dispensed).length ?? 0;
-    const isExpired = recipe.dueDate ? new Date(recipe.dueDate) < new Date() : false;
-    const cycleLimitReached = dispensedCount >= totalCycles;
-    const canReprepare = recipe.status === RecipeStatus.Dispensed && !isExpired && !cycleLimitReached;
-    let disabledReprepareTooltip = '';
-    if (isExpired) disabledReprepareTooltip = 'El documento de la receta ha vencido.';
-    else if (cycleLimitReached) disabledReprepareTooltip = `Límite de ${totalCycles} ciclos estimado alcanzado.`;
-
-    const canEdit = recipe.status !== RecipeStatus.Dispensed && recipe.status !== RecipeStatus.Cancelled;
-    const isArchivable = [RecipeStatus.Rejected, RecipeStatus.Cancelled, RecipeStatus.Dispensed].includes(recipe.status) || isExpired;
-
-    const ActionButton = () => {
-      switch (recipe.status) {
-        case RecipeStatus.PendingValidation:
-          return null;
-        case RecipeStatus.Validated:
-          return recipe.supplySource === 'Insumos de Skol' 
-            ? <Button size="sm" asChild><Link href="/dispatch-management"><Truck className="mr-2 h-4 w-4 text-white" />Ir a Despacho</Link></Button>
-            : <Button size="sm" onClick={() => setRecipeToSend(recipe)}><Send className="mr-2 h-4 w-4 text-white" />Enviar</Button>;
-        case RecipeStatus.SentToExternal:
-          return <Button size="sm" onClick={() => setRecipeToReceive(recipe)}><PackageCheck className="mr-2 h-4 w-4 text-white" />Recepcionar</Button>;
-        case RecipeStatus.ReceivedAtSkol:
-          return <Button size="sm" onClick={() => handleUpdateStatus(recipe, RecipeStatus.ReadyForPickup)}><Package className="mr-2 h-4 w-4 text-white" />Marcar Retiro</Button>;
-        case RecipeStatus.ReadyForPickup:
-          return <Button size="sm" onClick={() => handleUpdateStatus(recipe, RecipeStatus.Dispensed)}><CheckCheck className="mr-2 h-4 w-4 text-white" />Dispensar</Button>;
-        case RecipeStatus.Dispensed:
-          return (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span tabIndex={0}>
-                    <Button size="sm" onClick={() => setRecipeToReprepare(recipe)} disabled={!canReprepare}>
-                      <Copy className="mr-2 h-4 w-4" />Re-preparar
-                    </Button>
-                  </span>
-                </TooltipTrigger>
-                {!canReprepare && disabledReprepareTooltip && (
-                  <TooltipContent>
-                    <p>{disabledReprepareTooltip}</p>
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            </TooltipProvider>
-          );
-        default:
-          return <Button size="sm" onClick={() => setRecipeToView(recipe)}><Eye className="mr-2 h-4 w-4" />Ver Detalle</Button>;
-      }
-    };
-
-    return (
-      <div className="flex justify-end items-center w-full gap-2">
-        {recipe.status === RecipeStatus.PendingValidation ? (
-          <>
-            <Button size="sm" variant="outline" className="text-red-500 border-red-500 hover:bg-red-50 hover:text-red-600 flex-1" onClick={() => setRecipeToReject(recipe)}>
-              <XCircle className="mr-2 h-4 w-4" />
-              Rechazar
-            </Button>
-            <Button size="sm" className="flex-1" onClick={() => handleUpdateStatus(recipe, RecipeStatus.Validated, 'Receta validada por farmacéutico.')}>
-              <ShieldCheck className="mr-2 h-4 w-4 text-white" />
-              Validar
-            </Button>
-          </>
-        ) : (
-          <div className="flex-1">
-            <ActionButton />
-          </div>
-        )}
-        
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button aria-haspopup="true" size="icon" variant="ghost" className="flex-shrink-0">
-              <MoreHorizontal className="h-4 w-4" />
-              <span className="sr-only">Toggle menu</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setRecipeToView(recipe)}><Eye className="mr-2 h-4 w-4" />Ver Detalle</DropdownMenuItem>
-            <DropdownMenuItem disabled={!canEdit} onSelect={() => canEdit && router.push(`/recipes/${recipe.id}`)}><Pencil className="mr-2 h-4 w-4" />Editar</DropdownMenuItem>
-            {(recipe.status === RecipeStatus.ReceivedAtSkol || recipe.status === RecipeStatus.ReadyForPickup) && (
-              <DropdownMenuItem onClick={() => setRecipeToPrint(recipe)}><Printer className="mr-2 h-4 w-4" />Imprimir Etiqueta</DropdownMenuItem>
-            )}
-            {recipe.status === RecipeStatus.Dispensed && (
-              <DropdownMenuItem disabled={!canReprepare} onSelect={() => canReprepare && setRecipeToReprepare(recipe)}>
-                <Copy className="mr-2 h-4 w-4" />
-                <span>Re-preparar</span>
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuSeparator />
-            {isArchivable && (
-                <DropdownMenuItem className="text-gray-600 focus:text-gray-700 focus:bg-gray-100" onClick={() => setRecipeToArchive(recipe)}>
-                    <Archive className="mr-2 h-4 w-4" />Archivar
-                </DropdownMenuItem>
-            )}
-            {recipe.status !== RecipeStatus.Cancelled && recipe.status !== RecipeStatus.Dispensed && (
-              <DropdownMenuItem className="text-amber-600 focus:text-amber-600 focus:bg-amber-50" onClick={() => setRecipeToCancel(recipe)}><Ban className="mr-2 h-4 w-4" />Anular Receta</DropdownMenuItem>
-            )}
-            <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50" onClick={() => setRecipeToDelete(recipe)}><Trash2 className="mr-2 h-4 w-4" />Eliminar</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    );
-  };
-  
   const ReprepareMessage = () => {
     if (daysSinceDispensation === null) {
       return <DialogDescription>¿Está seguro que desea iniciar un nuevo ciclo para esta receta? La receta volverá al estado 'Pendiente Validación'.</DialogDescription>;
@@ -1375,7 +1438,9 @@ export const RecipesClient = ({
                                     )}
                                     </div>
                                 </TableCell>
-                                <TableCell className="text-right"><RecipeActions recipe={recipe} /></TableCell>
+                                <TableCell className="text-right">
+                                    <RecipeActions recipe={recipe} onReprepare={setRecipeToReprepare} onCancel={setRecipeToCancel} onDelete={setRecipeToDelete} onArchive={setRecipeToArchive} onSend={setRecipeToSend} onView={setRecipeToView} onReceive={setRecipeToReceive} onReadyForPickup={() => handleUpdateStatus(recipe, RecipeStatus.ReadyForPickup)} onDispense={() => handleUpdateStatus(recipe, RecipeStatus.Dispensed)} onPrint={setRecipeToPrint} onValidate={() => handleUpdateStatus(recipe, RecipeStatus.Validated, 'Receta validada por farmacéutico.')} onReject={() => setRecipeToReject(recipe)} />
+                                </TableCell>
                                 </TableRow>
                             )
                         })}
@@ -1435,7 +1500,9 @@ export const RecipesClient = ({
                         ) : (<p className="text-sm text-muted-foreground">Sin preparado</p>)}
                         <p className="text-xs text-muted-foreground pt-1">Creada: {format(new Date(recipe.createdAt), "d MMM yyyy", { locale: es })}</p>
                     </CardContent>
-                    <CardFooter className="p-3 bg-muted/50"><MobileRecipeActions recipe={recipe} /></CardFooter>
+                    <CardFooter className="p-3 bg-muted/50">
+                        <MobileRecipeActions recipe={recipe} onReprepare={setRecipeToReprepare} onCancel={setRecipeToCancel} onDelete={setRecipeToDelete} onArchive={setRecipeToArchive} onSend={setRecipeToSend} onView={setRecipeToView} onReadyForPickup={() => handleUpdateStatus(recipe, RecipeStatus.ReadyForPickup)} onDispense={() => handleUpdateStatus(recipe, RecipeStatus.Dispensed)} onPrint={setRecipeToPrint} onValidate={() => handleUpdateStatus(recipe, RecipeStatus.Validated, 'Receta validada por farmacéutico.')} onReject={() => setRecipeToReject(recipe)} onReceive={setRecipeToReceive} />
+                    </CardFooter>
                     </Card>
                 )})}
             </div>
@@ -1617,4 +1684,4 @@ export const RecipesClient = ({
       )}
     </>
   );
-};
+}
