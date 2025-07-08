@@ -7,64 +7,72 @@ const apiKey = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIxMTcxIiwianRpIjo
 
 /**
  * Fetches the entire product catalog from Lioren.
- * Filtering is expected to be done on the client-side after fetching.
+ * This version handles pagination to retrieve all products.
  */
 export async function fetchLiorenInventory(): Promise<LiorenProduct[]> {
   if (!apiKey) {
     throw new Error("La API Key de Lioren no está configurada.");
   }
 
-  const url = 'https://www.lioren.cl/api/productos';
+  const allProducts: LiorenProduct[] = [];
+  let page = 1;
+  const MAX_PAGES = 100; // Safety break to prevent infinite loops
 
-  try {
-    const response = await fetch(url, {
-      headers: { 
-        'Authorization': `Bearer ${apiKey}`,
-        'Accept': 'application/json'
-      },
-      cache: 'no-store'
-    });
-
-    if (!response.ok) {
-      throw new Error(`Error de la API de Lioren al buscar productos: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
+  while (page <= MAX_PAGES) {
+    const url = `https://www.lioren.cl/api/productos?page=${page}`;
     
-    // Check for different possible response structures
-    
-    // Case 1: Data is in a '*' key
-    if (data && Array.isArray(data['*'])) {
-      return data['*'] as LiorenProduct[];
-    }
+    try {
+      const response = await fetch(url, {
+        headers: { 
+          'Authorization': `Bearer ${apiKey}`,
+          'Accept': 'application/json'
+        },
+        cache: 'no-store'
+      });
 
-    // Case 2: Data is an object of products, keyed by ID
-    if (data && typeof data === 'object' && !Array.isArray(data)) {
-        const productArray = Object.values(data);
-        // Verify that the values look like product objects before returning
-        if (productArray.length > 0 && typeof productArray[0] === 'object' && 'id' in (productArray[0] as object) && 'nombre' in (productArray[0] as object)) {
-            return productArray as LiorenProduct[];
+      if (!response.ok) {
+        // If we get an error on a page other than the first, we can assume we've reached the end.
+        if (page > 1) {
+          console.log(`Lioren API: Finished fetching products at page ${page}. Status: ${response.status}`);
+          break;
         }
-    }
+        throw new Error(`Error de la API de Lioren al buscar productos: ${response.status} ${response.statusText}`);
+      }
 
-    // Case 3: Data is in a 'productos' key
-    if (data && Array.isArray(data.productos)) {
-      return data.productos as LiorenProduct[];
-    }
-    
-    // Case 4: Data is a raw array
-    if (Array.isArray(data)) {
-        return data as LiorenProduct[];
-    }
-    
-    console.warn("El formato de la respuesta de la API de Lioren para productos no fue el esperado.", data);
-    return [];
+      const data = await response.json();
+      let productsOnPage: LiorenProduct[] = [];
+      
+      // Check for different possible response structures
+      if (data && Array.isArray(data['*'])) {
+        productsOnPage = data['*'] as LiorenProduct[];
+      } else if (data && typeof data === 'object' && !Array.isArray(data)) {
+        const productArray = Object.values(data);
+        if (productArray.length > 0 && typeof productArray[0] === 'object' && 'id' in (productArray[0] as object) && 'nombre' in (productArray[0] as object)) {
+            productsOnPage = productArray as LiorenProduct[];
+        }
+      } else if (data && Array.isArray(data.productos)) {
+        productsOnPage = data.productos as LiorenProduct[];
+      } else if (Array.isArray(data)) {
+        productsOnPage = data as LiorenProduct[];
+      }
+      
+      if (productsOnPage.length === 0) {
+        // No more products, break the loop
+        break;
+      }
+      
+      allProducts.push(...productsOnPage);
+      page++;
 
-  } catch (error) {
-    console.error("Fallo al conectar con la API de Lioren.", error);
-    throw new Error(`Fallo de conexión con Lioren: ${error instanceof Error ? error.message : "Error desconocido"}`);
+    } catch (error) {
+      console.error("Fallo al conectar con la API de Lioren.", error);
+      throw new Error(`Fallo de conexión con Lioren: ${error instanceof Error ? error.message : "Error desconocido"}`);
+    }
   }
+  
+  return allProducts;
 }
+
 
 export async function fetchWarehousesFromLioren(): Promise<Bodega[]> {
     if (!apiKey) {
