@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -79,8 +80,8 @@ type RecipeActionsProps = {
   onReadyForPickup: (recipe: Recipe) => void;
   onDispense: (recipe: Recipe) => void;
   onPrint: (recipe: Recipe) => void;
-  onValidate: () => void;
-  onReject: () => void;
+  onValidate: (recipe: Recipe) => void;
+  onReject: (recipe: Recipe) => void;
 };
 
 export const RecipeActions = (props: RecipeActionsProps) => {
@@ -102,12 +103,12 @@ export const RecipeActions = (props: RecipeActionsProps) => {
             {recipe.status === RecipeStatus.PendingValidation && (
                 <>
                     <TooltipProvider><Tooltip><TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onValidate}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onValidate(recipe)}>
                             <ShieldCheck className="h-4 w-4 text-green-600" />
                         </Button>
                     </TooltipTrigger><TooltipContent><p>Validar</p></TooltipContent></Tooltip></TooltipProvider>
                     <TooltipProvider><Tooltip><TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onReject}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onReject(recipe)}>
                             <XCircle className="h-4 w-4 text-red-600" />
                         </Button>
                     </TooltipTrigger><TooltipContent><p>Rechazar</p></TooltipContent></Tooltip></TooltipProvider>
@@ -210,11 +211,11 @@ export const MobileRecipeActions = (props: RecipeActionsProps) => {
       <div className="flex justify-end items-center w-full gap-2">
         {recipe.status === RecipeStatus.PendingValidation ? (
           <>
-            <Button size="sm" variant="outline" className="text-red-500 border-red-500 hover:bg-red-50 hover:text-red-600 flex-1" onClick={onReject}>
+            <Button size="sm" variant="outline" className="text-red-500 border-red-500 hover:bg-red-50 hover:text-red-600 flex-1" onClick={() => onReject(recipe)}>
               <XCircle className="mr-2 h-4 w-4" />
               Rechazar
             </Button>
-            <Button size="sm" className="flex-1" onClick={onValidate}>
+            <Button size="sm" className="flex-1" onClick={() => onValidate(recipe)}>
               <ShieldCheck className="mr-2 h-4 w-4 text-white" />
               Validar
             </Button>
