@@ -29,6 +29,7 @@ import React, { useMemo, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 // --- Client Components for the Dashboard ---
 
@@ -174,9 +175,9 @@ const ProactiveAlertsCard = ({ patients }: { patients: Patient[] }) => {
                         <AlertTitle>
                             <Link href={`/patients/${patient.id}`} className="hover:underline">{patient.name}</Link>
                         </AlertTitle>
-                        <p className="text-sm">
+                        <AlertDescription>
                             {patient.proactiveMessage}
-                        </p>
+                        </AlertDescription>
                     </div>
                 </div>
               </Alert>
