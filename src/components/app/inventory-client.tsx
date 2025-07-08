@@ -578,6 +578,8 @@ export function InventoryClient({ initialInventory, liorenInventory }: {
     };
 
     const handleCreateLocalFromLioren = (product: LiorenProduct) => {
+        const vademecumEntry = VADEMECUM_DATA.find(v => v.productName.toLowerCase() === product.nombre.toLowerCase());
+        
         const prefillData: Partial<InventoryItem> = {
             name: product.nombre,
             inventoryType: 'Fraccionamiento',
@@ -585,7 +587,8 @@ export function InventoryClient({ initialInventory, liorenInventory }: {
             unit: product.unidad,
             costPrice: product.preciocompraneto,
             salePrice: product.precioventabruto,
-            isControlled: VADEMECUM_DATA.some(v => v.productName.toLowerCase() === product.nombre.toLowerCase() && v.isControlled),
+            isControlled: !!vademecumEntry?.isControlled,
+            activePrinciple: vademecumEntry?.activeIngredient || '',
             requiresRefrigeration: false,
             internalNotes: `Creado desde Lioren. Producto original: ${product.nombre} (SKU: ${product.codigo})`,
         };
