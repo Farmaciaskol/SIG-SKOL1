@@ -246,30 +246,21 @@ function MainNavContent({
 
   return (
     <div className={cn(
-        "grid min-h-svh w-full bg-muted/40",
+        "grid min-h-svh w-full",
         isSidebarOpen ? "md:grid-cols-[280px_1fr]" : "md:grid-cols-[72px_1fr]"
     )}>
-      <nav className="hidden bg-background md:flex md:flex-col border-r">
+      <nav className="hidden md:flex md:flex-col bg-muted/40 border-r">
         <div className="flex h-16 shrink-0 items-center px-4">
             <Button variant="ghost" className="h-9 w-9 p-0" onClick={toggleSidebar}>
                 <Menu className="h-5 w-5 text-muted-foreground" />
             </Button>
-            <Link href="/dashboard" className="flex items-center gap-2 font-semibold text-foreground ml-4">
-                <Image
-                    src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=78ea6257-ea42-4127-8fe0-a0e4839132f5"
-                    alt="Skol Pharmacy Logo"
-                    width={120}
-                    height={33}
-                    priority
-                />
-            </Link>
         </div>
         <div className="flex-1 overflow-auto py-4">
             {navContent}
         </div>
       </nav>
       <div className="flex flex-1 flex-col">
-          <header className="flex h-16 shrink-0 items-center bg-background px-4 lg:px-6">
+          <header className="flex h-16 shrink-0 items-center px-4 lg:px-6">
             <div className="flex h-16 items-center justify-between gap-4 w-full">
                 <div className="flex items-center gap-4">
                    <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -301,10 +292,9 @@ function MainNavContent({
                           </div>
                       </SheetContent>
                     </Sheet>
-                    <div className="hidden md:block w-full max-w-sm"><CommandPalette /></div>
+                    <div className="w-full max-w-sm"><CommandPalette /></div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <div className="block md:hidden"><CommandPalette /></div>
                     <Button asChild variant="ghost" size="icon" className="relative h-9 w-9 rounded-full text-muted-foreground hover:bg-accent">
                     <Link href="/portal-inbox">
                         <Inbox className="h-5 w-5" />

@@ -105,7 +105,7 @@ export function CommandPalette() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="text-sm text-muted-foreground w-full h-9 px-3 bg-card rounded-md flex items-center justify-start border border-input shadow-sm hover:bg-accent"
+        className="text-sm text-muted-foreground w-full h-9 px-3 bg-background rounded-md flex items-center justify-start border border-input shadow-sm hover:bg-accent"
       >
         <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
         <span className="truncate">Buscar...</span>
