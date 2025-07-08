@@ -507,106 +507,119 @@ export default function PatientDetailPage() {
               </Card>
             )}
             
-            {/* Active Treatments */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>Tratamientos Activos</CardTitle>
-                  <Button variant="outline" size="sm" onClick={handleOpenCommercialMedsModal}>
-                      <Pencil className="mr-2 h-4 w-4" /> Editar Medicamentos
-                  </Button>
-              </CardHeader>
-              <CardContent className="pt-0 space-y-6">
-                  {activeTreatments.length > 0 ? (
-                    <>
-                      <div>
-                          <h3 className="text-lg font-semibold text-primary mb-2">Preparados Magistrales</h3>
-                          <div className="border rounded-lg overflow-hidden">
-                              <Table>
-                                  <TableHeader>
-                                      <TableRow>
-                                          <TableHead>Preparado</TableHead>
-                                          <TableHead>Estado</TableHead>
-                                          <TableHead>Vencimiento</TableHead>
-                                          <TableHead className="text-right">Acciones</TableHead>
-                                      </TableRow>
-                                  </TableHeader>
-                                  <TableBody>
-                                      {magistralTreatments.length > 0 ? magistralTreatments.map(treatment => {
-                                          const recipe = (treatment as { type: 'magistral'; recipe: Recipe }).recipe;
-                                          const item = recipe.items[0];
-                                          const isExpired = recipe.dueDate ? new Date(recipe.dueDate) < new Date() : false;
+            {/* Active Treatments (collapsible) */}
+            <Accordion type="multiple" defaultValue={['treatments']} className="w-full">
+              <Card>
+                <AccordionItem value="treatments" className="border-b-0">
+                  <AccordionTrigger className="text-xl font-semibold p-6 hover:no-underline">
+                    <div className="flex w-full items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <FlaskConical className="h-5 w-5 text-primary" />
+                            <span>Tratamientos Activos</span>
+                        </div>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-6 pb-6">
+                    <div className="flex justify-end mb-4">
+                        <Button variant="outline" size="sm" onClick={handleOpenCommercialMedsModal}>
+                            <Pencil className="mr-2 h-4 w-4" /> Editar Medicamentos
+                        </Button>
+                    </div>
+                    <div className="space-y-6">
+                    {activeTreatments.length > 0 ? (
+                        <>
+                        <div>
+                            <h3 className="text-lg font-semibold text-primary mb-2">Preparados Magistrales</h3>
+                            <div className="border rounded-lg overflow-hidden">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Preparado</TableHead>
+                                            <TableHead>Estado</TableHead>
+                                            <TableHead>Vencimiento</TableHead>
+                                            <TableHead className="text-right">Acciones</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {magistralTreatments.length > 0 ? magistralTreatments.map(treatment => {
+                                            const recipe = (treatment as { type: 'magistral'; recipe: Recipe }).recipe;
+                                            const item = recipe.items[0];
+                                            const isExpired = recipe.dueDate ? new Date(recipe.dueDate) < new Date() : false;
 
-                                          return (
-                                              <TableRow key={recipe.id} className={isExpired ? "bg-red-50/50" : ""}>
-                                                  <TableCell>
-                                                      <p className="font-semibold">{item?.principalActiveIngredient || 'N/A'}</p>
-                                                      <p className="text-xs text-muted-foreground">{item ? `${item.concentrationValue}${item.concentrationUnit}` : 'N/A'}</p>
-                                                  </TableCell>
-                                                  <TableCell><Badge variant="outline">{recipe.status}</Badge></TableCell>
-                                                  <TableCell className={isExpired ? "text-red-600 font-semibold" : ""}>
-                                                      {recipe.dueDate ? format(parseISO(recipe.dueDate), 'dd-MM-yyyy') : 'N/A'}
-                                                  </TableCell>
-                                                  <TableCell className="text-right">
-                                                      <DropdownMenu>
-                                                          <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                                                          <DropdownMenuContent align="end">
-                                                              <DropdownMenuItem asChild><Link href={`/recipes/${recipe.id}`}><Eye className="mr-2 h-4 w-4" />Ver Receta</Link></DropdownMenuItem>
-                                                              <DropdownMenuItem onClick={() => setReportingTreatment(treatment)}><ShieldAlert className="mr-2 h-4 w-4 text-amber-600"/>Reportar Evento FV</DropdownMenuItem>
-                                                          </DropdownMenuContent>
-                                                      </DropdownMenu>
-                                                  </TableCell>
-                                              </TableRow>
-                                          )
-                                      }) : (
-                                          <TableRow><TableCell colSpan={4} className="h-24 text-center">No hay preparados magistrales activos.</TableCell></TableRow>
-                                      )}
-                                  </TableBody>
-                              </Table>
-                          </div>
-                      </div>
-                      <div>
-                          <h3 className="text-lg font-semibold text-primary mb-2">Medicamentos Comerciales</h3>
-                          <div className="border rounded-lg overflow-hidden">
-                              <Table>
-                                  <TableHeader>
-                                      <TableRow>
-                                          <TableHead>Medicamento</TableHead>
-                                          <TableHead>Dosis</TableHead>
-                                          <TableHead>Precio Ref.</TableHead>
-                                          <TableHead className="text-right">Acciones</TableHead>
-                                      </TableRow>
-                                  </TableHeader>
-                                  <TableBody>
-                                      {commercialTreatments.length > 0 ? commercialTreatments.map(treatment => {
-                                          const inventoryItem = treatment.inventoryItem as InventoryItem;
-                                          return (
-                                              <TableRow key={inventoryItem.id}>
-                                                  <TableCell className="font-semibold">{inventoryItem.name}</TableCell>
-                                                  <TableCell>{inventoryItem.doseValue ? `${inventoryItem.doseValue} ${inventoryItem.doseUnit}` : 'N/A'}</TableCell>
-                                                  <TableCell>{inventoryItem.salePrice ? `$${inventoryItem.salePrice.toLocaleString('es-CL')}` : 'N/A'}</TableCell>
-                                                  <TableCell className="text-right">
-                                                      <DropdownMenu>
-                                                          <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                                                          <DropdownMenuContent align="end">
-                                                              <DropdownMenuItem onClick={() => setReportingTreatment(treatment)}><ShieldAlert className="mr-2 h-4 w-4 text-amber-600"/>Reportar Evento FV</DropdownMenuItem>
-                                                          </DropdownMenuContent>
-                                                      </DropdownMenu>
-                                                  </TableCell>
-                                              </TableRow>
-                                          )
-                                      }) : (
-                                          <TableRow><TableCell colSpan={4} className="h-24 text-center">No hay medicamentos comerciales registrados.</TableCell></TableRow>
-                                      )}
-                                  </TableBody>
-                              </Table>
-                          </div>
-                      </div>
-                    </>
-                  ) : (
-                    <p className="text-sm text-center py-8 text-muted-foreground">No hay tratamientos activos registrados para este paciente.</p>
-                  )}
-              </CardContent>
-            </Card>
+                                            return (
+                                                <TableRow key={recipe.id} className={isExpired ? "bg-red-50/50" : ""}>
+                                                    <TableCell>
+                                                        <p className="font-semibold">{item?.principalActiveIngredient || 'N/A'}</p>
+                                                        <p className="text-xs text-muted-foreground">{item ? `${item.concentrationValue}${item.concentrationUnit}` : 'N/A'}</p>
+                                                    </TableCell>
+                                                    <TableCell><Badge variant="outline">{recipe.status}</Badge></TableCell>
+                                                    <TableCell className={isExpired ? "text-red-600 font-semibold" : ""}>
+                                                        {recipe.dueDate ? format(parseISO(recipe.dueDate), 'dd-MM-yyyy') : 'N/A'}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end">
+                                                                <DropdownMenuItem asChild><Link href={`/recipes/${recipe.id}`}><Eye className="mr-2 h-4 w-4" />Ver Receta</Link></DropdownMenuItem>
+                                                                <DropdownMenuItem onClick={() => setReportingTreatment(treatment)}><ShieldAlert className="mr-2 h-4 w-4 text-amber-600"/>Reportar Evento FV</DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )
+                                        }) : (
+                                            <TableRow><TableCell colSpan={4} className="h-24 text-center">No hay preparados magistrales activos.</TableCell></TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-semibold text-primary mb-2">Medicamentos Comerciales</h3>
+                            <div className="border rounded-lg overflow-hidden">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Medicamento</TableHead>
+                                            <TableHead>Dosis</TableHead>
+                                            <TableHead>Precio Ref.</TableHead>
+                                            <TableHead className="text-right">Acciones</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {commercialTreatments.length > 0 ? commercialTreatments.map(treatment => {
+                                            const inventoryItem = treatment.inventoryItem as InventoryItem;
+                                            return (
+                                                <TableRow key={inventoryItem.id}>
+                                                    <TableCell className="font-semibold">{inventoryItem.name}</TableCell>
+                                                    <TableCell>{inventoryItem.doseValue ? `${inventoryItem.doseValue} ${inventoryItem.doseUnit}` : 'N/A'}</TableCell>
+                                                    <TableCell>{inventoryItem.salePrice ? `$${inventoryItem.salePrice.toLocaleString('es-CL')}` : 'N/A'}</TableCell>
+                                                    <TableCell className="text-right">
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end">
+                                                                <DropdownMenuItem onClick={() => setReportingTreatment(treatment)}><ShieldAlert className="mr-2 h-4 w-4 text-amber-600"/>Reportar Evento FV</DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )
+                                        }) : (
+                                            <TableRow><TableCell colSpan={4} className="h-24 text-center">No hay medicamentos comerciales registrados.</TableCell></TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </div>
+                        </>
+                    ) : (
+                        <p className="text-sm text-center py-8 text-muted-foreground">No hay tratamientos activos registrados para este paciente.</p>
+                    )}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Card>
+            </Accordion>
 
               {/* Timeline and History */}
               <Accordion type="multiple" defaultValue={['history']} className="w-full space-y-6">
