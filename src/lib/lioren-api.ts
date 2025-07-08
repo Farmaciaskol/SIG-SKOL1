@@ -151,16 +151,18 @@ export async function searchLiorenProducts(searchTerm: string): Promise<{ produc
 
     const data = await response.json();
     
-    let productsOnPage: LiorenProduct[] = [];
+    let products: LiorenProduct[] = [];
     if (data && data.data && Array.isArray(data.data)) {
-      productsOnPage = data.data;
+      products = data.data; // Standard paginated response
     } else if (data && Array.isArray(data['*'])) {
-      productsOnPage = data['*'];
+      products = data['*']; // Non-standard paginated response
+    } else if (Array.isArray(data)) {
+      products = data; // Direct array response
     } else {
       console.warn("La respuesta de búsqueda de la API de Lioren no contiene un listado de productos válido.", data);
     }
 
-    return { products: productsOnPage };
+    return { products };
   } catch (error) {
     console.error("Fallo al conectar con la API de Lioren:", error);
     if (error instanceof Error && error.name === 'AbortError') {
