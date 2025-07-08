@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Snowflake, DollarSign, UserSquare, Truck, FileX, FileClock } from 'lucide-react';
+import { Snowflake, DollarSign, UserSquare, Truck, FileX, FileClock, Leaf } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { statusConfig, MAX_REPREPARATIONS } from '@/lib/constants';
 import { Recipe, RecipeStatus } from '@/lib/types';
@@ -111,6 +111,7 @@ export function RecipeTableView({ recipes, selectedRecipes, allOnPageSelected, t
                   {recipe.items.length > 0 ? (
                     <div className="flex flex-col">
                       <span className="text-sm font-medium text-foreground flex items-center gap-2 truncate" title={`${recipe.items[0].principalActiveIngredient} ${recipe.items[0].concentrationValue}${recipe.items[0].concentrationUnit}`}>
+                        {recipe.isSugarFree && (<TooltipProvider><Tooltip><TooltipTrigger asChild><span><Leaf className="h-4 w-4 text-green-600" /></span></TooltipTrigger><TooltipContent><p>Preparado Sin Azúcar</p></TooltipContent></Tooltip></TooltipProvider>)}
                         {recipe.items[0].principalActiveIngredient}{' '}
                         {recipe.items[0].concentrationValue}
                         {recipe.items[0].concentrationUnit}

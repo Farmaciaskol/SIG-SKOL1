@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Snowflake, DollarSign, UserSquare, Truck, FileClock } from 'lucide-react';
+import { Snowflake, DollarSign, UserSquare, Truck, FileClock, Leaf } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { statusConfig, MAX_REPREPARATIONS } from '@/lib/constants';
 import { Recipe, RecipeStatus } from '@/lib/types';
@@ -104,6 +104,7 @@ export function RecipeCardView({ recipes, selectedRecipes, toggleSelectRecipe, g
                   </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
+                  {recipe.isSugarFree && (<TooltipProvider><Tooltip><TooltipTrigger asChild><span><Leaf className="h-4 w-4 text-green-600" /></span></TooltipTrigger><TooltipContent><p>Preparado Sin Azúcar</p></TooltipContent></Tooltip></TooltipProvider>)}
                   {isExpiringSoon && (<TooltipProvider><Tooltip><TooltipTrigger asChild><span><FileClock className="h-4 w-4 text-orange-500" /></span></TooltipTrigger><TooltipContent><p>Receta vence pronto o está vencida.</p></TooltipContent></Tooltip></TooltipProvider>)}
                   {isPaymentPending && (<TooltipProvider><Tooltip><TooltipTrigger asChild><span><DollarSign className="h-4 w-4 text-amber-600" /></span></TooltipTrigger><TooltipContent><p>Pago pendiente</p></TooltipContent></Tooltip></TooltipProvider>)}
                   {recipe.status === RecipeStatus.PendingReviewPortal && (<TooltipProvider><Tooltip><TooltipTrigger asChild><span><UserSquare className="h-4 w-4 text-purple-600" /></span></TooltipTrigger><TooltipContent><p>Receta del Portal</p></TooltipContent></Tooltip></TooltipProvider>)}

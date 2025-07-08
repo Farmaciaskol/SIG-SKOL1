@@ -81,6 +81,7 @@ const recipeFormSchema = z.object({
   externalPharmacyId: z.string().min(1, 'Debe seleccionar un recetario.'),
   supplySource: z.string().min(1, 'Debe seleccionar un origen de insumos.'),
   preparationCost: z.coerce.number().min(0, 'El costo de preparación debe ser un número positivo.'),
+  isSugarFree: z.boolean().default(false).optional(),
   isControlled: z.boolean().default(false).optional(),
   controlledRecipeType: z.string().optional(),
   controlledRecipeFolio: z.string().optional(),
@@ -354,6 +355,7 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
       externalPharmacyId: '',
       supplySource: '',
       preparationCost: 0,
+      isSugarFree: false,
       isControlled: false,
       controlledRecipeType: '',
       controlledRecipeFolio: '',
@@ -415,6 +417,7 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
       externalPharmacyId: recipeData.externalPharmacyId ?? '',
       supplySource: recipeData.supplySource ?? '',
       preparationCost: recipeData.preparationCost ?? 0,
+      isSugarFree: recipeData.isSugarFree ?? false,
       isControlled: recipeData.isControlled ?? false,
       controlledRecipeType: recipeData.controlledRecipeType ?? '',
       controlledRecipeFolio: recipeData.controlledRecipeFolio ?? '',
@@ -785,6 +788,33 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
                         </FormItem>
                       )} />
                     </div>
+
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-foreground">Etiquetas Especiales</h3>
+                        <FormField
+                            control={form.control}
+                            name="isSugarFree"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4 shadow-sm">
+                                <FormControl>
+                                    <Checkbox
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                    />
+                                </FormControl>
+                                <div className="space-y-1 leading-none">
+                                    <FormLabel>
+                                    Preparado Sin Azúcar
+                                    </FormLabel>
+                                    <FormDescription>
+                                    Marque esta casilla si la fórmula debe ser preparada sin sacarosa.
+                                    </FormDescription>
+                                </div>
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+
                     <div className="space-y-4">
                         <h3 className="text-lg font-semibold text-foreground">Medicamento Controlado</h3>
                         <FormField control={form.control} name="isControlled" render={({ field }) => (<FormItem className="flex flex-row items-center space-x-2 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel className="font-normal">Es Controlado</FormLabel></FormItem>)} />

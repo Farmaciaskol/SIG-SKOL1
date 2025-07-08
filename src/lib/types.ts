@@ -196,6 +196,7 @@ export interface Recipe {
   preparationCost?: number;
   transportCost?: number;
   isControlled?: boolean;
+  isSugarFree?: boolean;
   controlledRecipeType?: string;
   controlledRecipeFolio?: string;
   prescriptionImageUrl?: string;
