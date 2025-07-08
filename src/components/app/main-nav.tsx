@@ -274,42 +274,20 @@ function MainNavContent({
 
       {/* Main content area wrapped in a new div */}
       <div className="flex flex-1 flex-col overflow-hidden relative">
-        {/* Elegant circular button for desktop */}
-        {!isMobile && (
-            <Button
-                variant="outline"
-                size="icon"
-                className="absolute top-24 -translate-y-1/2 z-20 h-7 w-7 rounded-full bg-card shadow-md transition-all duration-300 ease-in-out hover:scale-110"
-                style={{
-                    left: state === 'expanded' ? 'var(--sidebar-width)' : 'var(--sidebar-width-icon)',
-                    marginLeft: '-0.875rem' // Centers the button on the line
-                }}
-                onClick={toggleSidebar}
-            >
-                <ChevronLeft
-                    className={cn(
-                        'h-4 w-4 transition-transform duration-300 ease-in-out',
-                        state === 'collapsed' && 'rotate-180'
-                    )}
-                />
-            </Button>
-        )}
-
+        
         {/* === HEADER === */}
         <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b bg-card px-4 sm:px-6">
           {/* Header Left Side */}
           <div className="flex items-center gap-2">
-            {isMobile && (
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="flex h-9 w-9 shrink-0 rounded-full"
-                    onClick={toggleSidebar}
-                >
-                    <PanelLeft className="h-5 w-5" />
-                    <span className="sr-only">Toggle sidebar</span>
-                </Button>
-            )}
+             <Button
+                variant="ghost"
+                size="icon"
+                className="flex h-9 w-9 shrink-0 rounded-full"
+                onClick={toggleSidebar}
+            >
+                <PanelLeft className="h-5 w-5" />
+                <span className="sr-only">Toggle sidebar</span>
+            </Button>
           </div>
           
           {/* Header Right Side */}
