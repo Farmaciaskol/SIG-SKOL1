@@ -50,6 +50,9 @@ import { Button } from '../ui/button';
 import React from 'react';
 import { Badge } from '../ui/badge';
 import { getAvatar } from '@/components/app/predefined-avatars';
+import { auth } from '@/lib/firebase';
+import { signOut } from 'firebase/auth';
+import { useAuthState } from 'react-firebase-hooks/auth';
 import { User as AppUser } from '@/lib/types';
 import { CommandPalette } from './command-palette';
 import { getUsers } from '@/lib/data';
@@ -59,7 +62,6 @@ const menuGroups = [
       title: 'Principal',
       items: [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { href: '/portal-inbox', label: 'Portal', icon: Inbox },
         { href: '/recipes', label: 'Recetas', icon: FileText },
       ],
     },
@@ -203,7 +205,7 @@ function MainNavContent({
 
   return (
     <div className="flex min-h-svh w-full">
-      <nav className="hidden md:flex flex-col gap-4 border-r bg-muted/40 p-2 w-[250px]">
+      <nav className="hidden md:flex flex-col gap-4 border-r bg-muted p-2 w-[250px]">
         <div className="flex h-16 items-center px-4">
           <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
             <Image
@@ -231,9 +233,6 @@ function MainNavContent({
                     >
                       <item.icon className="h-4 w-4" />
                       <span>{item.label}</span>
-                       {(item.href === '/portal-inbox') && portalInboxCount > 0 && (
-                          <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-500 text-white">{portalInboxCount}</Badge>
-                       )}
                        {item.href === '/inventory' && lowStockCount > 0 && (
                             <Badge variant="destructive" className="ml-auto">{lowStockCount}</Badge>
                        )}
@@ -247,20 +246,17 @@ function MainNavContent({
             ))}
         </div>
         <div className="mt-auto p-2">
-            <Link
-                href="/settings"
-                className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/5',
-                pathname.startsWith('/settings') && 'bg-primary/10 text-primary font-semibold'
-                )}
+            <Button
+                variant="ghost"
+                className="justify-start w-full"
             >
-                <Settings className="h-4 w-4" />
-                Configuración
-            </Link>
+                <ChevronLeft className="mr-2 h-4 w-4" />
+                Cerrar Menú
+            </Button>
         </div>
       </nav>
       <div className="flex flex-1 flex-col">
-        <header className="flex h-16 items-center justify-between gap-4 border-b bg-muted/40 px-6">
+        <header className="flex h-16 items-center justify-between gap-4 border-b bg-muted px-6">
           <div className="md:hidden">
               <Button
                 variant="ghost"
@@ -275,6 +271,17 @@ function MainNavContent({
              <CommandPalette />
           </div>
           <div className="flex items-center gap-2">
+            <Button asChild variant="ghost" size="icon" className="relative h-9 w-9 rounded-full">
+                <Link href="/portal-inbox">
+                    <Inbox className="h-5 w-5" />
+                    {portalInboxCount > 0 && (
+                        <Badge variant="destructive" className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full p-0">
+                            {portalInboxCount}
+                        </Badge>
+                    )}
+                    <span className="sr-only">Portal Inbox</span>
+                </Link>
+            </Button>
             <Button asChild variant="ghost" size="icon" className="relative h-9 w-9 rounded-full">
               <Link href="/messaging">
                 <MessageSquare className="h-5 w-5" />
