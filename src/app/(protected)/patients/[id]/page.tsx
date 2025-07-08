@@ -15,7 +15,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, User, Mail, Phone, MapPin, AlertTriangle, Pencil, Clock, Wand2, FlaskConical, FileText, CheckCircle2, BriefcaseMedical, DollarSign, Calendar, Lock, ShieldAlert, Eye, PlusCircle, Search, X, ChevronLeft, Calendar as CalendarIcon, Save } from 'lucide-react';
+import { Loader2, User, Mail, Phone, MapPin, AlertTriangle, Pencil, Clock, Wand2, FlaskConical, FileText, CheckCircle2, BriefcaseMedical, DollarSign, Calendar, Lock, ShieldAlert, Eye, PlusCircle, Search, X, ChevronLeft, Calendar as CalendarIcon, Save, MoreHorizontal } from 'lucide-react';
 import { format, parseISO, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { PatientFormDialog } from '@/components/app/patient-form-dialog';
@@ -34,6 +34,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Textarea } from '@/components/ui/textarea';
 import { InventoryItemForm } from '@/components/app/inventory-item-form';
 import React from 'react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+
 
 type ActiveTreatment = {
   type: 'magistral';
@@ -412,6 +414,9 @@ export default function PatientDetailPage() {
     );
   }, [inventory, medSearchTerm]);
 
+  const magistralTreatments = useMemo(() => activeTreatments.filter(t => t.type === 'magistral'), [activeTreatments]);
+  const commercialTreatments = useMemo(() => activeTreatments.filter(t => t.type === 'commercial'), [activeTreatments]);
+
 
   if (loading) {
     return (
@@ -504,86 +509,103 @@ export default function PatientDetailPage() {
             
             {/* Active Treatments */}
             <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle>Tratamientos Activos</CardTitle>
-                    <Button variant="outline" size="sm" onClick={handleOpenCommercialMedsModal}>
-                        <Pencil className="mr-2 h-4 w-4" /> Editar Medicamentos
-                    </Button>
-                </CardHeader>
-                <CardContent>
-                    {activeTreatments.length > 0 ? (
-                        <ul className="space-y-3">
-                            {activeTreatments.map((treatment) => {
-                                let key, name, details, isExpired = false, dose = 'N/A', quantity = 'N/A', price = 'N/A';
-                                if (treatment.type === 'magistral') {
-                                    const r = treatment.recipe;
-                                    const item = r.items[0];
-                                    key = r.id;
-                                    name = item?.principalActiveIngredient || 'Preparado Magistral';
-                                    details = `Receta #${r.id.substring(0, 6)}... - ${r.status}`;
-                                    if (r.dueDate) {
-                                        const dueDate = parseISO(r.dueDate);
-                                        if (isValid(dueDate)) { isExpired = dueDate < new Date(); }
-                                    }
-                                    dose = item ? `${item.concentrationValue}${item.concentrationUnit}` : 'N/A';
-                                    quantity = item ? `${item.totalQuantityValue} ${item.totalQuantityUnit}` : 'N/A';
-                                    price = r.preparationCost ? `$${r.preparationCost.toLocaleString('es-CL')}` : 'N/A';
-                                } else {
-                                    key = treatment.inventoryItem.id;
-                                    name = treatment.inventoryItem.name;
-                                    details = 'Medicamento Comercial';
-                                    const invItem = treatment.inventoryItem as InventoryItem;
-                                    dose = invItem.doseValue ? `${invItem.doseValue} ${invItem.doseUnit}` : 'N/A';
-                                    quantity = invItem.itemsPerBaseUnit ? `${invItem.itemsPerBaseUnit} ${invItem.pharmaceuticalForm}/envase` : 'N/A';
-                                    price = invItem.salePrice ? `$${invItem.salePrice.toLocaleString('es-CL')}` : 'N/A';
-                                }
+              <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Tratamientos Activos</CardTitle>
+                  <Button variant="outline" size="sm" onClick={handleOpenCommercialMedsModal}>
+                      <Pencil className="mr-2 h-4 w-4" /> Editar Medicamentos
+                  </Button>
+              </CardHeader>
+              <CardContent className="pt-0 space-y-6">
+                  {activeTreatments.length > 0 ? (
+                    <>
+                      <div>
+                          <h3 className="text-lg font-semibold text-primary mb-2">Preparados Magistrales</h3>
+                          <div className="border rounded-lg overflow-hidden">
+                              <Table>
+                                  <TableHeader>
+                                      <TableRow>
+                                          <TableHead>Preparado</TableHead>
+                                          <TableHead>Estado</TableHead>
+                                          <TableHead>Vencimiento</TableHead>
+                                          <TableHead className="text-right">Acciones</TableHead>
+                                      </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                      {magistralTreatments.length > 0 ? magistralTreatments.map(treatment => {
+                                          const recipe = (treatment as { type: 'magistral'; recipe: Recipe }).recipe;
+                                          const item = recipe.items[0];
+                                          const isExpired = recipe.dueDate ? new Date(recipe.dueDate) < new Date() : false;
 
-                                return (
-                                <li key={key} className={cn("p-4 bg-muted/50 rounded-lg", isExpired && "bg-red-50 border-l-4 border-red-400")}>
-                                    <div className="flex items-start justify-between">
-                                        <div>
-                                            <p className={cn("font-semibold text-foreground text-base", isExpired && "text-red-800")}>{name}</p>
-                                            <p className="text-xs text-muted-foreground">{details}</p>
-                                        </div>
-                                        {treatment.type === 'magistral' && (
-                                            <Button variant="ghost" size="sm" asChild>
-                                                <Link href={`/recipes/${treatment.recipe.id}`}>Ver Receta</Link>
-                                            </Button>
-                                        )}
-                                    </div>
-                                    {isExpired && (
-                                        <div className="flex items-center gap-1.5 mt-2 text-red-600">
-                                            <AlertTriangle className="h-4 w-4" />
-                                            <p className="text-sm font-semibold">Receta Vencida</p>
-                                        </div>
-                                    )}
-                                    <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-muted-foreground/10 text-xs">
-                                        <div>
-                                            <p className="text-muted-foreground">Dosis/Conc.</p>
-                                            <p className="font-medium text-foreground">{dose}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-muted-foreground">Cantidad</p>
-                                            <p className="font-medium text-foreground">{quantity}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-muted-foreground">Precio/Costo</p>
-                                            <p className="font-medium text-foreground">{price}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex justify-end mt-3 pt-3 border-t border-muted-foreground/10">
-                                        <Button variant="ghost" size="sm" onClick={() => setReportingTreatment(treatment)} className="text-amber-600 hover:text-amber-700 hover:bg-amber-50">
-                                            <ShieldAlert className="mr-2 h-4 w-4" />
-                                            Reportar Evento FV
-                                        </Button>
-                                    </div>
-                                </li>
-                            )})}
-                        </ul>
-                    ) : (
-                        <p className="text-sm text-muted-foreground">No hay tratamientos activos registrados.</p>
-                    )}
-                </CardContent>
+                                          return (
+                                              <TableRow key={recipe.id} className={isExpired ? "bg-red-50/50" : ""}>
+                                                  <TableCell>
+                                                      <p className="font-semibold">{item?.principalActiveIngredient || 'N/A'}</p>
+                                                      <p className="text-xs text-muted-foreground">{item ? `${item.concentrationValue}${item.concentrationUnit}` : 'N/A'}</p>
+                                                  </TableCell>
+                                                  <TableCell><Badge variant="outline">{recipe.status}</Badge></TableCell>
+                                                  <TableCell className={isExpired ? "text-red-600 font-semibold" : ""}>
+                                                      {recipe.dueDate ? format(parseISO(recipe.dueDate), 'dd-MM-yyyy') : 'N/A'}
+                                                  </TableCell>
+                                                  <TableCell className="text-right">
+                                                      <DropdownMenu>
+                                                          <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                                          <DropdownMenuContent align="end">
+                                                              <DropdownMenuItem asChild><Link href={`/recipes/${recipe.id}`}><Eye className="mr-2 h-4 w-4" />Ver Receta</Link></DropdownMenuItem>
+                                                              <DropdownMenuItem onClick={() => setReportingTreatment(treatment)}><ShieldAlert className="mr-2 h-4 w-4 text-amber-600"/>Reportar Evento FV</DropdownMenuItem>
+                                                          </DropdownMenuContent>
+                                                      </DropdownMenu>
+                                                  </TableCell>
+                                              </TableRow>
+                                          )
+                                      }) : (
+                                          <TableRow><TableCell colSpan={4} className="h-24 text-center">No hay preparados magistrales activos.</TableCell></TableRow>
+                                      )}
+                                  </TableBody>
+                              </Table>
+                          </div>
+                      </div>
+                      <div>
+                          <h3 className="text-lg font-semibold text-primary mb-2">Medicamentos Comerciales</h3>
+                          <div className="border rounded-lg overflow-hidden">
+                              <Table>
+                                  <TableHeader>
+                                      <TableRow>
+                                          <TableHead>Medicamento</TableHead>
+                                          <TableHead>Dosis</TableHead>
+                                          <TableHead>Precio Ref.</TableHead>
+                                          <TableHead className="text-right">Acciones</TableHead>
+                                      </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                      {commercialTreatments.length > 0 ? commercialTreatments.map(treatment => {
+                                          const inventoryItem = treatment.inventoryItem as InventoryItem;
+                                          return (
+                                              <TableRow key={inventoryItem.id}>
+                                                  <TableCell className="font-semibold">{inventoryItem.name}</TableCell>
+                                                  <TableCell>{inventoryItem.doseValue ? `${inventoryItem.doseValue} ${inventoryItem.doseUnit}` : 'N/A'}</TableCell>
+                                                  <TableCell>{inventoryItem.salePrice ? `$${inventoryItem.salePrice.toLocaleString('es-CL')}` : 'N/A'}</TableCell>
+                                                  <TableCell className="text-right">
+                                                      <DropdownMenu>
+                                                          <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                                          <DropdownMenuContent align="end">
+                                                              <DropdownMenuItem onClick={() => setReportingTreatment(treatment)}><ShieldAlert className="mr-2 h-4 w-4 text-amber-600"/>Reportar Evento FV</DropdownMenuItem>
+                                                          </DropdownMenuContent>
+                                                      </DropdownMenu>
+                                                  </TableCell>
+                                              </TableRow>
+                                          )
+                                      }) : (
+                                          <TableRow><TableCell colSpan={4} className="h-24 text-center">No hay medicamentos comerciales registrados.</TableCell></TableRow>
+                                      )}
+                                  </TableBody>
+                              </Table>
+                          </div>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-sm text-center py-8 text-muted-foreground">No hay tratamientos activos registrados para este paciente.</p>
+                  )}
+              </CardContent>
             </Card>
 
               {/* Timeline and History */}
@@ -867,5 +889,3 @@ export default function PatientDetailPage() {
     </>
   );
 }
-
-    
