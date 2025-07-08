@@ -105,11 +105,6 @@ export function PatientFormDialog({ patient, isOpen, onOpenChange, onSuccess }: 
                 await updatePatient(patient.id, dataToSave);
                 toast({ title: 'Paciente Actualizado', description: 'Los datos del paciente se han guardado.' });
             } else {
-                if (!dataToSave.email) {
-                    toast({ title: "Email requerido", description: "El email es necesario para que el paciente pueda registrarse en el portal.", variant: "destructive" });
-                    setIsSubmitting(false);
-                    return;
-                }
                 await addPatient(dataToSave as any);
                 toast({ title: 'Paciente Creado', description: 'El nuevo paciente ha sido registrado.' });
             }
@@ -117,7 +112,7 @@ export function PatientFormDialog({ patient, isOpen, onOpenChange, onSuccess }: 
             onOpenChange(false);
         } catch (error) {
             console.error("Failed to save patient:", error);
-            toast({ title: 'Error', description: 'No se pudo guardar el paciente.', variant: 'destructive' });
+            toast({ title: 'Error', description: error instanceof Error ? error.message : 'No se pudo guardar el paciente.', variant: 'destructive' });
         } finally {
             setIsSubmitting(false);
         }
@@ -129,7 +124,7 @@ export function PatientFormDialog({ patient, isOpen, onOpenChange, onSuccess }: 
                 <DialogHeader>
                     <DialogTitle>{isEditMode ? 'Editar Paciente' : 'Nuevo Paciente'}</DialogTitle>
                     <DialogDescription>
-                        {isEditMode ? 'Actualice los datos del paciente.' : 'Complete el formulario para registrar un nuevo paciente. El email es requerido para que pueda activar su cuenta en el portal.'}
+                        {isEditMode ? 'Actualice los datos del paciente.' : 'Complete el formulario para registrar un nuevo paciente. El paciente podrá crear su cuenta en el portal más tarde.'}
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -146,6 +141,17 @@ export function PatientFormDialog({ patient, isOpen, onOpenChange, onSuccess }: 
                              <FormField control={form.control} name="phone" render={({ field }) => (
                                 <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                             )}/>
+                             <FormField control={form.control} name="email" render={({ field }) => (
+                                <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                        </div>
+                        <FormField control={form.control} name="address" render={({ field }) => (
+                            <FormItem><FormLabel>Dirección</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                        )}/>
+                        
+                        <Separator className="my-6"/>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                              <FormField control={form.control} name="gender" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Género</FormLabel>
@@ -160,9 +166,6 @@ export function PatientFormDialog({ patient, isOpen, onOpenChange, onSuccess }: 
                                 </FormItem>
                             )}/>
                         </div>
-                        <FormField control={form.control} name="address" render={({ field }) => (
-                            <FormItem><FormLabel>Dirección</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                        )}/>
                         
                         <div className="flex items-center space-x-6 pt-2">
                             <FormField control={form.control} name="isChronic" render={({ field }) => (
@@ -182,23 +185,7 @@ export function PatientFormDialog({ patient, isOpen, onOpenChange, onSuccess }: 
                         <FormField control={form.control} name="allergies" render={({ field }) => (
                             <FormItem><FormLabel>Alergias Conocidas</FormLabel><FormControl><Textarea placeholder="Separadas por comas. Ej: Penicilina, AINEs" {...field} /></FormControl><FormMessage /></FormItem>
                         )}/>
-
-                         <Separator className="my-6"/>
-
-                        <div>
-                            <h3 className="text-lg font-medium mb-1">Credenciales de Acceso al Portal</h3>
-                            <p className="text-sm text-muted-foreground mb-4">
-                                El email servirá como nombre de usuario para que el paciente cree su cuenta.
-                            </p>
-                            <FormField control={form.control} name="email" render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Email {isEditMode ? '' : '*'}</FormLabel>
-                                  <FormControl><Input type="email" {...field} /></FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                            )}/>
-                        </div>
-
+                        
                         <DialogFooter className="pt-4 sticky bottom-0 bg-background">
                             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
                             <Button type="submit" disabled={isSubmitting}>

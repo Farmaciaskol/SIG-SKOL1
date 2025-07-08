@@ -665,13 +665,6 @@ export const addPatient = async (patient: Omit<Patient, 'id' | 'proactiveStatus'
     if (!querySnapshot.empty) {
         throw new Error('Ya existe un paciente con este RUT.');
     }
-
-    if (!patient.email) {
-        throw new Error("El email es requerido para crear un nuevo paciente y su acceso al portal.");
-    }
-    
-    // In a real application, you would trigger a Firebase Function here to create the Firebase Auth user.
-    console.log(`(Simulado) Se enviaría una invitación o se crearía un usuario de Firebase Auth para ${patient.email}`);
     
     const dataToSave: Omit<Patient, 'id'> = {
         ...patient,
