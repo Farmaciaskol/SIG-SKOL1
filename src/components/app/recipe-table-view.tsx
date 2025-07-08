@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Snowflake, DollarSign, UserSquare, Split, FileX, AlertTriangle } from 'lucide-react';
+import { Snowflake, DollarSign, UserSquare, Truck, FileX, FileClock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { statusConfig, MAX_REPREPARATIONS } from '@/lib/constants';
 import { Recipe, RecipeStatus } from '@/lib/types';
@@ -130,7 +130,7 @@ export function RecipeTableView({ recipes, selectedRecipes, allOnPageSelected, t
                     </Badge>
                     {isExpiringSoon && (
                       <TooltipProvider><Tooltip>
-                          <TooltipTrigger asChild><span><AlertTriangle className="h-5 w-5 text-orange-500" /></span></TooltipTrigger>
+                          <TooltipTrigger asChild><span><FileClock className="h-5 w-5 text-orange-500" /></span></TooltipTrigger>
                           <TooltipContent><p>Receta vence pronto o está vencida.</p></TooltipContent>
                       </Tooltip></TooltipProvider>
                     )}
@@ -154,7 +154,7 @@ export function RecipeTableView({ recipes, selectedRecipes, allOnPageSelected, t
                     )}
                     {recipe.status === RecipeStatus.Validated && recipe.supplySource === 'Insumos de Skol' && (
                       <TooltipProvider><Tooltip>
-                          <TooltipTrigger asChild><span><Split className="h-5 w-5 text-orange-600" /></span></TooltipTrigger>
+                          <TooltipTrigger asChild><span><Truck className="h-5 w-5 text-orange-600" /></span></TooltipTrigger>
                           <TooltipContent><p>Pendiente de Despacho a Recetario</p></TooltipContent>
                       </Tooltip></TooltipProvider>
                     )}
