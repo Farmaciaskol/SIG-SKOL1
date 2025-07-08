@@ -47,17 +47,31 @@ export async function fetchLiorenInventory(): Promise<LiorenProduct[]> {
 
       const data = await response.json();
       
-      const productsOnPage = data?.['*'];
+      let productsOnPage: LiorenProduct[] | undefined;
 
-      if (!Array.isArray(productsOnPage)) {
+      // Try to find the product list in different possible formats
+      if (data && Array.isArray(data['*'])) {
+          productsOnPage = data['*'];
+      } else if (data && Array.isArray(data.productos)) {
+          productsOnPage = data.productos;
+      } else if (Array.isArray(data)) {
+          productsOnPage = data;
+      }
+
+      if (productsOnPage === undefined) {
+        // We couldn't find an array of products in any known format.
         if (page > 1) {
-            console.log(`Lioren API: Finished fetching products at page ${page}. Response was not an array.`);
-            break;
+            // Probably the end of pagination with an unusual response.
+            console.log(`Lioren API: Finished fetching products at page ${page}. Response was not a recognized array format.`);
+        } else {
+            // This is the first page and the format is unknown.
+            console.warn('La respuesta de la API de Lioren no contiene un listado de productos en un formato esperado. Respuesta recibida:', JSON.stringify(data, null, 2));
         }
-        throw new Error('La respuesta de la API de Lioren no contiene un listado de productos válido.');
+        break; // Exit the loop gracefully, we can't process this.
       }
       
       if (productsOnPage.length === 0) {
+        // This is a valid empty page, which means we've reached the end of the products.
         break;
       }
       
