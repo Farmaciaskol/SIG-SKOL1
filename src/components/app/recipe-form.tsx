@@ -576,7 +576,14 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
 
       if (result.items && result.items.length > 0) {
         remove(); // Clear all items first
-        const filledItems = result.items.map(item => ({ ...defaultItem, ...item, safetyStockDays: item.safetyStockDays || 0 }));
+        const filledItems = result.items.map(item => {
+          const sanitizedItem: { [key: string]: any } = {};
+          for (const key in item) {
+            const value = (item as any)[key];
+            sanitizedItem[key] = value === null ? '' : value;
+          }
+          return { ...defaultItem, ...sanitizedItem, safetyStockDays: item.safetyStockDays || 0 };
+        });
         append(filledItems);
       }
 
