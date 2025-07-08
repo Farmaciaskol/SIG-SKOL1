@@ -50,6 +50,7 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
+  SheetTrigger,
 } from '@/components/ui/sheet';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -217,7 +218,7 @@ function MainNavContent({
   return (
     <div className="flex min-h-svh w-full bg-muted">
       <nav className={cn(
-          "hidden md:flex flex-col bg-muted transition-all duration-300 ease-in-out",
+          "hidden md:flex flex-col bg-card transition-all duration-300 ease-in-out",
           isSidebarOpen ? "w-[250px]" : "w-[72px]"
       )}>
         <div className={cn(
@@ -237,7 +238,7 @@ function MainNavContent({
         </div>
         <div className="flex-1 overflow-auto">
             {menuGroups.map((group) => (
-              <div key={group.title} className="px-2">
+              <div key={group.title} className="px-2 mb-2">
                 <h3 className={cn(
                   "text-xs font-normal text-muted-foreground uppercase tracking-wider mb-2 transition-opacity duration-300 font-sans",
                   isSidebarOpen ? "opacity-100 px-3" : "opacity-0 h-0"
@@ -261,20 +262,20 @@ function MainNavContent({
                 </div>
               </div>
             ))}
-             <div className="p-2">
-                <Button
-                    variant="ghost"
-                    className={cn("justify-start w-full", !isSidebarOpen && "justify-center")}
-                    onClick={toggleSidebar}
-                >
-                    <ChevronLeft className={cn("h-5 w-5 transition-transform", !isSidebarOpen && "rotate-180")} />
-                    <span className={cn("ml-2", !isSidebarOpen && "hidden")}>Cerrar Menú</span>
-                </Button>
-            </div>
+        </div>
+         <div className="p-2 mt-auto">
+            <Button
+                variant="ghost"
+                className={cn("justify-start w-full", !isSidebarOpen && "justify-center")}
+                onClick={toggleSidebar}
+            >
+                <ChevronLeft className={cn("h-5 w-5 transition-transform", !isSidebarOpen && "rotate-180")} />
+                <span className={cn("ml-2", !isSidebarOpen && "hidden")}>Cerrar Menú</span>
+            </Button>
         </div>
       </nav>
       <div className="flex flex-1 flex-col">
-        <header className="flex h-16 items-center justify-between gap-4 bg-muted px-6">
+        <header className="flex h-16 items-center justify-between gap-4 bg-card px-6">
           <div className="md:hidden">
               <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
                 <SheetTrigger asChild>
@@ -287,7 +288,7 @@ function MainNavContent({
                         <span className="sr-only">Toggle Sidebar</span>
                     </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-[250px] p-0 bg-muted">
+                <SheetContent side="left" className="w-[250px] p-0 bg-card">
                     <SheetHeader className="sr-only">
                         <SheetTitle>Menú Principal</SheetTitle>
                         <SheetDescription>Navegación principal de la aplicación.</SheetDescription>
@@ -306,7 +307,7 @@ function MainNavContent({
                     <div className="flex-1 overflow-auto">
                         {menuGroups.map((group) => (
                           <div key={group.title} className="px-2 mb-2">
-                            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">
+                            <h3 className="text-xs font-normal text-muted-foreground uppercase tracking-wider mb-2 px-3">
                                 {group.title}
                             </h3>
                             <div className="flex flex-col gap-1">
