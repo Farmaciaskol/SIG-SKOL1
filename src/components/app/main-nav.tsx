@@ -246,7 +246,7 @@ function MainNavContent({
 
   return (
     <div className={cn(
-        "grid min-h-svh w-full",
+        "grid min-h-svh w-full border-t-4 border-slate-900 dark:border-slate-700",
         isSidebarOpen ? "md:grid-cols-[280px_1fr]" : "md:grid-cols-[72px_1fr]"
     )}>
       <nav className="hidden md:flex md:flex-col bg-muted">
@@ -260,7 +260,7 @@ function MainNavContent({
         </div>
       </nav>
       <div className="flex flex-1 flex-col">
-          <header className="flex h-16 shrink-0 items-center border-t px-4 lg:px-6">
+          <header className="flex h-16 shrink-0 items-center px-4 lg:px-6">
             <div className="flex h-16 items-center justify-between gap-4 w-full">
                 <div className="flex items-center gap-4">
                    <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
