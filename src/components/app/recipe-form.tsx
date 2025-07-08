@@ -1,3 +1,4 @@
+
 'use client';
 
 import { extractRecipeDataFromImage } from '@/ai/flows/extract-recipe-data-from-image';
@@ -605,7 +606,13 @@ export function RecipeForm({ recipeId, copyFromId, patientId }: RecipeFormProps)
       const finalRecipeId = isEditMode && !copyFromId ? recipeId : undefined;
       await saveRecipe(data, imageFile, user.uid, finalRecipeId);
       toast({ title: isEditMode && !copyFromId ? 'Receta Actualizada' : 'Receta Creada', description: 'Los datos se han guardado correctamente.' });
-      router.push('/recipes');
+      
+      if (patientId && !isEditMode) {
+        router.push(`/patients/${patientId}`);
+      } else {
+        router.push('/recipes');
+      }
+      
       router.refresh();
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Por favor, intente de nuevo.';
