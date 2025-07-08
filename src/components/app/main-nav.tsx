@@ -39,6 +39,7 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarFooter,
+  SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
@@ -292,7 +293,7 @@ function MainNavContent({
         {/* === HEADER === */}
         <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between bg-muted px-4 sm:px-6">
           <div className="flex items-center gap-2">
-             {/* This space is now empty */}
+            {isMobile && <SidebarTrigger />}
           </div>
           
           {/* Header Right Side */}
