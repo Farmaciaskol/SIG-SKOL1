@@ -32,12 +32,27 @@ export async function fetchLiorenInventory(): Promise<LiorenProduct[]> {
     const data = await response.json();
     
     // Check for different possible response structures
-    if (data && Array.isArray(data.productos)) {
-      return data.productos as LiorenProduct[];
-    }
+    
+    // Case 1: Data is in a '*' key
     if (data && Array.isArray(data['*'])) {
       return data['*'] as LiorenProduct[];
     }
+
+    // Case 2: Data is an object of products, keyed by ID
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+        const productArray = Object.values(data);
+        // Verify that the values look like product objects before returning
+        if (productArray.length > 0 && typeof productArray[0] === 'object' && 'id' in (productArray[0] as object) && 'nombre' in (productArray[0] as object)) {
+            return productArray as LiorenProduct[];
+        }
+    }
+
+    // Case 3: Data is in a 'productos' key
+    if (data && Array.isArray(data.productos)) {
+      return data.productos as LiorenProduct[];
+    }
+    
+    // Case 4: Data is a raw array
     if (Array.isArray(data)) {
         return data as LiorenProduct[];
     }
