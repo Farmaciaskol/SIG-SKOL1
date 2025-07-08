@@ -29,17 +29,60 @@ import { RecipeTableView } from './recipe-table-view';
 import { RecipeCardView } from './recipe-card-view';
 import { CardHeader, CardTitle } from '../ui/card';
 
-const StatCard = ({ title, value, icon: Icon, onClick, active = false }: { title: string; value: string | number; icon: React.ElementType; onClick: () => void; active?: boolean }) => (
-  <Card className={cn("hover:shadow-md transition-shadow cursor-pointer", active && "ring-2 ring-primary")} onClick={onClick}>
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 pb-2">
-      <CardTitle className="text-sm font-medium">{title}</CardTitle>
-      <Icon className="h-4 w-4 text-muted-foreground" />
-    </CardHeader>
-    <CardContent className="p-4 pt-0">
-      <p className="text-2xl font-bold">{value}</p>
-    </CardContent>
-  </Card>
-);
+const intentClasses = {
+  default: {
+    bg: 'bg-sky-50 dark:bg-sky-950',
+    icon: 'text-sky-500 dark:text-sky-400',
+    border: 'border-sky-300 dark:border-sky-800'
+  },
+  warning: {
+    bg: 'bg-yellow-50 dark:bg-yellow-950',
+    icon: 'text-yellow-500 dark:text-yellow-400',
+    border: 'border-yellow-300 dark:border-yellow-800'
+  },
+  danger: {
+    bg: 'bg-red-50 dark:bg-red-950',
+    icon: 'text-red-500 dark:text-red-400',
+    border: 'border-red-300 dark:border-red-800'
+  },
+  neutral: {
+    bg: 'bg-slate-100 dark:bg-slate-800',
+    icon: 'text-slate-500 dark:text-slate-400',
+    border: 'border-slate-300 dark:border-slate-700'
+  }
+};
+
+const StatCard = ({ title, value, icon: Icon, onClick, active = false, intent = 'neutral' }: { 
+  title: string; 
+  value: string | number; 
+  icon: React.ElementType; 
+  onClick: () => void; 
+  active?: boolean;
+  intent?: keyof typeof intentClasses;
+}) => {
+  const classes = intentClasses[intent] || intentClasses.neutral;
+  
+  return (
+    <Card 
+      className={cn(
+        "hover:shadow-lg transition-shadow cursor-pointer border-l-4", 
+        classes.border,
+        active && "ring-2 ring-primary ring-offset-2"
+      )} 
+      onClick={onClick}
+    >
+      <CardContent className="p-4 flex items-center gap-4">
+        <div className={cn("p-3 rounded-lg", classes.bg)}>
+          <Icon className={cn("h-6 w-6", classes.icon)} />
+        </div>
+        <div>
+          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          <p className="text-2xl font-bold">{value}</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
 
 
 export const RecipesClient = ({
@@ -525,11 +568,46 @@ export const RecipesClient = ({
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 mt-6">
-        <StatCard title="Pend. Validación" value={stats.pendingValidation} icon={FileClock} onClick={() => setStatusFilter(RecipeStatus.PendingValidation)} active={statusFilter === RecipeStatus.PendingValidation}/>
-        <StatCard title="En Preparación" value={stats.inPreparation} icon={FlaskConical} onClick={() => setStatusFilter(RecipeStatus.Preparation)} active={statusFilter === RecipeStatus.Preparation}/>
-        <StatCard title="Para Retiro" value={stats.readyForPickup} icon={Package} onClick={() => setStatusFilter(RecipeStatus.ReadyForPickup)} active={statusFilter === RecipeStatus.ReadyForPickup}/>
-        <StatCard title="Próximas a Vencer" value={stats.expiringOrExpired} icon={AlertTriangle} onClick={() => setStatusFilter('expiring')} active={statusFilter === 'expiring'}/>
-        <StatCard title="Rechazadas" value={stats.rejected} icon={XCircle} onClick={() => setStatusFilter(RecipeStatus.Rejected)} active={statusFilter === RecipeStatus.Rejected}/>
+        <StatCard 
+          title="Pend. Validación" 
+          value={stats.pendingValidation} 
+          icon={FileClock}
+          onClick={() => setStatusFilter(RecipeStatus.PendingValidation)}
+          active={statusFilter === RecipeStatus.PendingValidation}
+          intent="warning"
+        />
+        <StatCard 
+          title="En Preparación" 
+          value={stats.inPreparation} 
+          icon={FlaskConical}
+          onClick={() => setStatusFilter(RecipeStatus.Preparation)}
+          active={statusFilter === RecipeStatus.Preparation}
+          intent="default"
+        />
+        <StatCard 
+          title="Para Retiro" 
+          value={stats.readyForPickup} 
+          icon={Package}
+          onClick={() => setStatusFilter(RecipeStatus.ReadyForPickup)}
+          active={statusFilter === RecipeStatus.ReadyForPickup}
+          intent="default"
+        />
+        <StatCard 
+          title="Próximas a Vencer" 
+          value={stats.expiringOrExpired} 
+          icon={AlertTriangle}
+          onClick={() => setStatusFilter('expiring')}
+          active={statusFilter === 'expiring'}
+          intent="warning"
+        />
+        <StatCard 
+          title="Rechazadas" 
+          value={stats.rejected} 
+          icon={XCircle}
+          onClick={() => setStatusFilter(RecipeStatus.Rejected)}
+          active={statusFilter === RecipeStatus.Rejected}
+          intent="danger"
+        />
       </div>
 
       <Card className="mt-6">
@@ -602,7 +680,6 @@ export const RecipesClient = ({
         preparationExpiry={preparationExpiry} setPreparationExpiry={setPreparationExpiry}
         transportCost={transportCost} setTransportCost={setTransportCost}
         receptionChecklist={receptionChecklist}
-        setReceptionChecklist={setReceptionChecklist}
         daysSinceDispensation={daysSinceDispensation}
         urgencyStatus={urgencyStatus}
         isDeleteBatchAlertOpen={isDeleteBatchAlertOpen} setIsDeleteBatchAlertOpen={setIsDeleteBatchAlertOpen}
