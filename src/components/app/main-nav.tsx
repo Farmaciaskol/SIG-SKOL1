@@ -28,23 +28,6 @@ import {
   Menu,
 } from 'lucide-react';
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarHeader,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarMenu,
-  SidebarProvider,
-  useSidebar,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarFooter,
-  SidebarTrigger,
-} from '@/components/ui/sidebar';
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '@/lib/firebase';
-import { signOut } from 'firebase/auth';
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -52,6 +35,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from '@/components/ui/dialog';
+import { Card, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '../ui/button';
 import React from 'react';
@@ -66,6 +59,7 @@ const menuGroups = [
       title: 'Principal',
       items: [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { href: '/portal-inbox', label: 'Portal', icon: Inbox },
         { href: '/recipes', label: 'Recetas', icon: FileText },
       ],
     },
@@ -171,8 +165,7 @@ function MainNavContent({
   const pathname = usePathname();
   const [user] = useAuthState(auth);
   const [appUser, setAppUser] = React.useState<AppUser | null>(null);
-  const { state, toggleSidebar, isMobile } = useSidebar();
-  
+
   const fetchAppUser = React.useCallback(async () => {
     if (user?.email) {
       const allUsers = await getUsers();
@@ -209,112 +202,79 @@ function MainNavContent({
 
 
   return (
-    <div className="flex min-h-svh w-full bg-muted group/sidebar" data-state={state}>
-      {/* Sidebar is now a direct child of the flex container */}
-      <Sidebar className="bg-muted" collapsible="icon">
-        <SidebarHeader className="h-16 flex items-center justify-center p-2">
-          <Link href="/dashboard" className="block">
-            <div className="relative h-10 w-32 flex items-center">
-                {/* Full Logo: visible when expanded */}
-                <Image
-                    src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=1a612d04-0f27-4317-bfd6-06b48f019a24"
-                    alt="Skol Pharmacy Logo"
-                    width={120}
-                    height={33}
-                    className="object-contain h-full w-auto transition-opacity duration-300 group-data-[state=expanded]:opacity-100 group-data-[state=collapsed]:opacity-0"
-                    priority
-                />
-                {/* Imagotipo: visible when collapsed */}
-                <Image
-                    src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/IMAGOTIPO_IMAGOTIPO%20FONDO%20-04_IMAGOTIPO%20BLANCO_IMAGOTIPO%20AZUL.png?alt=media&token=746abbd3-b1d7-4abc-80c4-d8125cf78fa2"
-                    alt="Skol Pharmacy Imagotipo"
-                    width={36}
-                    height={36}
-                    className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 object-contain h-9 w-9 transition-opacity duration-300 opacity-0 group-data-[state=collapsed]:opacity-100"
-                    priority
-                />
-            </div>
+    <div className="flex min-h-svh w-full">
+      <nav className="hidden md:flex flex-col gap-4 border-r bg-muted/40 p-2 w-[250px]">
+        <div className="flex h-16 items-center px-4">
+          <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
+            <Image
+                src="https://firebasestorage.googleapis.com/v0/b/sgi-skol1.firebasestorage.app/o/LOGOTIPO%20FARMACIA%20SKOL_LOGO%20COLOR.png?alt=media&token=1a612d04-0f27-4317-bfd6-06b48f019a24"
+                alt="Skol Pharmacy Logo"
+                width={120}
+                height={33}
+                priority
+            />
           </Link>
-        </SidebarHeader>
-        <SidebarContent className="p-2 flex-1">
-          <div className="flex flex-col gap-0 group-data-[collapsible=icon]:gap-0">
+        </div>
+        <div className="flex-1 overflow-auto">
             {menuGroups.map((group) => (
-              <SidebarGroup key={group.title} className="p-0">
-                <SidebarGroupLabel className="p-0 px-2 pb-1 font-normal text-xs uppercase">
-                  {group.title}
-                </SidebarGroupLabel>
-                <SidebarMenu className="gap-1">
+              <div key={group.title} className="px-2 mb-4">
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{group.title}</h3>
+                <div className="flex flex-col gap-1">
                   {group.items.map((item) => (
-                    <SidebarMenuItem key={item.href} className="p-0">
-                      <SidebarMenuButton
-                        asChild
-                        isActive={pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))}
-                        tooltip={item.label}
-                        className={cn( (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) && "bg-primary/10 text-primary hover:bg-primary/20")}
-                      >
-                        <Link href={item.href} className="flex items-center w-full">
-                          <item.icon className="h-4 w-4" />
-                          <span className="flex-1 ml-2 group-data-[collapsible=icon]:hidden">{item.label}</span>
-                          {item.href === '/inventory' && lowStockCount > 0 && (
-                            <Badge variant="destructive" className="h-5 w-5 p-0 flex items-center justify-center rounded-full group-data-[collapsible=icon]:hidden">{lowStockCount}</Badge>
-                          )}
-                          {item.href === '/dispatch-management' && itemsToDispatchCount > 0 && (
-                            <Badge variant="destructive" className="h-5 w-5 p-0 flex items-center justify-center rounded-full group-data-[collapsible=icon]:hidden">{itemsToDispatchCount}</Badge>
-                          )}
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/5',
+                        (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) && 'bg-primary/10 text-primary font-semibold'
+                      )}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.label}</span>
+                       {(item.href === '/portal-inbox') && portalInboxCount > 0 && (
+                          <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-500 text-white">{portalInboxCount}</Badge>
+                       )}
+                       {item.href === '/inventory' && lowStockCount > 0 && (
+                            <Badge variant="destructive" className="ml-auto">{lowStockCount}</Badge>
+                       )}
+                       {item.href === '/dispatch-management' && itemsToDispatchCount > 0 && (
+                            <Badge variant="destructive" className="ml-auto">{itemsToDispatchCount}</Badge>
+                       )}
+                    </Link>
                   ))}
-                </SidebarMenu>
-              </SidebarGroup>
+                </div>
+              </div>
             ))}
-          </div>
-        </SidebarContent>
-        <SidebarFooter className="p-2 mt-auto">
-            <SidebarMenuButton
-                onClick={toggleSidebar}
-                tooltip="Toggle Sidebar"
-                className="h-9 w-9 self-start justify-center rounded-full hover:bg-accent"
+        </div>
+        <div className="mt-auto p-2">
+            <Link
+                href="/settings"
+                className={cn(
+                'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/5',
+                pathname.startsWith('/settings') && 'bg-primary/10 text-primary font-semibold'
+                )}
             >
-                <ChevronLeft className="h-5 w-5 transition-transform duration-300 ease-in-out group-data-[state=collapsed]:rotate-180" />
-                <span className="sr-only">Toggle Sidebar</span>
-            </SidebarMenuButton>
-        </SidebarFooter>
-      </Sidebar>
-
-      {/* Main content area wrapped in a new div */}
-      <div className="flex flex-1 flex-col overflow-hidden relative">
-        
-        {/* === HEADER === */}
-        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between bg-muted px-4 sm:px-6">
+                <Settings className="h-4 w-4" />
+                Configuración
+            </Link>
+        </div>
+      </nav>
+      <div className="flex flex-1 flex-col">
+        <header className="flex h-16 items-center justify-between gap-4 border-b bg-muted/40 px-6">
+          <div className="md:hidden">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 md:hidden"
+              >
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Toggle Sidebar</span>
+              </Button>
+          </div>
+          <div className="w-full max-w-md ml-auto">
+             <CommandPalette />
+          </div>
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 md:hidden"
-              onClick={toggleSidebar}
-            >
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle Sidebar</span>
-            </Button>
-          </div>
-          
-          {/* Header Right Side */}
-          <div className="flex flex-1 items-center justify-end gap-2 md:gap-4">
-            <div className="w-full max-w-xs ml-auto">
-              <CommandPalette />
-            </div>
-             <Button asChild variant="ghost" size="icon" className="relative h-9 w-9 rounded-full">
-                <Link href="/portal-inbox">
-                    <Inbox className="h-5 w-5" />
-                    {portalInboxCount > 0 && (
-                    <Badge variant="destructive" className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full p-0">
-                        {portalInboxCount}
-                    </Badge>
-                    )}
-                    <span className="sr-only">Bandeja de Entrada del Portal</span>
-                </Link>
-            </Button>
             <Button asChild variant="ghost" size="icon" className="relative h-9 w-9 rounded-full">
               <Link href="/messaging">
                 <MessageSquare className="h-5 w-5" />
@@ -330,12 +290,50 @@ function MainNavContent({
               itemsToDispatchCount={itemsToDispatchCount} 
               lowStockCount={lowStockCount} 
             />
-            <Button asChild variant="ghost" size="icon" className="h-9 w-9 rounded-full">
-                <Link href="/settings">
-                    <Settings className="h-5 w-5" />
-                    <span className="sr-only">Configuración</span>
-                </Link>
-            </Button>
+            <Dialog>
+                <DialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
+                        <Settings className="h-5 w-5" />
+                        <span className="sr-only">Configuración</span>
+                    </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Configuración</DialogTitle>
+                        <DialogDescription>
+                            Seleccione una sección para administrar.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4">
+                        <DialogClose asChild>
+                            <Link href="/settings" className="block">
+                                <Card className="hover:bg-muted/50 transition-colors">
+                                    <CardHeader className="flex flex-row items-center gap-4 p-4">
+                                        <Settings className="h-6 w-6 text-primary"/>
+                                        <div>
+                                            <h3 className="font-semibold">General</h3>
+                                            <p className="text-sm text-muted-foreground">Listas, parámetros y ajustes de la aplicación.</p>
+                                        </div>
+                                    </CardHeader>
+                                </Card>
+                            </Link>
+                        </DialogClose>
+                        <DialogClose asChild>
+                            <Link href="/settings" className="block">
+                                <Card className="hover:bg-muted/50 transition-colors">
+                                     <CardHeader className="flex flex-row items-center gap-4 p-4">
+                                        <Users className="h-6 w-6 text-primary"/>
+                                        <div>
+                                            <h3 className="font-semibold">Usuarios y Roles</h3>
+                                            <p className="text-sm text-muted-foreground">Administre accesos y permisos del sistema.</p>
+                                        </div>
+                                    </CardHeader>
+                                </Card>
+                            </Link>
+                        </DialogClose>
+                    </div>
+                </DialogContent>
+            </Dialog>
             {user && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -370,9 +368,7 @@ function MainNavContent({
             )}
           </div>
         </header>
-        
-        {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto p-6 md:p-8 bg-background rounded-tl-2xl">
+        <main className="flex-1 p-6 md:p-8 overflow-auto bg-background rounded-tl-2xl">
           {children}
         </main>
       </div>
@@ -382,8 +378,6 @@ function MainNavContent({
 
 export function MainNav(props: MainNavProps & { children: React.ReactNode }) {
   return (
-    <SidebarProvider>
       <MainNavContent {...props}>{props.children}</MainNavContent>
-    </SidebarProvider>
   )
 }
