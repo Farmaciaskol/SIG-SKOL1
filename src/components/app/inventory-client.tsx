@@ -524,26 +524,29 @@ export function InventoryClient({
                             ) : liorenResults.length > 0 ? (
                                 <div className="max-h-[70vh] overflow-y-auto">
                                     <Table>
-                                        <TableHeader><TableRow><TableHead>Nombre</TableHead><TableHead>Código</TableHead><TableHead>Precio</TableHead><TableHead>Stock</TableHead><TableHead className="text-right">Acción</TableHead></TableRow></TableHeader>
+                                        <TableHeader><TableRow><TableHead>Nombre</TableHead><TableHead>Código</TableHead><TableHead>Precio</TableHead><TableHead>Stock por Bodega</TableHead><TableHead className="text-right">Acción</TableHead></TableRow></TableHeader>
                                         <TableBody>
                                             {liorenResults.map(product => {
-                                                const totalStock = Array.isArray(product.stocks)
-                                                    ? product.stocks.reduce((sum, stock) => {
-                                                        if (stock && stock.stock !== null && stock.stock !== undefined) {
-                                                          const stockValue = Number(stock.stock);
-                                                          if (!isNaN(stockValue)) {
-                                                            return sum + stockValue;
-                                                          }
-                                                        }
-                                                        return sum;
-                                                      }, 0)
-                                                    : 0;
                                                 return (
                                                     <TableRow key={product.id}>
                                                         <TableCell className="font-medium">{product.nombre || "N/A"}</TableCell>
                                                         <TableCell>{product.codigo || "N/A"}</TableCell>
                                                         <TableCell>${typeof product.precioventabruto === 'number' ? product.precioventabruto.toLocaleString('es-CL') : 'N/A'}</TableCell>
-                                                        <TableCell>{totalStock}</TableCell>
+                                                        <TableCell>
+                                                            <div className="flex flex-wrap gap-1">
+                                                                {Array.isArray(product.stocks) && product.stocks.filter(s => Number(s.stock) > 0).length > 0 ? (
+                                                                product.stocks
+                                                                    .filter(stock => Number(stock.stock) > 0)
+                                                                    .map(stock => (
+                                                                    <Badge key={stock.sucursal_id} variant="secondary" className="font-normal">
+                                                                        {stock.nombre}: {Number(stock.stock)}
+                                                                    </Badge>
+                                                                    ))
+                                                                ) : (
+                                                                <Badge variant="outline">Sin Stock</Badge>
+                                                                )}
+                                                            </div>
+                                                        </TableCell>
                                                         <TableCell className="text-right">
                                                             <Button size="sm" onClick={() => handleImportFromLioren(product)}>
                                                                 <Download className="mr-2 h-4 w-4" />
