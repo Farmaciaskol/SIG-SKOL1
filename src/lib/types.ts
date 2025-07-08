@@ -165,6 +165,9 @@ export interface RecipeItem {
   totalQuantityUnit: string;
   usageInstructions: string;
   safetyStockDays?: number;
+  isRefrigerated?: boolean;
+  requiresFractionation?: boolean;
+  sourceInventoryItemId?: string;
 }
 
 export interface AuditTrailEntry {
@@ -434,6 +437,42 @@ export interface Order {
   prescriptionImageUrl?: string;
 }
 
+export interface LiorenStock {
+  sucursal_id: number;
+  nombre: string;
+  stock: number;
+}
+
+export interface LiorenProduct {
+  id: number;
+  nombre: string;
+  exento: number;
+  codigo: string; // SKU
+  unidad: string;
+  param1: string;
+  param2: string;
+  param3: string;
+  param4: string;
+  descripcion?: string;
+  activo: number;
+  preciocompraneto: number;
+  precioventabruto: number;
+  cod_imp_venta: string;
+  cod_imp_compra: string;
+  peso: number;
+  largo: string;
+  ancho: string;
+  alto: string;
+  stocks: LiorenStock[];
+  atributos: any[];
+  otrosprecios: any[];
+}
+
+export interface Bodega {
+    id: number;
+    nombre: string;
+    sucursal_id: number | null;
+}
 
 export interface AppData {
   recipes: Recipe[];
