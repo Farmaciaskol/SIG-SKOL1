@@ -62,6 +62,26 @@ npm run dev
 
 Esto iniciará la aplicación en [http://localhost:9002](http://localhost:9002).
 
+## Despliegue a Producción
+
+Este proyecto está configurado para desplegarse fácilmente con **Firebase App Hosting**.
+
+Para publicar tu aplicación, sigue estos dos pasos en la terminal:
+
+1.  **Construir la aplicación para producción:**
+    ```bash
+    npm run build
+    ```
+    Este comando optimiza y empaqueta el código de Next.js.
+
+2.  **Desplegar en Firebase:**
+    ```bash
+    firebase deploy --only apphosting
+    ```
+    Este comando sube la versión de producción a Firebase. Una vez completado, Firebase te proporcionará la URL pública donde tu aplicación estará disponible.
+
+El archivo `apphosting.yaml` en la raíz del proyecto contiene la configuración que Firebase App Hosting utiliza para el despliegue.
+
 ## Estructura del Proyecto
 
 -   `src/app/`: Contiene todas las rutas de la aplicación, siguiendo la convención del App Router de Next.js.
