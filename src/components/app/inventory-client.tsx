@@ -5,13 +5,14 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { getInventory, addInventoryItem, updateInventoryItem, deleteInventoryItem, addLotToInventoryItem, type Patient, syncFraccionamientoStock } from '@/lib/data';
+import { getInventory, addInventoryItem, updateInventoryItem, deleteInventoryItem, addLotToInventoryItem, type Patient } from '@/lib/data';
 import type { InventoryItem, LotDetail, Bodega } from '@/lib/types';
-import { searchLiorenProducts, type LiorenProduct, fetchLiorenWarehouses, fetchLiorenProductAttributes } from '@/lib/lioren-api';
-import { PlusCircle, Search, Edit, Box, Trash2, MoreVertical, DollarSign, Package, PackageX, AlertTriangle, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Loader2, Calendar as CalendarIcon, Snowflake, Download, RefreshCw } from 'lucide-react';
+import { searchLiorenProducts, type LiorenProduct, fetchLiorenWarehouses } from '@/lib/lioren-api';
+import { runStockSync } from '@/lib/actions';
+import { PlusCircle, Search, Edit, Box, Trash2, MoreVertical, DollarSign, Package, PackageX, AlertTriangle, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Loader2, RefreshCw, Download } from 'lucide-react';
 import { format, differenceInDays, isBefore, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -19,9 +20,6 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { InventoryItemForm } from './inventory-item-form';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { Calendar } from '../ui/calendar';
-import { Label } from '../ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Alert } from '../ui/alert';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
@@ -201,7 +199,7 @@ export function InventoryClient({
     const handleSyncStock = async () => {
         setIsSyncing(true);
         try {
-            const result = await syncFraccionamientoStock();
+            const result = await runStockSync();
             if (result.success) {
                 toast({ title: 'Sincronización Exitosa', description: result.message });
                 refreshLocalData();
@@ -312,7 +310,7 @@ export function InventoryClient({
                 </TabsList>
                 <TabsContent value="local" className="mt-6">
                     <div className="space-y-6">
-                        <div className="flex items-center gap-2">
+                         <div className="flex items-center gap-2">
                             <Button onClick={() => handleOpenForm(null)}>
                                 <PlusCircle className="mr-2 h-4 w-4" /> Crear Producto Local
                             </Button>

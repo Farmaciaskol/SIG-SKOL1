@@ -4,6 +4,7 @@
 import { 
   getPatients,
   updatePatient, 
+  syncFraccionamientoStock,
 } from './data';
 import { analyzePatientForProactiveAlerts } from '@/ai/flows/analyze-patient-proactive-alerts';
 import { MAX_REPREPARATIONS } from './constants';
@@ -62,4 +63,12 @@ export async function runProactiveAnalysisForAllPatients(): Promise<{ success: b
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     return { success: false, updatedCount: 0, message: `Analysis failed: ${errorMessage}` };
   }
+}
+
+/**
+ * Triggers the synchronization of stock for "Fraccionamiento" items
+ * between the local database and the Lioren API.
+ */
+export async function runStockSync(): Promise<{ success: boolean; updatedCount: number; message: string }> {
+    return await syncFraccionamientoStock();
 }
