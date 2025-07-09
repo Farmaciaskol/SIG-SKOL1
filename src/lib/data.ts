@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db, storage, auth } from './firebase';
@@ -1181,7 +1182,7 @@ export async function syncFraccionamientoStock(): Promise<{ success: boolean; up
         let liorenTotalStock = 0;
         if (Array.isArray(liorenProduct.stocks)) {
             for (const stockDetail of liorenProduct.stocks) {
-                const stockValue = Number(stockDetail.stock);
+                const stockValue = Number(stockDetail.stock ?? stockDetail.cantidad);
                 if (!isNaN(stockValue)) {
                     liorenTotalStock += stockValue;
                 }

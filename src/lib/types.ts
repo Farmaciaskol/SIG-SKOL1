@@ -449,6 +449,7 @@ export interface LiorenStock {
   bodega_id?: number | null;
   nombre?: string;
   stock?: number | null;
+  cantidad?: number | null;
 }
 
 export interface LiorenProduct {

@@ -564,7 +564,7 @@ export function InventoryClient({
                                                                         }
                                                                         const warehouseId = stockItem.bodega_id;
                                                                         const warehouseName = stockItem.nombre || getWarehouseName(warehouseId);
-                                                                        const stockValue = stockItem.stock;
+                                                                        const stockValue = stockItem.stock ?? stockItem.cantidad;
                                                                         const key = `${product.id}-${warehouseId !== null && warehouseId !== undefined ? warehouseId : `idx-${index}`}`;
 
                                                                         let warehouseDisplay = "Bodega Desconocida";
