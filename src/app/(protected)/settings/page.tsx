@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
@@ -12,8 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, PlusCircle, Save, X, MoreHorizontal, Pencil, Trash2, Search, Users, Shield } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2, PlusCircle, Save, X, MoreHorizontal, Pencil, Trash2, Search, Users, Shield, Settings } from 'lucide-react';
 import { PERMISSIONS } from '@/lib/constants';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -31,6 +29,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import React from 'react';
 
 // ===== AppSettingsTab Component and its helpers =====
 
@@ -639,29 +640,54 @@ const UserManagementTab = () => {
 
 
 // ===== Main Page Component =====
+
+const settingsNav = [
+  { name: 'General', href: '/settings?tab=general', tab: 'general', icon: Settings },
+  { name: 'Usuarios y Roles', href: '/settings?tab=users', tab: 'users', icon: Users },
+];
+
 export default function SettingsPage() {
-    return (
-        <div className="space-y-6">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-primary font-headline">Configuración</h1>
-                    <p className="text-sm text-muted-foreground">
-                    Gestione la configuración general, usuarios y roles del sistema.
-                    </p>
-                </div>
-            </div>
-            <Tabs defaultValue="general" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 md:w-[400px]">
-                    <TabsTrigger value="general">Configuración General</TabsTrigger>
-                    <TabsTrigger value="users">Usuarios y Roles</TabsTrigger>
-                </TabsList>
-                <TabsContent value="general" className="mt-6">
-                    <AppSettingsTab />
-                </TabsContent>
-                <TabsContent value="users" className="mt-6">
-                    <UserManagementTab />
-                </TabsContent>
-            </Tabs>
+  const searchParams = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'general';
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-primary font-headline">Configuración</h1>
+        <p className="text-sm text-muted-foreground">
+          Gestione la configuración general, usuarios y roles del sistema.
+        </p>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+        <nav className="lg:col-span-1">
+          <ul className="space-y-1">
+            {settingsNav.map((item) => (
+              <li key={item.name}>
+                <Link
+                  href={item.href}
+                  className={cn(
+                    'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors',
+                    activeTab === item.tab
+                      ? 'bg-secondary text-secondary-foreground'
+                      : 'hover:bg-muted/50 hover:text-foreground'
+                  )}
+                >
+                  <item.icon className="h-5 w-5" />
+                  <span>{item.name}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+        <div className="lg:col-span-4">
+          <Card>
+            <CardContent className="p-6">
+              {activeTab === 'general' && <AppSettingsTab />}
+              {activeTab === 'users' && <UserManagementTab />}
+            </CardContent>
+          </Card>
         </div>
-    );
+      </div>
+    </div>
+  );
 }

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect } from 'react';
@@ -10,7 +9,7 @@ export default function UserManagementRedirect() {
 
   useEffect(() => {
     // Redirect to the new unified settings page, on the 'users' tab
-    router.replace('/settings');
+    router.replace('/settings?tab=users');
   }, [router]);
 
   // Show a loader while redirecting
