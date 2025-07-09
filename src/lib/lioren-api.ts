@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import type { LiorenProduct, Bodega } from './types';
@@ -81,6 +82,34 @@ export async function searchLiorenProducts(searchTerm: string): Promise<{ produc
         return { products: [], error: message };
     }
 }
+
+/**
+ * Searches for a single product in Lioren based on its exact code (SKU/barcode).
+ * @param code The exact product code to search for.
+ * @returns A promise that resolves to the product if found, or null.
+ */
+export async function searchLiorenProductByCode(code: string): Promise<{ product: LiorenProduct | null; error?: string }> {
+    if (!code || code.trim() === '') {
+        return { product: null };
+    }
+
+    try {
+        const url = new URL('https://www.lioren.cl/api/productos');
+        url.searchParams.append('codigo', code);
+        const data = await fetchLiorenAPI(url.toString());
+        const products = data?.data || data?.['*'] || (Array.isArray(data) ? data : []);
+
+        // The API returns an array even for code search. Find the exact match.
+        const exactMatch = products.find((p: LiorenProduct) => p.codigo === code);
+
+        return { product: exactMatch || null };
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "No se pudo conectar con el servidor de Lioren.";
+        console.error(`Fallo al buscar producto por código ${code} en Lioren:`, error);
+        return { product: null, error: message };
+    }
+}
+
 
 /**
  * Fetches all registered warehouses from Lioren.

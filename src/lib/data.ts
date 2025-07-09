@@ -8,7 +8,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, ControlledLogEntryType, ProactivePatientStatus, PatientActionNeeded, MonthlyDispensationBoxStatus, DispensationItemStatus, PharmacovigilanceReportStatus, UserRequestStatus, type Recipe, type Doctor, type InventoryItem, type User, type Role, type ExternalPharmacy, type Patient, type PharmacovigilanceReport, type AppData, type AuditTrailEntry, type DispatchNote, type DispatchItem, type ControlledSubstanceLogEntry, type LotDetail, type AppSettings, type MonthlyDispensationBox, type PatientMessage, type UserRequest, type Order, type OrderItem, RecipeItem } from './types';
 import { MAX_REPREPARATIONS } from './constants';
 import { addMonths } from 'date-fns';
-import { fetchAllLiorenProducts, LiorenProduct, searchLiorenProducts } from './lioren-api';
+import { fetchAllLiorenProducts, LiorenProduct, searchLiorenProducts, searchLiorenProductByCode } from './lioren-api';
 import { normalizeString } from './utils';
 
 // Helper function to recursively convert Firestore Timestamps to ISO strings
@@ -1164,16 +1164,13 @@ export async function syncFraccionamientoStock(): Promise<{ success: boolean; up
       const localItemSku = localItem.sku || localItem.barcode;
       
       if (localItemSku) {
-        // Use the search endpoint which is known to return stock details
-        const liorenResponse = await searchLiorenProducts(localItemSku);
+        // Use the new, more precise search function
+        const { product: liorenProduct, error } = await searchLiorenProductByCode(localItemSku);
 
-        if (liorenResponse.error) {
-            errors.push(`Error fetching ${localItem.name}: ${liorenResponse.error}`);
+        if (error) {
+            errors.push(`Error fetching ${localItem.name}: ${error}`);
             continue; // Skip to next item
         }
-
-        // Find the exact match by SKU/codigo
-        const liorenProduct = liorenResponse.products.find(p => p.codigo === localItemSku);
 
         if (liorenProduct) {
             let liorenTotalStock = 0;
@@ -1191,6 +1188,9 @@ export async function syncFraccionamientoStock(): Promise<{ success: boolean; up
               batch.update(itemRef, { quantity: liorenTotalStock });
               updatedCount++;
             }
+        } else {
+            // Optional: Log if a product with a SKU in local DB is not found in Lioren
+            console.log(`Product with SKU ${localItemSku} (${localItem.name}) not found in Lioren.`);
         }
       }
     }
