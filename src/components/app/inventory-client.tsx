@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
@@ -53,12 +52,10 @@ const StatCard = ({ title, value, icon: Icon }: { title: string; value: string |
 
 const InventoryActions = ({ 
     item, 
-    onManageLots, 
     onEdit, 
     onDelete 
 }: { 
     item: InventoryItemWithStats; 
-    onManageLots: (item: InventoryItemWithStats) => void;
     onEdit: (item: InventoryItem) => void;
     onDelete: (item: InventoryItem) => void;
 }) => {
@@ -70,10 +67,6 @@ const InventoryActions = ({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuItem onClick={() => onManageLots(item)}>
-            <Box className="mr-2 h-4 w-4" />
-            <span>Gestionar Lotes</span>
-          </DropdownMenuItem>
            <DropdownMenuItem onClick={() => onEdit(item)}>
             <Edit className="mr-2 h-4 w-4" />
             <span>Editar Producto</span>
@@ -87,127 +80,6 @@ const InventoryActions = ({
     );
 };
 
-function LotManagementDialog({ 
-  item, 
-  isOpen, 
-  onOpenChange, 
-  onLotAdded 
-}: { 
-  item: InventoryItem | null; 
-  isOpen: boolean; 
-  onOpenChange: (open: boolean) => void;
-  onLotAdded: () => void;
-}) {
-  const { toast } = useToast();
-  const [newLotNumber, setNewLotNumber] = useState('');
-  const [newLotQuantity, setNewLotQuantity] = useState('');
-  const [newLotExpiry, setNewLotExpiry] = useState<Date | undefined>();
-  const [isAdding, setIsAdding] = useState(false);
-
-  const handleAddNewLot = async () => {
-    if (!item || !newLotNumber || !newLotQuantity || !newLotExpiry) {
-        toast({ title: 'Error', description: 'Todos los campos son requeridos para añadir un lote.', variant: 'destructive' });
-        return;
-    }
-    setIsAdding(true);
-    try {
-        const newLot: LotDetail = {
-            lotNumber: newLotNumber,
-            quantity: parseInt(newLotQuantity, 10),
-            expiryDate: newLotExpiry.toISOString(),
-        };
-        await addLotToInventoryItem(item.id, newLot);
-        toast({ title: 'Lote Añadido', description: 'El nuevo lote se ha guardado y el stock ha sido actualizado.' });
-        onLotAdded();
-        setNewLotNumber('');
-        setNewLotQuantity('');
-        setNewLotExpiry(undefined);
-    } catch (error) {
-        toast({ title: 'Error al Añadir Lote', description: error instanceof Error ? error.message : 'Ocurrió un error.', variant: 'destructive' });
-    } finally {
-        setIsAdding(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!isOpen) {
-        setNewLotNumber('');
-        setNewLotQuantity('');
-        setNewLotExpiry(undefined);
-    }
-  }, [isOpen]);
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Lotes de: <span className="text-primary">{item?.name}</span></DialogTitle>
-          <DialogDescription>Añada nuevos lotes al inventario o revise los existentes.</DialogDescription>
-        </DialogHeader>
-        
-        <div className="mt-4 max-h-60 overflow-y-auto pr-4 border-b pb-4">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                    <TableHead>N° Lote</TableHead>
-                    <TableHead>Stock</TableHead>
-                    <TableHead>Vencimiento</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {item?.lots && item.lots.length > 0 && item.lots.filter(l => l.quantity > 0).length > 0 ? (
-                    item.lots.filter(l => l.quantity > 0).sort((a,b) => new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime()).map(lot => (
-                        <TableRow key={lot.lotNumber}>
-                        <TableCell className="font-mono">{lot.lotNumber}</TableCell>
-                        <TableCell>{lot.quantity}</TableCell>
-                        <TableCell>{format(parseISO(lot.expiryDate), 'dd-MM-yyyy')}</TableCell>
-                        </TableRow>
-                    ))
-                    ) : (
-                    <TableRow><TableCell colSpan={3} className="text-center h-24">No hay lotes con stock para este producto.</TableCell></TableRow>
-                    )}
-                </TableBody>
-            </Table>
-        </div>
-
-        <div className="space-y-4 pt-4">
-            <h4 className="font-semibold">Añadir Nuevo Lote</h4>
-            <div className="grid gap-4">
-                <div className="space-y-1">
-                    <Label htmlFor="new-lot-number">Número de Lote *</Label>
-                    <Input id="new-lot-number" value={newLotNumber} onChange={(e) => setNewLotNumber(e.target.value)} />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                        <Label htmlFor="new-lot-quantity">Cantidad *</Label>
-                        <Input id="new-lot-quantity" type="number" value={newLotQuantity} onChange={(e) => setNewLotQuantity(e.target.value)} />
-                    </div>
-                     <div className="space-y-1">
-                        <Label>Vencimiento *</Label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !newLotExpiry && "text-muted-foreground")}>
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {newLotExpiry ? format(newLotExpiry, "PPP", { locale: es }) : <span>Seleccionar fecha</span>}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={newLotExpiry} onSelect={setNewLotExpiry} initialFocus /></PopoverContent>
-                        </Popover>
-                    </div>
-                </div>
-             </div>
-             <DialogFooter className="pt-4">
-                 <Button onClick={handleAddNewLot} disabled={isAdding || !newLotNumber || !newLotQuantity || !newLotExpiry} className="w-full">
-                    {isAdding && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                    Añadir Lote
-                </Button>
-             </DialogFooter>
-        </div>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
 export function InventoryClient({ 
   initialInventory,
   patients,
@@ -220,7 +92,6 @@ export function InventoryClient({
     const [activeFilter, setActiveFilter] = useState<FilterStatus>('all');
     const { toast } = useToast();
 
-    const [managingLotsFor, setManagingLotsFor] = useState<InventoryItemWithStats | null>(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<InventoryItem | Partial<InventoryItem> | null>(null);
     const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null);
@@ -396,19 +267,8 @@ export function InventoryClient({
         }
     }, [inventory, inventoryWithStats]);
 
-    const handleManageLots = (item: InventoryItemWithStats) => {
-        setManagingLotsFor(item);
-    };
-
     return (
         <>
-            <LotManagementDialog 
-                item={managingLotsFor}
-                isOpen={!!managingLotsFor}
-                onOpenChange={(open) => { if (!open) setManagingLotsFor(null); }}
-                onLotAdded={refreshLocalData}
-            />
-            
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
               <DialogContent className="sm:max-w-3xl">
                 <DialogHeader>
@@ -512,7 +372,7 @@ export function InventoryClient({
                                                 <TableCell><div className="flex items-center gap-2"><span className="font-semibold text-lg text-foreground">{item.quantity}</span><span className="text-sm text-muted-foreground ml-1">{item.unit}</span></div></TableCell>
                                                 <TableCell>{item.nextExpiryDate && !isNaN(parseISO(item.nextExpiryDate).getTime()) ? format(parseISO(item.nextExpiryDate), 'MMM yyyy', {locale: es}) : 'N/A'}</TableCell>
                                                 <TableCell><Badge variant="outline" className={cn("font-semibold", statusStyles[item.status])}>{item.status}</Badge></TableCell>
-                                                <TableCell className="text-right"><InventoryActions item={item} onManageLots={handleManageLots} onEdit={() => handleOpenForm(item)} onDelete={() => setItemToDelete(item)} /></TableCell>
+                                                <TableCell className="text-right"><InventoryActions item={item} onEdit={() => handleOpenForm(item)} onDelete={() => setItemToDelete(item)} /></TableCell>
                                             </TableRow>
                                         )})}
                                     </TableBody>
