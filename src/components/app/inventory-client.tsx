@@ -562,7 +562,7 @@ export function InventoryClient({
                                                                         if (typeof stockItem !== 'object' || stockItem === null) {
                                                                             return ( <Badge key={`invalid-stock-${index}`} variant="destructive"> Dato Inválido </Badge> );
                                                                         }
-                                                                        const warehouseId = stockItem.sucursal_id;
+                                                                        const warehouseId = stockItem.bodega_id;
                                                                         const warehouseName = stockItem.nombre || getWarehouseName(warehouseId);
                                                                         const stockValue = stockItem.stock;
                                                                         const key = `${product.id}-${warehouseId !== null && warehouseId !== undefined ? warehouseId : `idx-${index}`}`;

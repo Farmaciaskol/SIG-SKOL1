@@ -446,7 +446,7 @@ export interface Order {
 }
 
 export interface LiorenStock {
-  sucursal_id?: number | null;
+  bodega_id?: number | null;
   nombre?: string;
   stock?: number | null;
 }
