@@ -1198,7 +1198,17 @@ export async function syncFraccionamientoStock(): Promise<{ success: boolean; up
       await batch.commit();
     }
     
-    const message = `Sincronización completa. Se actualizaron ${updatedCount} productos. ${errors.length > 0 ? `Errores: ${errors.join(', ')}` : ''}`;
+    let message: string;
+    if (updatedCount > 0) {
+      message = `Sincronización completa. Se actualizaron ${updatedCount} productos.`;
+    } else {
+      message = "Sincronización completa. Tu stock local ya estaba al día con Lioren.";
+    }
+
+    if (errors.length > 0) {
+        message += ` Se encontraron errores: ${errors.join(', ')}`;
+    }
+
     console.log(message);
     return { success: true, updatedCount, message };
 
