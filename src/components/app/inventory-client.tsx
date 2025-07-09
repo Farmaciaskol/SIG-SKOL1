@@ -25,6 +25,7 @@ import { Calendar } from '../ui/calendar';
 import { Label } from '../ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Alert } from '../ui/alert';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 const EXPIRY_THRESHOLD_DAYS = 90;
 
@@ -455,10 +456,19 @@ export function InventoryClient({
                             <Button onClick={() => handleOpenForm(null)}>
                                 <PlusCircle className="mr-2 h-4 w-4" /> Crear Producto Local
                             </Button>
-                            <Button variant="outline" onClick={handleSyncStock} disabled={isSyncing}>
-                                {isSyncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <RefreshCw className="mr-2 h-4 w-4"/>}
-                                Sincronizar con Lioren
-                            </Button>
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                    <Button variant="outline" onClick={handleSyncStock} disabled={isSyncing}>
+                                        {isSyncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <RefreshCw className="mr-2 h-4 w-4"/>}
+                                        Sincronizar Stock
+                                    </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                    <p>Actualiza el stock de los productos de "Fraccionamiento" con el total de Lioren.</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
                         </div>
                         <div>
                             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-6">

@@ -1176,8 +1176,9 @@ export async function syncFraccionamientoStock(): Promise<{ success: boolean; up
     let updatedCount = 0;
 
     for (const localItem of fraccionamientoItems) {
-      if (localItem.barcode && liorenMapByBarcode.has(localItem.barcode)) {
-        const liorenProduct = liorenMapByBarcode.get(localItem.barcode)!;
+      const localItemSku = localItem.sku || localItem.barcode;
+      if (localItemSku && liorenMapByBarcode.has(localItemSku)) {
+        const liorenProduct = liorenMapByBarcode.get(localItemSku)!;
         
         let liorenTotalStock = 0;
         if (Array.isArray(liorenProduct.stocks)) {
