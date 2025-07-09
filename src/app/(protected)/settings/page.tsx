@@ -1,27 +1,17 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { getAppSettings, updateAppSettings, getUsers, getRoles, addUser, updateUser, deleteUser, addRole, updateRole, deleteRole } from '@/lib/data';
+import { getAppSettings, updateAppSettings, getUsers, getRoles, deleteUser } from '@/lib/data';
 import type { AppSettings, User, Role } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, PlusCircle, Save, X, MoreHorizontal, Pencil, Trash2, Search, Users, Shield, Settings } from 'lucide-react';
-import { PERMISSIONS } from '@/lib/constants';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { getAvatar } from '@/components/app/predefined-avatars';
-import { Checkbox } from '@/components/ui/checkbox';
-import { cn } from '@/lib/utils';
-import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   DropdownMenu,
@@ -32,6 +22,9 @@ import {
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import React from 'react';
+import { RoleManagerDialog } from '@/components/app/role-manager-dialog';
+import { UserFormDialog } from '@/components/app/user-form-dialog';
+import { cn } from '@/lib/utils';
 
 // ===== AppSettingsTab Component and its helpers =====
 
@@ -186,13 +179,6 @@ const AppSettingsTab = () => {
 
 // ===== User Management Tab Components and its helpers =====
 
-const userFormSchema = z.object({
-  name: z.string().min(1, { message: 'El nombre es requerido.' }),
-  email: z.string().email({ message: 'Email inválido.' }),
-  roleId: z.string().min(1, { message: 'Debe seleccionar un rol.' }),
-});
-type UserFormValues = z.infer<typeof userFormSchema>;
-
 const StatCard = ({ title, value, icon: Icon }: { title: string; value: string | number; icon: React.ElementType }) => (
     <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -211,192 +197,6 @@ const PlaceholderUserIcon = ({ className }: { className?: string }) => (
       <path d="M12 14c-3.866 0-7 3.134-7 7v1h14v-1c0-3.866-3.134-7-7-7z" />
     </svg>
 );
-
-const PERMISSION_GROUP_TRANSLATIONS: Record<string, string> = {
-  RECIPES: 'Recetas',
-  PATIENTS: 'Pacientes',
-  USERS: 'Usuarios',
-  SETTINGS: 'Configuración',
-};
-
-const PERMISSION_ACTION_TRANSLATIONS: Record<string, string> = {
-  CREATE: 'Crear',
-  READ: 'Leer / Ver',
-  UPDATE: 'Actualizar / Editar',
-  DELETE: 'Eliminar',
-  VALIDATE: 'Validar',
-};
-
-const RoleManagerDialog = ({ roles, isOpen, onOpenChange, onSuccess }: {
-    roles: Role[];
-    isOpen: boolean;
-    onOpenChange: (open: boolean) => void;
-    onSuccess: () => void;
-}) => {
-    const { toast } = useToast();
-    const [selectedRole, setSelectedRole] = useState<Role | null>(null);
-    const [editedPermissions, setEditedPermissions] = useState<string[]>([]);
-    const [editedName, setEditedName] = useState('');
-    const [newRoleName, setNewRoleName] = useState('');
-    const [isSaving, setIsSaving] = useState(false);
-    const [roleToDelete, setRoleToDelete] = useState<Role | null>(null);
-
-    useEffect(() => {
-        if (selectedRole) {
-            setEditedName(selectedRole.name);
-            setEditedPermissions(selectedRole.permissions);
-        } else {
-            setEditedName('');
-            setEditedPermissions([]);
-        }
-    }, [selectedRole]);
-
-    const handlePermissionChange = (permissionId: string, checked: boolean) => {
-        setEditedPermissions(prev =>
-            checked ? [...prev, permissionId] : prev.filter(p => p !== permissionId)
-        );
-    };
-
-    const handleSave = async () => {
-        if (!selectedRole && !newRoleName.trim()) {
-            toast({ title: 'Error', description: 'El nombre del nuevo rol no puede estar vacío.', variant: 'destructive' });
-            return;
-        }
-        if (selectedRole && !editedName.trim()) {
-            toast({ title: 'Error', description: 'El nombre del rol no puede estar vacío.', variant: 'destructive' });
-            return;
-        }
-
-        setIsSaving(true);
-        try {
-            if (selectedRole) {
-                await updateRole(selectedRole.id, { name: editedName, permissions: editedPermissions });
-                toast({ title: 'Rol Actualizado', description: `Se guardaron los cambios para el rol ${editedName}.` });
-            } else {
-                const newRoleId = await addRole({ name: newRoleName, permissions: editedPermissions });
-                toast({ title: 'Rol Creado', description: `Se ha creado el rol ${newRoleName}.` });
-                setNewRoleName('');
-            }
-            onSuccess();
-        } catch (error) {
-            toast({ title: 'Error', description: `No se pudo guardar el rol. ${error instanceof Error ? error.message : ''}`, variant: 'destructive' });
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
-    const handleDelete = async () => {
-        if (!roleToDelete) return;
-        setIsSaving(true);
-        try {
-            await deleteRole(roleToDelete.id);
-            toast({ title: 'Rol Eliminado', description: `El rol ${roleToDelete.name} ha sido eliminado.` });
-            setSelectedRole(null);
-            onSuccess();
-        } catch (error) {
-            toast({ title: 'Error', description: `No se pudo eliminar el rol. ${error instanceof Error ? error.message : ''}`, variant: 'destructive' });
-        } finally {
-            setIsSaving(false);
-            setRoleToDelete(null);
-        }
-    }
-
-    const currentRoleName = selectedRole ? editedName : newRoleName;
-    const currentPermissions = editedPermissions;
-    const canSave = selectedRole ? (selectedRole.name !== editedName || JSON.stringify(selectedRole.permissions) !== JSON.stringify(editedPermissions)) : newRoleName.trim() !== '';
-
-    return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-4xl max-h-[90vh]">
-                <DialogHeader>
-                    <DialogTitle>Gestionar Roles y Permisos</DialogTitle>
-                    <DialogDescription>Cree, edite o elimine roles, y asigne permisos específicos para cada uno.</DialogDescription>
-                </DialogHeader>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[70vh]">
-                    <Card className="md:col-span-1 flex flex-col">
-                        <CardHeader className="p-4 border-b">
-                            <h3 className="text-lg font-semibold">Roles</h3>
-                        </CardHeader>
-                        <CardContent className="p-2 flex-1 overflow-y-auto">
-                            {roles.map(role => (
-                                <button
-                                    key={role.id}
-                                    onClick={() => setSelectedRole(role)}
-                                    className={cn("w-full text-left p-2 rounded-md hover:bg-muted", selectedRole?.id === role.id && "bg-muted font-semibold")}
-                                >
-                                    {role.name}
-                                </button>
-                            ))}
-                        </CardContent>
-                        <CardFooter className="p-2 border-t">
-                            <Button variant="outline" className="w-full" onClick={() => setSelectedRole(null)}>
-                                <PlusCircle className="mr-2 h-4 w-4"/> Nuevo Rol
-                            </Button>
-                        </CardFooter>
-                    </Card>
-                    <Card className="md:col-span-2 flex flex-col">
-                        <CardHeader className="p-4 border-b">
-                            {selectedRole ? (
-                                <Input value={editedName} onChange={(e) => setEditedName(e.target.value)} className="text-lg font-semibold h-9" />
-                            ) : (
-                                <Input value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} placeholder="Nombre del Nuevo Rol..." className="text-lg font-semibold h-9" />
-                            )}
-                        </CardHeader>
-                        <CardContent className="p-4 flex-1 overflow-y-auto space-y-4">
-                            <h4 className="font-medium text-foreground">Permisos</h4>
-                            {Object.entries(PERMISSIONS).map(([group, permissions]) => (
-                                <div key={group}>
-                                    <h5 className="capitalize font-semibold mb-2 text-primary">{PERMISSION_GROUP_TRANSLATIONS[group] || group.toLowerCase()}</h5>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-3">
-                                        {Object.entries(permissions).map(([name, id]) => (
-                                            <div key={id} className="flex items-center space-x-2">
-                                                <Checkbox
-                                                    id={id}
-                                                    checked={currentPermissions.includes(id)}
-                                                    onCheckedChange={(checked) => handlePermissionChange(id, !!checked)}
-                                                />
-                                                <label htmlFor={id} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 capitalize">
-                                                    {PERMISSION_ACTION_TRANSLATIONS[name] || name.toLowerCase().replace(/_/g, ' ')}
-                                                </label>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <Separator className="mt-4" />
-                                </div>
-                            ))}
-                        </CardContent>
-                        <CardFooter className="p-4 border-t flex justify-between">
-                            {selectedRole ? (
-                                <Button variant="destructive" onClick={() => setRoleToDelete(selectedRole)} disabled={isSaving}>
-                                    <Trash2 className="mr-2 h-4 w-4"/> Eliminar Rol
-                                </Button>
-                            ) : <div></div>}
-                            <Button onClick={handleSave} disabled={!canSave || isSaving}>
-                                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                                <Save className="mr-2 h-4 w-4"/> {selectedRole ? 'Guardar Cambios' : 'Crear Rol'}
-                            </Button>
-                        </CardFooter>
-                    </Card>
-                </div>
-                 <AlertDialog open={!!roleToDelete} onOpenChange={(open) => !open && setRoleToDelete(null)}>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>¿Eliminar el rol "{roleToDelete?.name}"?</AlertDialogTitle>
-                            <AlertDialogDescription>Esta acción no se puede deshacer. Se eliminará permanentemente el rol.</AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleDelete} disabled={isSaving} className="bg-destructive hover:bg-destructive/90">
-                                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Eliminar
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            </DialogContent>
-        </Dialog>
-    );
-};
 
 const UserActions = ({ user, onEdit, onDelete }: { user: User, onEdit: (u: User) => void, onDelete: (u: User) => void }) => (
     <DropdownMenu>
@@ -426,11 +226,6 @@ const UserManagementTab = () => {
 
     const { toast } = useToast();
 
-    const form = useForm<UserFormValues>({
-        resolver: zodResolver(userFormSchema),
-        defaultValues: { name: '', email: '', roleId: '' },
-    });
-
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
@@ -451,24 +246,12 @@ const UserManagementTab = () => {
     
     const handleOpenUserForm = (user: User | null) => {
         setEditingUser(user);
-        form.reset(user ? { name: user.name, email: user.email, roleId: user.roleId } : { name: '', email: '', roleId: '' });
         setIsUserFormOpen(true);
     }
-
-    const onUserSubmit = async (data: UserFormValues) => {
-        try {
-        if (editingUser) {
-            await updateUser(editingUser.id, data);
-            toast({ title: 'Usuario Actualizado', description: `El usuario ${data.name} ha sido actualizado.` });
-        } else {
-            await addUser(data);
-            toast({ title: 'Usuario Creado', description: `El usuario ${data.name} ha sido añadido.` });
-        }
+    
+    const onUserFormSuccess = () => {
         setIsUserFormOpen(false);
         fetchData();
-        } catch(error) {
-        toast({ title: 'Error', description: `No se pudo guardar el usuario. ${error instanceof Error ? error.message : ''}`, variant: 'destructive' });
-        }
     }
 
     const handleDeleteUser = async () => {
@@ -568,53 +351,13 @@ const UserManagementTab = () => {
                 </CardContent>
             </Card>
 
-            <Dialog open={isUserFormOpen} onOpenChange={(open) => { if (!open) setEditingUser(null); setIsUserFormOpen(open); }}>
-                <DialogContent className="sm:max-w-[425px]">
-                    <DialogHeader>
-                    <DialogTitle className="text-primary">{editingUser ? 'Editar Usuario' : 'Añadir Nuevo Usuario'}</DialogTitle>
-                    <DialogDescription>
-                        {editingUser ? 'Actualice los datos del usuario.' : 'Complete el formulario para registrar un nuevo usuario en el sistema.'}
-                    </DialogDescription>
-                    </DialogHeader>
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onUserSubmit)} className="space-y-4 py-2">
-                            <FormField control={form.control} name="name" render={({ field }) => (
-                                <FormItem><FormLabel>Nombre Completo</FormLabel><FormControl><Input placeholder="Ej: Ana Pérez" {...field} /></FormControl><FormMessage /></FormItem>
-                            )}/>
-                            <FormField control={form.control} name="email" render={({ field }) => (
-                                <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="ej: email@dominio.com" {...field} /></FormControl><FormMessage /></FormItem>
-                            )}/>
-                            <FormField
-                                control={form.control}
-                                name="roleId"
-                                render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Rol</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value}>
-                                    <FormControl>
-                                        <SelectTrigger>
-                                        <SelectValue placeholder="Seleccione un rol..." />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        {roles.map(role => <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>)}
-                                    </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                                )}
-                            />
-                            <DialogFooter className="pt-4">
-                                <Button type="button" variant="ghost" onClick={() => setIsUserFormOpen(false)}>Cancelar</Button>
-                                <Button type="submit" disabled={form.formState.isSubmitting}>
-                                    {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    {editingUser ? 'Guardar Cambios' : 'Crear Usuario'}
-                                </Button>
-                            </DialogFooter>
-                        </form>
-                    </Form>
-                </DialogContent>
-            </Dialog>
+            <UserFormDialog 
+                user={editingUser}
+                roles={roles}
+                isOpen={isUserFormOpen}
+                onOpenChange={setIsUserFormOpen}
+                onSuccess={onUserFormSuccess}
+            />
             
             <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
                 <AlertDialogContent>
