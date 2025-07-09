@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
@@ -7,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription }
 import { Input } from '@/components/ui/input';
 import { getInventory, addInventoryItem, updateInventoryItem, deleteInventoryItem, addLotToInventoryItem, type Patient, syncFraccionamientoStock } from '@/lib/data';
 import type { InventoryItem, LotDetail, Bodega } from '@/lib/types';
-import { searchLiorenProducts, type LiorenProduct, fetchLiorenWarehouses } from '@/lib/lioren-api';
+import { searchLiorenProducts, type LiorenProduct, fetchLiorenWarehouses, fetchLiorenProductAttributes } from '@/lib/lioren-api';
 import { PlusCircle, Search, Edit, Box, Trash2, MoreVertical, DollarSign, Package, PackageX, AlertTriangle, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Loader2, Calendar as CalendarIcon, Snowflake, Download, RefreshCw } from 'lucide-react';
 import { format, differenceInDays, isBefore, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -566,9 +567,18 @@ export function InventoryClient({
                                                                         const stockValue = stockItem.stock;
                                                                         const key = `${product.id}-${warehouseId !== null && warehouseId !== undefined ? warehouseId : `idx-${index}`}`;
 
+                                                                        let warehouseDisplay = "Bodega Desconocida";
+                                                                        if (warehouseName) {
+                                                                            warehouseDisplay = warehouseName;
+                                                                        } else if (warehouseId !== undefined && warehouseId !== null) {
+                                                                            warehouseDisplay = `ID Bodega: ${warehouseId}`;
+                                                                        }
+
+                                                                        const stockDisplay = (stockValue !== undefined && stockValue !== null) ? stockValue : 'N/D';
+
                                                                         return (
                                                                             <Badge key={key} variant="secondary" className="font-normal">
-                                                                                {warehouseName || `ID Bodega: ${warehouseId}`}: {stockValue ?? 'N/D'}
+                                                                                {warehouseDisplay}: {stockDisplay}
                                                                             </Badge>
                                                                         );
                                                                     })
