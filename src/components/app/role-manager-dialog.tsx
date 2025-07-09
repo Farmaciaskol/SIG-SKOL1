@@ -37,41 +37,37 @@ export const RoleManagerDialog = ({ roles, isOpen, onOpenChange, onSuccess }: {
 }) => {
     const { toast } = useToast();
     const [selectedRole, setSelectedRole] = useState<Role | null>(null);
-    const [editedPermissions, setEditedPermissions] = useState<string[]>([]);
-    const [editedName, setEditedName] = useState('');
-    const [newRoleName, setNewRoleName] = useState('');
+    const [currentFormData, setCurrentFormData] = useState<{ name: string; permissions: string[] }>({ name: '', permissions: [] });
     const [isSaving, setIsSaving] = useState(false);
     const [roleToDelete, setRoleToDelete] = useState<Role | null>(null);
 
     useEffect(() => {
         if (selectedRole) {
-            setEditedName(selectedRole.name);
-            setEditedPermissions(selectedRole.permissions);
+            setCurrentFormData({ name: selectedRole.name, permissions: selectedRole.permissions });
         } else {
-            setEditedName('');
-            setEditedPermissions([]);
+            setCurrentFormData({ name: '', permissions: [] });
         }
     }, [selectedRole]);
     
     useEffect(() => {
       if(!isOpen) {
         setSelectedRole(null);
-        setNewRoleName('');
       }
-    }, [isOpen])
+    }, [isOpen]);
 
     const handlePermissionChange = (permissionId: string, checked: boolean) => {
-        setEditedPermissions(prev =>
-            checked ? [...prev, permissionId] : prev.filter(p => p !== permissionId)
-        );
+        setCurrentFormData(prev => ({
+            ...prev,
+            permissions: checked ? [...prev.permissions, permissionId] : prev.permissions.filter(p => p !== permissionId)
+        }));
+    };
+    
+    const handleNameChange = (newName: string) => {
+        setCurrentFormData(prev => ({ ...prev, name: newName }));
     };
 
     const handleSave = async () => {
-        if (!selectedRole && !newRoleName.trim()) {
-            toast({ title: 'Error', description: 'El nombre del nuevo rol no puede estar vacío.', variant: 'destructive' });
-            return;
-        }
-        if (selectedRole && !editedName.trim()) {
+        if (!currentFormData.name.trim()) {
             toast({ title: 'Error', description: 'El nombre del rol no puede estar vacío.', variant: 'destructive' });
             return;
         }
@@ -79,12 +75,12 @@ export const RoleManagerDialog = ({ roles, isOpen, onOpenChange, onSuccess }: {
         setIsSaving(true);
         try {
             if (selectedRole) {
-                await updateRole(selectedRole.id, { name: editedName, permissions: editedPermissions });
-                toast({ title: 'Rol Actualizado', description: `Se guardaron los cambios para el rol ${editedName}.` });
+                await updateRole(selectedRole.id, currentFormData);
+                toast({ title: 'Rol Actualizado', description: `Se guardaron los cambios para el rol ${currentFormData.name}.` });
             } else {
-                await addRole({ name: newRoleName, permissions: editedPermissions });
-                toast({ title: 'Rol Creado', description: `Se ha creado el rol ${newRoleName}.` });
-                setNewRoleName('');
+                await addRole(currentFormData);
+                toast({ title: 'Rol Creado', description: `Se ha creado el rol ${currentFormData.name}.` });
+                setCurrentFormData({ name: '', permissions: [] }); // Reset for next new role
             }
             onSuccess();
         } catch (error) {
@@ -100,7 +96,9 @@ export const RoleManagerDialog = ({ roles, isOpen, onOpenChange, onSuccess }: {
         try {
             await deleteRole(roleToDelete.id);
             toast({ title: 'Rol Eliminado', description: `El rol ${roleToDelete.name} ha sido eliminado.` });
-            setSelectedRole(null);
+            if (selectedRole?.id === roleToDelete.id) {
+                setSelectedRole(null);
+            }
             onSuccess();
         } catch (error) {
             toast({ title: 'Error', description: `No se pudo eliminar el rol. ${error instanceof Error ? error.message : ''}`, variant: 'destructive' });
@@ -110,9 +108,11 @@ export const RoleManagerDialog = ({ roles, isOpen, onOpenChange, onSuccess }: {
         }
     }
 
-    const currentRoleName = selectedRole ? editedName : newRoleName;
-    const currentPermissions = editedPermissions;
-    const canSave = selectedRole ? (selectedRole.name !== editedName || JSON.stringify(selectedRole.permissions) !== JSON.stringify(editedPermissions)) : newRoleName.trim() !== '';
+    const isPristine = selectedRole 
+        ? selectedRole.name === currentFormData.name && JSON.stringify(selectedRole.permissions.slice().sort()) === JSON.stringify(currentFormData.permissions.slice().sort())
+        : !currentFormData.name.trim();
+
+    const canSave = !isPristine;
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -145,11 +145,12 @@ export const RoleManagerDialog = ({ roles, isOpen, onOpenChange, onSuccess }: {
                     </Card>
                     <Card className="md:col-span-2 flex flex-col">
                         <CardHeader className="p-4 border-b">
-                            {selectedRole ? (
-                                <Input value={editedName} onChange={(e) => setEditedName(e.target.value)} className="text-lg font-semibold h-9" />
-                            ) : (
-                                <Input value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} placeholder="Nombre del Nuevo Rol..." className="text-lg font-semibold h-9" />
-                            )}
+                            <Input
+                                value={currentFormData.name}
+                                onChange={(e) => handleNameChange(e.target.value)}
+                                placeholder="Nombre del Nuevo Rol..."
+                                className="text-lg font-semibold h-9"
+                            />
                         </CardHeader>
                         <CardContent className="p-4 flex-1 overflow-y-auto space-y-4">
                             <h4 className="font-medium text-foreground">Permisos</h4>
@@ -161,7 +162,7 @@ export const RoleManagerDialog = ({ roles, isOpen, onOpenChange, onSuccess }: {
                                             <div key={id} className="flex items-center space-x-2">
                                                 <Checkbox
                                                     id={id}
-                                                    checked={currentPermissions.includes(id)}
+                                                    checked={currentFormData.permissions.includes(id)}
                                                     onCheckedChange={(checked) => handlePermissionChange(id, !!checked)}
                                                 />
                                                 <label htmlFor={id} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 capitalize">
