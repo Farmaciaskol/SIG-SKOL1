@@ -1189,7 +1189,6 @@ export async function syncFraccionamientoStock(): Promise<{ success: boolean; up
               updatedCount++;
             }
         } else {
-            // Optional: Log if a product with a SKU in local DB is not found in Lioren
             console.log(`Product with SKU ${localItemSku} (${localItem.name}) not found in Lioren.`);
         }
       }
