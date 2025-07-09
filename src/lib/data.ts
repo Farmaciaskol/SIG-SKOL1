@@ -8,7 +8,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { RecipeStatus, SkolSuppliedItemsDispatchStatus, DispatchStatus, ControlledLogEntryType, ProactivePatientStatus, PatientActionNeeded, MonthlyDispensationBoxStatus, DispensationItemStatus, PharmacovigilanceReportStatus, UserRequestStatus, type Recipe, type Doctor, type InventoryItem, type User, type Role, type ExternalPharmacy, type Patient, type PharmacovigilanceReport, type AppData, type AuditTrailEntry, type DispatchNote, type DispatchItem, type ControlledSubstanceLogEntry, type LotDetail, type AppSettings, type MonthlyDispensationBox, type PatientMessage, type UserRequest, type Order, type OrderItem, RecipeItem } from './types';
 import { MAX_REPREPARATIONS } from './constants';
 import { addMonths } from 'date-fns';
-import { fetchAllLiorenProducts, LiorenProduct } from './lioren-api';
+import { fetchAllLiorenProducts, LiorenProduct, searchLiorenProducts } from './lioren-api';
 import { normalizeString } from './utils';
 
 // Helper function to recursively convert Firestore Timestamps to ISO strings
@@ -1149,51 +1149,48 @@ export async function syncFraccionamientoStock(): Promise<{ success: boolean; up
   }
 
   try {
-    const [liorenResponse, localInventory] = await Promise.all([
-      fetchAllLiorenProducts(),
-      getInventory()
-    ]);
-
-    if (liorenResponse.error) {
-      return { success: false, updatedCount: 0, message: liorenResponse.error };
-    }
-    
-    const liorenProducts = liorenResponse.products;
+    const localInventory = await getInventory();
     const fraccionamientoItems = localInventory.filter(item => item.inventoryType === 'Fraccionamiento');
 
     if (fraccionamientoItems.length === 0) {
       return { success: true, updatedCount: 0, message: 'No hay productos de fraccionamiento para sincronizar.' };
     }
 
-    const liorenMapByBarcode = new Map<string, LiorenProduct>();
-    for (const product of liorenProducts) {
-      if (product.codigo) {
-        liorenMapByBarcode.set(product.codigo, product);
-      }
-    }
-
     const batch = writeBatch(db);
     let updatedCount = 0;
+    const errors: string[] = [];
 
     for (const localItem of fraccionamientoItems) {
       const localItemSku = localItem.sku || localItem.barcode;
-      if (localItemSku && liorenMapByBarcode.has(localItemSku)) {
-        const liorenProduct = liorenMapByBarcode.get(localItemSku)!;
-        
-        let liorenTotalStock = 0;
-        if (Array.isArray(liorenProduct.stocks)) {
-            for (const stockDetail of liorenProduct.stocks) {
-                const stockValue = Number(stockDetail.stock ?? stockDetail.cantidad);
-                if (!isNaN(stockValue)) {
-                    liorenTotalStock += stockValue;
-                }
-            }
+      
+      if (localItemSku) {
+        // Use the search endpoint which is known to return stock details
+        const liorenResponse = await searchLiorenProducts(localItemSku);
+
+        if (liorenResponse.error) {
+            errors.push(`Error fetching ${localItem.name}: ${liorenResponse.error}`);
+            continue; // Skip to next item
         }
 
-        if (localItem.quantity !== liorenTotalStock) {
-          const itemRef = doc(db, 'inventory', localItem.id);
-          batch.update(itemRef, { quantity: liorenTotalStock });
-          updatedCount++;
+        // Find the exact match by SKU/codigo
+        const liorenProduct = liorenResponse.products.find(p => p.codigo === localItemSku);
+
+        if (liorenProduct) {
+            let liorenTotalStock = 0;
+            if (Array.isArray(liorenProduct.stocks)) {
+                for (const stockDetail of liorenProduct.stocks) {
+                    const stockValue = Number(stockDetail.stock ?? stockDetail.cantidad);
+                    if (!isNaN(stockValue)) {
+                        liorenTotalStock += stockValue;
+                    }
+                }
+            }
+
+            if (localItem.quantity !== liorenTotalStock) {
+              const itemRef = doc(db, 'inventory', localItem.id);
+              batch.update(itemRef, { quantity: liorenTotalStock });
+              updatedCount++;
+            }
         }
       }
     }
@@ -1202,8 +1199,9 @@ export async function syncFraccionamientoStock(): Promise<{ success: boolean; up
       await batch.commit();
     }
     
-    console.log(`Sync complete. ${updatedCount} items updated.`);
-    return { success: true, updatedCount, message: `Sincronización completa. Se actualizaron ${updatedCount} productos.` };
+    const message = `Sincronización completa. Se actualizaron ${updatedCount} productos. ${errors.length > 0 ? `Errores: ${errors.join(', ')}` : ''}`;
+    console.log(message);
+    return { success: true, updatedCount, message };
 
   } catch (error) {
     console.error('Failed to run stock sync:', error);
